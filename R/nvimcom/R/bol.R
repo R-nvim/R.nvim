@@ -564,81 +564,73 @@ nvim.buildargs <- function(afile, pkg) {
 #' Build Omni List and list of functions for syntax highlighting in Nvim-R's
 #' cache directory.
 #' @param omnilist Full path of `omnils_` file to be built.
-#' @param packlist Library name.
-#' @param allnames Whether to include objects whose names begin with a dot.
-nvim.bol <- function(omnilist, packlist, allnames = FALSE) {
+#' @param libname Library name.
+nvim.bol <- function(omnilist, libname) {
     nvim.OutDec <- getOption("OutDec")
     on.exit(options(nvim.OutDec))
     options(OutDec = ".")
 
-    if (!missing(packlist) && is.null(NvimcomEnv$pkgdescr[[packlist]]))
-        GetFunDescription(packlist)
+    if (is.null(NvimcomEnv$pkgdescr[[libname]]))
+        GetFunDescription(libname)
 
     loadpack <- search()
-    if (missing(packlist)) {
-        listpack <- loadpack[grep("^package:", loadpack)]
-    } else {
-        listpack <- paste0("package:", packlist)
+    packname <- paste0("package:", libname)
+
+    if (nvim.grepl(paste0(packname, "$"), loadpack) == FALSE) {
+        ok <- try(require(libname, warn.conflicts = FALSE,
+                          quietly = TRUE, character.only = TRUE))
+        if (!ok)
+            return(invisible(NULL))
     }
 
-    for (curpack in listpack) {
-        curlib <- sub("^package:", "", curpack)
-        if (nvim.grepl(paste0(curpack, "$"), loadpack) == FALSE) {
-            ok <- try(require(curlib, warn.conflicts = FALSE,
-                                      quietly = TRUE, character.only = TRUE))
-            if (!ok)
-                next
+    obj.list <- objects(packname, all.names = TRUE)
+    obj.list <- filter.objlist(obj.list)
+
+    l <- length(obj.list)
+    if (l > 0) {
+        # Build omnils_ for both omni completion and Object Browser
+        sink(omnilist, append = FALSE)
+        for (obj in obj.list) {
+            ol <- try(nvim.omni.line(obj, packname, libname, 0))
+            if (inherits(ol, "try-error"))
+                warning(paste0("Error while generating omni completion line for: ",
+                               obj, " (", packname, ", ", libname, ").\n"))
         }
-
-        obj.list <- objects(curpack, all.names = allnames)
-        obj.list <- filter.objlist(obj.list)
-
-        l <- length(obj.list)
-        if (l > 0) {
-            # Build omnils_ for both omni completion and Object Browser
-            sink(omnilist, append = FALSE)
-            for (obj in obj.list) {
-                ol <- try(nvim.omni.line(obj, curpack, curlib, 0))
-                if (inherits(ol, "try-error"))
-                    warning(paste0("Error while generating omni completion line for: ",
-                                   obj, " (", curpack, ", ", curlib, ").\n"))
-            }
-            sink()
-            # Build list of functions for syntax highlight
-            fl <- readLines(omnilist)
-            fl <- fl[grep("\006\003\006", fl)]
-            fl <- sub("\006.*", "", fl)
-            fl <- fl[!grepl("[<%\\[\\+\\*&=\\$:{|@\\(\\^>/~!]", fl)]
-            fl <- fl[!grepl("-", fl)]
-            if (curlib == "base") {
-                fl <- fl[!grepl("^array$", fl)]
-                fl <- fl[!grepl("^attach$", fl)]
-                fl <- fl[!grepl("^character$", fl)]
-                fl <- fl[!grepl("^complex$", fl)]
-                fl <- fl[!grepl("^data.frame$", fl)]
-                fl <- fl[!grepl("^detach$", fl)]
-                fl <- fl[!grepl("^double$", fl)]
-                fl <- fl[!grepl("^function$", fl)]
-                fl <- fl[!grepl("^integer$", fl)]
-                fl <- fl[!grepl("^library$", fl)]
-                fl <- fl[!grepl("^list$", fl)]
-                fl <- fl[!grepl("^logical$", fl)]
-                fl <- fl[!grepl("^matrix$", fl)]
-                fl <- fl[!grepl("^numeric$", fl)]
-                fl <- fl[!grepl("^require$", fl)]
-                fl <- fl[!grepl("^source$", fl)]
-                fl <- fl[!grepl("^vector$", fl)]
-            }
-            if (length(fl) > 0) {
-                fl <- paste("syn keyword rFunction", fl)
-                writeLines(text = fl, con = sub("omnils_", "fun_", omnilist))
-            } else {
-                writeLines(text = '" No functions found.', con = sub("omnils_", "fun_", omnilist))
-            }
+        sink()
+        # Build list of functions for syntax highlight
+        fl <- readLines(omnilist)
+        fl <- fl[grep("\006\003\006", fl)]
+        fl <- sub("\006.*", "", fl)
+        fl <- fl[!grepl("[<%\\[\\+\\*&=\\$:{|@\\(\\^>/~!]", fl)]
+        fl <- fl[!grepl("-", fl)]
+        if (libname == "base") {
+            fl <- fl[!grepl("^array$", fl)]
+            fl <- fl[!grepl("^attach$", fl)]
+            fl <- fl[!grepl("^character$", fl)]
+            fl <- fl[!grepl("^complex$", fl)]
+            fl <- fl[!grepl("^data.frame$", fl)]
+            fl <- fl[!grepl("^detach$", fl)]
+            fl <- fl[!grepl("^double$", fl)]
+            fl <- fl[!grepl("^function$", fl)]
+            fl <- fl[!grepl("^integer$", fl)]
+            fl <- fl[!grepl("^library$", fl)]
+            fl <- fl[!grepl("^list$", fl)]
+            fl <- fl[!grepl("^logical$", fl)]
+            fl <- fl[!grepl("^matrix$", fl)]
+            fl <- fl[!grepl("^numeric$", fl)]
+            fl <- fl[!grepl("^require$", fl)]
+            fl <- fl[!grepl("^source$", fl)]
+            fl <- fl[!grepl("^vector$", fl)]
+        }
+        if (length(fl) > 0) {
+            fl <- paste("syn keyword rFunction", fl)
+            writeLines(text = fl, con = sub("omnils_", "fun_", omnilist))
         } else {
-            writeLines(text = "", con = omnilist)
             writeLines(text = '" No functions found.', con = sub("omnils_", "fun_", omnilist))
         }
+    } else {
+        writeLines(text = "", con = omnilist)
+        writeLines(text = '" No functions found.', con = sub("omnils_", "fun_", omnilist))
     }
     return(invisible(NULL))
 }
@@ -689,7 +681,7 @@ nvim.buildomnils <- function(p) {
         cat(msg)
         flush(stdout())
         unlink(c(paste0(bdir, pbuilt), paste0(bdir, fbuilt), paste0(bdir, abuilt)))
-        nvim.bol(paste0(bdir, "omnils_", p, "_", pvi), p, TRUE)
+        nvim.bol(paste0(bdir, "omnils_", p, "_", pvi), p)
         return(invisible(1))
     }
     return(invisible(0))
