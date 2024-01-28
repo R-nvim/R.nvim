@@ -411,7 +411,7 @@ function RQuit(how)
 
     call g:SendCmdToR(qcmd)
 
-    if has_key(g:rplugin, "tmux_split") || a:how == 'save'
+    if a:how == 'save'
         sleep 200m
     endif
 
@@ -427,12 +427,6 @@ function ClearRInfo()
     endfor
     let g:SendCmdToR = function('SendCmdToR_fake')
     let g:rplugin.R_pid = 0
-
-    " Legacy support for running R in a Tmux split pane
-    if has_key(g:rplugin, "tmux_split") && has_key(g:Rcfg, 'tmux_title') && g:rplugin.tmux_split
-                \ && g:Rcfg.tmux_title != 'automatic' && g:Rcfg.tmux_title != ''
-        call system("tmux set automatic-rename on")
-    endif
 
     if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         call CloseRTerm()
@@ -990,14 +984,6 @@ function ShowRDoc(rkeyword, txt)
         stopinsert
     endif
 
-    " Legacy support for running R in a Tmux split pane.
-    " If the help command was triggered in the R Console, jump to Vim pane:
-    if has_key(g:rplugin, "tmux_split") && g:rplugin.tmux_split && !s:running_rhelp
-        let slog = system("tmux select-pane -t " . g:rplugin.editor_pane)
-        if v:shell_error
-            call RWarningMsg(slog)
-        endif
-    endif
     let s:running_rhelp = 0
 
     if bufname("%") =~ "Object_Browser" || (has_key(g:rplugin, "R_bufnr") && bufnr("%") == g:rplugin.R_bufnr)

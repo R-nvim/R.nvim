@@ -68,7 +68,6 @@ local config = {
     strict_rst          = true,
     synctex             = true,
     texerr              = true,
-    tmux_title          = 'NvimR',
     user_maps_only      = false,
     wait                = 60,
     wait_reply          = 2,
