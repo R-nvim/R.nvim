@@ -463,7 +463,7 @@ function SyncTeX_forward(...)
         return
     endif
 
-    call SyncTeX_forward2(SyncTeX_GetMaster() . '.tex', b:rplugin_pdfdir . "/" . basenm . ".pdf", texln, 1)
+    exe 'lua require("r.pdf").SyncTeX_forward("' . SyncTeX_GetMaster() . '.tex", "' . b:rplugin_pdfdir . '/' . basenm . '.pdf", ' . texln . ', 1)'
 endfunction
 
 function SetPDFdir()

@@ -1,4 +1,4 @@
-if vim.fn.exists("g:R_filetypes") and type(vim.g.R_filetypes) == "table" and vim.fn.index(vim.g.R_filetypes, 'r') == -1 then
+if vim.fn.exists("g:R_filetypes") == 1 and type(vim.g.R_filetypes) == "table" and vim.fn.index(vim.g.R_filetypes, 'r') == -1 then
     return
 end
 
@@ -6,11 +6,6 @@ local routfile
 
 -- Override default values with user variable options and set internal variables.
 require("r.config").real_setup()
-
--- Check if b:pdf_is_open already exists to avoid errors at other places
-if not vim.fn.exists("b:pdf_is_open") then
-    vim.b.pdf_is_open = 0
-end
 
 local GetRCmdBatchOutput = function (_)
     if vim.fn.filereadable(routfile) then
@@ -40,7 +35,7 @@ require("r").ShowRout = function ()
     vim.api.nvim_command("silent update")
 
     local rcmd
-    if vim.fn.has("win32") then
+    if vim.fn.has("win32") == 1 then
         rcmd = vim.g.rplugin.Rcmd .. ' CMD BATCH --no-restore --no-save "' .. vim.fn.expand("%") .. '" "' .. routfile .. '"'
     else
         rcmd = { vim.g.rplugin.Rcmd, "CMD", "BATCH", "--no-restore", "--no-save", vim.fn.expand("%"),  routfile }

@@ -46,7 +46,7 @@ endfunction
 "==============================================================================
 
 function RWarningMsg(wmsg)
-    exe "lua vim.notify('" . qmsg . "', vim.log.levels.WARN, {title = 'Nvim-R'})"
+    exe "lua vim.notify('" . a:wmsg . "', vim.log.levels.WARN, {title = 'Nvim-R'})"
 endfunction
 
 
@@ -250,7 +250,7 @@ function ROpenPDF(fullpath)
         if g:Rcfg.openpdf == 1
             let b:pdf_is_open = 1
         endif
-        call ROpenPDF2(a:fullpath)
+        exe 'lua require("r.pdf").open("' . a:fullpath . '")'
     endif
 endfunction
 
@@ -477,10 +477,14 @@ if !isdirectory(g:rplugin.compldir)
 endif
 
 if filereadable(g:rplugin.compldir . "/uname")
-    let g:rplugin.is_darwin = readfile(g:rplugin.compldir . "/uname")[0] =~ "Darwin"
+    if readfile(g:rplugin.compldir . "/uname")[0] =~ "Darwin"
+        let g:rplugin.is_darwin = v:true
+    endif
 else
     silent let s:uname = system("uname")
-    let g:rplugin.is_darwin = s:uname  =~ "Darwin"
+    if s:uname =~ "Darwin"
+        let g:rplugin.is_darwin = v:true
+    endif
     call writefile([s:uname], g:rplugin.compldir . "/uname")
     unlet s:uname
 endif
@@ -709,6 +713,7 @@ exe "source " . substitute(g:rplugin.home, " ", "\\ ", "g") . "/R/nvimrcom.vim"
 
 " SyncTeX options
 let g:rplugin.has_wmctrl = 0
+let g:rplugin.has_awbt = 0
 
 " Initial List of files to be deleted on VimLeave
 let g:rplugin.del_list = [
