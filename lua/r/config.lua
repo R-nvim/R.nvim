@@ -94,6 +94,23 @@ local set_editing_mode = function ()
     config.editing_mode = em
 end
 
+local validate_user_opts = function()
+    -- We don't use vim.validate() because its error message has traceback details not useful for users.
+    for k, _ in pairs(user_opts) do
+        if config[k] == nil then
+            vim.notify("R-Nvim: unrecognized option `" .. k .. "`.", vim.log.levels.WARN)
+        else
+            if k == "external_term" and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean") then
+                vim.notify("R-Nvim: option `external_term` should be either boolean or string.", vim.log.levels.WARN)
+            elseif k == "rmdchunk" and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number") then
+                vim.notify("R-Nvim: option `rmdchunk` should be either number or string.", vim.log.levels.WARN)
+            elseif not (type(user_opts[k]) == type(config[k])) then
+                vim.notify("R-Nvim: option `" .. k .. "` should be " .. type(config[k]) .. ", not " .. type(user_opts[k]) .. ".", vim.log.levels.WARN)
+            end
+        end
+    end
+end
+
 M = {}
 
 --- Store user options
@@ -106,6 +123,8 @@ end
 --- Set initial values of some internal variables.
 --- Set the default value of config variables that depend on system features.
 M.real_setup = function ()
+    validate_user_opts()
+
     -- Override default config values with user options for the first time.
     -- Some config options depend on others to have their default values set.
     for k, v in pairs(user_opts) do
