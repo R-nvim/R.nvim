@@ -45,37 +45,8 @@ endfunction
 " WarningMsg
 "==============================================================================
 
-let g:rplugin.has_notify = v:false
-lua if pcall(require, 'notify') then vim.cmd('let g:rplugin.has_notify = v:true') end
-
-function WarnAfterVimEnter1()
-    call timer_start(1000, 'WarnAfterVimEnter2')
-endfunction
-
-function WarnAfterVimEnter2(...)
-    for msg in s:start_msg
-        call RWarningMsg(msg)
-    endfor
-endfunction
-
 function RWarningMsg(wmsg)
-    if v:vim_did_enter == 0
-        if !exists('s:start_msg')
-            let s:start_msg = [a:wmsg]
-            exe 'autocmd VimEnter * call WarnAfterVimEnter1()'
-        else
-            let s:start_msg += [a:wmsg]
-        endif
-        return
-    endif
-    if mode() == 'i' && g:rplugin.has_notify
-        let qmsg = substitute(a:wmsg, "'", "\\\\'", "g")
-        exe "lua require('notify')('" . qmsg . "', 'warn', {title = 'Nvim-R'})"
-        return
-    endif
-    echohl WarningMsg
-    echomsg a:wmsg
-    echohl None
+    exe "lua vim.notify('" . qmsg . "', vim.log.levels.WARN, {title = 'Nvim-R'})"
 endfunction
 
 
