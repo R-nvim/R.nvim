@@ -30,9 +30,7 @@ to deal with. Cryptic error message are bugs... Please report them at:
 
     https://github.com/jalvesaq/Nvim-R/discussions
 
-Patches and git pull requests are welcome. If you want a feature that only few
-people might be interested in, you can write a script to be sourced by R-Nvim
-(see |source|).
+Git pull requests are welcome.
 
 
 ==============================================================================
@@ -924,7 +922,6 @@ the `init.vim`. The workaround is do not include the superfluous command
 |strict_rst|          Code style for generated rst files
 |insert_mode_cmds|    Allow R commands in insert mode
 |rmhidden|            Remove hidden objects from R workspace
-|source|              Source additional Vim scripts
 |wait|                Time to wait for nvimcom loading
 |wait_reply|          Time to wait for R reply
 |nvim_wd|             Start R in Neovim's working directory
@@ -1793,22 +1790,6 @@ clear the screen. If you have set vi mode in your `~/.inputrc` you might also
 want to set CTRL-L to clear the screen, as explained at
 
 https://unix.stackexchange.com/questions/104094/is-there-any-way-to-enable-ctrll-to-clear-screen-when-set-o-vi-is-set
-
-
-------------------------------------------------------------------------------
-6.27. Source additional Vim scripts                                 *source*
-
-This variable should contain a comma separated list of Vim scripts to be
-sourced by R-Nvim. These scripts may provide additional
-functionality and/or change the behavior of R-Nvim. If you have such
-scripts, put in your config:
->lua
-   source = '~/path/to/MyScript.vim,/path/to/AnotherScript.vim'
-<
-Currently, there is only one script known to extend R-Nvim features:
-
-   Support for the devtools R package:
-   https://github.com/mllg/vim-devtools-plugin
 
 
 ------------------------------------------------------------------------------

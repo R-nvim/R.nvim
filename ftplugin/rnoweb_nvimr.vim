@@ -70,8 +70,6 @@ endif
 call RCreateMaps('n', 'RNextRChunk',     'gn', ':call b:NextRChunk()')
 call RCreateMaps('n', 'RPreviousRChunk', 'gN', ':call b:PreviousRChunk()')
 
-call RSourceOtherScripts()
-
 function! RPDFinit(...)
     exe "source " . substitute(g:rplugin.home, " ", "\\ ", "g") . "/R/pdf_init.vim"
 endfunction

@@ -68,8 +68,6 @@ vim.fn.RCreateSendMaps()
 vim.fn.RControlMaps()
 vim.fn.RCreateMaps('nvi', 'RSetwd',    'rd', ':call RSetWD()')
 
-vim.fn.RSourceOtherScripts()
-
 if vim.b.undo_ftplugin then
     vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
 else

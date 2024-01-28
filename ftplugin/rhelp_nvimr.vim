@@ -29,8 +29,6 @@ call RCreateSendMaps()
 call RControlMaps()
 call RCreateMaps('nvi', 'RSetwd', 'rd', ':call RSetWD()')
 
-call RSourceOtherScripts()
-
 if exists("b:undo_ftplugin")
     let b:undo_ftplugin .= " | unlet! b:IsInRCode"
 else
