@@ -5,7 +5,7 @@ endif
 
 lua require("r.config").real_setup()
 
-if g:Rcfg.rnowebchunk == 1
+if g:Rcfg.rnowebchunk
     " Write code chunk in rnoweb files
     inoremap <buffer><silent> < <Esc>:call RWriteChunk()<CR>a
 endif
@@ -51,7 +51,7 @@ call RCreateMaps('nvi', 'RSetwd',        'rd', ':call RSetWD()')
 call RCreateMaps('nvi', 'RSweave',      'sw', ':call RWeave("nobib", 0, 0)')
 call RCreateMaps('nvi', 'RMakePDF',     'sp', ':call RWeave("nobib", 0, 1)')
 call RCreateMaps('nvi', 'RBibTeX',      'sb', ':call RWeave("bibtex", 0, 1)')
-if has_key(g:Rcfg, "rm_knit_cache") && g:Rcfg.rm_knit_cache == 1
+if has_key(g:Rcfg, "rm_knit_cache") && g:Rcfg.rm_knit_cache
     call RCreateMaps('nvi', 'RKnitRmCache', 'kr', ':call RKnitRmCache()')
 endif
 call RCreateMaps('nvi', 'RKnit',        'kn', ':call RWeave("nobib", 1, 0)')

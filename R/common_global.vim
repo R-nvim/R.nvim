@@ -90,7 +90,7 @@ if !has("nvim-0.6.0")
 endif
 
 " Convert <M--> into <-
-function ReplaceUnderS()
+function RAssign()
     if &filetype != "r" && b:IsInRCode(0) != 1
         exe "normal! a" . g:Rcfg.assign_map
     endif
@@ -318,7 +318,7 @@ function RCreateMaps(type, plug, combo, target)
             exec 'vnoremap <buffer><silent> <LocalLeader>' . a:combo . ' <Esc>' . tg
         endif
     endif
-    if g:Rcfg.insert_mode_cmds == 1 && a:type =~ "i"
+    if g:Rcfg.insert_mode_cmds && a:type =~ "i"
         exec 'inoremap <buffer><silent> <Plug>' . a:plug . ' <Esc>' . tg . il
         if g:Rcfg.user_maps_only != 1 && !hasmapto('<Plug>' . a:plug, "i")
             exec 'inoremap <buffer><silent> <LocalLeader>' . a:combo . ' <Esc>' . tg . il
@@ -410,9 +410,9 @@ endfunction
 function RCreateEditMaps()
     " Edit
     "-------------------------------------
-    " Replace 'underline' with '<-'
-    if g:Rcfg.assign == 1 || g:Rcfg.assign == 2
-        silent exe 'inoremap <buffer><silent> ' . g:Rcfg.assign_map . ' <Esc>:call ReplaceUnderS()<CR>a'
+    " Replace <M--> with ' <- '
+    if g:Rcfg.assign
+        silent exe 'inoremap <buffer><silent> ' . g:Rcfg.assign_map . ' <Esc>:call RAssign()<CR>a'
     endif
 endfunction
 
@@ -839,14 +839,14 @@ let $NVIMR_TMPDIR = g:rplugin.tmpdir
 
 " Default values of some variables
 
-if has('win32') && !(type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0)
+if has('win32') && !(type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false)
     " Sending multiple lines at once to Rgui on Windows does not work.
     let g:Rcfg.parenblock = 0
 else
     let g:Rcfg.parenblock = 1
 endif
 
-if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
     let g:Rcfg.nvimpager = 'vertical'
     let g:Rcfg.save_win_pos = 0
     let g:Rcfg.arrange_windows  = 0
@@ -942,7 +942,7 @@ if has_key(g:Rcfg, "R_app")
     endif
 else
     if has("win32")
-        if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+        if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
             let g:rplugin.R = "Rterm.exe"
         else
             let g:rplugin.R = "Rgui.exe"
@@ -973,7 +973,7 @@ if g:Rcfg.applescript
     exe "source " . substitute(g:rplugin.home, " ", "\\ ", "g") . "/R/osx.vim"
 endif
 
-if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
     exe "source " . substitute(g:rplugin.home, " ", "\\ ", "g") . "/R/nvimbuffer.vim"
 endif
 

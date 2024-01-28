@@ -72,7 +72,7 @@ else
 endif
 
 if !has_key(g:Rcfg, "R_args")
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         let g:Rcfg.R_args = ["--no-save"]
     else
         let g:Rcfg.R_args = ["--sdi", "--no-save"]
