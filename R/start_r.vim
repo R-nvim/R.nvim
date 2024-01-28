@@ -90,7 +90,7 @@ function ReallyStartR(whatr)
         return
     endif
 
-    if (type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 1) || type(g:Rcfg.external_term) == v:t_string
+    if (type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term) || type(g:Rcfg.external_term) == v:t_string
         let g:Rcfg.objbr_place = substitute(g:Rcfg.objbr_place, 'console', 'script', '')
     endif
 
@@ -148,7 +148,7 @@ function ReallyStartR(whatr)
     else
         let start_options += ['options(nvimcom.nvimpager = TRUE)']
     endif
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0 && g:Rcfg.esc_term
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false && g:Rcfg.esc_term
         let start_options += ['options(editor = nvimcom:::nvim.edit)']
     endif
     if has_key(g:Rcfg, "csv_delim") && (g:Rcfg.csv_delim == "," || g:Rcfg.csv_delim == ";")
@@ -205,7 +205,7 @@ function ReallyStartR(whatr)
         return
     endif
 
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         call StartR_InBuffer()
         return
     endif
@@ -376,7 +376,7 @@ endfunction
 function SetSendCmdToR(...)
     if exists("g:RStudio_cmd")
         let g:SendCmdToR = function('SendCmdToRStudio')
-    elseif type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    elseif type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         let g:SendCmdToR = function('SendCmdToR_Buffer')
     elseif has("win32")
         let g:SendCmdToR = function('SendCmdToR_Windows')
@@ -397,7 +397,7 @@ function RQuit(how)
     endif
 
     if has("win32")
-	if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 1
+	if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term
 	    " SaveWinPos
 	    call JobStdin(g:rplugin.jobs["Server"], "84" . $NVIMR_COMPLDIR . "\n")
 	endif
@@ -434,7 +434,7 @@ function ClearRInfo()
         call system("tmux set automatic-rename on")
     endif
 
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         call CloseRTerm()
     endif
     call JobStdin(g:rplugin.jobs["Server"], "43\n")
@@ -627,7 +627,7 @@ function StopRDebugging()
 endfunction
 
 function FindDebugFunc(srcref)
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         let s:func_offset = -1 " Not found
         let sbopt = &switchbuf
         set switchbuf=useopen,usetab
@@ -674,7 +674,7 @@ function FindDebugFunc(srcref)
         let idx -= 1
     endwhile
 
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         if tabpagenr() != curtab
             exe 'normal! ' . curtab . 'gt'
         endif
@@ -688,7 +688,7 @@ endfunction
 
 function RDebugJump(fnm, lnum)
     let saved_so = &scrolloff
-    if g:Rcfg.debug_center == 1
+    if g:Rcfg.debug_center
         set so=999
     endif
     if a:fnm == '' || a:fnm == '<text>'
@@ -742,7 +742,7 @@ function RDebugJump(fnm, lnum)
     "call sign_place(1, 'rdebugcurline', 'dbgline', fname, {'lnum': flnum})
     sign unplace 1
     exe 'sign place 1 line=' . flnum . ' name=dbgline file=' . fname
-    if g:Rcfg.dbg_jump && !s:rdebugging && type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if g:Rcfg.dbg_jump && !s:rdebugging && type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         exe 'sb ' . g:rplugin.R_bufnr
         startinsert
     elseif bname != expand("%")
@@ -1039,7 +1039,7 @@ function ShowRDoc(rkeyword, txt)
             " The only way of ShowRDoc() being called when R_nvimpager=="no"
             " is the user setting the value of R_nvimpager to 'no' after
             " Neovim startup. It should be set in the vimrc.
-            if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+            if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
                 let g:Rcfg.nvimpager = "vertical"
             else
                 let g:Rcfg.nvimpager = "tab"
@@ -1751,10 +1751,10 @@ endfunction
 
 " Clear the console screen
 function RClearConsole()
-    if g:Rcfg.clear_console == 0
+    if g:Rcfg.clear_console == v:false
         return
     endif
-    if has("win32") && type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 1
+    if has("win32") && type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term
         call JobStdin(g:rplugin.jobs["Server"], "86\n")
         sleep 50m
         call JobStdin(g:rplugin.jobs["Server"], "87\n")
@@ -1895,18 +1895,18 @@ function RAction(rcmd, ...)
         endif
         let rfun = a:rcmd
         if a:rcmd == "args"
-            if g:Rcfg.listmethods == 1 && rkeyword !~ '::'
+            if g:Rcfg.listmethods && rkeyword !~ '::'
                 call g:SendCmdToR('nvim.list.args("' . rkeyword . '")')
             else
                 call g:SendCmdToR('args(' . rkeyword . ')')
             endif
             return
         endif
-        if a:rcmd == "plot" && g:Rcfg.specialplot == 1
+        if a:rcmd == "plot" && g:Rcfg.specialplot
             let rfun = "nvim.plot"
         endif
         if a:rcmd == "plotsumm"
-            if g:Rcfg.specialplot == 1
+            if g:Rcfg.specialplot
                 let raction = "nvim.plot(" . rkeyword . "); summary(" . rkeyword . ")"
             else
                 let raction = "plot(" . rkeyword . "); summary(" . rkeyword . ")"
@@ -1959,7 +1959,7 @@ function RAction(rcmd, ...)
 endfunction
 
 function RLoadHTML(fullpath, browser)
-    if g:Rcfg.openhtml == 0
+    if g:Rcfg.openhtml == v:false
         return
     endif
 
