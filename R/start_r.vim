@@ -269,7 +269,6 @@ function WaitNvimcomStart()
 endfunction
 
 function SetNvimcomInfo(nvimcomversion, rpid, wid, r_info)
-    let g:TheRInfo = a:r_info
     let g:rplugin.debug_info['Time']['start_R'] = reltimefloat(reltime(g:rplugin.debug_info['Time']['start_R'], reltime()))
     if filereadable(g:rplugin.home . '/R/nvimcom/DESCRIPTION')
         let ndesc = readfile(g:rplugin.home . '/R/nvimcom/DESCRIPTION')
@@ -309,10 +308,8 @@ function SetNvimcomInfo(nvimcomversion, rpid, wid, r_info)
             let hl_term = g:Rcfg.hl_term
         else
             if Rinfo[4] =~# '1'
-                let g:TheRInfo4 = "zero"
                 let hl_term = 0
             else
-                let g:TheRInfo4 = "um"
                 let hl_term = 1
             endif
         endif
@@ -1637,7 +1634,7 @@ function SendLineToR(godown, ...)
         endif
     endif
 
-    if &filetype == "rhelp" && RhelpIsInRCode(1) != 1
+    if &filetype == "rhelp" && b:IsInRCode(1) != 1
         return
     endif
 
