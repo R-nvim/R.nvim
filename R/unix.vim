@@ -18,8 +18,6 @@ if !executable(g:rplugin.R)
     call RWarningMsg('"' . g:rplugin.R . '" not found. Fix the value of either R_path or R_app in your vimrc.')
 endif
 
-if (type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term) ||
-            \ type(g:Rcfg.external_term) == v:t_string ||
-            \ (has_key(g:Rcfg, 'source') && g:Rcfg.source =~# 'tmux_split.vim')
+if (type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term) || type(g:Rcfg.external_term) == v:t_string
     exe "source " . substitute(g:rplugin.home, " ", "\\ ", "g") . "/R/tmux.vim"
 endif
