@@ -12,7 +12,7 @@ if not vim.fn.exists("b:pdf_is_open") then
     vim.b.pdf_is_open = 0
 end
 
-function GetRCmdBatchOutput(...)
+local GetRCmdBatchOutput = function (_)
     if vim.fn.filereadable(routfile) then
         if vim.g.R_routnotab == 1 then
             vim.api.nvim_command("split " .. routfile)
@@ -29,9 +29,9 @@ function GetRCmdBatchOutput(...)
 end
 
 -- Run R CMD BATCH on the current file and load the resulting .Rout in a split window
-function ShowRout()
+require("r").ShowRout = function ()
     routfile = vim.fn.expand("%:r") .. ".Rout"
-    if vim.fn.bufloaded(routfile) then
+    if vim.fn.bufloaded(routfile) == 1 then
         vim.api.nvim_command("bunload " .. routfile)
         vim.fn.delete(routfile)
     end
@@ -62,7 +62,7 @@ vim.fn.RCreateEditMaps()
 -- Only .R files are sent to R
 vim.fn.RCreateMaps('ni', 'RSendFile',  'aa', ':call SendFileToR("silent")')
 vim.fn.RCreateMaps('ni', 'RESendFile', 'ae', ':call SendFileToR("echo")')
-vim.fn.RCreateMaps('ni', 'RShowRout',  'ao', ':call ShowRout()')
+vim.fn.RCreateMaps('ni', 'RShowRout',  'ao', ':lua require("r").ShowRout()')
 
 vim.fn.RCreateSendMaps()
 vim.fn.RControlMaps()
