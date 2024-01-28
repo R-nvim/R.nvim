@@ -254,197 +254,24 @@ function ROpenPDF(fullpath)
     endif
 endfunction
 
-" For each noremap we need a vnoremap including <Esc> before the :call,
-" otherwise nvim will call the function as many times as the number of selected
-" lines. If we put <Esc> in the noremap, nvim will bell.
-" RCreateMaps Args:
-"   type : modes to which create maps (normal, visual and insert) and whether
-"          the cursor have to go the beginning of the line
-"   plug : the <Plug>Name
-"   combo: combination of letters that make the shortcut
-"   target: the command or function to be called
 function RCreateMaps(type, plug, combo, target)
-    if index(g:Rcfg.disable_cmds, a:plug) > -1
-        return
-    endif
-    if a:type =~ '0'
-        let tg = a:target . '<CR>0'
-        let il = 'i'
-    elseif a:type =~ '\.'
-        let tg = a:target
-        let il = 'a'
-    else
-        let tg = a:target . '<CR>'
-        let il = 'a'
-    endif
-    if a:type =~ "n"
-        exec 'noremap <buffer><silent> <Plug>' . a:plug . ' ' . tg
-        if g:Rcfg.user_maps_only != 1 && !hasmapto('<Plug>' . a:plug, "n")
-            exec 'noremap <buffer><silent> <LocalLeader>' . a:combo . ' ' . tg
-        endif
-    endif
-    if a:type =~ "v"
-        exec 'vnoremap <buffer><silent> <Plug>' . a:plug . ' <Esc>' . tg
-        if g:Rcfg.user_maps_only != 1 && !hasmapto('<Plug>' . a:plug, "v")
-            exec 'vnoremap <buffer><silent> <LocalLeader>' . a:combo . ' <Esc>' . tg
-        endif
-    endif
-    if g:Rcfg.insert_mode_cmds && a:type =~ "i"
-        exec 'inoremap <buffer><silent> <Plug>' . a:plug . ' <Esc>' . tg . il
-        if g:Rcfg.user_maps_only != 1 && !hasmapto('<Plug>' . a:plug, "i")
-            exec 'inoremap <buffer><silent> <LocalLeader>' . a:combo . ' <Esc>' . tg . il
-        endif
-    endif
+    exe 'lua require("r.maps").create("' . a:type . '", "' . a:plug . '", "' .  a:combo . '" , "' .  substitute(a:target, '"', '\\"', 'g') . '")'
 endfunction
 
 function RControlMaps()
-    " List space, clear console, clear all
-    "-------------------------------------
-    call RCreateMaps('nvi', 'RListSpace',    'rl', ':call g:SendCmdToR("ls()")')
-    call RCreateMaps('nvi', 'RClearConsole', 'rr', ':call RClearConsole()')
-    call RCreateMaps('nvi', 'RClearAll',     'rm', ':call RClearAll()')
-
-    " Print, names, structure
-    "-------------------------------------
-    call RCreateMaps('ni', 'RObjectPr',    'rp', ':call RAction("print")')
-    call RCreateMaps('ni', 'RObjectNames', 'rn', ':call RAction("nvim.names")')
-    call RCreateMaps('ni', 'RObjectStr',   'rt', ':call RAction("str")')
-    call RCreateMaps('ni', 'RViewDF',      'rv', ':call RAction("viewobj")')
-    call RCreateMaps('ni', 'RViewDFs',     'vs', ':call RAction("viewobj", ", howto=''split''")')
-    call RCreateMaps('ni', 'RViewDFv',     'vv', ':call RAction("viewobj", ", howto=''vsplit''")')
-    call RCreateMaps('ni', 'RViewDFa',     'vh', ':call RAction("viewobj", ", howto=''above 7split'', nrows=6")')
-    call RCreateMaps('ni', 'RDputObj',     'td', ':call RAction("dputtab")')
-
-    call RCreateMaps('v', 'RObjectPr',     'rp', ':call RAction("print", "v")')
-    call RCreateMaps('v', 'RObjectNames',  'rn', ':call RAction("nvim.names", "v")')
-    call RCreateMaps('v', 'RObjectStr',    'rt', ':call RAction("str", "v")')
-    call RCreateMaps('v', 'RViewDF',       'rv', ':call RAction("viewobj", "v")')
-    call RCreateMaps('v', 'RViewDFs',      'vs', ':call RAction("viewobj", "v", ", howto=''split''")')
-    call RCreateMaps('v', 'RViewDFv',      'vv', ':call RAction("viewobj", "v", ", howto=''vsplit''")')
-    call RCreateMaps('v', 'RViewDFa',      'vh', ':call RAction("viewobj", "v", ", howto=''above 7split'', nrows=6")')
-    call RCreateMaps('v', 'RDputObj',      'td', ':call RAction("dputtab", "v")')
-
-    " Arguments, example, help
-    "-------------------------------------
-    call RCreateMaps('nvi', 'RShowArgs',   'ra', ':call RAction("args")')
-    call RCreateMaps('nvi', 'RShowEx',     're', ':call RAction("example")')
-    call RCreateMaps('nvi', 'RHelp',       'rh', ':call RAction("help")')
-
-    " Summary, plot, both
-    "-------------------------------------
-    call RCreateMaps('ni', 'RSummary',     'rs', ':call RAction("summary")')
-    call RCreateMaps('ni', 'RPlot',        'rg', ':call RAction("plot")')
-    call RCreateMaps('ni', 'RSPlot',       'rb', ':call RAction("plotsumm")')
-
-    call RCreateMaps('v', 'RSummary',      'rs', ':call RAction("summary", "v")')
-    call RCreateMaps('v', 'RPlot',         'rg', ':call RAction("plot", "v")')
-    call RCreateMaps('v', 'RSPlot',        'rb', ':call RAction("plotsumm", "v")')
-
-    " Object Browser
-    "-------------------------------------
-    call RCreateMaps('nvi', 'RUpdateObjBrowser', 'ro', ':call RObjBrowser()')
-    call RCreateMaps('nvi', 'ROpenLists',        'r=', ':call RBrOpenCloseLs("O")')
-    call RCreateMaps('nvi', 'RCloseLists',       'r-', ':call RBrOpenCloseLs("C")')
-
-    " Render script with rmarkdown
-    "-------------------------------------
-    call RCreateMaps('nvi', 'RMakeRmd',    'kr', ':call RMakeRmd("default")')
-    call RCreateMaps('nvi', 'RMakeAll',    'ka', ':call RMakeRmd("all")')
-    if &filetype == "quarto"
-        call RCreateMaps('nvi', 'RMakePDFK',   'kp', ':call RMakeRmd("pdf")')
-        call RCreateMaps('nvi', 'RMakePDFKb',  'kl', ':call RMakeRmd("beamer")')
-        call RCreateMaps('nvi', 'RMakeWord',   'kw', ':call RMakeRmd("docx")')
-        call RCreateMaps('nvi', 'RMakeHTML',   'kh', ':call RMakeRmd("html")')
-        call RCreateMaps('nvi', 'RMakeODT',    'ko', ':call RMakeRmd("odt")')
-    else
-        call RCreateMaps('nvi', 'RMakePDFK',   'kp', ':call RMakeRmd("pdf_document")')
-        call RCreateMaps('nvi', 'RMakePDFKb',  'kl', ':call RMakeRmd("beamer_presentation")')
-        call RCreateMaps('nvi', 'RMakeWord',   'kw', ':call RMakeRmd("word_document")')
-        call RCreateMaps('nvi', 'RMakeHTML',   'kh', ':call RMakeRmd("html_document")')
-        call RCreateMaps('nvi', 'RMakeODT',    'ko', ':call RMakeRmd("odt_document")')
-    endif
+    lua require("r.maps").control()
 endfunction
 
 function RCreateStartMaps()
-    " Start
-    "-------------------------------------
-    call RCreateMaps('nvi', 'RStart',       'rf', ':call StartR("R")')
-    call RCreateMaps('nvi', 'RCustomStart', 'rc', ':call StartR("custom")')
-
-    " Close
-    "-------------------------------------
-    call RCreateMaps('nvi', 'RClose',       'rq', ":call RQuit('nosave')")
-    call RCreateMaps('nvi', 'RSaveClose',   'rw', ":call RQuit('save')")
-
+    lua require("r.maps").start()
 endfunction
 
 function RCreateEditMaps()
-    " Edit
-    "-------------------------------------
-    " Replace <M--> with ' <- '
-    if g:Rcfg.assign
-        silent exe 'inoremap <buffer><silent> ' . g:Rcfg.assign_map . ' <Esc>:call RAssign()<CR>a'
-    endif
+    lua require("r.maps").edit()
 endfunction
 
 function RCreateSendMaps()
-    " Block
-    "-------------------------------------
-    call RCreateMaps('ni', 'RSendMBlock',     'bb', ':call SendMBlockToR("silent", "stay")')
-    call RCreateMaps('ni', 'RESendMBlock',    'be', ':call SendMBlockToR("echo", "stay")')
-    call RCreateMaps('ni', 'RDSendMBlock',    'bd', ':call SendMBlockToR("silent", "down")')
-    call RCreateMaps('ni', 'REDSendMBlock',   'ba', ':call SendMBlockToR("echo", "down")')
-
-    " Function
-    "-------------------------------------
-    call RCreateMaps('nvi', 'RSendFunction',  'ff', ':call SendFunctionToR("silent", "stay")')
-    call RCreateMaps('nvi', 'RDSendFunction', 'fe', ':call SendFunctionToR("echo", "stay")')
-    call RCreateMaps('nvi', 'RDSendFunction', 'fd', ':call SendFunctionToR("silent", "down")')
-    call RCreateMaps('nvi', 'RDSendFunction', 'fa', ':call SendFunctionToR("echo", "down")')
-
-    " Selection
-    "-------------------------------------
-    call RCreateMaps('n', 'RSendSelection',   'ss', ':call SendSelectionToR("silent", "stay", "normal")')
-    call RCreateMaps('n', 'RESendSelection',  'se', ':call SendSelectionToR("echo", "stay", "normal")')
-    call RCreateMaps('n', 'RDSendSelection',  'sd', ':call SendSelectionToR("silent", "down", "normal")')
-    call RCreateMaps('n', 'REDSendSelection', 'sa', ':call SendSelectionToR("echo", "down", "normal")')
-
-    call RCreateMaps('v', 'RSendSelection',   'ss', ':call SendSelectionToR("silent", "stay")')
-    call RCreateMaps('v', 'RESendSelection',  'se', ':call SendSelectionToR("echo", "stay")')
-    call RCreateMaps('v', 'RDSendSelection',  'sd', ':call SendSelectionToR("silent", "down")')
-    call RCreateMaps('v', 'REDSendSelection', 'sa', ':call SendSelectionToR("echo", "down")')
-    call RCreateMaps('v', 'RSendSelAndInsertOutput', 'so', ':call SendSelectionToR("echo", "stay", "NewtabInsert")')
-
-    " Paragraph
-    "-------------------------------------
-    call RCreateMaps('ni', 'RSendParagraph',   'pp', ':call SendParagraphToR("silent", "stay")')
-    call RCreateMaps('ni', 'RESendParagraph',  'pe', ':call SendParagraphToR("echo", "stay")')
-    call RCreateMaps('ni', 'RDSendParagraph',  'pd', ':call SendParagraphToR("silent", "down")')
-    call RCreateMaps('ni', 'REDSendParagraph', 'pa', ':call SendParagraphToR("echo", "down")')
-
-    if &filetype == "rnoweb" || &filetype == "rmd" || &filetype == "quarto" || &filetype == "rrst"
-        call RCreateMaps('ni', 'RSendChunkFH', 'ch', ':call SendFHChunkToR()')
-    endif
-
-    " *Line*
-    "-------------------------------------
-    call RCreateMaps('ni',  'RSendLine', 'l', ':call SendLineToR("stay")')
-    call RCreateMaps('ni0', 'RDSendLine', 'd', ':call SendLineToR("down")')
-    call RCreateMaps('ni0', '(RDSendLineAndInsertOutput)', 'o', ':call SendLineToRAndInsertOutput()')
-    call RCreateMaps('v',   '(RDSendLineAndInsertOutput)', 'o', ':call RWarningMsg("This command does not work over a selection of lines.")')
-    call RCreateMaps('i',   'RSendLAndOpenNewOne', 'q', ':call SendLineToR("newline")')
-    call RCreateMaps('ni.', 'RSendMotion', 'm', ':set opfunc=SendMotionToR<CR>g@')
-    call RCreateMaps('n',   'RNLeftPart', 'r<left>', ':call RSendPartOfLine("left", 0)')
-    call RCreateMaps('n',   'RNRightPart', 'r<right>', ':call RSendPartOfLine("right", 0)')
-    call RCreateMaps('i',   'RILeftPart', 'r<left>', 'l:call RSendPartOfLine("left", 1)')
-    call RCreateMaps('i',   'RIRightPart', 'r<right>', 'l:call RSendPartOfLine("right", 1)')
-    if &filetype == "r"
-        call RCreateMaps('n', 'RSendAboveLines',  'su', ':call SendAboveLinesToR()')
-    endif
-
-    " Debug
-    call RCreateMaps('n',   'RDebug', 'bg', ':call RAction("debug")')
-    call RCreateMaps('n',   'RUndebug', 'ud', ':call RAction("undebug")')
+    lua require("r.maps").send()
 endfunction
 
 function RBufEnter()

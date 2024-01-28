@@ -56,17 +56,17 @@ end
 vim.b.IsInRCode = DefaultIsInRCode
 
 -- Key bindings and menu items
-vim.fn.RCreateStartMaps()
-vim.fn.RCreateEditMaps()
+require("r.maps").start()
+require("r.maps").edit()
 
 -- Only .R files are sent to R
-vim.fn.RCreateMaps('ni', 'RSendFile',  'aa', ':call SendFileToR("silent")')
-vim.fn.RCreateMaps('ni', 'RESendFile', 'ae', ':call SendFileToR("echo")')
-vim.fn.RCreateMaps('ni', 'RShowRout',  'ao', ':lua require("r").ShowRout()')
+require("r.maps").create('ni', 'RSendFile',  'aa', ':call SendFileToR("silent")')
+require("r.maps").create('ni', 'RESendFile', 'ae', ':call SendFileToR("echo")')
+require("r.maps").create('ni', 'RShowRout',  'ao', ':lua require("r").ShowRout()')
 
-vim.fn.RCreateSendMaps()
-vim.fn.RControlMaps()
-vim.fn.RCreateMaps('nvi', 'RSetwd',    'rd', ':call RSetWD()')
+require("r.maps").send()
+require("r.maps").control()
+require("r.maps").create('nvi', 'RSetwd',    'rd', ':call RSetWD()')
 
 if vim.b.undo_ftplugin then
     vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
