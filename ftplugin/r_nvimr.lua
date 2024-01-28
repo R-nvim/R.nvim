@@ -48,12 +48,12 @@ require("r").ShowRout = function ()
     vim.g.rplugin.jobs["R_CMD"] = vim.fn.jobstart(rcmd, { on_exit = GetRCmdBatchOutput })
 end
 
--- Default IsInRCode function when the plugin is used as a global plugin
-function DefaultIsInRCode(_)
+local is_in_R_code = function(_)
     return 1
 end
 
-vim.b.IsInRCode = DefaultIsInRCode
+-- Default IsInRCode function when the plugin is used as a global plugin
+vim.b.IsInRCode = is_in_R_code
 
 -- Key bindings and menu items
 require("r.maps").start()
