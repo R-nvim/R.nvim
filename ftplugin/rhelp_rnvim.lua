@@ -1,4 +1,4 @@
-if vim.fn.exists("g:R_filetypes") and type(vim.g.R_filetypes) == "table" and vim.fn.index(vim.g.R_filetypes, 'rhelp') == -1 then
+if vim.fn.exists("g:R_filetypes") == 1 and type(vim.g.R_filetypes) == "table" and vim.fn.index(vim.g.R_filetypes, 'rhelp') == -1 then
     return
 end
 

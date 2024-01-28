@@ -48,7 +48,7 @@ local config = {
     openpdf             = 2,
     paragraph_begin     = true,
     parenblock          = true,
-    pdfviewer           = "zathura",
+    pdfviewer           = "undefined",
     quarto_preview_args = '',
     quarto_render_args  = '',
     rconsole_height     = 15,
@@ -63,6 +63,7 @@ local config = {
     set_home_env        = true,
     setwidth            = 2,
     silent_term         = false,
+    skim_app_path       = "",
     source_args         = "",
     specialplot         = false,
     strict_rst          = true,
@@ -74,6 +75,7 @@ local config = {
 }
 
 local user_opts = {}
+local did_global_setup = false
 
 local set_editing_mode = function ()
     local em = "emacs"
@@ -94,6 +96,26 @@ local set_editing_mode = function ()
     config.editing_mode = em
 end
 
+local set_pdf_viewer = function ()
+    if vim.fn.getenv("XDG_CURRENT_DESKTOP") == "sway" then
+        config.openpdf = 2
+    elseif vim.g.rplugin.is_darwin or vim.fn.getenv("WAYLAND_DISPLAY") ~= "" then
+        config.openpdf = 1
+    else
+        config.openpdf = 2
+    end
+
+    if vim.g.rplugin.is_darwin then
+        config.pdfviewer = "skim"
+    else
+        if vim.fn.has("win32") == 1 then
+            config.pdfviewer = "sumatra"
+        else
+            config.pdfviewer = "zathura"
+        end
+    end
+end
+
 local validate_user_opts = function()
     -- We don't use vim.validate() because its error message has traceback details not useful for users.
     for k, _ in pairs(user_opts) do
@@ -111,18 +133,9 @@ local validate_user_opts = function()
     end
 end
 
-M = {}
+local global_setup = function ()
+    did_global_setup = true
 
---- Store user options
----@param opts table User options
-M.store_user_opts = function(opts)
-    user_opts = opts
-end
-
---- Real setup function.
---- Set initial values of some internal variables.
---- Set the default value of config variables that depend on system features.
-M.real_setup = function ()
     validate_user_opts()
 
     -- Override default config values with user options for the first time.
@@ -140,12 +153,38 @@ M.real_setup = function ()
     -- config values.
     -- Fix some invalid values
     vim.cmd.runtime("R/common_global.vim")
+    set_pdf_viewer()
+
+    if vim.g.rplugin.is_darwin then
+        config.applescript = true
+    end
 
     -- Override default config values with user options for the second time.
     for k, v in pairs(user_opts) do
         config[k] = v
     end
+end
 
+M = {}
+
+--- Store user options
+---@param opts table User options
+M.store_user_opts = function(opts)
+    user_opts = opts
+end
+
+--- Real setup function.
+--- Set initial values of some internal variables.
+--- Set the default value of config variables that depend on system features.
+M.real_setup = function ()
+    -- Check if b:pdf_is_open already exists to avoid errors at other places
+    if vim.fn.exists("b:pdf_is_open")  == 0 then
+        vim.api.nvim_buf_set_var(0, "pdf_is_open", false)
+    end
+
+    if not did_global_setup then
+        global_setup()
+    end
 end
 
 --- Return the table with the final configure variables: the default values

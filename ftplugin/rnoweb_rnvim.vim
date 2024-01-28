@@ -71,7 +71,8 @@ call RCreateMaps('n', 'RNextRChunk',     'gn', ':call b:NextRChunk()')
 call RCreateMaps('n', 'RPreviousRChunk', 'gN', ':call b:PreviousRChunk()')
 
 function! RPDFinit(...)
-    exe "source " . substitute(g:rplugin.home, " ", "\\ ", "g") . "/R/pdf_init.vim"
+    lua require("r.pdf").setup()
+    call SetPDFdir()
 endfunction
 
 call timer_start(1, "RPDFinit")
