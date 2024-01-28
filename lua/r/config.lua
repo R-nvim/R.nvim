@@ -83,10 +83,12 @@ local set_editing_mode = function ()
     if vim.fn.filereadable(iprc) == 1 then
         local inputrc = vim.fn.readfile(iprc)
         local line
+        local e
         for _, v in pairs(inputrc) do
             line = string.gsub(v, "^%s*#.*", "")
-            if string.find(line, "set.*editing-mode") then
-                em = string.gsub(line, "^%s*%sediting-mode%s*", "")
+            _, e = string.find(line, "set%s+editing%-mode")
+            if e then
+                em = string.gsub(line, ".+editing%-mode%s+", "")
                 em = string.gsub(em, "%s*", "")
             end
         end
