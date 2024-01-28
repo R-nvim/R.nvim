@@ -53,6 +53,7 @@ local config = {
     quarto_render_args  = '',
     rconsole_height     = 15,
     rconsole_width      = 80,
+    rm_knit_cache       = false,
     rmarkdown_args      = "",
     rmd_environment     = ".GlobalEnv",
     rmdchunk            = 2, -- might be a string

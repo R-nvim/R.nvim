@@ -50,7 +50,7 @@ end
 -- Default IsInRCode function when the plugin is used as a global plugin
 vim.b.IsInRCode = is_in_R_code
 
--- Key bindings and menu items
+-- Key bindings
 require("r.maps").start()
 require("r.maps").edit()
 
