@@ -513,23 +513,6 @@ function RVimLeave()
     endif
 endfunction
 
-function RSourceOtherScripts()
-    if has_key(g:Rcfg, "source")
-        let flist = split(g:Rcfg.source, ",")
-        for fl in flist
-            if fl =~ " "
-                call RWarningMsg("Invalid file name (empty spaces are not allowed): '" . fl . "'")
-            else
-                exe "source " . escape(fl, ' \')
-            endif
-        endfor
-    endif
-
-    if (g:Rcfg.auto_start == 1 && v:vim_did_enter == 0) || g:Rcfg.auto_start == 2
-        call timer_start(200, 'AutoStartR')
-    endif
-endfunction
-
 function ShowRDebugInfo()
     for key in keys(g:rplugin.debug_info)
         if len(g:rplugin.debug_info[key]) == 0

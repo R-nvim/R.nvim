@@ -183,8 +183,6 @@ let g:Rcfg.strict_rst = get(g:, "R_strict_rst",         1)
 
 let s:has_rst2pdf = 0
 
-call RSourceOtherScripts()
-
 function! RPDFinit(...)
     exe "source " . substitute(g:rplugin.home, " ", "\\ ", "g") . "/R/pdf_init.vim"
 endfunction
