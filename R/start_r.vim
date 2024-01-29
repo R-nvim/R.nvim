@@ -1,4 +1,4 @@
-"==============================================================================
+"==============================================================================start
 " Function to start R and functions that are called only after R is started.
 "==============================================================================
 
@@ -1209,7 +1209,7 @@ endfunction
 " Send file to R
 function SendFileToR(e)
  " Pass parameters to Lua function using luaeval()
-    let lua_code = 'require("r.sendfn").SendFileToR("' . a:e . '")'
+    let lua_code = 'require("r.send").source_file("' . a:e . '")'
     call luaeval(lua_code)
 endfunction
 
@@ -1335,7 +1335,7 @@ endfunction
 
 " Send all lines above to R
 function SendAboveLinesToR()
-    lua require("r.sendfn").SendAboveLinesToR()
+    lua require("r.send").above_lines()
 endfunction
 
 " Send selection to R
@@ -1432,7 +1432,7 @@ endfunction
 
 " Send paragraph to R
 function SendParagraphToR(e, m)
-    let lua_code = 'require("r.sendfn").SendParagraphToR("' . a:e . '", "' . a:m . '")'
+    let lua_code = 'require("r.send").paragraph("' . a:e . '", "' . a:m . '")'
     call luaeval(lua_code)
 endfunction
 
