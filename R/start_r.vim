@@ -1980,10 +1980,6 @@ endfunction
 
 " render a document with rmarkdown
 function RMakeRmd(t)
-    if !has_key(g:rplugin, "pdfviewer")
-        call RSetPDFViewer()
-    endif
-
     update
 
     let rmddir = s:RGetBufDir()
