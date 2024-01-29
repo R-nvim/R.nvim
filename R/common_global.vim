@@ -62,23 +62,15 @@ endif
 
 " Convert <M--> into <-
 function RAssign()
-    if &filetype != "r" && b:IsInRCode(0) != 1
-        exe "normal! a" . g:Rcfg.assign_map
-    endif
-    exe "normal! a <- "
+    lua require("r.edit").assign()
 endfunction
 
 " Get the word either under or after the cursor.
 " Works for word(| where | is the cursor position.
-function RGetKeyword(...)
+function RGetKeyword()
     " Go back some columns if character under cursor is not valid
-    if a:0 == 2
-        let line = getline(a:1)
-        let i = a:2
-    else
-        let line = getline(".")
-        let i = col(".") - 1
-    endif
+    let line = getline(".")
+    let i = col(".") - 1
     if strlen(line) == 0
         return ""
     endif
@@ -235,23 +227,7 @@ function RGetFirstObj(rkeyword, ...)
 endfunction
 
 function ROpenPDF(fullpath)
-    if g:Rcfg.openpdf == 0
-        return
-    endif
-
-    if a:fullpath == "Get Master"
-        let fpath = SyncTeX_GetMaster() . ".pdf"
-        let fpath = b:rplugin_pdfdir . "/" . substitute(fpath, ".*/", "", "")
-        call ROpenPDF(fpath)
-        return
-    endif
-
-    if b:pdf_is_open == 0
-        if g:Rcfg.openpdf == 1
-            let b:pdf_is_open = 1
-        endif
-        exe 'lua require("r.pdf").open("' . a:fullpath . '")'
-    endif
+    exe 'lua require("r.pdf").open("' . a:fullpath . '")'
 endfunction
 
 function RCreateMaps(type, plug, combo, target)

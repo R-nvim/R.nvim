@@ -11,25 +11,25 @@ local M = {}
 M.setup = function()
     check_installed()
     if cfg.pdfviewer == "zathura" then
-        M.open = require("r.pdf.zathura").open
+        M.open2 = require("r.pdf.zathura").open
         M.SyncTeX_forward = require("r.pdf.zathura").SyncTeX_forward
     elseif cfg.pdfviewer == "evince" then
-        M.open = require("r.pdf.evince").open
+        M.open2 = require("r.pdf.evince").open
         M.SyncTeX_forward = require("r.pdf.evince").SyncTeX_forward
     elseif cfg.pdfviewer == "okular" then
-        M.open = require("r.pdf.okular").open
+        M.open2 = require("r.pdf.okular").open
         M.SyncTeX_forward = require("r.pdf.okular").SyncTeX_forward
     elseif vim.fn.has("win32") == 1 and cfg.pdfviewer == "sumatra" then
-        M.open = require("r.pdf.sumatra").open
+        M.open2 = require("r.pdf.sumatra").open
         M.SyncTeX_forward = require("r.pdf.sumatra").SyncTeX_forward
     elseif vim.g.rplugin.is_darwin and cfg.pdfviewer == "skim" then
-        M.open = require("r.pdf.skim").open
+        M.open2 = require("r.pdf.skim").open
         M.SyncTeX_forward = require("r.pdf.skim").SyncTeX_forward
     elseif cfg.pdfviewer == "qpdfview" then
-        M.open = require("r.pdf.qpdfview").open
+        M.open2 = require("r.pdf.qpdfview").open
         M.SyncTeX_forward = require("r.pdf.qpdfview").SyncTeX_forward
     else
-        M.open = require("r.pdf.generic").open
+        M.open2 = require("r.pdf.generic").open
         M.SyncTeX_forward = require("r.pdf.generic").SyncTeX_forward
     end
 
@@ -57,6 +57,26 @@ M.setup = function()
     --         end
     --     end
     -- end
+end
+
+M.open = function (fullpath)
+    if cfg.openpdf == 0 then
+        return
+    end
+
+    if fullpath == "Get Master" then
+        local fpath = vim.fn.SyncTeX_GetMaster() .. ".pdf"
+        fpath = vim.b.rplugin_pdfdir .. "/" .. fpath:gsub(".*/", "")
+        M.open(fpath)
+        return
+    end
+
+    if not vim.b.pdf_is_open then
+        if cfg.openpdf == 1 then
+            vim.b.pdf_is_open = true
+        end
+        M.open2(fullpath)
+    end
 end
 
 function RRaiseWindow(wttl)
