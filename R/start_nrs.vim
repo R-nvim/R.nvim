@@ -231,6 +231,9 @@ function StartNServer()
         call UnsetRHome()
     endif
 
+    call AddForDeletion(g:rplugin.tmpdir . '/run_R_stdout')
+    call AddForDeletion(g:rplugin.tmpdir . '/run_R_stderr')
+
     unlet $NVIMR_OPENDF
     unlet $NVIMR_OPENLS
     unlet $NVIMR_OBJBR_ALLNAMES
