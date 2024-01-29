@@ -692,11 +692,6 @@ if g:Rcfg.objbr_h < 4
     let g:Rcfg.objbr_h = 4
 endif
 
-" Control the menu 'R' and the tool bar buttons
-if !has_key(g:rplugin, "hasmenu")
-    let g:rplugin.hasmenu = 0
-endif
-
 autocmd BufEnter * call RBufEnter()
 if &filetype != "rbrowser"
     autocmd VimLeave * call RVimLeave()

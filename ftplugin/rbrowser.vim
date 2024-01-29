@@ -27,10 +27,6 @@ setlocal nocursorline
 setlocal nocursorcolumn
 setlocal nospell
 
-if !has_key(g:rplugin, "hasmenu")
-    let g:rplugin.hasmenu = 0
-endif
-
 " Popup menu
 if !exists("s:hasbrowsermenu")
     let s:hasbrowsermenu = 0
