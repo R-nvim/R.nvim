@@ -25,7 +25,7 @@ let g:rplugin = {
             \ 'myport': 0,
             \ 'R_pid': 0 }
 
-let g:Rcfg = deepcopy(luaeval('require("r.config").get_config()'))
+let g:Rcfg = luaeval('require("r.config").get_config()')
 
 "==============================================================================
 " Check if there is more than one copy of Nvim-R
@@ -251,68 +251,12 @@ function RCreateSendMaps()
 endfunction
 
 function RBufEnter()
-    let g:rplugin.curbuf = bufname("%")
-    if &filetype == "r" || &filetype == "rnoweb" || &filetype == "rmd" || &filetype == "quarto" || &filetype == "rrst" || &filetype == "rhelp"
-        let g:rplugin.rscript_name = bufname("%")
-    endif
+    lua require("r.edit").buf_enter()
 endfunction
 
 " Store list of files to be deleted on VimLeave
 function AddForDeletion(fname)
-    for fn in g:rplugin.del_list
-        if fn == a:fname
-            return
-        endif
-    endfor
-    call add(g:rplugin.del_list, a:fname)
-endfunction
-
-function RVimLeave()
-    for job in keys(g:rplugin.jobs)
-        if IsJobRunning(job) && job == 'Server'
-            " Avoid warning of exit status 141
-            call JobStdin(g:rplugin.jobs[job], "9\n")
-            sleep 20m
-        endif
-    endfor
-
-    for fn in g:rplugin.del_list
-        call delete(fn)
-    endfor
-    if executable("rmdir")
-        call jobstart("rmdir '" . g:rplugin.tmpdir . "'", {'detach': v:true})
-        if g:rplugin.localtmpdir != g:rplugin.tmpdir
-            call jobstart("rmdir '" . g:rplugin.localtmpdir . "'", {'detach': v:true})
-        endif
-    endif
-endfunction
-
-function ShowRDebugInfo()
-    for key in keys(g:rplugin.debug_info)
-        if len(g:rplugin.debug_info[key]) == 0
-            continue
-        endif
-        echohl Title
-        echo key
-        echohl None
-        if key == 'Time' || key == 'nvimcom_info'
-            for step in keys(g:rplugin.debug_info[key])
-                echohl Identifier
-                echo '  ' . step . ': '
-                if key == 'Time'
-                    echohl Number
-                else
-                    echohl String
-                endif
-                echon g:rplugin.debug_info[key][step]
-                echohl None
-            endfor
-            echo ""
-        else
-            echo g:rplugin.debug_info[key]
-        endif
-        echo ""
-    endfor
+    exe 'lua require("r.edit").add_for_deletion("' . a:fname . '")'
 endfunction
 
 " Function to send commands
@@ -349,7 +293,7 @@ command -nargs=? -complete=dir RSourceDir :call RSourceDirectory(<q-args>)
 command RStop :call SignalToR('SIGINT')
 command RKill :call SignalToR('SIGKILL')
 command -nargs=? RSend :call g:SendCmdToR(<q-args>)
-command RDebugInfo :call ShowRDebugInfo()
+command RDebugInfo :lua require("r.edit").show_debug_info()
 
 "==============================================================================
 " Temporary links to be deleted when start_r.vim is sourced
@@ -670,7 +614,7 @@ endif
 
 autocmd BufEnter * call RBufEnter()
 if &filetype != "rbrowser"
-    autocmd VimLeave * call RVimLeave()
+    autocmd VimLeave * lua require("r.edit").vim_leave()
 endif
 
 if v:windowid != 0 && $WINDOWID == ""
@@ -685,11 +629,6 @@ exe "source " . substitute(g:rplugin.home, " ", "\\ ", "g") . "/R/nvimrcom.vim"
 " SyncTeX options
 let g:rplugin.has_wmctrl = 0
 let g:rplugin.has_awbt = 0
-
-" Initial List of files to be deleted on VimLeave
-let g:rplugin.del_list = [
-            \ g:rplugin.tmpdir . '/run_R_stdout',
-            \ g:rplugin.tmpdir . '/run_R_stderr']
 
 " Set the name of R executable
 if has_key(g:Rcfg, "R_app")

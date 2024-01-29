@@ -419,9 +419,6 @@ endfunction
 function ClearRInfo()
     call delete(g:rplugin.tmpdir . "/globenv_" . $NVIMR_ID)
     call delete(g:rplugin.localtmpdir . "/liblist_" . $NVIMR_ID)
-    for fn in g:rplugin.del_list
-        call delete(fn)
-    endfor
     let g:SendCmdToR = function('SendCmdToR_fake')
     let g:rplugin.R_pid = 0
 
@@ -515,7 +512,7 @@ function StartObjBrowser()
             if g:Rcfg.objbr_place =~? 'console'
                 sil exe 'sb ' . g:rplugin.R_bufnr
             else
-                sil exe 'sb ' . g:rplugin.rscript_name
+                sil exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
             endif
             if g:Rcfg.objbr_place =~# 'right'
                 sil exe 'rightbelow vsplit Object_Browser'
@@ -628,7 +625,7 @@ function FindDebugFunc(srcref)
         exe 'sb ' . g:rplugin.R_bufnr
         sleep 30m " Time to fill the buffer lines
         let rlines = getline(1, "$")
-        exe 'sb ' . g:rplugin.rscript_name
+        exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
     elseif string(g:SendCmdToR) == "function('SendCmdToR_Term')"
         let tout = system('tmux -L NvimR capture-pane -p -t ' . g:rplugin.tmuxsname)
         let rlines = split(tout, "\n")
@@ -695,7 +692,7 @@ function RDebugJump(fnm, lnum)
 
     if s:func_offset >= 0
         let flnum = a:lnum + s:func_offset
-        let fname = g:rplugin.rscript_name
+        let fname = luaeval('require("r.edit").get_rscript_name()')
     else
         let flnum = a:lnum
         let fname = expand(a:fnm)
@@ -703,15 +700,15 @@ function RDebugJump(fnm, lnum)
 
     let bname = bufname("%")
 
-    if !bufloaded(fname) && fname != g:rplugin.rscript_name && fname != expand("%") && fname != expand("%:p")
+    if !bufloaded(fname) && fname != luaeval('require("r.edit").get_rscript_name()') && fname != expand("%") && fname != expand("%:p")
         if filereadable(fname)
-            exe 'sb ' . g:rplugin.rscript_name
+            exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
             if &modified
                 split
             endif
             exe 'edit ' . fname
         elseif glob("*") =~ fname
-            exe 'sb ' . g:rplugin.rscript_name
+            exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
             if &modified
                 split
             endif
@@ -937,7 +934,7 @@ function AskRDoc(rkeyword, package, getclass)
     if bufname("%") =~ "Object_Browser" || (has_key(g:rplugin, "R_bufnr") && bufnr("%") == g:rplugin.R_bufnr)
         let savesb = &switchbuf
         set switchbuf=useopen,usetab
-        exe "sb " . g:rplugin.rscript_name
+        exe "sb " . luaeval('require("r.edit").get_rscript_name()')
         exe "set switchbuf=" . savesb
     else
         if a:getclass
@@ -986,7 +983,7 @@ function ShowRDoc(rkeyword, txt)
     if bufname("%") =~ "Object_Browser" || (has_key(g:rplugin, "R_bufnr") && bufnr("%") == g:rplugin.R_bufnr)
         let savesb = &switchbuf
         set switchbuf=useopen,usetab
-        exe "sb " . g:rplugin.rscript_name
+        exe "sb " . luaeval('require("r.edit").get_rscript_name()')
         exe "set switchbuf=" . savesb
     endif
     call SetRTextWidth(a:rkeyword)
