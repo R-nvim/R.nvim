@@ -90,7 +90,7 @@ function ReallyStartR(whatr)
         return
     endif
 
-    if (type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 1) || type(g:Rcfg.external_term) == v:t_string
+    if (type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term) || type(g:Rcfg.external_term) == v:t_string
         let g:Rcfg.objbr_place = substitute(g:Rcfg.objbr_place, 'console', 'script', '')
     endif
 
@@ -148,7 +148,7 @@ function ReallyStartR(whatr)
     else
         let start_options += ['options(nvimcom.nvimpager = TRUE)']
     endif
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0 && g:Rcfg.esc_term
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false && g:Rcfg.esc_term
         let start_options += ['options(editor = nvimcom:::nvim.edit)']
     endif
     if has_key(g:Rcfg, "csv_delim") && (g:Rcfg.csv_delim == "," || g:Rcfg.csv_delim == ";")
@@ -205,7 +205,7 @@ function ReallyStartR(whatr)
         return
     endif
 
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         call StartR_InBuffer()
         return
     endif
@@ -269,7 +269,6 @@ function WaitNvimcomStart()
 endfunction
 
 function SetNvimcomInfo(nvimcomversion, rpid, wid, r_info)
-    let g:TheRInfo = a:r_info
     let g:rplugin.debug_info['Time']['start_R'] = reltimefloat(reltime(g:rplugin.debug_info['Time']['start_R'], reltime()))
     if filereadable(g:rplugin.home . '/R/nvimcom/DESCRIPTION')
         let ndesc = readfile(g:rplugin.home . '/R/nvimcom/DESCRIPTION')
@@ -309,10 +308,8 @@ function SetNvimcomInfo(nvimcomversion, rpid, wid, r_info)
             let hl_term = g:Rcfg.hl_term
         else
             if Rinfo[4] =~# '1'
-                let g:TheRInfo4 = "zero"
                 let hl_term = 0
             else
-                let g:TheRInfo4 = "um"
                 let hl_term = 1
             endif
         endif
@@ -376,7 +373,7 @@ endfunction
 function SetSendCmdToR(...)
     if exists("g:RStudio_cmd")
         let g:SendCmdToR = function('SendCmdToRStudio')
-    elseif type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    elseif type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         let g:SendCmdToR = function('SendCmdToR_Buffer')
     elseif has("win32")
         let g:SendCmdToR = function('SendCmdToR_Windows')
@@ -397,7 +394,7 @@ function RQuit(how)
     endif
 
     if has("win32")
-	if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 1
+	if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term
 	    " SaveWinPos
 	    call JobStdin(g:rplugin.jobs["Server"], "84" . $NVIMR_COMPLDIR . "\n")
 	endif
@@ -411,7 +408,7 @@ function RQuit(how)
 
     call g:SendCmdToR(qcmd)
 
-    if has_key(g:rplugin, "tmux_split") || a:how == 'save'
+    if a:how == 'save'
         sleep 200m
     endif
 
@@ -422,19 +419,10 @@ endfunction
 function ClearRInfo()
     call delete(g:rplugin.tmpdir . "/globenv_" . $NVIMR_ID)
     call delete(g:rplugin.localtmpdir . "/liblist_" . $NVIMR_ID)
-    for fn in g:rplugin.del_list
-        call delete(fn)
-    endfor
     let g:SendCmdToR = function('SendCmdToR_fake')
     let g:rplugin.R_pid = 0
 
-    " Legacy support for running R in a Tmux split pane
-    if has_key(g:rplugin, "tmux_split") && has_key(g:Rcfg, 'tmux_title') && g:rplugin.tmux_split
-                \ && g:Rcfg.tmux_title != 'automatic' && g:Rcfg.tmux_title != ''
-        call system("tmux set automatic-rename on")
-    endif
-
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         call CloseRTerm()
     endif
     call JobStdin(g:rplugin.jobs["Server"], "43\n")
@@ -524,7 +512,7 @@ function StartObjBrowser()
             if g:Rcfg.objbr_place =~? 'console'
                 sil exe 'sb ' . g:rplugin.R_bufnr
             else
-                sil exe 'sb ' . g:rplugin.rscript_name
+                sil exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
             endif
             if g:Rcfg.objbr_place =~# 'right'
                 sil exe 'rightbelow vsplit Object_Browser'
@@ -627,7 +615,7 @@ function StopRDebugging()
 endfunction
 
 function FindDebugFunc(srcref)
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         let s:func_offset = -1 " Not found
         let sbopt = &switchbuf
         set switchbuf=useopen,usetab
@@ -637,7 +625,7 @@ function FindDebugFunc(srcref)
         exe 'sb ' . g:rplugin.R_bufnr
         sleep 30m " Time to fill the buffer lines
         let rlines = getline(1, "$")
-        exe 'sb ' . g:rplugin.rscript_name
+        exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
     elseif string(g:SendCmdToR) == "function('SendCmdToR_Term')"
         let tout = system('tmux -L NvimR capture-pane -p -t ' . g:rplugin.tmuxsname)
         let rlines = split(tout, "\n")
@@ -674,7 +662,7 @@ function FindDebugFunc(srcref)
         let idx -= 1
     endwhile
 
-    if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         if tabpagenr() != curtab
             exe 'normal! ' . curtab . 'gt'
         endif
@@ -688,7 +676,7 @@ endfunction
 
 function RDebugJump(fnm, lnum)
     let saved_so = &scrolloff
-    if g:Rcfg.debug_center == 1
+    if g:Rcfg.debug_center
         set so=999
     endif
     if a:fnm == '' || a:fnm == '<text>'
@@ -704,7 +692,7 @@ function RDebugJump(fnm, lnum)
 
     if s:func_offset >= 0
         let flnum = a:lnum + s:func_offset
-        let fname = g:rplugin.rscript_name
+        let fname = luaeval('require("r.edit").get_rscript_name()')
     else
         let flnum = a:lnum
         let fname = expand(a:fnm)
@@ -712,15 +700,15 @@ function RDebugJump(fnm, lnum)
 
     let bname = bufname("%")
 
-    if !bufloaded(fname) && fname != g:rplugin.rscript_name && fname != expand("%") && fname != expand("%:p")
+    if !bufloaded(fname) && fname != luaeval('require("r.edit").get_rscript_name()') && fname != expand("%") && fname != expand("%:p")
         if filereadable(fname)
-            exe 'sb ' . g:rplugin.rscript_name
+            exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
             if &modified
                 split
             endif
             exe 'edit ' . fname
         elseif glob("*") =~ fname
-            exe 'sb ' . g:rplugin.rscript_name
+            exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
             if &modified
                 split
             endif
@@ -742,7 +730,7 @@ function RDebugJump(fnm, lnum)
     "call sign_place(1, 'rdebugcurline', 'dbgline', fname, {'lnum': flnum})
     sign unplace 1
     exe 'sign place 1 line=' . flnum . ' name=dbgline file=' . fname
-    if g:Rcfg.dbg_jump && !s:rdebugging && type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+    if g:Rcfg.dbg_jump && !s:rdebugging && type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
         exe 'sb ' . g:rplugin.R_bufnr
         startinsert
     elseif bname != expand("%")
@@ -946,7 +934,7 @@ function AskRDoc(rkeyword, package, getclass)
     if bufname("%") =~ "Object_Browser" || (has_key(g:rplugin, "R_bufnr") && bufnr("%") == g:rplugin.R_bufnr)
         let savesb = &switchbuf
         set switchbuf=useopen,usetab
-        exe "sb " . g:rplugin.rscript_name
+        exe "sb " . luaeval('require("r.edit").get_rscript_name()')
         exe "set switchbuf=" . savesb
     else
         if a:getclass
@@ -990,20 +978,12 @@ function ShowRDoc(rkeyword, txt)
         stopinsert
     endif
 
-    " Legacy support for running R in a Tmux split pane.
-    " If the help command was triggered in the R Console, jump to Vim pane:
-    if has_key(g:rplugin, "tmux_split") && g:rplugin.tmux_split && !s:running_rhelp
-        let slog = system("tmux select-pane -t " . g:rplugin.editor_pane)
-        if v:shell_error
-            call RWarningMsg(slog)
-        endif
-    endif
     let s:running_rhelp = 0
 
     if bufname("%") =~ "Object_Browser" || (has_key(g:rplugin, "R_bufnr") && bufnr("%") == g:rplugin.R_bufnr)
         let savesb = &switchbuf
         set switchbuf=useopen,usetab
-        exe "sb " . g:rplugin.rscript_name
+        exe "sb " . luaeval('require("r.edit").get_rscript_name()')
         exe "set switchbuf=" . savesb
     endif
     call SetRTextWidth(a:rkeyword)
@@ -1039,7 +1019,7 @@ function ShowRDoc(rkeyword, txt)
             " The only way of ShowRDoc() being called when R_nvimpager=="no"
             " is the user setting the value of R_nvimpager to 'no' after
             " Neovim startup. It should be set in the vimrc.
-            if type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 0
+            if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
                 let g:Rcfg.nvimpager = "vertical"
             else
                 let g:Rcfg.nvimpager = "tab"
@@ -1595,7 +1575,7 @@ function SendLineToR(godown, ...)
         endif
     endif
 
-    if &filetype == "rhelp" && RhelpIsInRCode(1) != 1
+    if &filetype == "rhelp" && b:IsInRCode(1) != 1
         return
     endif
 
@@ -1695,10 +1675,10 @@ endfunction
 
 " Clear the console screen
 function RClearConsole()
-    if g:Rcfg.clear_console == 0
+    if g:Rcfg.clear_console == v:false
         return
     endif
-    if has("win32") && type(g:Rcfg.external_term) == v:t_number && g:Rcfg.external_term == 1
+    if has("win32") && type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term
         call JobStdin(g:rplugin.jobs["Server"], "86\n")
         sleep 50m
         call JobStdin(g:rplugin.jobs["Server"], "87\n")
@@ -1839,18 +1819,18 @@ function RAction(rcmd, ...)
         endif
         let rfun = a:rcmd
         if a:rcmd == "args"
-            if g:Rcfg.listmethods == 1 && rkeyword !~ '::'
+            if g:Rcfg.listmethods && rkeyword !~ '::'
                 call g:SendCmdToR('nvim.list.args("' . rkeyword . '")')
             else
                 call g:SendCmdToR('args(' . rkeyword . ')')
             endif
             return
         endif
-        if a:rcmd == "plot" && g:Rcfg.specialplot == 1
+        if a:rcmd == "plot" && g:Rcfg.specialplot
             let rfun = "nvim.plot"
         endif
         if a:rcmd == "plotsumm"
-            if g:Rcfg.specialplot == 1
+            if g:Rcfg.specialplot
                 let raction = "nvim.plot(" . rkeyword . "); summary(" . rkeyword . ")"
             else
                 let raction = "plot(" . rkeyword . "); summary(" . rkeyword . ")"
@@ -1903,7 +1883,7 @@ function RAction(rcmd, ...)
 endfunction
 
 function RLoadHTML(fullpath, browser)
-    if g:Rcfg.openhtml == 0
+    if g:Rcfg.openhtml == v:false
         return
     endif
 
@@ -1941,10 +1921,6 @@ endfunction
 
 " render a document with rmarkdown
 function RMakeRmd(t)
-    if !has_key(g:rplugin, "pdfviewer")
-        call RSetPDFViewer()
-    endif
-
     update
 
     let rmddir = s:RGetBufDir()

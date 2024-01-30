@@ -1,18 +1,18 @@
-## Both Vim/Neovim and R on the remote machine
+## Both Neovim and R on the remote machine
 
 The easiest way to run R in a remote machine is to log into the remote device
 through ssh, start Neovim, and run R in a Neovim's terminal (the default). You
-will only need both Vim (or Neovim) and R configured as usual in the remote
+will only need both Neovim and R configured as usual in the remote
 machine.
 
 ## Only R on the remote machine
 
-However, if you need to start either Neovim or Vim on the local machine and
+However, if you need to start Neovim on the local machine and
 run R in the remote machine, then, a lot of additional configuration is
-required to enable full communication between Vim and R because by default
-both Nvim-R and nvimcom only accept TCP connections from the local host, and,
+required to enable full communication between Neovim and R because by default
+both R-Nvim and nvimcom only accept TCP connections from the local host, and,
 R saves temporary files in the `/tmp` directory of the machine where it is
-running. To make the communication between local Vim and remote R possible,
+running. To make the communication between local Neovim and remote R possible,
 the remote R has to know the IP address of the local machine and one remote
 directory must be mounted locally. Below is an example of how to achieve this
 goal.
@@ -62,7 +62,7 @@ goal.
 
        if [ "x$REMOTE_DIR_IS_MOUNTED" = "x" ]
        then
-           echo "RWarn: Remote directory '$REMOTE_CACHE_DIR' not mounted. Quit Vim and start it again.\x14"
+           echo "RWarn: Remote directory '$REMOTE_CACHE_DIR' not mounted. Quit Neovim and start it again.\x14"
            sshfs $REMOTE_LOGIN_HOST:$REMOTE_CACHE_DIR $LOCAL_MOUNT_POINT
            sync
            exit 153
@@ -85,24 +85,14 @@ goal.
          NVIMR_PORT=$NVIMR_PORT R $*"
        ```
 
-     - Add the following lines to your `vimrc`:
-
-       ```vim
-       let R_app = '/home/locallogin/bin/sshR'
-       let R_cmd = '/home/locallogin/bin/sshR'
-       let R_compldir = '/home/locallogin/.remoteR
-       let R_remote_compldir = '/home/remotelogin/.cache/Nvim-R'
-       let R_local_R_library_dir = '/path/to/local/R/library' " where nvimcom is installed
-       ```
-
-       or, if using `init.lua`:
+     - Add this to your R-Nvim config:
 
        ```lua
-       vim.g.R_app = '/home/locallogin/bin/sshR'
-       vim.g.R_cmd = '/home/locallogin/bin/sshR'
-       vim.g.R_compldir = '/home/locallogin/.remoteR'
-       vim.g.R_remote_compldir = '/home/remotelogin/.cache/Nvim-R'
-       vim.g.R_local_R_library_dir = '/path/to/local/R/library' -- where nvimcom is installed
+       R_app = '/home/locallogin/bin/sshR'
+       R_cmd = '/home/locallogin/bin/sshR'
+       compldir = '/home/locallogin/.remoteR'
+       remote_compldir = '/home/remotelogin/.cache/Nvim-R'
+       local_R_library_dir = '/path/to/local/R/library' -- where nvimcom is installed
        ```
 
      - Mount the remote directory:
@@ -111,7 +101,7 @@ goal.
        ~/bin/mountR
        ```
 
-     - Start Neovim (or Vim), and start R. Nvimcom should be automatically
+     - Start Neovim and start R. Nvimcom should be automatically
        installed on the remote machine.
 
      - If nvimcom is not automatically installed, you will have to

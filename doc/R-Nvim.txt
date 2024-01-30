@@ -30,9 +30,7 @@ to deal with. Cryptic error message are bugs... Please report them at:
 
     https://github.com/jalvesaq/Nvim-R/discussions
 
-Patches and git pull requests are welcome. If you want a feature that only few
-people might be interested in, you can write a script to be sourced by R-Nvim
-(see |source|).
+Git pull requests are welcome.
 
 
 ==============================================================================
@@ -447,13 +445,7 @@ window. Note: The command <LocalLeader>ao, silently writes the current buffer
 to its file if it was modified and deletes the .Rout file if it exists.
 
 R syntax uses " <- " to assign values to variables which is inconvenient to
-type. In insert mode, typing a single underscore, "_", will write " <- ",
-unless you are typing inside a string. The replacement will always happen if
-syntax highlighting is off (see |:syn-on| and |:syn-off|). If necessary, it is
-possible to insert an actual underscore into your file by typing a second
-underscore. This behavior is similar to the EMACS ESS mode some users may be
-familiar with and is enabled by default. You have to change the value of
-|assign| to disable underscore replacement.
+type. In insert mode, typing <M--> will write " <- ".
 
 When you press <LocalLeader>rh, the plugin shows the help for the function
 under the cursor. The plugin also checks the class of the first object passed
@@ -777,7 +769,7 @@ You can set both foreground and background colors of R output in your
 If you prefer that R output is highlighted using your current `colorscheme`,
 put in your `init.lua`:
 >lua
-   vim.g.rout_follow_colorscheme = 1
+   vim.g.rout_follow_colorscheme = true
 <
 
 ==============================================================================
@@ -922,7 +914,6 @@ the `init.vim`. The workaround is do not include the superfluous command
 |rmarkdown_args|      Further options to be passed to `rmarkdown::render()`
 |quarto_render_args|  Options to be passed to `quarto::quarto_render()`
 |quarto_preview_args| Options to be passed to `quarto::quarto_preview()`
-|never_unmake_menu|   Do not unmake the menu when switching buffers
 |clear_line|          Clear R Console line before sending a command
 |editing_mode|        The mode defined in your `~/.inputrc`
 |pdfviewer|           PDF application used to open PDF documents
@@ -931,7 +922,6 @@ the `init.vim`. The workaround is do not include the superfluous command
 |strict_rst|          Code style for generated rst files
 |insert_mode_cmds|    Allow R commands in insert mode
 |rmhidden|            Remove hidden objects from R workspace
-|source|              Source additional Vim scripts
 |wait|                Time to wait for nvimcom loading
 |wait_reply|          Time to wait for R reply
 |nvim_wd|             Start R in Neovim's working directory
@@ -971,7 +961,7 @@ See also: |after_start|.
 If you want to always start the Object Browser immediately after starting R,
 put in your config:
 >lua
-   objbr_auto_start = 1
+   objbr_auto_start = true
 <
 See also: |after_ob_open|.
 
@@ -987,20 +977,20 @@ Vim's navigation commands work as usual (see |motion.txt|).
 If you need the <Esc> key in R, for example if you want to use `vi`, `vim` or
 `nvim` within R Console, put in your config:
 >lua
-   esc_term = 0
+   esc_term = false
 <
 Then, you will have to press the default <C-\><C-N> to go from Terminal to
 Normal mode.
 
 R-Nvim sets the option "editor" to a function that makes the object to be
-edited in a new tab when `esc_term` = 1 (the default value).
+edited in a new tab when `esc_term` = `true` (the default value).
 
                                                                *close_term*
 Neovim does not close its built-in terminal emulator when the application
 running in it quits, but R-Nvim does close it for you. If you rather prefer
 that the terminal remains open after R quits, put in your config:
 >lua
-   close_term = 0
+   close_term = false
 <
 Neovim stops automatically scrolling the R Console if you move the cursor to
 any line that is not the last one. This emulates the behavior of other
@@ -1015,20 +1005,19 @@ buffer before sending a command to force the scrolling R output, but you can
 put the line below in your |init.vim| to disable the auto scrolling of the
 terminal:
 >lua
-   auto_scroll = 0
+   auto_scroll = false
 <
 You may either use the package colorout (Unix only) to colorize R output or
 let Neovim highlight the terminal contents as it was a .Rout file type. Two
 advantages of colorout are the possibility of highlighting numbers close to
 zero in a different color and the distinction between stdout and stderr. The
-value of `hl_term` (0 or 1) determines whether Neovim should syntax highlight
-the R output, and its default value will be set to 0 if the package colorout
-is loaded. If you prefer do not rely on the auto detection of colorout, you
-should set the value of `hl_term` in your config. Example:
+value of `hl_term` (`false` or `true`) determines whether Neovim should syntax
+highlight the R output, and its default value will be set to `false` if the
+package colorout is installed. If you prefer do not rely on the auto detection
+of colorout, you should set the value of `hl_term` in your config. Example:
 >lua
-   hl_term = 0
-<
-                                                                    *OutDec*
+   hl_term = false
+<                                                                    *OutDec*
 Right after starting R, R-Nvim will try to detect if either the value of R's
 `OutDec` option is `","` or the current R script sets the `OutDec` option. If
 you are using Neovim to syntax highlight R's output and it is not correctly
@@ -1036,14 +1025,13 @@ detecting R's `OutDec` option, then, to get numbers correctly recognized, you
 should put in your config:
 >lua
    OutDec = ','
-<
-                                                                  *setwidth*
+<                                                                  *setwidth*
 On Unix systems, BEFORE sending a command to R Console, if the terminal width
 has changed, Neovim will send to nvimcom the command `options(width=X)`,
 where X is the new terminal width. You can set the value of `setwidth` to 0 to
 avoid the width being set. Example:
 >lua
-   setwidth = 0
+   setwidth = false
 <
 On Windows, the command is sent to R Console because it would crash R if sent
 through nvimcom.
@@ -1076,7 +1064,7 @@ value:
 If you do not want to run R in Neovim's built in terminal emulator, you
 have to install Tmux >= 2.0, and then put in your config:
 >lua
-   external_term = 1
+   external_term = true
 <
 Then, R will start in an external terminal emulator (useful if you use two
 monitors and want Neovim and R separate from each other), and Tmux will be
@@ -1091,11 +1079,11 @@ used to send commands from Neovim to R.
 Note: The options of this section are ignored on Mac OS X, where the command
 `open` is called to run the default application used to run shell scripts.
 
-R will run in Neovim's built-in terminal emulator, unless you set the
-value of `external_term`, which can be a numeric value (either `0` or `1`),
-the name of the terminal emulator or the complete command to run the terminal
-emulator. On Windows, the only valid value is `1`, which will make R-Nvim to
-run `Rgui.exe`, and not really a terminal emulator.
+R will run in Neovim's built-in terminal emulator, unless you set the value of
+`external_term`, which can be a boolean value, the name of the terminal
+emulator or the complete command to run the terminal emulator. On Windows, the
+only boolean values are valid; if `true` R-Nvim will run `Rgui.exe`, and not
+really a terminal emulator.
 
 On Linux, the complete command for running the terminal is predefined for the
 following options:
@@ -1111,12 +1099,12 @@ following options:
     9. lxterminal
    10. xterm.
 
-If the value of `external_term` is 1, the plugin runs the first terminal
+If the value of `external_term` is `true`, the plugin runs the first terminal
 emulator that it finds from the above list. If your favorite terminal emulator
 is not selected, you may define it in your config. Below are some examples of
 how to set the value of `external_term`:
 >lua
-   external_term = 1 -- Run R in an external terminal (or Rgui.exe)
+   external_term = true   -- Run R in an external terminal (or Rgui.exe)
    external_term = 'foot' -- Run R in in foot
 <
 If you are not satisfied with the way your terminal emulator is called by the
@@ -1134,7 +1122,7 @@ The last argument must be the one which precedes the command to be executed.
 The terminal error messages, if any, are shown as warning messages, unless you
 put in your config:
 >lua
-   silent_term = 1
+   silent_term = true
 <
 
 ------------------------------------------------------------------------------
@@ -1154,8 +1142,8 @@ when you quit R with the <LocalLeader>rq command, and it will restore the
 positions of the windows when you start R. If you do not like this behavior,
 you can put in your config:
 >lua
-   save_win_pos = 0
-   arrange_windows = 0
+   save_win_pos = false
+   arrange_windows = false
 <
 If you want R and GVim windows always in a specific arrangement, regardless of
 their state when you have quit R for the last time, you should arrange them
@@ -1167,7 +1155,7 @@ Folders" which is the same value set by R. However, if you have set `$HOME`
 yourself with the intention of changing the default value of `$HOME` assumed
 by R, you will want to put in your config:
 >lua
-   set_home_env = 0
+   set_home_env = false
 <
 
 ------------------------------------------------------------------------------
@@ -1180,7 +1168,7 @@ by R, you will want to put in your config:
 In Rnoweb files, a `<` is replaced with `<<>>=\n@`. To disable this feature,
 put in your config:
 >lua
-   rnowebchunk = 0
+   rnowebchunk = false
 <
 Similarly, in Rmd files the grave accent (backtick) is replaced with chunk
 delimiters unless you put in your config:
@@ -1202,10 +1190,10 @@ keys to be replaced by `<-`, set the value of |assign_map| in your config,
 as in the example below which emulates RStudio behavior (may only work on GVim
 or Neovim):
 >lua
-   assign_map = '<C-=>'
+   assign_map = '<M-=>'
 <
-Note: You can't map <C-=>, as StatET does because in Vim only alphabetic
-letters can be mapped in combination with the CTRL key.
+Note: You can't map <C-=> because in Neovim only alphabetic letters can be
+mapped in combination with the CTRL key.
 
 To completely disable this feature, put in your config:
 >lua
@@ -1247,12 +1235,12 @@ window, it will be 10 lines high, unless you set its height in your config:
 Below is an example of setup of some other options in the config that
 control the behavior of the Object Browser:
 >lua
-   objbr_opendf = 1    -- Show data.frames elements
-   objbr_openlist = 0  -- Show lists elements
-   objbr_allnames = 0  -- Show hidden objects
+   objbr_opendf = true     -- Show data.frames elements
+   objbr_openlist = false  -- Show lists elements
+   objbr_allnames = false  -- Show hidden objects
 <
 Objects whose names start with a "." are hidden by default. If you want them
-displayed in the Object Browser, set the value of `objbr_allnames` to `1`.
+displayed in the Object Browser, set the value of `objbr_allnames` to `true`.
 
 When a `data.frame` appears in the Object Browser for the first time, its
 elements are immediately displayed, but the elements of a `list` are displayed
@@ -1274,7 +1262,7 @@ respectively, `data.frames` and `lists`. The options are ignored for
 
 If you do not want to see R examples in a Neovim buffer, put in your config:
 >lua
-   open_example = 0
+   open_example = false
 <
 If you do not want to see R documentation in a Neovim buffer, put in your
 config:
@@ -1304,7 +1292,7 @@ The valid values of `nvimpager` are:
                  This is the default.
    "tab"       : Show the help document in a new tab. If there is already a
                  tab with an R help document tab, use it.
-                 This is the default if `external_term` = 1.
+                 This is the default if `external_term` = `true`.
    "horizontal": Split the window horizontally.
    "tabnew"    : Show the help document in a new tab.
    "no"        : Do not show R documentation in Neovim.
@@ -1404,7 +1392,7 @@ comments, and only the output of commands has some of its elements highlighted
 If you prefer that R commands in the R output are highlighted as they are in R
 scripts, put the following in your config:
 >lua
-   Rout_more_colors = 1
+   Rout_more_colors = true
 <
 When syntax highlighting .Rout files, R-Nvim considers "> " as the prompt
 string and "+ " as the continuation string. If you have defined different
@@ -1428,7 +1416,7 @@ has any pending changes, run `R CMD BATCH --no-restore --no-save` on the
 current file and show the resulting .Rout file in a new tab. If you prefer
 that the file is open in a new split window, put in your config:
 >lua
-   routnotab = 1
+   routnotab = true
 <
 
 ------------------------------------------------------------------------------
@@ -1439,7 +1427,7 @@ If Neovim is running R in an external terminal emulator, R will run in a Tmux
 session with a specially built Tmux configuration file. If you want to use
 your own ~/.tmux.conf, put in your config:
 >lua
-   notmuxconf = 1
+   notmuxconf = true
 <
 If you opted for using your own configuration file, the plugin will write a
 minimum configuration which will set the value of four environment variables
@@ -1496,14 +1484,14 @@ window.
 If you are on Mac OS X and want to use the R.app graphical application, put in
 your config:
 >lua
-   external_term = 1
-   applescript = 1
+   external_term = true
+   applescript = true
 <
 If you want to run RStudio instead of R set in your config the value of
 `RStudio_cmd` to the complete path of the RStudio_cmd binary. Example:
 >lua
-   external_term = 1
-   RStudio_cmd = 'C:\Program Files\RStudio\bin\rstudio'
+   external_term = true
+   RStudio_cmd = 'C:\\Program Files\\RStudio\\bin\\rstudio'
 <
 Note: You must manually run a successful comand in RStudio Console before
 sending code from Neovim to RStudio. The command might be something as simple as
@@ -1519,14 +1507,14 @@ The R function `args()` lists the arguments of a function, but not the
 arguments of its methods. If you want that the plugin calls the function
 `nvim.list.args()` after <LocalLeader>ra, you have to add to your config:
 >lua
-   listmethods = 1
+   listmethods = true
 <
 By default, R makes a scatter plot of numeric vectors. The function
 `nvim.plot()` do both a histogram and a box plot. The function can be called by
 the plugin after <LocalLeader>rg if you put the following line in your
 config:
 >lua
-   specialplot = 1
+   specialplot = true
 <
 
 ------------------------------------------------------------------------------
@@ -1541,13 +1529,13 @@ R, that is all lines above and below the current one that are not separated by
 an empty line. If you prefer that only lines from the cursor position to the
 end of the paragraph are sent, put in your config:
 >lua
-   paragraph_begin = 0
+   paragraph_begin = false
 <
 If a line has an opening parenthesis, all lines up to the closing parenthesis
 are sent to R when you send a line of code to R. If you prefer to send the
 lines one by one, put in your config:
 >lua
-   parenblock = 0
+   parenblock = false
 <
 Bracketed paste mode will bracket R code in special escape sequences when it
 is being sent to R so that R can tell the differences between stuff that you
@@ -1555,14 +1543,14 @@ type directly to the console and stuff that you send. It is particularly
 useful when you are using a version of R which is compiled against readline
 7.0+ or when rice console is used. To enable it, put in your config:
 >lua
-   bracketed_paste = 1
+   bracketed_paste = true
 <
 Some versions of R's console interpret <C-L> as a command to clear the console
 while others have no command to clear the console. You should set the value of
-`clear_console`  as `0` if you see `^L` printed in the R's console after
+`clear_console`  as `false` if you see `^L` printed in the R's console after
 <LocalLeader>rm:
 >lua
-   clear_console = 0
+   clear_console = false
 <
 
 ------------------------------------------------------------------------------
@@ -1619,7 +1607,7 @@ separate them in an R's `c()` command.
 If you want to pass arguments to the `Sweave()` function, set the value of the
 `sweaveargs` variable.
 
-If the value of `texerr` is `1`, nvmimcom will output to R Console LaTeX
+If the value of `texerr` is `true`, nvmimcom will output to R Console LaTeX
 errors and warnings produced by the compilation of the .tex document into
 .pdf. So, you do not have to scroll the R Console seeking for these messages.
 However, if R-Nvim cannot not find the LaTeX log file because it is not saved
@@ -1663,19 +1651,6 @@ config, as in the examples:
 <
 
 ------------------------------------------------------------------------------
-6.21. Never unmake the R menu                            *never_unmake_menu*
-
-Use this option if you want that the "R" menu item in GVim is not deleted when
-you change from one buffer to another, for example, when going from a .R file
-to a .txt one:
->lua
-   never_unmake_menu = 1
-<
-When this option is enabled all menu items are created regardless of the file
-type.
-
-
-------------------------------------------------------------------------------
 6.22. Clear R Console line before sending commands
                                                               *clear_line*
                                                               *editing_mode*
@@ -1687,7 +1662,7 @@ with commands sent by Neovim. But R-Nvim does not do this by default because
 control characters may cause problems in some circumstances. Hence, if you
 that R-Nvim adds <C-a><C-k> to every command put in your config:
 >lua
-   clear_line = 1
+   clear_line = true
 <
 R-Nvim reads your `~/.inputrc` and, if it finds the string "set editing-mode
 vi" it will send to R <Esc>0Da instead of <C-a><C-k>. If R-Nvim fails to
@@ -1717,22 +1692,15 @@ and to not run in Rgui.
 
 The plugin can automatically open the pdf file generated by pdflatex, after
 either `Sweave()` or `knit()`. This behavior is controlled by the variable
-|openpdf| whose value may be 0 (do not open the pdf), 1 (open only
-the first time that pdflatex is called) or a number higher than 1 (always
+|openpdf| whose value may be `0` (do not open the pdf), `1` (open only
+the first time that pdflatex is called) or a number higher than `1` (always
 open the pdf). For example, if you want that the pdf application is started
 automatically but do not want the terminal (or GNeovim) losing focus every time
 that you generate the pdf, you should put in put in your config:
 >lua
    openpdf = 1
 <
-If you use Linux or other Unix and eventually use the system console (without
-the X server) you may want to put in your |init.lua|:
->vim
-   if $DISPLAY == "" && $WAYLAND_DISPLAY == ""
-       let openpdf = 0
-   endif
-<
-The default value of `openpdf` is 1 on Mac OS X and 2 on Windows. On Linux,
+The default value of `openpdf` is `1` on Mac OS X and `2` on Windows. On Linux,
 it is 2 on the X Server and on Sway Window Manager and 1 on other Wayland
 compositors.
 
@@ -1750,7 +1718,7 @@ If editing an Rmd file, you can produce the html result with <LocalLeader>kr
 or <LocalLeader>kh (it may also work with other file types). The html file
 will be automatically opened if you put the following in your config:
 >lua
-   openhtml = 1
+   openhtml = true
 <
 The meanings of different values of `openhtml` are:
 
@@ -1765,7 +1733,7 @@ Most browser will open a new tab each time they are called instead of
 refreshing a document that is already open. So, if you rather prefer that
 R-Nvim never tries to open the web browser, put in your config:
 >lua
-   openhtml = 0
+   openhtml = false
 <
 For Quarto documents, the available key bindings are <LocalLeader>qr (render
 document), <LocalLeader>qp (preview document), and <LocalLeader>qs (stop
@@ -1786,7 +1754,7 @@ By default, R-Nvim sends the command `render_rst(strict=TRUE)` to R
 before using R's `knit()` function to convert an Rrst file into an rst one. If
 you prefer the non strict rst code, put the following in your config:
 >lua
-   strict_rst = 0
+   strict_rst = false
 <
 You can also set the value of `rst2pdfpath` (the path to rst2pdf
 application), `rrstcompiler` (the compiler argument to be passed to R
@@ -1806,7 +1774,7 @@ tries to send the command!
 If you want to enable commands in Insert mode, add the following to your
 config:
 >lua
-   insert_mode_cmds = 1
+   insert_mode_cmds = true
 <
 
 ------------------------------------------------------------------------------
@@ -1815,29 +1783,13 @@ config:
 Hidden objects are removed from R workspace when you do <LocalLeader>rm. If
 you prefer to remove only visible objects, put in your config:
 >lua
-   rmhidden = 0
+   rmhidden = false
 <
 After removing the objects, R-Nvim will also send CTRL-L to the R Console to
 clear the screen. If you have set vi mode in your `~/.inputrc` you might also
 want to set CTRL-L to clear the screen, as explained at
 
 https://unix.stackexchange.com/questions/104094/is-there-any-way-to-enable-ctrll-to-clear-screen-when-set-o-vi-is-set
-
-
-------------------------------------------------------------------------------
-6.27. Source additional Vim scripts                                 *source*
-
-This variable should contain a comma separated list of Vim scripts to be
-sourced by R-Nvim. These scripts may provide additional
-functionality and/or change the behavior of R-Nvim. If you have such
-scripts, put in your config:
->lua
-   source = '~/path/to/MyScript.vim,/path/to/AnotherScript.vim'
-<
-Currently, there is only one script known to extend R-Nvim features:
-
-   Support for the devtools R package:
-   https://github.com/mllg/vim-devtools-plugin
 
 
 ------------------------------------------------------------------------------
@@ -1948,7 +1900,7 @@ following:
 <
 Then, make the script executable, and put in your config:
 >lua
-   external_term = 1
+   external_term = true
    after_start = {'!after_R_start'}
 <
 Similarly, on Mac OS X, the script below (developed by songcai) will bring the
@@ -1983,18 +1935,18 @@ Put the line below in your config if do not want that the cursor jumps to the
 line being debugged (when `browser()` is run). Highlighting of the line being
 debugged will also be disabled.
 >lua
-   debug = 0
+   debug = false
 <
 R-Nvim puts the cursor in the R Console when the debugging starts. If you do
 not want this, put in your config:
 >lua
-   dbg_jump = 0
+   dbg_jump = false
 <
 The highlighted debugged line incrementally moves down the buffer with code
 execution and, with long scripts, it may stay at the bottom of the window as you
 debug. You can hold the highlighted line in the middle of the window with
 >lua
-    debug_center = 1
+    debug_center = true
 <
 
 ------------------------------------------------------------------------------
@@ -2007,7 +1959,7 @@ The R-Nvim sets many default key bindings.  The user can set custom
 key bindings (|R-Nvim-key-bindings|).  If you wish R-Nvim to only
 use those key-bindings specified by the user, put in your config:
 >lua
-    user_maps_only = 1
+    user_maps_only = true
 <
 If you want to disable only some of R-Nvim commands, create a Vim list with
 their key bindings names in your config. The complete list of key bindings
@@ -2190,7 +2142,7 @@ for SyncTeX in five applications:
 
 To completely disable SyncTeX support, put in your config:
 >lua
-   synctex = 0
+   synctex = false
 <
 You do not have to do anything special in your Rnoweb document, if you are
 using the knitr package, and are editing single file Rnoweb documents.

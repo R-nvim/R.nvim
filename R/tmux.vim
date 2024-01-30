@@ -25,8 +25,3 @@ unlet s:tmuxversion
 let g:rplugin.tmuxsname = "NvimR-" . substitute(localtime(), '.*\(...\)', '\1', '')
 
 let g:Rcfg.setwidth = get(g:, 'R_setwidth', 2)
-
-if !has_key(g:Rcfg, 'source') || (has_key(g:Rcfg, 'source') && g:Rcfg.source !~# 'tmux_split.vim')
-    exe 'source ' . substitute(expand('<sfile>:h:h'), ' ', '\ ', 'g') . '/R/extern_term.vim'
-endif
-

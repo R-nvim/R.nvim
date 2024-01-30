@@ -145,7 +145,7 @@ if v:lang =~ "^tr"
 endif
 
 " Define the default highlighting.
-if exists('g:Rcfg') && g:Rcfg.Rout_more_colors == 0
+if exists('g:Rcfg') && g:Rcfg.Rout_more_colors == v:false
     hi def link routInput	Comment
 endif
 
