@@ -1,5 +1,5 @@
 # Function called by R if options(editor = nvim.edit).
-# Nvim-R sets this option during nvimcom loading.
+# R-Nvim sets this option during nvimcom loading.
 nvim.edit <- function(name, file, title) {
     if (file != "")
         stop("Feature not implemented. Use nvim to edit files.")
@@ -34,7 +34,7 @@ vi <- function(name = NULL, file = "") {
     nvim.edit(name, file)
 }
 
-#' Function called by Nvim-R when the user wants to source a line of code and
+#' Function called by R-Nvim when the user wants to source a line of code and
 #' capture its output in a new Vim tab (default key binding `o`)
 #' @param s A string representing the line of code to be source.
 #' @param nm The name of the buffer to be created in the Vim tab.
@@ -46,10 +46,10 @@ nvim_capture_source_output <- function(s, nm) {
        PACKAGE = "nvimcom")
 }
 
-#' Function called by Nvim-R when the user wants to run the command `dput()`
+#' Function called by R-Nvim when the user wants to run the command `dput()`
 #' over the word under cursor and see its output in a new Vim tab.
 #' @param oname The name of the object under cursor.
-#' @param howto How to show the output (never included when called by Nvim-R).
+#' @param howto How to show the output (never included when called by R-Nvim).
 nvim_dput <- function(oname, howto = "tabnew") {
     o <- capture.output(eval(parse(text = paste0("dput(", oname, ")"))))
     o <- paste0(o, collapse = "\x14")
@@ -59,7 +59,7 @@ nvim_dput <- function(oname, howto = "tabnew") {
        PACKAGE = "nvimcom")
 }
 
-#' Function called by Nvim-R when the user wants to see a `data.frame` or
+#' Function called by R-Nvim when the user wants to see a `data.frame` or
 #' `matrix` (default key bindings: `\rv`, `\vs`, `\vv`, and `\rh`).
 #' @param oname The name of the object (`data.frame` or `matrix`).
 #' @param fenc File encoding to be used.
@@ -175,11 +175,11 @@ source.and.clean <- function(f, ...) {
 }
 
 #' Format R code.
-#' Sent to nvimcom through nvimrserver by Nvim-R when the user runs the
+#' Sent to nvimcom through nvimrserver by R-Nvim when the user runs the
 #' `Rformat` command.
-#' @param l1 First line of selection. Nvim-R needs the information to know
+#' @param l1 First line of selection. R-Nvim needs the information to know
 #' what lines to replace.
-#' @param l2 Last line of selection. Nvim-R needs the information to know
+#' @param l2 Last line of selection. R-Nvim needs the information to know
 #' what lines to replace.
 #' @param wco Text width, based on Vim option 'textwidth'.
 #' @param sw Vim option 'shiftwidth'.
@@ -227,10 +227,10 @@ nvim_format <- function(l1, l2, wco, sw, txt) {
     return(invisible(NULL))
 }
 
-#' Returns the output of command to be inserted by Nvim-R.
+#' Returns the output of command to be inserted by R-Nvim.
 #' The function is called when the user runs the command `:Rinsert`.
 #' @param cmd Command to be executed.
-#' @param howto How Nvim-R should insert the result.
+#' @param howto How R-Nvim should insert the result.
 nvim_insert <- function(cmd, howto = "tabnew") {
     try(o <- capture.output(cmd))
     if (inherits(o, "try-error")) {
@@ -315,7 +315,7 @@ nvim.get.summary <- function(obj, wdth) {
 }
 
 #' List arguments of a function
-#' This function is sent to R Console by Nvim-R when the user press `\ra` over
+#' This function is sent to R Console by R-Nvim when the user press `\ra` over
 #' an R object.
 #' @param ff The object under cursor.
 nvim.list.args <- function(ff) {
@@ -337,7 +337,7 @@ nvim.list.args <- function(ff) {
 }
 
 #' Plot an object.
-#' This function is sent to R Console by Nvim-R when the user press `\rg` over
+#' This function is sent to R Console by R-Nvim when the user press `\rg` over
 #' an R object.
 #' @param x The object under cursor.
 nvim.plot <- function(x) {
@@ -355,7 +355,7 @@ nvim.plot <- function(x) {
 }
 
 #' Output the names of an object.
-#' This function is sent to R Console by Nvim-R when the user press `\rn` over
+#' This function is sent to R Console by R-Nvim when the user press `\rn` over
 #' an R object.
 #' @param x The object under cursor.
 nvim.names <- function(x) {

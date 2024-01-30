@@ -1,6 +1,6 @@
 # R may break strings while sending them even if they are short
 out <- function(x) {
-    # Nvim-R will wait for more input if the string doesn't end with "\x14"
+    # R-Nvim will wait for more input if the string doesn't end with "\x14"
     y <- paste0(x, "\x14\n")
     cat(y)
     flush(stdout())
@@ -33,7 +33,7 @@ cat(libp, sep = "\n", colapse = "\n", file = "libPaths")
 R_version <- paste0(version[c("major", "minor")], collapse = ".")
 
 if (R_version < "4.0.0")
-    out("RWarn: Nvim-R requires R >= 4.0.0")
+    out("RWarn: R-Nvim requires R >= 4.0.0")
 
 R_version <- sub("[0-9]$", "", R_version)
 
@@ -63,7 +63,7 @@ check_nvimcom_installation <- function() {
 }
 
 # The nvimcom directory will not exist if nvimcom was packaged separately from
-# the rest of Nvim-R. I will also not be found if running Vim in MSYS2 and R
+# the rest of R-Nvim. I will also not be found if running Vim in MSYS2 and R
 # on Windows because the directory names change between the two systems.
 if (!is.null(needed_nvc_version)) {
     np <- find.package("nvimcom", quiet = TRUE, verbose = FALSE)
@@ -91,7 +91,7 @@ if (!is.null(needed_nvc_version)) {
 
     # Build and install nvimcom if necessary
     if (need_new_nvimcom != "") {
-        out(paste0("let g:rplugin.debug_info['Why build nvimcom'] = '", need_new_nvimcom, "'"))
+        out(paste0("RInfo: Why build nvimcom=", need_new_nvimcom))
 
         # Check if any directory in libPaths is writable
         ok <- FALSE
@@ -136,7 +136,7 @@ if (!is.null(needed_nvc_version)) {
 }
 
 
-# Save ~/.cache/Nvim-R/nvimcom_info
+# Save ~/.cache/R-Nvim/nvimcom_info
 np <- find.package("nvimcom", quiet = TRUE, verbose = FALSE)
 if (length(np) == 1) {
     nd <- utils::packageDescription("nvimcom")

@@ -3,6 +3,7 @@ local cfg = require("r.config").get_config()
 
 local del_list = {}
 local rscript_name = "undefined"
+local debug_info = {Time = {}}
 
 local M = {}
 
@@ -81,17 +82,10 @@ M.add_for_deletion = function (fname)
 end
 
 M.vim_leave = function ()
-    for job, _ in pairs(vim.g.rplugin.jobs) do
-        if vim.fn.IsJobRunning(job) and job == 'Server' then
-            -- Avoid warning of exit status 141
-            vim.fn.JobStdin(vim.g.rplugin.jobs[job], "9\n")
-            vim.cmd("sleep 20m")
-        end
-    end
+    require("r.job").stop_nrs()
 
     for _, fn in pairs(del_list) do
         vim.fn.delete(fn)
-        -- vim.fn.system("echo 'vim_leave: delete " .. fn .. "' >> /dev/shm/r-nvim-lua-log")
     end
 
     -- FIXME: check if rmdir is executable during startup and asynchronously
@@ -106,35 +100,27 @@ end
 
 M.show_debug_info = function()
     -- FIXME
-    -- The code converted to Lua shows nothing
+    -- The code with "echo" commands converted to Lua shows nothing
     -- Rewrite to display in a float window
-    vim.cmd([[
-    for key in keys(g:rplugin.debug_info)
-        if len(g:rplugin.debug_info[key]) == 0
-            continue
-        endif
-        echohl Title
-        echo key
-        echohl None
-        if key == 'Time' || key == 'nvimcom_info'
-            for step in keys(g:rplugin.debug_info[key])
-                echohl Identifier
-                echo '  ' . step . ': '
-                if key == 'Time'
-                    echohl Number
-                else
-                    echohl String
-                endif
-                echon g:rplugin.debug_info[key][step]
-                echohl None
-            endfor
-            echo ""
-        else
-            echo g:rplugin.debug_info[key]
-        endif
-        echo ""
-    endfor
-    ]])
+    local dstr = ""
+    for k, v in pairs(debug_info) do
+        dstr = dstr .. tostring(k) .. ":\n"
+        if #v > 0 then
+            if type(v) == "string" then
+                dstr = dstr .. tostring(v) .. "\n"
+            else
+                for vk, vv in pairs(v) do
+                    dstr = dstr .. "  " .. tostring(vk) ": "
+                    dstr = dstr .. tostring(vv) .. "\n"
+                end
+            end
+        end
+    end
+    print(dstr)
+end
+
+M.get_debug_info = function ()
+    return debug_info
 end
 
 return M

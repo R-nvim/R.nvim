@@ -17,7 +17,7 @@
 # this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 # Street, Fifth Floor, Boston, MA  02110-1301, USA
 
-# Modified to Nvim-R by Jakson Aquino
+# Modified to R-Nvim by Jakson Aquino
 
 import dbus, dbus.mainloop.glib, sys
 from nvimr import nvimr_cmd, nvimr_warn

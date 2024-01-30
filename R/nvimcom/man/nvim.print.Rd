@@ -5,7 +5,7 @@
 }
 \description{
   Print an object. If the object is a function, search for a method for the
-  \code{classfor} expression. The function is supposed to be called by Nvim-R.
+  \code{classfor} expression. The function is supposed to be called by R-Nvim.
 }
 \usage{
 nvim.print(object, firstobj)

@@ -91,11 +91,11 @@ function StartR_ExternalTerm(rcmd)
         let initterm = ['cd "' . getcwd() . '"',
                     \ opencmd ]
         call writefile(initterm, g:rplugin.tmpdir . "/initterm_" . $NVIMR_ID . ".sh")
-        let g:rplugin.jobs["Terminal emulator"] = StartJob(["sh", g:rplugin.tmpdir . "/initterm_" . $NVIMR_ID . ".sh"],
-                    \ {'on_stderr': function('ROnJobStderr'), 'on_exit': function('ROnJobExit'), 'detach': 1})
+        lua require("r.job").start("Terminal emulator", ["sh", g:rplugin.tmpdir . "/initterm_" . $NVIMR_ID . ".sh"], {'on_stderr': function('ROnJobStderr'), 'on_exit': function('ROnJobExit'), 'detach': 1})
         call AddForDeletion(g:rplugin.tmpdir . "/initterm_" . $NVIMR_ID . ".sh")
     endif
-    let g:rplugin.debug_info['R open command'] = opencmd
+    let dinf = luaeval('require("r.edit").get_debug_info()')
+    let dinf['R open command'] = opencmd
 
     let g:SendCmdToR = function('SendCmdToR_Term')
     call WaitNvimcomStart()

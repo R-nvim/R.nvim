@@ -22,9 +22,10 @@ M.SyncTeX_forward = function (tpath, ppath, texln, _)
     local pdfname = vim.fn.substitute(ppath, " ", "%20", "g")
 
     if vim.g.rplugin.evince_loop < 2 then
-        vim.g.rplugin.jobs["Python (Evince forward)"] = vim.fn.StartJob(
+        require("r.job").start(
+            "Python (Evince forward)",
             { py, vim.g.rplugin.home .. "/R/pdf_evince_forward.py", texname, pdfname, tostring(texln) },
-            vim.g.rplugin.job_handlers
+            nil
         )
     else
         vim.g.rplugin.evince_loop = 0
