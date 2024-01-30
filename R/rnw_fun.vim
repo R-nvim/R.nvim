@@ -72,12 +72,12 @@ endfunction
 " Because this function delete files, it will not be documented.
 " If you want to try it, put in your vimrc:
 "
-" let R_rm_knit_cache = 1
+" let R_rm_knit_cache = v:true
 "
 " If don't want to answer the question about deleting files, and
 " if you trust this code more than I do, put in your vimrc:
 "
-" let R_ask_rm_knitr_cache = 0
+" let R_ask_rm_knitr_cache = v:false
 "
 " Note that if you have the string "cache.path=" in more than one place only
 " the first one above the cursor position will be found. The path must be
@@ -93,7 +93,7 @@ function RKnitRmCache()
             let pathdir .= '/'
         endif
     endif
-    if has_key(g:Rcfg, "ask_rm_knitr_cache") && g:Rcfg.ask_rm_knitr_cache == 0
+    if has_key(g:Rcfg, "ask_rm_knitr_cache") && g:Rcfg.ask_rm_knitr_cache == v:false
         let cleandir = 1
     else
         call inputsave()
@@ -159,7 +159,7 @@ function RWeave(bibtex, knit, pdf)
         endif
     endif
 
-    if g:Rcfg.synctex == 0
+    if g:Rcfg.synctex == v:false
         let pdfcmd = pdfcmd . ", synctex = FALSE"
     endif
 
@@ -463,7 +463,7 @@ function SyncTeX_forward(...)
         return
     endif
 
-    call SyncTeX_forward2(SyncTeX_GetMaster() . '.tex', b:rplugin_pdfdir . "/" . basenm . ".pdf", texln, 1)
+    exe 'lua require("r.pdf").SyncTeX_forward("' . SyncTeX_GetMaster() . '.tex", "' . b:rplugin_pdfdir . '/' . basenm . '.pdf", ' . texln . ', 1)'
 endfunction
 
 function SetPDFdir()

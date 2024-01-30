@@ -1,4 +1,4 @@
-if vim.fn.exists("g:R_filetypes") and type(vim.g.R_filetypes) == "table" and vim.fn.index(vim.g.R_filetypes, 'r') == -1 then
+if vim.fn.exists("g:R_filetypes") == 1 and type(vim.g.R_filetypes) == "table" and vim.fn.index(vim.g.R_filetypes, 'r') == -1 then
     return
 end
 
@@ -7,12 +7,7 @@ local routfile
 -- Override default values with user variable options and set internal variables.
 require("r.config").real_setup()
 
--- Check if b:pdf_is_open already exists to avoid errors at other places
-if not vim.fn.exists("b:pdf_is_open") then
-    vim.b.pdf_is_open = 0
-end
-
-function GetRCmdBatchOutput(...)
+local GetRCmdBatchOutput = function (_)
     if vim.fn.filereadable(routfile) then
         if vim.g.R_routnotab == 1 then
             vim.api.nvim_command("split " .. routfile)
@@ -29,9 +24,9 @@ function GetRCmdBatchOutput(...)
 end
 
 -- Run R CMD BATCH on the current file and load the resulting .Rout in a split window
-function ShowRout()
+require("r").ShowRout = function ()
     routfile = vim.fn.expand("%:r") .. ".Rout"
-    if vim.fn.bufloaded(routfile) then
+    if vim.fn.bufloaded(routfile) == 1 then
         vim.api.nvim_command("bunload " .. routfile)
         vim.fn.delete(routfile)
     end
@@ -40,7 +35,7 @@ function ShowRout()
     vim.api.nvim_command("silent update")
 
     local rcmd
-    if vim.fn.has("win32") then
+    if vim.fn.has("win32") == 1 then
         rcmd = vim.g.rplugin.Rcmd .. ' CMD BATCH --no-restore --no-save "' .. vim.fn.expand("%") .. '" "' .. routfile .. '"'
     else
         rcmd = { vim.g.rplugin.Rcmd, "CMD", "BATCH", "--no-restore", "--no-save", vim.fn.expand("%"),  routfile }
@@ -48,27 +43,25 @@ function ShowRout()
     vim.g.rplugin.jobs["R_CMD"] = vim.fn.jobstart(rcmd, { on_exit = GetRCmdBatchOutput })
 end
 
--- Default IsInRCode function when the plugin is used as a global plugin
-function DefaultIsInRCode(_)
+local is_in_R_code = function(_)
     return 1
 end
 
-vim.b.IsInRCode = DefaultIsInRCode
+-- Default IsInRCode function when the plugin is used as a global plugin
+vim.b.IsInRCode = is_in_R_code
 
--- Key bindings and menu items
-vim.fn.RCreateStartMaps()
-vim.fn.RCreateEditMaps()
+-- Key bindings
+require("r.maps").start()
+require("r.maps").edit()
 
 -- Only .R files are sent to R
-vim.fn.RCreateMaps('ni', 'RSendFile',  'aa', ':call SendFileToR("silent")')
-vim.fn.RCreateMaps('ni', 'RESendFile', 'ae', ':call SendFileToR("echo")')
-vim.fn.RCreateMaps('ni', 'RShowRout',  'ao', ':call ShowRout()')
+require("r.maps").create('ni', 'RSendFile',  'aa', ':call SendFileToR("silent")')
+require("r.maps").create('ni', 'RESendFile', 'ae', ':call SendFileToR("echo")')
+require("r.maps").create('ni', 'RShowRout',  'ao', ':lua require("r").ShowRout()')
 
-vim.fn.RCreateSendMaps()
-vim.fn.RControlMaps()
-vim.fn.RCreateMaps('nvi', 'RSetwd',    'rd', ':call RSetWD()')
-
-vim.fn.RSourceOtherScripts()
+require("r.maps").send()
+require("r.maps").control()
+require("r.maps").create('nvi', 'RSetwd',    'rd', ':call RSetWD()')
 
 if vim.b.undo_ftplugin then
     vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
