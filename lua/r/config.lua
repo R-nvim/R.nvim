@@ -94,7 +94,8 @@ local set_editing_mode = function ()
             end
         end
     end
-    config.editing_mode = em
+  end
+  config.editing_mode = em
 end
 
 local set_pdf_viewer = function ()
@@ -145,9 +146,9 @@ local global_setup = function ()
         config[k] = v
     end
 
-    -- Config values that depend on either system features or other config
-    -- values.
-    set_editing_mode()
+  -- Config values that depend on either system features or other config
+  -- values.
+  set_editing_mode()
 
     -- Load functions that were not converted to Lua yet
     -- Configure more values that depend on either system features or other
@@ -191,8 +192,8 @@ end
 --- Return the table with the final configure variables: the default values
 --- overridden by user options.
 ---@return table
-M.get_config = function ()
-    return config
+M.get_config = function()
+  return config
 end
 
 return M
