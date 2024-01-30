@@ -1,4 +1,4 @@
-"==============================================================================
+"==============================================================================start
 " Function to start R and functions that are called only after R is started.
 "==============================================================================
 
@@ -1188,23 +1188,9 @@ endfunction
 
 " Send file to R
 function SendFileToR(e)
-    let fpath = nvim_buf_get_name(0) . ".tmp.R"
-
-    if filereadable(fpath)
-        call RWarningMsg('Error: cannot create "' . fpath . '" because it already exists. Please, delete it.')
-        return
-    endif
-
-    if has("win32")
-        let fpath = substitute(fpath, "\\", "/", "g")
-    endif
-    call writefile(getline(1, "$"), fpath)
-    call AddForDeletion(fpath)
-    let sargs = GetSourceArgs(a:e)
-    let ok = g:SendCmdToR('nvimcom:::source.and.clean("' . fpath .  '"' . sargs . ')')
-    if !ok
-        call delete(fpath)
-    endif
+ " Pass parameters to Lua function using luaeval()
+    let lua_code = 'require("r.send").source_file("' . a:e . '")'
+    call luaeval(lua_code)
 endfunction
 
 " Send block to R
@@ -1329,8 +1315,7 @@ endfunction
 
 " Send all lines above to R
 function SendAboveLinesToR()
-    let lines = getline(1, line(".") - 1)
-    call RSourceLines(lines, "")
+    lua require("r.send").above_lines()
 endfunction
 
 " Send selection to R
@@ -1427,49 +1412,8 @@ endfunction
 
 " Send paragraph to R
 function SendParagraphToR(e, m)
-    if &filetype != "r" && b:IsInRCode(1) != 1
-        return
-    endif
-
-    let o = line(".")
-    let c = col(".")
-    let i = o
-    if g:Rcfg.paragraph_begin && getline(i) !~ '^\s*$'
-        let line = getline(i-1)
-        while i > 1 && !(line =~ '^\s*$' ||
-                    \ (&filetype == "rnoweb" && line =~ "^<<") ||
-                    \ ((&filetype == "rmd" || &filetype == "quarto") && line =~ "^[ \t]*```{\\(r\\|python\\)"))
-            let i -= 1
-            let line = getline(i-1)
-        endwhile
-    endif
-    let max = line("$")
-    let j = i
-    let gotempty = 0
-    while j < max
-        let line = getline(j+1)
-        if line =~ '^\s*$' ||
-                    \ (&filetype == "rnoweb" && line =~ "^@$") ||
-                    \ ((&filetype == "rmd" || &filetype == "quarto") && line =~ "^[ \t]*```$")
-            break
-        endif
-        let j += 1
-    endwhile
-    let lines = getline(i, j)
-    let ok = RSourceLines(lines, a:e, "paragraph")
-    if ok == 0
-        return
-    endif
-    if j < max
-        call cursor(j, 1)
-    else
-        call cursor(max, 1)
-    endif
-    if a:m == "down"
-        call GoDown()
-    else
-        call cursor(o, c)
-    endif
+    let lua_code = 'require("r.send").paragraph("' . a:e . '", "' . a:m . '")'
+    call luaeval(lua_code)
 endfunction
 
 " Send R code from the first chunk up to current line
