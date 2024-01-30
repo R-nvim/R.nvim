@@ -410,7 +410,7 @@ SEXP rd2md(SEXP txt) {
     p2 = b;
     pre_rd_md(&p1, &p2, a + maxp);
 
-    // Final cleanup for nvimcom/Nvim-R:
+    // Final cleanup for nvimcom/R-Nvim:
     // - Replace \n with \x14 within pre-formatted code to restore them during
     // omni completion.
     // - Replace \n with empty space to avoid problems for Vim dictionaries

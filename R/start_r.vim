@@ -1,33 +1,12 @@
-"==============================================================================start
+"==============================================================================
 " Function to start R and functions that are called only after R is started.
 "==============================================================================
-
-" Delete provisory links
-unlet g:RAction
-unlet g:RAskHelp
-unlet g:RBrOpenCloseLs
-unlet g:RBuildTags
-unlet g:RClearAll
-unlet g:RClearConsole
-unlet g:RFormatCode
-unlet g:RInsert
-unlet g:RMakeRmd
-unlet g:RObjBrowser
-unlet g:RQuit
-unlet g:RSendPartOfLine
-unlet g:RSourceDirectory
-unlet g:SendFileToR
-unlet g:SendFunctionToR
-unlet g:SendLineToR
-unlet g:SendLineToRAndInsertOutput
-unlet g:SendMBlockToR
-unlet g:SendParagraphToR
-unlet g:SendSelectionToR
-unlet g:SignalToR
 
 "==============================================================================
 " Functions to start and close R
 "==============================================================================
+
+let g:SendCmdToR = luaeval('require("r.send").cmd')
 
 function s:RGetBufDir()
     let rwd = nvim_buf_get_name(0)
@@ -64,310 +43,30 @@ endfunction
 " This function is called by nvimrserver when its server binds to a specific port.
 let s:waiting_to_start_r = ''
 function RSetMyPort(p)
-    let g:rplugin.myport = a:p
-    let $NVIMR_PORT = a:p
-    if s:waiting_to_start_r != ''
-        call StartR(s:waiting_to_start_r)
-        let s:waiting_to_start_r = ''
-    endif
+    exe 'lua require("r.run").set_my_port(' . a:p . ')'
 endfunction
 
 " Start R
 function ReallyStartR(whatr)
-    let s:wait_nvimcom = 1
-
-    if g:rplugin.myport == 0
-        if IsJobRunning("Server") == 0
-            call RWarningMsg("Cannot start R: nvimrserver not running")
-            return
-        endif
-        if g:rplugin.nrs_running == 0
-            call RWarningMsg("nvimrserver not ready yet")
-            return
-        endif
-        let s:waiting_to_start_r = a:whatr
-        call JobStdin(g:rplugin.jobs["Server"], "1\n") " Start the TCP server
-        return
-    endif
-
-    if (type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term) || type(g:Rcfg.external_term) == v:t_string
-        let g:Rcfg.objbr_place = substitute(g:Rcfg.objbr_place, 'console', 'script', '')
-    endif
-
-    if a:whatr =~ "custom"
-        call inputsave()
-        let r_args = input('Enter parameters for R: ')
-        call inputrestore()
-        let g:rplugin.r_args = split(r_args)
-    else
-        let g:rplugin.r_args = g:Rcfg.R_args
-    endif
-
-    call writefile([], g:rplugin.localtmpdir . "/globenv_" . $NVIMR_ID)
-    call writefile([], g:rplugin.localtmpdir . "/liblist_" . $NVIMR_ID)
-
-    call AddForDeletion(g:rplugin.localtmpdir . "/globenv_" . $NVIMR_ID)
-    call AddForDeletion(g:rplugin.localtmpdir . "/liblist_" . $NVIMR_ID)
-
-    if &encoding == "utf-8"
-        call AddForDeletion(g:rplugin.tmpdir . "/start_options_utf8.R")
-    else
-        call AddForDeletion(g:rplugin.tmpdir . "/start_options.R")
-    endif
-
-    " Reset R_DEFAULT_PACKAGES to its original value (see https://github.com/jalvesaq/Nvim-R/issues/554):
-    let start_options = ['Sys.setenv("R_DEFAULT_PACKAGES" = "' . s:r_default_pkgs . '")']
-
-    if g:Rcfg.objbr_allnames
-        let start_options += ['options(nvimcom.allnames = TRUE)']
-    else
-        let start_options += ['options(nvimcom.allnames = FALSE)']
-    endif
-    if g:Rcfg.texerr
-        let start_options += ['options(nvimcom.texerrs = TRUE)']
-    else
-        let start_options += ['options(nvimcom.texerrs = FALSE)']
-    endif
-    if g:rplugin.update_glbenv
-        let start_options += ['options(nvimcom.autoglbenv = TRUE)']
-    else
-        let start_options += ['options(nvimcom.autoglbenv = FALSE)']
-    endif
-    if g:Rcfg.debug
-        let start_options += ['options(nvimcom.debug_r = TRUE)']
-    else
-        let start_options += ['options(nvimcom.debug_r = FALSE)']
-    endif
-    if has_key(g:Rcfg, 'setwidth') && g:Rcfg.setwidth == 2
-        let start_options += ['options(nvimcom.setwidth = TRUE)']
-    else
-        let start_options += ['options(nvimcom.setwidth = FALSE)']
-    endif
-    if g:Rcfg.nvimpager == "no"
-        let start_options += ['options(nvimcom.nvimpager = FALSE)']
-    else
-        let start_options += ['options(nvimcom.nvimpager = TRUE)']
-    endif
-    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false && g:Rcfg.esc_term
-        let start_options += ['options(editor = nvimcom:::nvim.edit)']
-    endif
-    if has_key(g:Rcfg, "csv_delim") && (g:Rcfg.csv_delim == "," || g:Rcfg.csv_delim == ";")
-        let start_options += ['options(nvimcom.delim = "' . g:Rcfg.csv_delim. '")']
-    else
-        let start_options += ['options(nvimcom.delim = "\t")']
-    endif
-    let start_options += ['options(nvimcom.source.path = "' . s:Rsource_read . '")']
-
-    let rwd = ""
-    if g:Rcfg.nvim_wd == 0
-        let rwd = s:RGetBufDir()
-    elseif g:Rcfg.nvim_wd == 1
-        let rwd = getcwd()
-    endif
-    if rwd != "" && !has_key(g:Rcfg, "remote_compldir")
-        if has("win32")
-            let rwd = substitute(rwd, '\\', '/', 'g')
-        endif
-
-        " `rwd` will not be a real directory if editing a file on the internet
-        " with netrw plugin
-        if isdirectory(rwd)
-            let start_options += ['setwd("' . rwd . '")']
-        endif
-    endif
-
-    if len(g:Rcfg.after_start) > 0
-        let extracmds = deepcopy(g:Rcfg.after_start)
-        call filter(extracmds, 'v:val =~ "^R:"')
-        if len(extracmds) > 0
-            call map(extracmds, 'substitute(v:val, "^R:", "", "")')
-            let start_options += extracmds
-        endif
-    endif
-
-    if &encoding == "utf-8"
-        call writefile(start_options, g:rplugin.tmpdir . "/start_options_utf8.R")
-    else
-        call writefile(start_options, g:rplugin.tmpdir . "/start_options.R")
-    endif
-
-    " Required to make R load nvimcom without the need of the user including
-    " library(nvimcom) in his or her ~/.Rprofile.
-    if $R_DEFAULT_PACKAGES == ""
-        let $R_DEFAULT_PACKAGES = "datasets,utils,grDevices,graphics,stats,methods,nvimcom"
-    elseif $R_DEFAULT_PACKAGES !~ "nvimcom"
-        let $R_DEFAULT_PACKAGES .= ",nvimcom"
-    endif
-
-    if exists("g:RStudio_cmd")
-        let $R_DEFAULT_PACKAGES .= ",rstudioapi"
-        call StartRStudio()
-        return
-    endif
-
-    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
-        call StartR_InBuffer()
-        return
-    endif
-
-    if g:Rcfg.applescript
-        call StartR_OSX()
-        return
-    endif
-
-    if has("win32")
-        call StartR_Windows()
-        return
-    endif
-
-    if IsSendCmdToRFake()
-        return
-    endif
-
-    let args_str = join(g:rplugin.r_args)
-    if args_str == ""
-        let rcmd = g:rplugin.R
-    else
-        let rcmd = g:rplugin.R . " " . args_str
-    endif
-
-    call StartR_ExternalTerm(rcmd)
+    exe 'lua require("r.run").signal_to_R("' . a:whatr . '")'
 endfunction
 
 " Send SIGINT to R
 function SignalToR(signal)
-    if g:rplugin.R_pid
-        call system('kill -s ' . a:signal . ' ' . g:rplugin.R_pid)
-    endif
+    exe 'lua require("r.run").signal_to_R(' . a:signal . ')'
 endfunction
 
 
 function CheckIfNvimcomIsRunning(...)
-    let s:nseconds = s:nseconds - 1
-    if g:rplugin.R_pid == 0
-        if s:nseconds > 0
-            call timer_start(1000, "CheckIfNvimcomIsRunning")
-        else
-            let msg = "The package nvimcom wasn't loaded yet. Please, quit R and try again."
-            call RWarningMsg(msg)
-            sleep 500m
-        endif
-    endif
+    exe 'lua require("r.run").check_nvimcom_running()'
 endfunction
 
 function WaitNvimcomStart()
-    let args_str = join(g:rplugin.r_args)
-    if args_str =~ "vanilla"
-        return 0
-    endif
-    if g:Rcfg.wait < 2
-        g:Rcfg.wait = 2
-    endif
-
-    let s:nseconds = g:Rcfg.wait
-    call timer_start(1000, "CheckIfNvimcomIsRunning")
+    exe 'lua require("r.run").wait_nvimcom_start()'
 endfunction
 
 function SetNvimcomInfo(nvimcomversion, rpid, wid, r_info)
-    let g:rplugin.debug_info['Time']['start_R'] = reltimefloat(reltime(g:rplugin.debug_info['Time']['start_R'], reltime()))
-    if filereadable(g:rplugin.home . '/R/nvimcom/DESCRIPTION')
-        let ndesc = readfile(g:rplugin.home . '/R/nvimcom/DESCRIPTION')
-        let current = substitute(matchstr(ndesc, '^Version: '), 'Version: ', '', '')
-        if a:nvimcomversion != current
-            call RWarningMsg('Mismatch in nvimcom versions: R (' . a:nvimcomversion . ') and Vim (' . current . ')')
-            sleep 1
-        endif
-    endif
-
-    let $R_DEFAULT_PACKAGES = s:r_default_pkgs
-
-    let g:rplugin.R_pid = a:rpid
-    let $RCONSOLE = a:wid
-
-    let Rinfo = split(a:r_info, "\x12")
-    let s:R_version = Rinfo[0]
-    if !has_key(g:Rcfg, "OutDec")
-        let g:Rcfg.OutDec = Rinfo[1]
-    endif
-    if !has_key(g:Rcfg, 'R_prompt_str')
-        let prompt_str = substitute(Rinfo[2], ' $', '', '')
-        let g:Rcfg.R_prompt_str = substitute(prompt_str, '.*#N#', '', '')
-    endif
-    if !has_key(g:Rcfg, 'R_continue_str')
-        let continue_str = substitute(Rinfo[3], ' $', '', '')
-        let g:Rcfg.R_continue_str = substitute(continue_str, '.*#N#', '', '')
-    endif
-
-    if has_key(g:rplugin, "R_bufnr")
-        " Put the cursor and the end of the buffer to ensure automatic scrolling
-        " See: https://github.com/neovim/neovim/issues/2636
-        let isnormal = mode() ==# 'n'
-        let curwin = winnr()
-        exe 'sb ' . g:rplugin.R_bufnr
-        if has_key(g:Rcfg, 'hl_term')
-            let hl_term = g:Rcfg.hl_term
-        else
-            if Rinfo[4] =~# '1'
-                let hl_term = 0
-            else
-                let hl_term = 1
-            endif
-        endif
-        if hl_term
-            set syntax=rout
-        endif
-        call cursor('$', 1)
-        exe curwin . 'wincmd w'
-        if isnormal
-            stopinsert
-        endif
-    endif
-
-    if IsJobRunning("Server")
-        " Set RConsole window ID in nvimrserver to ArrangeWindows()
-        if has("win32")
-            if $RCONSOLE == "0"
-                call RWarningMsg("nvimcom did not save R window ID")
-            endif
-        endif
-    else
-        call RWarningMsg("nvimcom is not running")
-    endif
-
-    if exists("g:RStudio_cmd")
-        if has("win32") && g:Rcfg.arrange_windows && filereadable(g:rplugin.compldir . "/win_pos")
-            " ArrangeWindows
-            call JobStdin(g:rplugin.jobs["Server"], "85" . g:rplugin.compldir . "\n")
-        endif
-    elseif has("win32")
-        if g:Rcfg.arrange_windows && filereadable(g:rplugin.compldir . "/win_pos")
-            " ArrangeWindows
-            call JobStdin(g:rplugin.jobs["Server"], "85" . g:rplugin.compldir . "\n")
-        endif
-    elseif g:Rcfg.applescript
-        call foreground()
-        sleep 200m
-    else
-        call delete(g:rplugin.tmpdir . "/initterm_" . $NVIMR_ID . ".sh")
-        call delete(g:rplugin.tmpdir . "/openR")
-    endif
-
-    if type(g:Rcfg.after_start) == v:t_list
-        for cmd in g:Rcfg.after_start
-            if cmd =~ '^!'
-                call system(substitute(cmd, '^!', '', ''))
-            elseif cmd =~ '^:'
-                exe substitute(cmd, '^:', '', '')
-            elseif cmd !~ '^R:'
-                call RWarningMsg("R_after_start must be a list of strings starting with 'R:', '!', or ':'")
-            endif
-        endfor
-    endif
-    call timer_start(1000, "SetSendCmdToR")
-    if g:Rcfg.objbr_auto_start
-        let s:autosttobjbr = 1
-        call timer_start(1010, "RObjBrowser")
-    endif
+    exe 'lua require("r.run").set_nvimcom_info("' . a:nvimcomversion . '", "' . a:rpid . '", "' . a:wid . '", "' . a:r_info '")'
 endfunction
 
 function SetSendCmdToR(...)
@@ -417,15 +116,7 @@ function RQuit(how)
 endfunction
 
 function ClearRInfo()
-    call delete(g:rplugin.tmpdir . "/globenv_" . $NVIMR_ID)
-    call delete(g:rplugin.localtmpdir . "/liblist_" . $NVIMR_ID)
-    let g:SendCmdToR = function('SendCmdToR_fake')
-    let g:rplugin.R_pid = 0
-
-    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
-        call CloseRTerm()
-    endif
-    call JobStdin(g:rplugin.jobs["Server"], "43\n")
+    exe 'lua require("r.run").clear_R_info()'
 endfunction
 
 let s:wait_nvimcom = 0
@@ -438,20 +129,7 @@ let s:wait_nvimcom = 0
 " Send a message to nvimrserver job which will send the message to nvimcom
 " through a TCP connection.
 function SendToNvimcom(code, attch)
-    if string(g:SendCmdToR) == "function('SendCmdToR_fake')"
-        call RWarningMsg("R is not running")
-        return
-    endif
-    if s:wait_nvimcom && string(g:SendCmdToR) == "function('SendCmdToR_NotYet')"
-        call RWarningMsg("R is not ready yet")
-        return
-    endif
-
-    if !IsJobRunning("Server")
-        call RWarningMsg("Server not running.")
-        return
-    endif
-    call JobStdin(g:rplugin.jobs["Server"], "2" . a:code . $NVIMR_ID . a:attch . "\n")
+    exe 'lua require("r.run").send_to_nvimcom("' . a:code . '", "' . a:attch . '")'
 endfunction
 
 
@@ -1945,52 +1623,3 @@ function RBuildTags()
     endif
     call g:SendCmdToR('rtags(ofile = "etags"); etags2ctags("etags", "tags"); unlink("etags")')
 endfunction
-
-
-"==============================================================================
-" Set variables
-"==============================================================================
-
-
-
-let s:r_default_pkgs  = $R_DEFAULT_PACKAGES
-
-" Avoid problems if either R_rconsole_width or R_rconsole_height is a float
-" number (https://github.com/jalvesaq/Nvim-R/issues/751#issuecomment-1742784447).
-if type(g:Rcfg.rconsole_width) == v:t_float
-    let R_rconsole_width = float2nr(g:Rcfg.rconsole_width)
-endif
-if type(g:Rcfg.rconsole_height) == v:t_float
-    let R_rconsole_height = float2nr(g:Rcfg.rconsole_height)
-endif
-
-
-if type(g:Rcfg.after_start) != v:t_list
-    call RWarningMsg('R_after_start must be a list of strings')
-    sleep 1
-    let g:Rcfg.after_start = []
-endif
-
-" Make the file name of files to be sourced
-if has_key(g:Rcfg, "remote_compldir")
-    let s:Rsource_read = g:Rcfg.remote_compldir . "/tmp/Rsource-" . getpid()
-else
-    let s:Rsource_read = g:rplugin.tmpdir . "/Rsource-" . getpid()
-endif
-let s:Rsource_write = g:rplugin.tmpdir . "/Rsource-" . getpid()
-call AddForDeletion(s:Rsource_write)
-
-let s:running_objbr = 0
-let s:running_rhelp = 0
-let g:rplugin.R_pid = 0
-
-" List of marks that the plugin seeks to find the block to be sent to R
-let s:all_marks = "abcdefghijklmnopqrstuvwxyz"
-
-if filewritable('/dev/null')
-    let s:null = "'/dev/null'"
-elseif has("win32") && filewritable('NUL')
-    let s:null = "'NUL'"
-else
-    let s:null = 'tempfile()'
-endif

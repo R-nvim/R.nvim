@@ -130,7 +130,7 @@ struct sockaddr_in servaddr; // Server address structure
 static int sockfd;           // socket file descriptor
 static int connfd;           // Connection file descriptor
 
-#define Debug_NRS_
+#define Debug_NRS
 __attribute__((format(printf, 1, 2))) static void
 Log(const char *fmt, ...) // Logging function for debugging
 {
@@ -2038,7 +2038,7 @@ static void init(void) {
     update_pkg_list(NULL);
     build_omnils();
 
-    printf("let g:rplugin.nrs_running = 1\n");
+    printf("let g:R_Nvim_status = 3\n");
     fflush(stdout);
 
     Log("init() finished");

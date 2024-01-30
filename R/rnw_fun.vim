@@ -328,7 +328,7 @@ function SyncTeX_backward(fname, ln)
     endif
     if filereadable(basenm . "-concordance.tex")
         if !filereadable(basenm . ".tex")
-            call RWarningMsg('SyncTeX [Nvim-R]: "' . basenm . '.tex" not found.')
+            call RWarningMsg('SyncTeX [R-Nvim]: "' . basenm . '.tex" not found.')
             return
         endif
         let concdata = SyncTeX_readconc(basenm)
@@ -349,7 +349,7 @@ function SyncTeX_backward(fname, ln)
         endif
     else
         if filereadable(basenm . ".Rnw") || filereadable(basenm . ".rnw")
-            call RWarningMsg('SyncTeX [Nvim-R]: "' . basenm . '-concordance.tex" not found.')
+            call RWarningMsg('SyncTeX [R-Nvim]: "' . basenm . '-concordance.tex" not found.')
             return
         elseif filereadable(flnm)
             let rnwf = flnm
@@ -408,11 +408,11 @@ function SyncTeX_forward(...)
                     return
                 endif
             else
-                call RWarningMsg('Nvim-R [SyncTeX]: "' . basenm . '-concordance.tex" not found.')
+                call RWarningMsg('R-Nvim [SyncTeX]: "' . basenm . '-concordance.tex" not found.')
                 return
             endif
         else
-            call RWarningMsg('SyncTeX [Nvim-R]: "' . basenm . '-concordance.tex" not found.')
+            call RWarningMsg('SyncTeX [R-Nvim]: "' . basenm . '-concordance.tex" not found.')
             return
         endif
     endif

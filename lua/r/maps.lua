@@ -154,21 +154,21 @@ M.send = function()
     M.create('v', 'RSendSelAndInsertOutput', 'so', ':call SendSelectionToR("echo", "stay", "NewtabInsert")')
 
     -- Paragraph
-    M.create('ni', 'RSendParagraph',   'pp', ':call SendParagraphToR("silent", "stay")')
-    M.create('ni', 'RESendParagraph',  'pe', ':call SendParagraphToR("echo", "stay")')
-    M.create('ni', 'RDSendParagraph',  'pd', ':call SendParagraphToR("silent", "down")')
-    M.create('ni', 'REDSendParagraph', 'pa', ':call SendParagraphToR("echo", "down")')
+    M.create('ni', 'RSendParagraph',   'pp', ':lua require("r.send").paragraph("silent", "stay")')
+    M.create('ni', 'RESendParagraph',  'pe', ':lua require("r.send").paragraph("echo", "stay")')
+    M.create('ni', 'RDSendParagraph',  'pd', ':lua require("r.send").paragraph("silent", "down")')
+    M.create('ni', 'REDSendParagraph', 'pa', ':lua require("r.send").paragraph("echo", "down")')
 
     if vim.o.filetype == "rnoweb" or vim.o.filetype == "rmd" or vim.o.filetype == "quarto" or vim.o.filetype == "rrst" then
         M.create('ni', 'RSendChunkFH', 'ch', ':call SendFHChunkToR()')
     end
 
     -- *Line*
-    M.create('ni',  'RSendLine', 'l', ':call SendLineToR("stay")')
-    M.create('ni0', 'RDSendLine', 'd', ':call SendLineToR("down")')
+    M.create('ni',  'RSendLine', 'l', ':lua require("r.send").line("stay")')
+    M.create('ni0', 'RDSendLine', 'd', ':lua require("r.send").line("down")')
     M.create('ni0', '(RDSendLineAndInsertOutput)', 'o', ':call SendLineToRAndInsertOutput()')
     M.create('v',   '(RDSendLineAndInsertOutput)', 'o', ':call RWarningMsg("This command does not work over a selection of lines.")')
-    M.create('i',   'RSendLAndOpenNewOne', 'q', ':call SendLineToR("newline")')
+    M.create('i',   'RSendLAndOpenNewOne', 'q', ':lua require("r.send").line("newline")')
     M.create('ni.', 'RSendMotion', 'm', ':set opfunc=SendMotionToR<CR>g@')
     M.create('n',   'RNLeftPart', 'r<left>', ':call RSendPartOfLine("left", 0)')
     M.create('n',   'RNRightPart', 'r<right>', ':call RSendPartOfLine("right", 0)')

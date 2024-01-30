@@ -3,7 +3,14 @@ local M = {}
 local config = require('r.config')
 local cursor = require('r.cursor')
 local paragraph = require('r.paragraph')
-local chunk = require('r.chunk')
+
+M.not_ready = function (_)
+    require("r").warn("R is not ready yet.")
+end
+
+M.cmd = function (_)
+    require("r").warn("Did you start R?")
+end
 
 M.GetSourceArgs = function(e)
   -- local sargs = config.get_config().source_args or ''
@@ -40,6 +47,13 @@ M.paragraph = function(e, m)
   if m == 'down' then
     cursor.move_next_paragraph()
   end
+end
+
+M.line = function (m)
+    M.cmd(vim.fn.getline(vim.fn.line(".")))
+    if m == "down" then
+        cursor.move_next_line()
+    end
 end
 
 return M

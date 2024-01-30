@@ -43,7 +43,7 @@ goal.
 
        ```sh
        #!/bin/sh
-       sshfs remotelogin@remotehost:/home/remotelogin/.cache/Nvim-R ~/.remoteR
+       sshfs remotelogin@remotehost:/home/remotelogin/.cache/R-Nvim ~/.remoteR
        ```
 
      - Create the shell script `~/bin/sshR` with the following contents, and
@@ -91,7 +91,7 @@ goal.
        R_app = '/home/locallogin/bin/sshR'
        R_cmd = '/home/locallogin/bin/sshR'
        compldir = '/home/locallogin/.remoteR'
-       remote_compldir = '/home/remotelogin/.cache/Nvim-R'
+       remote_compldir = '/home/remotelogin/.cache/R-Nvim'
        local_R_library_dir = '/path/to/local/R/library' -- where nvimcom is installed
        ```
 
@@ -110,7 +110,7 @@ goal.
 
        ```sh
        cd /tmp
-       R CMD build /path/to/Nvim-R/R/nvimcom
+       R CMD build /path/to/R-Nvim/R/nvimcom
        scp nvimcom_0.9-149.tar.gz remotelogin@remotehost:/tmp
        ssh remotelogin@remotehost
        cd /tmp
@@ -121,7 +121,7 @@ goal.
 
 Running R on a remote machine will make a lot of data to be transferred
 through a TCP connection between the R package `nvimcom` and the application
-`nvimrserver` run by Nvim-R. If your connection is not fast enough or its
+`nvimrserver` run by R-Nvim. If your connection is not fast enough or its
 latency is too high, you could consider using
 [vimcmdline](https://github.com/jalvesaq/vimcmdline) or a similar plugin. Of
 course, none of NvimR's features that depend on information on R's workspace
@@ -136,7 +136,7 @@ vim.g.cmdline_app = {
 }
 ```
 
-Most of Nvim-R's key bindings call functions that send code to R, and, because they
+Most of R-Nvim's key bindings call functions that send code to R, and, because they
 will not be used, it is better to disable them:
 
 ```lua

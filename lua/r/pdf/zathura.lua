@@ -53,9 +53,9 @@ local RStart_Zathura = function (fullpath)
             local max_pid = tonumber(vim.fn.readfile("/proc/sys/kernel/pid_max")[1])
             if pid > 0 and pid <= max_pid then
                 vim.fn.system('dbus-send --print-reply --session --dest=org.pwmt.zathura.PID-' .. pid .. ' /org/pwmt/zathura org.pwmt.zathura.CloseDocument')
-                vim.cmd("sleep 5m")
+                vim.wait(5)
                 vim.fn.system('kill ' .. pid)
-                vim.cmd("sleep 5m")
+                vim.wait(5)
             end
         end
     end
@@ -73,7 +73,7 @@ M.open = function(fullpath)
     end
 
     -- Time for Zathura to reload the PDF
-    vim.cmd("sleep 200m")
+    vim.wait(200)
 
     local fname = vim.fn.substitute(fullpath, ".*/", "", "")
 
@@ -110,7 +110,7 @@ M.SyncTeX_forward = function (tpath, ppath, texln, tryagain)
 
     if not zathura_pid[ppath] or (zathura_pid[ppath] and zathura_pid[ppath] == 0) then
         RStart_Zathura(ppath)
-        vim.cmd("sleep 900m")
+        vim.wait(900)
     end
 
     local result = vim.fn.system("zathura --synctex-forward=" .. texln .. ":1:" .. texname .. " --synctex-pid=" .. zathura_pid[ppath] .. " " .. pdfname)
@@ -118,7 +118,7 @@ M.SyncTeX_forward = function (tpath, ppath, texln, tryagain)
         zathura_pid[ppath] = 0
         if tryagain then
             RStart_Zathura(ppath)
-            vim.cmd("sleep 900m")
+            vim.wait(900)
             M.SyncTeX_forward(tpath, ppath, texln, false)
         else
             vim.notify(vim.fn.substitute(result, "\n", " ", "g"), vim.log.levels.WARN)

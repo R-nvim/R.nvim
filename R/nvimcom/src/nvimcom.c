@@ -106,7 +106,7 @@ static int flag_debug = 0;  // Do we need to get file name and line information
  * @brief Structure with name and version number of a library.
  *
  * The complete information of libraries is stored in its `omnils_`, `fun_` and
- * `args_` files in the Nvim-R cache directory. The nvimrserver only needs the
+ * `args_` files in the R-Nvim cache directory. The nvimrserver only needs the
  * name and version number of the library to read the corresponding files.
  *
  */
@@ -225,9 +225,9 @@ static void send_to_nvim(char *msg) {
     sent = send(sfd, b, tcp_header_len, 0);
     if (sent != tcp_header_len) {
         if (sent == -1)
-            REprintf("Error sending message header to Nvim-R: -1\n");
+            REprintf("Error sending message header to R-Nvim: -1\n");
         else
-            REprintf("Error sending message header to Nvim-R: %zu x %zu\n",
+            REprintf("Error sending message header to R-Nvim: %zu x %zu\n",
                      tcp_header_len, sent);
 #ifdef WIN32
         closesocket(sfd);
@@ -250,7 +250,7 @@ static void send_to_nvim(char *msg) {
         if (sent >= 0) {
             pCur += sent;
         } else if (sent == -1) {
-            REprintf("Error sending message to Nvim-R: %zu x %zu\n", len,
+            REprintf("Error sending message to R-Nvim: %zu x %zu\n", len,
                      pCur - msg);
             return;
         }
@@ -259,7 +259,7 @@ static void send_to_nvim(char *msg) {
             // The goal here is to avoid infinite loop.
             // TODO: Maybe delete this check because php code does not have
             // something similar
-            REprintf("Too many attempts to send message to Nvim-R: %zu x %zu\n",
+            REprintf("Too many attempts to send message to R-Nvim: %zu x %zu\n",
                      len, sent);
             return;
         }
@@ -268,7 +268,7 @@ static void send_to_nvim(char *msg) {
     // End the message with \x11
     sent = send(sfd, "\x11", 1, 0);
     if (sent != 1)
-        REprintf("Error sending final byte to Nvim-R: 1 x %zu\n", sent);
+        REprintf("Error sending final byte to R-Nvim: 1 x %zu\n", sent);
 }
 
 /**
@@ -642,7 +642,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
 /**
  * @brief Generate a list of objects in .GlobalEnv and store it in the
  * glbnvbuf2 buffer. The string stored in glbnvbuf2 represents a file with the
- * same format of the `omnils_` files in Nvim-R's cache directory.
+ * same format of the `omnils_` files in R-Nvim's cache directory.
  */
 static void nvimcom_globalenv_list(void) {
     if (verbose > 4)
@@ -704,7 +704,7 @@ static void nvimcom_globalenv_list(void) {
 }
 
 /**
- * @brief Send to Nvim-R the string containing the list of objects in
+ * @brief Send to R-Nvim the string containing the list of objects in
  * .GlobalEnv.
  */
 static void send_glb_env(void) {
@@ -717,7 +717,7 @@ static void send_glb_env(void) {
     send_to_nvim(send_ge_buf);
 
     if (verbose > 3)
-        REprintf("Time to send message to Nvim-R: %f\n",
+        REprintf("Time to send message to R-Nvim: %f\n",
                  1000 * ((double)clock() - t1) / CLOCKS_PER_SEC);
 
     char *tmp = glbnvbuf1;
@@ -751,7 +751,7 @@ static void nvimcom_eval_expr(const char *buf) {
          * a semicolon. */
         PROTECT(ans = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
         if (er && verbose > 1) {
-            strcpy(rep, "call RWarningMsg('Error running: ");
+            strcpy(rep, "lua require('r').warn('Error running: ");
             strncat(rep, buf2, 80);
             strcat(rep, "')");
             send_to_nvim(rep);
@@ -759,7 +759,7 @@ static void nvimcom_eval_expr(const char *buf) {
         UNPROTECT(1);
     } else {
         if (verbose > 1) {
-            strcpy(rep, "call RWarningMsg('Invalid command: ");
+            strcpy(rep, "lua require('r').warn('Invalid command: ");
             strncat(rep, buf2, 80);
             strcat(rep, "')");
             send_to_nvim(rep);
@@ -770,7 +770,7 @@ static void nvimcom_eval_expr(const char *buf) {
 
 /**
  * @brief Send the names and version numbers of currently loaded libraries to
- * Nvim-R.
+ * R-Nvim.
  */
 static void send_libnames(void) {
     LibInfo *lib;
@@ -1046,7 +1046,7 @@ static int nvimcom_read_console(const char *prompt, unsigned char *buf, int len,
 
 /**
  * @brief This function is called after the TCP connection with the nvimrserver
- * is established. Its goal is to pass to Nvim-R information on the running R
+ * is established. Its goal is to pass to R-Nvim information on the running R
  * instance.
  *
  * @param r_info Information on R (see `.onAttach()` at R/nvimcom.R)
@@ -1058,18 +1058,18 @@ static void nvimcom_send_running_info(const char *r_info, const char *nvv) {
 #ifdef WIN32
 #ifdef _WIN64
     snprintf(msg, 2175,
-             "call SetNvimcomInfo('%s', %" PRId64 ", '%" PRId64 "', '%s')", nvv,
+             "lua require('r.run').set_nvimcom_info('%s', %" PRId64 ", '%" PRId64 "', '%s')", nvv,
              R_PID, (long long)GetForegroundWindow(), r_info);
 #else
-    snprintf(msg, 2175, "call SetNvimcomInfo('%s', %d, '%ld', '%s')", nvv,
+    snprintf(msg, 2175, "lua require('r.run').set_nvimcom_info('%s', %d, '%ld', '%s')", nvv,
              R_PID, (long)GetForegroundWindow(), r_info);
 #endif
 #else
     if (getenv("WINDOWID"))
-        snprintf(msg, 2175, "call SetNvimcomInfo('%s', %d, '%s', '%s')", nvv,
+        snprintf(msg, 2175, "lua require('r.run').set_nvimcom_info('%s', %d, '%s', '%s')", nvv,
                  R_PID, getenv("WINDOWID"), r_info);
     else
-        snprintf(msg, 2175, "call SetNvimcomInfo('%s', %d, '0', '%s')", nvv,
+        snprintf(msg, 2175, "lua require('r.run').set_nvimcom_info('%s', %d, '0', '%s')", nvv,
                  R_PID, r_info);
 #endif
     send_to_nvim(msg);
@@ -1251,7 +1251,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, int *dbg, char **nvv,
     } else {
         if (verbose)
             REprintf("nvimcom: It seems that R was not started by Neovim. The "
-                     "communication with Nvim-R will not work.\n");
+                     "communication with R-Nvim will not work.\n");
         tmpdir[0] = 0;
         return;
     }
