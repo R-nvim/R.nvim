@@ -1,5 +1,8 @@
 local config = require("r.config").get_config()
+local warn = require("r").warn
 local R64app = nil
+
+local M = {}
 
 M.start_Rapp = function()
     if vim.g.R_Nvim_status == 5 then
@@ -17,12 +20,12 @@ M.start_Rapp = function()
     if args_str ~= " " and args_str ~= "" then
         -- https://github.com/jcfaria/Vim-R-plugin/issues/63
         -- https://stat.ethz.ch/pipermail/r-sig-mac/2013-February/009978.html
-        vim.fn.RWarningMsg('R.app does not support command line arguments. To pass "' ..
+        warn('R.app does not support command line arguments. To pass "' ..
         args_str .. '" to R, you must put "applescript = 0" in your config to run R in a terminal emulator.')
     end
     local rlog = vim.fn.system("open " .. rcmd)
     if vim.v.shell_error ~= 0 then
-        vim.fn.RWarningMsg(rlog)
+        warn(rlog)
     end
     vim.g.SendCmdToR = function(...) return M.send_cmd_to_Rapp(...) end
     require("r.run").wait_nvimcom_start()
@@ -38,3 +41,5 @@ M.send_cmd_to_Rapp = function(command, _)
     vim.fn.system("osascript -e 'tell application \"" .. rcmd .. "\" to cmd \"" .. cmd .. "\"'")
     return 1
 end
+
+return M

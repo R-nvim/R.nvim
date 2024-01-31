@@ -82,7 +82,7 @@ M.on_exit = function (job_id, data, _)
         warn('"' .. key .. '"' .. ' exited with status ' .. data)
     end
     if key == 'R' or key == 'RStudio' then
-        vim.fn.ClearRInfo()
+        require("r.run").clear_R_info()
     end
     if key == 'Server' then
         vim.g.rplugin.R_Nvim_status = 1

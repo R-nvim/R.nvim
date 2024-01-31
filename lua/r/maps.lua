@@ -115,9 +115,8 @@ M.start = function()
     M.create('nvi', 'RCustomStart', 'rc', ':lua require("r.run").start_R("custom")')
 
     -- Close
-    M.create('nvi', 'RClose',       'rq', ":call RQuit('nosave')")
-    M.create('nvi', 'RSaveClose',   'rw', ":call RQuit('save')")
-
+    M.create('nvi', 'RClose',       'rq', ":lua require('r.run').quit_R('nosave')")
+    M.create('nvi', 'RSaveClose',   'rw', ":lua require('r.run').quit_R('save')")
 end
 
 M.edit = function()

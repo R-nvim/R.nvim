@@ -15,47 +15,6 @@ function s:RGetBufDir()
     return rwd
 endfunction
 
-" Quit R
-function RQuit(how)
-    if exists("b:quit_command")
-        let qcmd = b:quit_command
-    else
-        if a:how == "save"
-            let qcmd = 'quit(save = "yes")'
-        else
-            let qcmd = 'quit(save = "no")'
-        endif
-    endif
-
-    if has("win32")
-	if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term
-	    " SaveWinPos
-	    call JobStdin("Server", "84" . $NVIMR_COMPLDIR . "\n")
-	endif
-	call JobStdin("Server", "2QuitNow\n")
-    endif
-
-    if bufloaded('Object_Browser')
-        exe 'bunload! Object_Browser'
-        sleep 30m
-    endif
-
-    call g:SendCmdToR(qcmd)
-
-    if a:how == 'save'
-        sleep 200m
-    endif
-
-    sleep 50m
-    call ClearRInfo()
-endfunction
-
-function ClearRInfo()
-    exe 'lua require("r.run").clear_R_info()'
-endfunction
-
-let s:wait_nvimcom = 0
-
 
 "==============================================================================
 " Internal communication with R

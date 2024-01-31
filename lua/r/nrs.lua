@@ -159,7 +159,7 @@ local StartNServer = function ()
     -- We have to set R's home directory on Windows because nvimrserver will
     -- run R to build the list for omni completion.
     if vim.fn.has('win32') == 1 then
-        vim.fn.SetRHome()
+        require("r.windows").set_R_home()
     end
 
     local nrs_opts = {
@@ -172,7 +172,7 @@ local StartNServer = function ()
     vim.g.R_Nvim_status = 2
 
     if vim.fn.has('win32') == 1 then
-        vim.fn.UnsetRHome()
+        require("r.windows").unset_R_home()
     end
 
     vim.fn.delete(cfg.tmpdir .. '/run_R_stdout')

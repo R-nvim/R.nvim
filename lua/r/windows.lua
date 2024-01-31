@@ -1,4 +1,5 @@
 local config = require("r.config").get_config()
+local warn = require("r").warn
 local saved_home = nil
 local M = {}
 
@@ -34,7 +35,7 @@ M.start_Rgui = function()
     vim.g.R_Nvim_status = 4
 
     if vim.fn.match(config.R_app, 'Rterm') then
-        vim.fn.RWarningMsg('"R_app" cannot be "Rterm.exe". R will crash if you send any command.')
+        warn('"R_app" cannot be "Rterm.exe". R will crash if you send any command.')
         vim.wait(200)
     end
 
