@@ -43,12 +43,6 @@ endfunction
 " Check Vim/Neovim version
 "==============================================================================
 
-if !has("nvim-0.6.0")
-    call RWarningMsg("R-Nvim requires Neovim >= 0.6.0.")
-    let g:rplugin.failed = 1
-    finish
-endif
-
 " Convert <M--> into <-
 function RAssign()
     lua require("r.edit").assign()

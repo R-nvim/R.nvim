@@ -8,6 +8,8 @@
 
 let g:SendCmdToR = luaeval('require("r.send").cmd')
 
+let g:rplugin = {}
+
 function s:RGetBufDir()
     let rwd = nvim_buf_get_name(0)
     if has("win32")
@@ -48,7 +50,7 @@ endfunction
 
 " Start R
 function ReallyStartR(whatr)
-    exe 'lua require("r.run").signal_to_R("' . a:whatr . '")'
+    exe 'lua require("r.run").really_start_R("' . a:whatr . '")'
 endfunction
 
 " Send SIGINT to R
@@ -552,8 +554,8 @@ function SetRTextWidth(rkeyword)
         endif
         unlet s:tnr
     endif
-    if !bufloaded(s:rdoctitle) || g:rplugin.newsize == 1
-        let g:rplugin.newsize = 0
+    if !bufloaded(s:rdoctitle) || g:rplugin_newsize == 1
+        let g:rplugin_newsize = 0
 
         " s:vimpager is used to calculate the width of the R help documentation
         " and to decide whether to obey R_nvimpager = 'vertical'
@@ -713,7 +715,6 @@ function ShowRDoc(rkeyword, txt)
     endif
 
     setlocal modifiable
-    let g:rplugin.curbuf = bufname("%")
 
     let save_unnamed_reg = @@
     set modifiable

@@ -1,4 +1,4 @@
-local cfg = require("r.config").get_config()
+local config = require("r.config").get_config()
 
 local zathura_pid = {}
 
@@ -44,7 +44,7 @@ local RStart_Zathura = function (fullpath)
     if zathura_pid[fullpath] and zathura_pid[fullpath] ~= 0 then
         -- Use the recorded pid to kill Zathura
         vim.fn.system('kill ' .. zathura_pid[fullpath])
-    elseif vim.g.rplugin.has_wmctrl and has_dbus_send and vim.fn.filereadable("/proc/sys/kernel/pid_max") then
+    elseif config.has_wmctrl and has_dbus_send and vim.fn.filereadable("/proc/sys/kernel/pid_max") then
         -- Use wmctrl to check if the pdf is already open and get Zathura's PID
         -- to close the document and kill Zathura.
         local info = vim.fn.filter(vim.fn.split(vim.fn.system("wmctrl -xpl"), "\n"), 'v:val =~ "Zathura.*' .. fname .. '"')
@@ -60,14 +60,13 @@ local RStart_Zathura = function (fullpath)
         end
     end
 
-    vim.env.NVIMR_PORT = vim.g.rplugin.myport
     StartZathuraNeovim(fullpath)
 end
 
 local M = {}
 
 M.open = function(fullpath)
-    if cfg.openpdf == 1 then
+    if config.openpdf == 1 then
         RStart_Zathura(fullpath)
         return
     end

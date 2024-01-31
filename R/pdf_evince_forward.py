@@ -110,7 +110,7 @@ class EvinceWindowProxy:
                 nvimr_cmd("call Evince_Again()")
         else:
             self.window.SyncView(input_file, data, 0,  dbus_interface = "org.gnome.evince.Window")
-            nvimr_cmd("let g:rplugin.evince_loop = 0")
+            nvimr_cmd("let g:rplugin.evince_loop = 0") # FIXME: don't use global variable
 
     def _syncview_handler(self, window_list):
         self.handle_get_window_list_reply(window_list)

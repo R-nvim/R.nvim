@@ -1,4 +1,5 @@
 
+local config = require("r.config").get_config()
 local sumatra_in_path = 0
 
 local function SumatraInPath()
@@ -34,9 +35,8 @@ M.open = function (fullpath)
         local pdir = vim.fn.substitute(fullpath, '\\(.*\\)/.*', '\\1', '')
         local olddir = vim.fn.substitute(vim.fn.substitute(vim.fn.getcwd(), '\\', '/', 'g'), ' ', '\\ ', 'g')
         vim.cmd("cd " .. pdir)
-        vim.env.NVIMR_PORT = vim.g.rplugin.myport
-        vim.fn.writefile({'start SumatraPDF.exe -reuse-instance -inverse-search "nvimrserver.exe %%f %%l" "' .. fullpath .. '"'}, vim.g.rplugin.tmpdir .. "/run_cmd.bat")
-        vim.fn.system(vim.g.rplugin.tmpdir .. "/run_cmd.bat")
+        vim.fn.writefile({'start SumatraPDF.exe -reuse-instance -inverse-search "nvimrserver.exe %%f %%l" "' .. fullpath .. '"'}, config.tmpdir .. "/run_cmd.bat")
+        vim.fn.system(config.tmpdir .. "/run_cmd.bat")
         vim.cmd("cd " .. olddir)
     end
 end
@@ -49,9 +49,8 @@ M.SyncTeX_forward = function (tpath, ppath, texln, _)
         local pname = vim.fn.substitute(ppath, tdir .. '/', '', '')
         local olddir = vim.fn.substitute(vim.fn.substitute(vim.fn.getcwd(), '\\', '/', 'g'), ' ', '\\ ', 'g')
         vim.cmd("cd " .. vim.fn.substitute(tdir, ' ', '\\ ', 'g'))
-        vim.env.NVIMR_PORT = vim.g.rplugin.myport
-        vim.fn.writefile({'start SumatraPDF.exe -reuse-instance -forward-search "' .. tname .. '" ' .. texln .. ' -inverse-search "nvimrserver.exe %%f %%l" "' .. pname .. '"'}, vim.g.rplugin.tmpdir .. "/run_cmd.bat")
-        vim.fn.system(vim.g.rplugin.tmpdir .. "/run_cmd.bat")
+        vim.fn.writefile({'start SumatraPDF.exe -reuse-instance -forward-search "' .. tname .. '" ' .. texln .. ' -inverse-search "nvimrserver.exe %%f %%l" "' .. pname .. '"'}, config.tmpdir .. "/run_cmd.bat")
+        vim.fn.system(config.tmpdir .. "/run_cmd.bat")
         vim.cmd("cd " .. olddir)
     end
 end

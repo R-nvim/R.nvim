@@ -16,17 +16,14 @@ end
 
 M.on_stdout = function (job_id, data, _)
     local cmd
-    vim.fn.system("echo 'on_stdout 1: " .. tostring(data) .. "' >> /dev/shm/r-nvim-lua-log")
+    -- vim.fn.system("echo 'on_stdout 1: " .. tostring(data) .. "' >> /dev/shm/r-nvim-lua-log")
     for _, v in pairs(data) do
         cmd = v:gsub('\r', '')
-        vim.fn.system("echo 'on_stdout 2: \"" .. cmd .. "\"' >> /dev/shm/r-nvim-lua-log")
         if #cmd == 0 then
             goto continue
         end
 
-        vim.fn.system("echo 'on_stdout 3: \"" .. cmd .. "\"' >> /dev/shm/r-nvim-lua-log")
         if cmd:sub(1, 1) == "\x11" then
-            vim.fn.system("echo 'on_stdout 4: \"" .. cmd .. "\"' >> /dev/shm/r-nvim-lua-log")
             local cmdsplt = vim.fn.split(cmd, "\x11")
             local size = vim.fn.str2nr(cmdsplt[1])
             local received = vim.fn.strlen(cmdsplt[2])
@@ -88,7 +85,7 @@ M.on_exit = function (job_id, data, _)
         vim.fn.ClearRInfo()
     end
     if key == 'Server' then
-        vim.g.rplugin.nrs_running = 0
+        vim.g.rplugin.R_Nvim_status = 1
     end
 end
 

@@ -1,5 +1,7 @@
 local evince_list = {}
 local py = nil
+local evince_loop = 0
+local config = require("r.config").get_config()
 
 -- Check if python3 is executable, otherwise use python
 if vim.fn.executable('python3') > 0 then
@@ -21,14 +23,14 @@ M.SyncTeX_forward = function (tpath, ppath, texln, _)
     local texname = vim.fn.substitute(n1, " ", "%20", "g") .. n2
     local pdfname = vim.fn.substitute(ppath, " ", "%20", "g")
 
-    if vim.g.rplugin.evince_loop < 2 then
+    if evince_loop < 2 then
         require("r.job").start(
             "Python (Evince forward)",
-            { py, vim.g.rplugin.home .. "/R/pdf_evince_forward.py", texname, pdfname, tostring(texln) },
+            { py, config.rnvim_home .. "/R/pdf_evince_forward.py", texname, pdfname, tostring(texln) },
             nil
         )
     else
-        vim.g.rplugin.evince_loop = 0
+        evince_loop = 0
     end
     vim.fn.RRaiseWindow(vim.fn.substitute(ppath, ".*/", "", ""))
 end
@@ -38,29 +40,23 @@ M.run_EvinceBackward = function ()
     local pdfpath = vim.b.rplugin_pdfdir .. "/" .. vim.fn.substitute(basenm, ".*/", "", "")
     local did_evince = 0
 
-    if not evince_list then
-        evince_list = {}
-    else
-        for _, bb in ipairs(evince_list) do
-            if bb == pdfpath then
-                did_evince = 1
-                break
-            end
+    for _, bb in ipairs(evince_list) do
+        if bb == pdfpath then
+            did_evince = 1
+            break
         end
     end
 
     if did_evince == 0 then
         table.insert(evince_list, pdfpath)
-        vim.g.rplugin.jobs["Python (Evince backward)"] = vim.fn.StartJob(
-            { py, vim.g.rplugin.home .. "/R/pdf_evince_back.py", pdfpath },
-            vim.g.rplugin.job_handlers
-        )
+        require("r.job").start("Python (Evince backward)",
+            { py, config.rnvim_home .. "/R/pdf_evince_back.py", pdfpath }, nil)
     end
 end
 
 -- Avoid possible infinite loop
 M.Evince_Again = function ()
-    vim.g.rplugin.evince_loop = vim.g.rplugin.evince_loop + 1
+    evince_loop = evince_loop + 1
     vim.fn.SyncTeX_forward()
 end
 

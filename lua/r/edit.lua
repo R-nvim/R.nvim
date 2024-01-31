@@ -1,5 +1,5 @@
 
-local cfg = require("r.config").get_config()
+local config = require("r.config").get_config()
 
 local del_list = {}
 local rscript_name = "undefined"
@@ -9,7 +9,7 @@ local M = {}
 
 M.assign = function ()
     if vim.o.filetype ~= "r" and vim.b.IsInRCode(false) ~= 1 then
-        vim.fn.feedkeys(cfg.assign_map, "n")
+        vim.fn.feedkeys(config.assign_map, "n")
     else
         vim.fn.feedkeys(" <- ", "n")
     end
@@ -60,7 +60,6 @@ M.get_keyword = function()
 end
 
 M.buf_enter = function ()
-    vim.g.rplugin.curbuf = vim.fn.bufname("%")
     if vim.o.filetype == "r" or vim.o.filetype == "rnoweb" or vim.o.filetype == "rmd" or
         vim.o.filetype == "quarto" or vim.o.filetype == "rrst" or vim.o.filetype == "rhelp" then
         rscript_name = vim.fn.bufname("%")
@@ -91,9 +90,9 @@ M.vim_leave = function ()
     -- FIXME: check if rmdir is executable during startup and asynchronously
     -- because executable() is slow on Mac OS X.
     if vim.fn.executable("rmdir") == 1 then
-        vim.fn.jobstart("rmdir '" .. vim.g.rplugin.tmpdir .. "'", {detach = true})
-        if vim.g.rplugin.localtmpdir ~= vim.g.rplugin.tmpdir then
-            vim.fn.jobstart("rmdir '" .. vim.g.rplugin.localtmpdir .. "'", {detach = true})
+        vim.fn.jobstart("rmdir '" .. config.tmpdir .. "'", {detach = true})
+        if config.localtmpdir ~= config.tmpdir then
+            vim.fn.jobstart("rmdir '" .. config.localtmpdir .. "'", {detach = true})
         end
     end
 end
@@ -121,6 +120,10 @@ end
 
 M.get_debug_info = function ()
     return debug_info
+end
+
+M.raise_window = function(ttl)
+    vim.fn.RRaiseWindow(ttl)
 end
 
 return M

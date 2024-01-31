@@ -128,7 +128,7 @@ setlocal bufhidden=wipe
 setlocal nonumber
 setlocal noswapfile
 set buftype=nofile
-autocmd VimResized <buffer> let g:rplugin.newsize = 1
+autocmd VimResized <buffer> let g:rplugin_newsize = 1 " FIXME: don't use global variable
 call FixRdoc()
 autocmd FileType rdoc call FixRdoc()
 

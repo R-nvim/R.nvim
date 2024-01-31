@@ -9,6 +9,7 @@ endif
 
 setlocal iskeyword=@,48-57,_,.
 
+let s:config = luaeval('require("r.config").get_config()')
 syn case match
 
 " Normal text
@@ -36,7 +37,7 @@ syn match routNegNum "-\<\d\+\>"
 " hexadecimal number
 syn match routNumber "\<0x\([0-9]\|[a-f]\|[A-F]\)\+"
 
-if g:Rcfg.OutDec == ","
+if s:config.OutDec == ","
     syn match routFloat "\<\d\+,\d*\([Ee][-+]\=\d\+\)\="
     syn match routNegFloat "-\<\d\+,\d*\([Ee][-+]\=\d\+\)\="
     syn match routFloat "\<,\d\+\([Ee][-+]\=\d\+\)\="
@@ -74,16 +75,16 @@ syn match routDate "[0-9][0-9][0-9][0-9][-/][0-9][0-9][-/][0-9][-0-9]"
 syn match routDate "[0-9][0-9][-/][0-9][0-9][-/][0-9][0-9][0-9][-0-9]"
 syn match routDate "[0-9][0-9]:[0-9][0-9]:[0-9][-0-9]"
 
-if exists('g:Rcfg') && has_key(g:Rcfg, "Rout_more_colors") &&
-            \ has_key(g:Rcfg, "R_prompt_str") && has_key(g:Rcfg, "R_continue_str")
-    if g:Rcfg.Rout_more_colors
+if exists('s:config') && has_key(s:config, "Rout_more_colors") &&
+            \ has_key(s:config, "R_prompt_str") && has_key(s:config, "R_continue_str")
+    if s:config.Rout_more_colors
         syn include @routR syntax/r.vim
-        exe 'syn region routColoredR start=/^' . g:Rcfg.R_prompt_str . '/ end=/$/ contains=@routR keepend'
-        exe 'syn region routColoredR start=/^' . g:Rcfg.R_continue_str . '/ end=/$/ contains=@routR keepend'
+        exe 'syn region routColoredR start=/^' . s:config.R_prompt_str . '/ end=/$/ contains=@routR keepend'
+        exe 'syn region routColoredR start=/^' . s:config.R_continue_str . '/ end=/$/ contains=@routR keepend'
     else
         " Input
-        exe 'syn match routInput /^' . g:Rcfg.R_prompt_str . '.*/'
-        exe 'syn match routInput /^' . g:Rcfg.R_continue_str . '.*/'
+        exe 'syn match routInput /^' . s:config.R_prompt_str . '.*/'
+        exe 'syn match routInput /^' . s:config.R_continue_str . '.*/'
     endif
 endif
 
@@ -145,7 +146,7 @@ if v:lang =~ "^tr"
 endif
 
 " Define the default highlighting.
-if exists('g:Rcfg') && g:Rcfg.Rout_more_colors == v:false
+if s:config.Rout_more_colors == v:false
     hi def link routInput	Comment
 endif
 
