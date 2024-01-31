@@ -56,8 +56,8 @@ require("r.maps").start()
 require("r.maps").edit()
 
 -- Only .R files are sent to R
-require("r.maps").create('ni', 'RSendFile',  'aa', ':call SendFileToR("silent")')
-require("r.maps").create('ni', 'RESendFile', 'ae', ':call SendFileToR("echo")')
+require("r.maps").create('ni', 'RSendFile',  'aa', ':require("r.send").source_file("silent")')
+require("r.maps").create('ni', 'RESendFile', 'ae', ':require("r.send").source_file("echo")')
 require("r.maps").create('ni', 'RShowRout',  'ao', ':lua require("r").show_R_out()')
 
 require("r.maps").send()

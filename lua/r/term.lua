@@ -145,7 +145,7 @@ M.start_term = function ()
     vim.b.pdf_is_open = 1
     vim.cmd("sbuffer " .. edbuf)
     vim.cmd("stopinsert")
-    vim.fn.WaitNvimcomStart()
+    require("r.run").wait_nvimcom_start()
 end
 
 M.highlight_term = function()

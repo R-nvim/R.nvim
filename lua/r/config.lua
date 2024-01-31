@@ -1,3 +1,5 @@
+local warn = require("r").warn
+
 local config = {
     OutDec              = ".",
     Rout_more_colors    = false,
@@ -130,14 +132,14 @@ local validate_user_opts = function()
     -- We don't use vim.validate() because its error message has traceback details not useful for users.
     for k, _ in pairs(user_opts) do
         if config[k] == nil then
-            vim.notify("R-Nvim: unrecognized option `" .. k .. "`.", vim.log.levels.WARN)
+            warn("R-Nvim: unrecognized option `" .. k .. "`.")
         else
             if k == "external_term" and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean") then
-                vim.notify("R-Nvim: option `external_term` should be either boolean or string.", vim.log.levels.WARN)
+                warn("R-Nvim: option `external_term` should be either boolean or string.")
             elseif k == "rmdchunk" and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number") then
-                vim.notify("R-Nvim: option `rmdchunk` should be either number or string.", vim.log.levels.WARN)
+                warn("R-Nvim: option `rmdchunk` should be either number or string.")
             elseif not (type(user_opts[k]) == type(config[k])) then
-                vim.notify("R-Nvim: option `" .. k .. "` should be " .. type(config[k]) .. ", not " .. type(user_opts[k]) .. ".", vim.log.levels.WARN)
+                warn("R-Nvim: option `" .. k .. "` should be " .. type(config[k]) .. ", not " .. type(user_opts[k]) .. ".")
             end
         end
     end
@@ -223,7 +225,7 @@ local do_common_global = function()
     local first_line = 'Last change in this file: 2024-01-30'
     if vim.fn.filereadable(config.compldir .. "/README") == 0 or vim.fn.readfile(config.compldir .. "/README")[1] ~= first_line then
         need_readme = 1
-        vim.notify("Need README")
+        vim.notify("Need README") -- FIXME: delete this line
     end
 
     if need_readme == 1 then
@@ -652,6 +654,10 @@ M.real_setup = function ()
     if not did_global_setup then
         global_setup()
     end
+
+    if config.auto_start then
+        require("r.run").auto_start_R()
+    end
 end
 
 --- Return the table with the final configure variables: the default values
@@ -664,13 +670,13 @@ end
 M.check_health = function ()
     -- Check if Vim-R-plugin is installed
     if vim.fn.exists("*WaitVimComStart") ~= 0 then
-        vim.notify("Please, uninstall Vim-R-plugin before using R-Nvim.", vim.log.levels.ERROR)
+        warn("Please, uninstall Vim-R-plugin before using R-Nvim.")
     end
 
     -- Check if Nvim-R is installed
     -- FIXME: choose a function that exists in Nvim-R, but not in R-Nvim
     if vim.fn.exists("*WaitVimComStart") ~= 0 then
-        vim.notify("Please, uninstall Nvim-R before using R-Nvim.", vim.log.levels.ERROR)
+        warn("Please, uninstall Nvim-R before using R-Nvim.")
     end
 
     if vim.fn.executable(config.R_app) == 0 then
