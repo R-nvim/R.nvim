@@ -1,4 +1,5 @@
 local config = require("r.config").get_config()
+local warn = require("r").warn
 local M = {}
 
 M.start_RStudio = function()
@@ -26,7 +27,7 @@ end
 
 M.send_cmd_to_RStudio = function(command, _)
     if not require('r.job').is_running('RStudio') then
-        vim.fn.RWarningMsg('Is RStudio running?')
+        warn('Is RStudio running?')
         return 0
     end
 

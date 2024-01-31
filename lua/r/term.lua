@@ -1,6 +1,7 @@
 M = {}
 
 local config = require("r.config").get_config()
+local warn = require("r").warn
 local R_width = 80
 local number_col
 local R_bufnr = nil
@@ -9,7 +10,7 @@ M.send_cmd_to_term = function(command, nl)
 
     local is_running require("r.job").is_running("R")
     if is_running == 0 then
-        vim.fn.RWarningMsg("Is R running?")
+        warn("Is R running?")
         return 0
     end
 
@@ -112,12 +113,12 @@ M.start_term = function ()
     split_window()
 
     if vim.fn.has("win32") == 1 then
-        vim.fn.SetRHome()
+        require("r.windows").set_R_home()
     end
     require("r.job").R_term_open(config.R_app .. ' ' .. table.concat(config.R_args, ' '))
     if vim.fn.has("win32") == 1 then
         vim.cmd("redraw")
-        vim.fn.UnsetRHome()
+        require("r.windows").unset_R_home()
     end
     R_bufnr = vim.fn.bufnr("%")
     if config.hl_term then

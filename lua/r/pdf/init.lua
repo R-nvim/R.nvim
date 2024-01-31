@@ -1,4 +1,5 @@
 local config = require("r.config").get_config()
+local warn = require("r").warn
 
 local check_installed = function()
     if vim.fn.executable(config.pdfviewer) == 0 then
@@ -100,7 +101,7 @@ function RRaiseWindow(wttl)
                     return 1
                 end
             else
-                vim.fn.RWarningMsg('Error running Gnome Shell Extension "Activate Window By Title": ' ..
+                warn('Error running Gnome Shell Extension "Activate Window By Title": ' ..
                             vim.fn.substitute(sout, "\n", " ", "g"))
                 return 0
             end
@@ -115,7 +116,7 @@ function RRaiseWindow(wttl)
                     return 0
                 end
             else
-                vim.fn.RWarningMsg('Error running swaymsg: ' .. vim.fn.substitute(sout, "\n", " ", "g"))
+                warn('Error running swaymsg: ' .. vim.fn.substitute(sout, "\n", " ", "g"))
                 return 0
             end
         end

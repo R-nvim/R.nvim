@@ -200,7 +200,7 @@ M.start_R = function (whatr)
 
     if vim.fn.exists("g:RStudio_cmd") == 1 then
         vim.env.R_DEFAULT_PACKAGES = rdp .. ",rstudioapi"
-        vim.fn.StartRStudio()
+        require("r.rstudio").start_RStudio()
         return
     end
 
@@ -210,19 +210,19 @@ M.start_R = function (whatr)
     end
 
     if config.applescript then
-        vim.fn.StartR_OSX()
+        require("r.osx").start_Rapp()
         return
     end
 
     if vim.fn.has("win32") == 1 then
-        vim.fn.StartR_Windows()
+        require("r.windows").start_Rgui()
         return
     end
 
     local args_str = table.concat(r_args, " ")
     local rcmd = config.R_app .. " " .. args_str
 
-    vim.fn.StartR_ExternalTerm(rcmd)
+    require("r.external_term").start_extern_term(rcmd)
 end
 
 -- Send SIGINT to R
@@ -338,7 +338,7 @@ M.clear_R_info = function()
     R_pid = 0
     vim.g.R_Nvim_status = 3
     if type(config.external_term) == 'boolean' and config.external_term == false then
-        vim.fn.CloseRTerm()
+        require("r.term").close_term()
     end
     job.stdin("Server", "43\n")
     vim.g.R_Nvim_status = 1
@@ -351,19 +351,50 @@ end
 -- through a TCP connection.
 M.send_to_nvimcom = function (code, attch)
     if wait_nvimcom and R_pid == 0 then
-        vim.fn.RWarningMsg("R is not ready yet")
+        warn("R is not ready yet")
         return
     end
     if R_pid == 0 then
-        vim.fn.RWarningMsg("R is not running")
+        warn("R is not running")
         return
     end
 
     if not job.is_running("Server") then
-        vim.fn.RWarningMsg("Server not running.")
+        warn("Server not running.")
         return
     end
     job.stdin("Server", "2" .. code .. vim.env.NVIMR_ID .. attch .. "\n")
+end
+
+M.quit_R = function (how)
+    local qcmd
+    if how == "save" then
+        qcmd = 'quit(save = "yes")'
+    else
+        qcmd = 'quit(save = "no")'
+    end
+
+    if vim.fn.has("win32") == 1 then
+        if type(config.external_term) == "boolean" and config.external_term then
+            -- SaveWinPos
+            job.stdin("Server", "84" .. vim.fn.escape(vim.env.NVIMR_COMPLDIR, '\\') .. "\n")
+        end
+        job.stdin("Server", "2QuitNow\n")
+    end
+
+    if vim.fn.bufloaded('Object_Browser') == 1 then
+        vim.cmd('bunload! Object_Browser')
+        vim.wait(30)
+    end
+
+    require("r.send").cmd(qcmd)
+
+    if how == 'save' then
+        vim.wait(200)
+    end
+
+    vim.wait(50)
+    M.clear_R_info()
 end
 
 return M

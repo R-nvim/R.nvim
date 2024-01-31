@@ -170,13 +170,13 @@ local do_common_global = function()
         config.user_login = vim.fn.system('whoami')
     else
         config.user_login = "NoLoginName"
-        vim.fn.RWarningMsg("Could not determine user name.")
+        warn("Could not determine user name.")
     end
 
     config.user_login = vim.fn.substitute(vim.fn.substitute(config.user_login, '.*\\', '', ''), '\\W', '', 'g')
     if config.user_login == "" then
         config.user_login = "NoLoginName"
-        vim.fn.RWarningMsg("Could not determine user name.")
+        warn("Could not determine user name.")
     end
 
     if vim.fn.has("win32") ~= 0 then
@@ -386,14 +386,14 @@ local do_common_global = function()
     -- Look for invalid options
     local objbrplace = vim.split(config.objbr_place, ',')
     if #objbrplace > 2 then
-        vim.fn.RWarningMsg('Too many options for R_objbr_place.')
+        warn('Too many options for R_objbr_place.')
     end
     for _, pos in ipairs(objbrplace) do
         if pos ~= 'console' and pos ~= 'script' and
             pos:lower() ~= 'left' and pos:lower() ~= 'right' and
             pos:lower() ~= 'above' and pos:lower() ~= 'below' and
             pos:lower() ~= 'top' and pos:lower() ~= 'bottom' then
-            vim.fn.RWarningMsg('Invalid value for R_objbr_place: "' .. pos .. '". Please see R-Nvim\'s documentation.')
+            warn('Invalid value for R_objbr_place: "' .. pos .. '". Please see R-Nvim\'s documentation.')
         end
     end
 
@@ -469,7 +469,7 @@ local windows_config = function ()
             if vim.fn.isdirectory(dir) then
                 vim.fn.system('set PATH=' .. dir .. ';' .. vim.fn.getenv('PATH'))
             else
-                vim.fn.RWarningMsg('"' .. dir .. '" is not a directory. Fix the value of R_path in your vimrc.')
+                warn('"' .. dir .. '" is not a directory. Fix the value of R_path in your vimrc.')
             end
         end
     else
@@ -503,7 +503,7 @@ local windows_config = function ()
             rinstallpath = vim.fn.substitute(rinstallpath, '\\s*$', '', 'g')
         end
         if not vim.fn.exists("rinstallpath") then
-            vim.fn.RWarningMsg("Could not find R path in Windows Registry. If you have already installed R, please, set the value of 'R_path'.")
+            warn("Could not find R path in Windows Registry. If you have already installed R, please, set the value of 'R_path'.")
             return
         end
         local hasR32 = vim.fn.isdirectory(rinstallpath .. '\\bin\\i386')
@@ -536,7 +536,7 @@ local tmux_config = function ()
     -- Check whether Tmux is OK
     if vim.fn.executable('tmux') == 0 then
         config.external_term = 0
-        vim.fn.RWarningMsg("tmux executable not found")
+        warn("tmux executable not found")
         return
     end
 
@@ -551,7 +551,7 @@ local tmux_config = function ()
             tmuxversion = "1.0"
         end
         if tmuxversion < "3.0" then
-            vim.fn.RWarningMsg("R-Nvim requires Tmux >= 3.0")
+            warn("R-Nvim requires Tmux >= 3.0")
         end
     end
 end
@@ -565,13 +565,13 @@ local unix_config = function ()
             if vim.fn.isdirectory(dir) == 1 then
                 vim.env.PATH = dir .. ':' .. vim.env.PATH
             else
-                vim.fn.RWarningMsg('"' .. dir .. '" is not a directory. Fix the value of R_path in your config.')
+                warn('"' .. dir .. '" is not a directory. Fix the value of R_path in your config.')
             end
         end
     end
 
     if vim.fn.executable(config.R_app) == 0 then
-        vim.fn.RWarningMsg('"' .. config.R_app .. '" not found. Fix the value of either R_path or R_app in your config.')
+        warn('"' .. config.R_app .. '" not found. Fix the value of either R_path or R_app in your config.')
     end
 
     if (type(config.external_term) == "boolean" and config.external_term) or type(config.external_term) == "string" then
@@ -654,7 +654,7 @@ M.real_setup = function ()
         global_setup()
     end
 
-    if config.auto_start then
+    if (config.auto_start == 1 and vim.v.vim_did_enter == 0) or config.auto_start == 2 then
         require("r.run").auto_start_R()
     end
 end
@@ -679,11 +679,11 @@ M.check_health = function ()
     end
 
     if vim.fn.executable(config.R_app) == 0 then
-        vim.fn.RWarningMsg("R_app executable not found: '" .. config.R_app .. "'")
+        warn("R_app executable not found: '" .. config.R_app .. "'")
     end
 
     if not config.R_cmd == config.R_app and vim.fn.executable(config.R_cmd) == 0 then
-        vim.fn.RWarningMsg("R_cmd executable not found: '" .. config.R_cmd .. "'")
+        warn("R_cmd executable not found: '" .. config.R_cmd .. "'")
     end
 end
 
