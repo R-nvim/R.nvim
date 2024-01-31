@@ -1921,7 +1921,7 @@ static void fill_inst_libs(void) {
 }
 
 static void send_nrs_info(void) {
-    printf("lua require('r.nrs').echo_nrs_info('Loaded packages:')");
+    printf("lua require('r.nrs').echo_nrs_info('Loaded packages:");
     PkgData *pkg = pkgList;
     while (pkg) {
         printf(" %s", pkg->name);

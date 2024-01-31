@@ -98,24 +98,47 @@ M.vim_leave = function ()
 end
 
 M.show_debug_info = function()
-    -- FIXME
-    -- The code with "echo" commands converted to Lua shows nothing
-    -- Rewrite to display in a float window
-    local dstr = ""
+    local info = {}
     for k, v in pairs(debug_info) do
-        dstr = dstr .. tostring(k) .. ":\n"
-        if #v > 0 then
-            if type(v) == "string" then
-                dstr = dstr .. tostring(v) .. "\n"
+        if type(v) == "string" then
+            table.insert(info, {tostring(k), "Title"})
+            table.insert(info, {": "})
+            if #v > 0 then
+                table.insert(info, {v .. "\n"})
             else
-                for vk, vv in pairs(v) do
-                    dstr = dstr .. "  " .. tostring(vk) ": "
-                    dstr = dstr .. tostring(vv) .. "\n"
+                table.insert(info, {"(empty)\n"})
+            end
+        elseif type(v) == "table" then
+            table.insert(info, {tostring(k), "Title"})
+            table.insert(info, {":\n"})
+            for vk, vv in pairs(v) do
+                table.insert(info, {"  " .. tostring(vk), "Identifier"})
+                table.insert(info, {": "})
+                if tostring(k) == "Time" then
+                    table.insert(info, {tostring(vv) .. "\n", "Number"})
+                elseif tostring(k) == "nvimcom info" then
+                    table.insert(info, {tostring(vv) .. "\n", "String"})
+                else
+                    table.insert(info, {tostring(vv) .. "\n"})
                 end
             end
+        else
+            warn("debug_info error: " .. type(v))
         end
+        -- vim.notify("Empty: " .. tostring(k) .. " " .. tostring(v))
     end
-    print(dstr)
+    vim.api.nvim_echo(info, false, {})
+end
+
+M.add_to_debug_info = function(title, info, parent)
+    if parent then
+        if debug_info[parent] == nil then
+            debug_info[parent] = {}
+        end
+        debug_info[parent][title] = info
+    else
+        debug_info[title] = info
+    end
 end
 
 M.get_debug_info = function ()

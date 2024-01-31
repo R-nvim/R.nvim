@@ -19,7 +19,7 @@ local get_R_output = function (_)
             vim.api.nvim_command("normal! gT")
         end
     else
-        vim.notify("The file '" .. routfile .. "' either does not exist or is not readable.")
+        require("r").warn("The file '" .. routfile .. "' either does not exist or is not readable.")
     end
 end
 

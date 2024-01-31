@@ -677,7 +677,7 @@ nvim.buildomnils <- function(p) {
     }
 
     if (need_build) {
-        msg <- paste0("echo 'Building completion list for \"", p, "\"'\x14\n")
+        msg <- paste0("ECHO: Building completion list for \"", p, "\"\x14\n")
         cat(msg)
         flush(stdout())
         unlink(c(paste0(bdir, pbuilt), paste0(bdir, fbuilt), paste0(bdir, abuilt)))

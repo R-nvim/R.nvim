@@ -1,3 +1,4 @@
+local warn = require("r").warn
 
 local M = {}
 
@@ -10,7 +11,7 @@ M.is_in_R_code = function (vrb)
         return 1
     else
         if vrb then
-            vim.notify("Not inside an R code chunk.", vim.log.levels.WARN)
+            warn("Not inside an R code chunk.")
         end
         return 0
     end
@@ -23,7 +24,7 @@ M.is_in_Py_code = function (vrb)
         return 1
     else
         if vrb then
-            vim.notify("Not inside a Python code chunk.", vim.log.levels.WARN)
+            warn("Not inside a Python code chunk.")
         end
         return 0
     end
@@ -74,7 +75,7 @@ M.send_R_chunk = function (e, m)
     end
     if M.is_in_R_code(0) ~= 1 then
         if M.is_in_Py_code(0) == 0 then
-            vim.notify("Not inside an R code chunk.", vim.log.levels.WARN)
+            warn("Not inside an R code chunk.")
         else
             send_py_chunk(e, m)
         end
@@ -103,7 +104,7 @@ M.previous_chunk = function ()
     local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW")
     if i == 0 then
         vim.fn.cursor(curline, 1)
-        vim.notify("There is no previous R code chunk to go.", vim.log.levels.WARN)
+        warn("There is no previous R code chunk to go.")
         return
     else
         vim.fn.cursor(i+1, 1)
@@ -113,7 +114,7 @@ end
 M.next_chunk = function ()
     local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "nW")
     if i == 0 then
-        vim.notify("There is no next R code chunk to go.", vim.log.levels.WARN)
+        warn("There is no next R code chunk to go.")
         return
     else
         vim.fn.cursor(i+1, 1)
@@ -121,6 +122,7 @@ M.next_chunk = function ()
 end
 
 M.setup = function ()
+    local rmdtime = vim.fn.reltime()
     local cfg = require("r.config").get_config()
 
     if type(cfg.rmdchunk) == "number" and (cfg.rmdchunk == 1 or cfg.rmdchunk == 2) then
@@ -167,6 +169,7 @@ M.setup = function ()
     else
         vim.api.nvim_buf_set_var(0, "undo_ftplugin", "unlet! b:IsInRCode b:PreviousRChunk b:NextRChunk b:SendChunkToR")
     end
+    require("r.edit").add_to_debug_info('rmd setup', vim.fn.reltimefloat(vim.fn.reltime(rmdtime, vim.fn.reltime())), "Time")
 end
 
 return M

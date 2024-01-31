@@ -15,7 +15,7 @@ local is_in_R_code = function(vrb)
         return 1
     else
         if vrb then
-            vim.notify("Not inside an R section.", vim.log.levels.WARN)
+            require("r").warn("Not inside an R section.")
         end
         return 0
     end

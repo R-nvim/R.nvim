@@ -1,3 +1,4 @@
+local warn = require("r").warn
 local cfg = require("r.config").get_config()
 
 local M = {}
@@ -7,7 +8,7 @@ M.open = function(fullpath)
 end
 
 M.SyncTeX_forward = function (_, _, _, _)
-    vim.notify("R-Nvim has no support for SyncTeX with '" .. cfg.pdfviewer .. "'")
+    warn("R-Nvim has no support for SyncTeX with '" .. cfg.pdfviewer .. "'")
 end
 
 return M
