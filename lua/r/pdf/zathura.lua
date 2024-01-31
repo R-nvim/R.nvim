@@ -1,3 +1,4 @@
+local warn = require("r").warn
 local config = require("r.config").get_config()
 
 local zathura_pid = {}
@@ -32,7 +33,7 @@ local StartZathuraNeovim = function (fullpath)
         }
     )
     if job_id < 1 then
-        vim.notify("Failed to run Zathura...", vim.log.levels.WARN)
+        warn("Failed to run Zathura...")
     else
         zathura_pid[fullpath] = vim.fn.jobpid(job_id)
     end
@@ -120,7 +121,7 @@ M.SyncTeX_forward = function (tpath, ppath, texln, tryagain)
             vim.wait(900)
             M.SyncTeX_forward(tpath, ppath, texln, false)
         else
-            vim.notify(vim.fn.substitute(result, "\n", " ", "g"), vim.log.levels.WARN)
+            warn(vim.fn.substitute(result, "\n", " ", "g"))
             return
         end
     end

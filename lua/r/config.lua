@@ -458,6 +458,7 @@ local do_common_global = function()
 end
 
 local windows_config = function ()
+    local wtime = vim.fn.reltime()
     local isi386 = false
     local rinstallpath = nil
 
@@ -504,6 +505,7 @@ local windows_config = function ()
         end
         if not vim.fn.exists("rinstallpath") then
             warn("Could not find R path in Windows Registry. If you have already installed R, please, set the value of 'R_path'.")
+            require("r.edit").add_to_debug_info('windows setup', vim.fn.reltimefloat(vim.fn.reltime(wtime, vim.fn.reltime())), "Time")
             return
         end
         local hasR32 = vim.fn.isdirectory(rinstallpath .. '\\bin\\i386')
@@ -530,9 +532,11 @@ local windows_config = function ()
             config.R_args = {"--sdi", "--no-save"}
         end
     end
+    require("r.edit").add_to_debug_info('windows setup', vim.fn.reltimefloat(vim.fn.reltime(wtime, vim.fn.reltime())), "Time")
 end
 
 local tmux_config = function ()
+    local ttime = vim.fn.reltime()
     -- Check whether Tmux is OK
     if vim.fn.executable('tmux') == 0 then
         config.external_term = 0
@@ -554,9 +558,11 @@ local tmux_config = function ()
             warn("R-Nvim requires Tmux >= 3.0")
         end
     end
+    require("r.edit").add_to_debug_info('tmux setup', vim.fn.reltimefloat(vim.fn.reltime(ttime, vim.fn.reltime())), "Time")
 end
 
 local unix_config = function ()
+    local utime = vim.fn.reltime()
     if config.R_path then
         local rpath = vim.fn.split(config.R_path, ':')
         vim.fn.map(rpath, 'expand(v:val)')
@@ -577,6 +583,7 @@ local unix_config = function ()
     if (type(config.external_term) == "boolean" and config.external_term) or type(config.external_term) == "string" then
         tmux_config()
     end
+    require("r.edit").add_to_debug_info('unix setup', vim.fn.reltimefloat(vim.fn.reltime(utime, vim.fn.reltime())), "Time")
 end
 
 local global_setup = function ()
@@ -643,6 +650,8 @@ end
 --- Set initial values of some internal variables.
 --- Set the default value of config variables that depend on system features.
 M.real_setup = function ()
+    local gtime = vim.fn.reltime()
+
     vim.g.R_Nvim_status = 1
 
     -- Check if b:pdf_is_open already exists to avoid errors at other places
@@ -657,6 +666,8 @@ M.real_setup = function ()
     if (config.auto_start == 1 and vim.v.vim_did_enter == 0) or config.auto_start == 2 then
         require("r.run").auto_start_R()
     end
+
+    require("r.edit").add_to_debug_info('global setup', vim.fn.reltimefloat(vim.fn.reltime(gtime, vim.fn.reltime())), "Time")
 end
 
 --- Return the table with the final configure variables: the default values

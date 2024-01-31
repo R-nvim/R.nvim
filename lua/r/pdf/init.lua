@@ -3,13 +3,14 @@ local warn = require("r").warn
 
 local check_installed = function()
     if vim.fn.executable(config.pdfviewer) == 0 then
-        vim.notify("R-Nvim: Please, set the value of `pdfviewer`. The application `" .. config.pdfviewer .. "` was not found.", vim.log.levels.WARN)
+        warn("R-Nvim: Please, set the value of `pdfviewer`. The application `" .. config.pdfviewer .. "` was not found.")
     end
 end
 
 local M = {}
 
 M.setup = function()
+    local ptime = vim.fn.reltime()
     check_installed()
     if config.pdfviewer == "zathura" then
         M.open2 = require("r.pdf.zathura").open
@@ -42,7 +43,7 @@ M.setup = function()
             config.has_wmctrl = 1
         else
             if vim.o.filetype == "rnoweb" and config.synctex then
-                vim.notify("The application wmctrl must be installed to edit Rnoweb effectively.", vim.log.levels.WARN)
+                warn("The application wmctrl must be installed to edit Rnoweb effectively.")
             end
         end
     end
@@ -58,6 +59,7 @@ M.setup = function()
     --         end
     --     end
     -- end
+    require("r.edit").add_to_debug_info('pdf setup', vim.fn.reltimefloat(vim.fn.reltime(ptime, vim.fn.reltime())), "Time")
 end
 
 M.open = function (fullpath)

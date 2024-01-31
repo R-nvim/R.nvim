@@ -1,15 +1,18 @@
-local M = {}
 local edit = require("r.edit")
 local job = require("r.job")
-local cfg = require("r.config").get_config()
+local config = require("r.config").get_config()
+local warn = require("r").warn
 local RWarn = {}
 local RBerr = {}
 local RBout = {}
-local libd
+local libd = nil
 local RoutLine = ''
 local pkgbuild_attempt = false
 local Rhelp_loaded = {}
 local Rhelp_list = {}
+local Rtime
+
+local M = {}
 
 local RInitStdout = function (_, data, _)
     if not data then
@@ -23,7 +26,7 @@ local RInitStdout = function (_, data, _)
             return
         end
     end
-    if rcmd:find('^RWarn: ') or rcmd:find('^let ') or rcmd:find('^echo ') then
+    if rcmd:find('^ECHO: ') or rcmd:find('^INFO: ') or rcmd:find('^WARN: ') or rcmd:find('^LIBD: ') then
         if rcmd:find("\x14") == nil then
             RoutLine = rcmd
             return
@@ -33,13 +36,19 @@ local RInitStdout = function (_, data, _)
         -- In spite of flush(stdout()), rcmd might be concatenating two commands
         local rcmdl = vim.fn.split(rcmd, "\x14", 0)
         for _, c in ipairs(rcmdl) do
-            if c:find('^RWarn: ') then
+            if c:find('^WARN: ') then
                 table.insert(RWarn, c:sub(7))
-            else
-                vim.fn.execute(c)
-            end
-            if c:find('^echo') then
-                vim.api.nvim_command('redraw')
+            elseif c:find('^LIBD: ') then
+                libd = c:sub(7)
+            elseif c:find('^ECHO: ') then
+                local msg = c:sub(7)
+                vim.schedule(function()
+                        vim.api.nvim_echo({{msg}}, false, {})
+                        vim.api.nvim_command('redraw')
+                end)
+            elseif c:find('^INFO: ') then
+                local info = vim.fn.split(c:sub(7), "=")
+                edit.add_to_debug_info(info[1], info[2])
             end
         end
     else
@@ -63,7 +72,7 @@ local MkRdir = function ()
             -- Try again
             M.check_nvimcom_version()
         else
-            vim.notify('Failed creating "' .. libd .. '"', vim.log.levels.WARN)
+            warn('Failed creating "' .. libd .. '"')
         end
     else
         vim.api.nvim_out_write("\n")
@@ -75,23 +84,23 @@ end
 
 -- Find the path to the nvimrserver executable in the specified library directory.
 local FindNCSpath = function (libdir)
-    local ncs
+    local nrs
     if vim.fn.has('win32') == 1 then
-        ncs = 'nvimrserver.exe'
+        nrs = 'nvimrserver.exe'
     else
-        ncs = 'nvimrserver'
+        nrs = 'nvimrserver'
     end
     local paths = {
-        libdir .. '/bin/' .. ncs,
-        libdir .. '/bin/x64/' .. ncs,
-        libdir .. '/bin/i386/' .. ncs,
+        libdir .. '/bin/' .. nrs,
+        libdir .. '/bin/x64/' .. nrs,
+        libdir .. '/bin/i386/' .. nrs,
     }
     for _, path in ipairs(paths) do
         if vim.fn.filereadable(path) == 1 then
             return path
         end
     end
-    vim.notify('Application "' .. ncs .. '" not found at "' .. libdir .. '"', vim.log.levels.WARN)
+    warn('Application "' .. nrs .. '" not found at "' .. libdir .. '"')
     return ''
 end
 
@@ -102,25 +111,24 @@ local StartNServer = function ()
     end
 
     local nrs_path
-    local debug_info = edit.get_debug_info()
 
-    if cfg.local_R_library_dir then
-        nrs_path = FindNCSpath(cfg.local_R_library_dir .. '/nvimcom')
+    if config.local_R_library_dir then
+        nrs_path = FindNCSpath(config.local_R_library_dir .. '/nvimcom')
     else
-        local info_path = cfg.compldir .. '/nvimcom_info'
+        local info_path = config.compldir .. '/nvimcom_info'
         if vim.fn.filereadable(info_path) == 1 then
             local info = vim.fn.readfile(info_path)
             if #info == 3 then
                 -- Update nvimcom information
-                debug_info.nvimcom_info = {version = info[1], home = info[2], Rversion = info[3]}
+                edit.add_to_debug_info("nvimcom info", {version = info[1], home = info[2], Rversion = info[3]})
                 nrs_path = FindNCSpath(info[2])
             else
                 vim.fn.delete(info_path)
-                vim.notify("ERROR in nvimcom_info! Please, do :RDebugInfo for details.", vim.log.levels.WARN)
+                warn("ERROR in nvimcom_info! Please, do :RDebugInfo for details.")
                 return
             end
         else
-            vim.notify("ERROR: nvimcom_info not found. Please, run :RDebugInfo for details.", vim.log.levels.WARN)
+            warn("ERROR: nvimcom_info not found. Please, run :RDebugInfo for details.")
             return
         end
     end
@@ -132,29 +140,22 @@ local StartNServer = function ()
     -- Some pdf viewers run nvimrserver to send SyncTeX messages back to Vim
     if vim.fn.has('win32') == 0 then
         nrs_env["PATH"] = nrs_dir .. ':' .. vim.env.PATH
-        -- vim.fn.system('export PATH=' .. nrs_dir .. ':$PATH')
     else
         nrs_env["PATH"] = nrs_dir .. ':' .. vim.env.PATH
-        -- vim.fn.system('set PATH=' .. nrs_dir .. ';' .. vim.fn.escape('$PATH', ';'))
     end
 
     -- Options in the nvimrserver application are set through environment variables
-    if cfg.objbr_opendf then
+    if config.objbr_opendf then
         nrs_env["NVIMR_OPENDF"] = 'TRUE'
-        -- vim.fn.system('export NVIMR_OPENDF=TRUE')
     end
-    if cfg.objbr_openlist then
+    if config.objbr_openlist then
         nrs_env["NVIMR_OPENLS"] = 'TRUE'
-        -- vim.fn.system('export NVIMR_OPENLS=TRUE')
     end
-    if cfg.objbr_allnames then
+    if config.objbr_allnames then
         nrs_env["NVIMR_OBJBR_ALLNAMES"] = 'TRUE'
-        -- vim.fn.system('export NVIMR_OBJBR_ALLNAMES=TRUE')
     end
-    nrs_env["NVIMR_RPATH"] = cfg.R_cmd
-    -- vim.fn.system('export NVIMR_RPATH=' .. cfg.R_cmd)
-    nrs_env["NVIMR_LOCAL_TMPDIR"] = cfg.localtmpdir
-    -- vim.fn.system('export NVIMR_LOCAL_TMPDIR=' .. cfg.localtmpdir)
+    nrs_env["NVIMR_RPATH"] = config.R_cmd
+    nrs_env["NVIMR_LOCAL_TMPDIR"] = config.localtmpdir
 
     -- We have to set R's home directory on Windows because nvimrserver will
     -- run R to build the list for omni completion.
@@ -175,14 +176,9 @@ local StartNServer = function ()
         require("r.windows").unset_R_home()
     end
 
-    vim.fn.delete(cfg.tmpdir .. '/run_R_stdout')
-    vim.fn.delete(cfg.tmpdir .. '/run_R_stderr')
+    vim.fn.delete(config.tmpdir .. '/run_R_stdout')
+    vim.fn.delete(config.tmpdir .. '/run_R_stderr')
 
-    vim.fn.system('unset NVIMR_OPENDF')
-    vim.fn.system('unset NVIMR_OPENLS')
-    vim.fn.system('unset NVIMR_OBJBR_ALLNAMES')
-    vim.fn.system('unset NVIMR_RPATH')
-    vim.fn.system('unset NVIMR_LOCAL_TMPDIR')
     vim.cmd("command RGetNCSInfo :lua require('r.nrs').request_nrs_info()")
 end
 
@@ -190,7 +186,6 @@ end
 -- and if the file nvimcom_info seems to be OK (has three lines).
 local RInitExit = function (_, data, _)
     local cnv_again = 0
-    local debug_info = edit.get_debug_info()
 
     if data == 0 or data == 512 then -- ssh success seems to be 512
         StartNServer()
@@ -206,49 +201,45 @@ local RInitExit = function (_, data, _)
         pkgbuild_attempt = true
         if vim.fn.executable("R") == 1 then
             local shf = {
-                'cd ' .. cfg.tmpdir,
-                'R CMD build ' .. cfg.rnvim_home .. '/R/nvimcom'
+                'cd ' .. config.tmpdir,
+                'R CMD build ' .. config.rnvim_home .. '/R/nvimcom'
             }
-            vim.fn.writefile(shf, cfg.tmpdir .. '/buildpkg.sh')
-            vim.fn.system('sh ' .. cfg.tmpdir .. '/buildpkg.sh')
+            vim.fn.writefile(shf, config.tmpdir .. '/buildpkg.sh')
+            vim.fn.system('sh ' .. config.tmpdir .. '/buildpkg.sh')
             if vim.v.shell_error == 0 then
                 M.check_nvimcom_version()
                 cnv_again = 1
             end
-            vim.fn.delete(cfg.tmpdir .. '/buildpkg.sh')
+            vim.fn.delete(config.tmpdir .. '/buildpkg.sh')
         end
     else
         if vim.fn.filereadable(vim.fn.expand("~/.R/Makevars")) == 1 then
-            vim.notify("ERROR! Please, run :RDebugInfo for details, and check your '~/.R/Makevars'.", vim.log.levels.WARN)
+            warn("ERROR! Please, run :RDebugInfo for details, and check your '~/.R/Makevars'.")
         else
-            vim.notify("ERROR: R exit code = " .. tostring(data) .. "! Please, run :RDebugInfo for details.", vim.log.levels.WARN)
+            warn("ERROR: R exit code = " .. tostring(data) .. "! Please, run :RDebugInfo for details.")
         end
     end
 
-    debug_info["before_nrs.R stderr"] = table.concat(RBerr, "\n")
-    debug_info["before_nrs.R stdout"] = table.concat(RBout, "\n")
+    edit.add_to_debug_info("before_nrs.R stderr", table.concat(RBerr, "\n"))
+    edit.add_to_debug_info("before_nrs.R stdout", table.concat(RBout, "\n"))
     RBerr = nil
     RBout = nil
-    edit.add_for_deletion(cfg.tmpdir .. "/bo_code.R")
-    edit.add_for_deletion(cfg.localtmpdir .. "/libs_in_nrs_" .. vim.env.NVIMR_ID)
-    edit.add_for_deletion(cfg.tmpdir .. "/libnames_" .. vim.env.NVIMR_ID)
+    edit.add_for_deletion(config.tmpdir .. "/bo_code.R")
+    edit.add_for_deletion(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.NVIMR_ID)
+    edit.add_for_deletion(config.tmpdir .. "/libnames_" .. vim.env.NVIMR_ID)
     if #RWarn > 0 then
-        debug_info['RInit Warning'] = ''
-        for _, wrn in pairs(RWarn) do
-            if wrn and debug_info['RInit Warning'] then
-                debug_info['RInit Warning'] = debug_info['RInit Warning'] .. wrn .. "\n"
-            end
-            vim.notify(wrn, vim.log.levels.WARN)
-        end
+        local wrn = table.concat(RWarn, "\n")
+        edit.add_to_debug_info('RInit Warning', wrn)
+        warn(wrn)
     end
     if cnv_again == 0 then
-        debug_info['Time']['before_nrs.R'] = vim.fn.reltimefloat(vim.fn.reltime(debug_info['Time']['before_nrs.R'], vim.fn.reltime()))
+    edit.add_to_debug_info('before_nrs.R', vim.fn.reltimefloat(vim.fn.reltime(Rtime, vim.fn.reltime())), "Time")
     end
 end
 
 -- List R libraries from buffer
 local ListRLibsFromBuffer = function ()
-    local start_libs = cfg.start_libs or "base,stats,graphics,grDevices,utils,methods"
+    local start_libs = config.start_libs or "base,stats,graphics,grDevices,utils,methods"
     local lines = vim.fn.getline(1, "$")
     local filter_lines = vim.fn.filter(lines, "v:val =~ '^\\s*library\\|require\\s*('")
     local lib
@@ -284,13 +275,13 @@ local BAAExit = function (_, data, _)
 end
 
 -- Build all arguments
-local BuildAllArgs = function (_)
-    if vim.fn.filereadable(cfg.compldir .. '/args_lock') == 1 then
-        vim.fn.timer_start(5000, M.BuildAllArgs)
+M.BuildAllArgs = function (_)
+    if vim.fn.filereadable(config.compldir .. '/args_lock') == 1 then
+        vim.fn.timer_start(1000, M.BuildAllArgs)
         return
     end
 
-    local flist = vim.fn.glob(cfg.compldir .. '/omnils_*', false, true)
+    local flist = vim.fn.glob(config.compldir .. '/omnils_*', false, true)
     for i, afile in ipairs(flist) do
         flist[i] = vim.fn.substitute(afile, "/omnils_", "/args_", "")
     end
@@ -307,17 +298,17 @@ local BuildAllArgs = function (_)
         return
     end
 
-    vim.fn.writefile({""}, cfg.compldir .. '/args_lock')
-    table.insert(rscrpt, 'unlink("' .. cfg.compldir .. '/args_lock")')
+    vim.fn.writefile({""}, config.compldir .. '/args_lock')
+    table.insert(rscrpt, 'unlink("' .. config.compldir .. '/args_lock")')
 
-    local scrptnm = cfg.tmpdir .. "/build_args.R"
+    local scrptnm = config.tmpdir .. "/build_args.R"
     edit.add_for_deletion(scrptnm)
     vim.fn.writefile(rscrpt, scrptnm)
-    if cfg.remote_compldir then
-        scrptnm = cfg.remote_compldir .. "/tmp/build_args.R"
+    if config.remote_compldir then
+        scrptnm = config.remote_compldir .. "/tmp/build_args.R"
     end
     local jobh = {on_exit = BAAExit}
-    require("r.job").start("Build_args", {cfg.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm}, jobh)
+    require("r.job").start("Build_args", {config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm}, jobh)
 end
 
 -- Add words to the completion list of :Rhelp
@@ -329,7 +320,7 @@ local AddToRhelpList = function (lib)
     end
     table.insert(Rhelp_loaded, lib)
 
-    local omf = cfg.compldir .. '/omnils_' .. lib
+    local omf = config.compldir .. '/omnils_' .. lib
 
     -- List of objects
     local olist = vim.fn.readfile(omf)
@@ -363,11 +354,11 @@ end
 -- This function is called for the first time before R is running because we
 -- support syntax highlighting and omni completion of default libraries' objects.
 M.update_Rhelp_list = function()
-    if vim.fn.filereadable(cfg.localtmpdir .. "/libs_in_nrs_" .. vim.env.NVIMR_ID) == 0 then
+    if vim.fn.filereadable(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.NVIMR_ID) == 0 then
         return
     end
 
-    local libs_in_nrs = vim.fn.readfile(cfg.localtmpdir .. "/libs_in_nrs_" .. vim.env.NVIMR_ID)
+    local libs_in_nrs = vim.fn.readfile(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.NVIMR_ID)
     for _, lib in ipairs(libs_in_nrs) do
         AddToRhelpList(lib)
     end
@@ -377,8 +368,7 @@ end
 
 M.check_nvimcom_version = function ()
     local flines
-    local nvimcom_desc_path = cfg.rnvim_home .. '/R/nvimcom/DESCRIPTION'
-    local debug_info = edit.get_debug_info()
+    local nvimcom_desc_path = config.rnvim_home .. '/R/nvimcom/DESCRIPTION'
 
     if vim.fn.filereadable(nvimcom_desc_path) == 1 then
         local ndesc = vim.fn.readfile(nvimcom_desc_path)
@@ -389,13 +379,13 @@ M.check_nvimcom_version = function ()
     end
 
     local libs = ListRLibsFromBuffer()
-    table.insert(flines, 'nvim_r_home <- "' .. cfg.rnvim_home .. '"')
+    table.insert(flines, 'nvim_r_home <- "' .. config.rnvim_home .. '"')
     table.insert(flines, 'libs <- c(' .. libs .. ')')
-    vim.list_extend(flines, vim.fn.readfile(cfg.rnvim_home .. "/R/before_nrs.R"))
+    vim.list_extend(flines, vim.fn.readfile(config.rnvim_home .. "/R/before_nrs.R"))
 
-    local scrptnm = cfg.tmpdir .. "/before_nrs.R"
+    local scrptnm = config.tmpdir .. "/before_nrs.R"
     vim.fn.writefile(flines, scrptnm)
-    edit.add_for_deletion(cfg.tmpdir .. "/before_nrs.R")
+    edit.add_for_deletion(config.tmpdir .. "/before_nrs.R")
 
     -- Run the script as a job, setting callback functions to receive its
     -- stdout, stderr, and exit code.
@@ -405,14 +395,14 @@ M.check_nvimcom_version = function ()
         on_exit = RInitExit,
     }
 
-    local remote_compldir = cfg.remote_compldir
-    if vim.fn.has_key(cfg, "remote_compldir") == 1 then
+    local remote_compldir = config.remote_compldir
+    if vim.fn.has_key(config, "remote_compldir") == 1 then
         scrptnm = remote_compldir .. "/tmp/before_nrs.R"
     end
 
-    debug_info['Time']['before_nrs.R'] = vim.fn.reltime()
-    require("r.job").start("Init R", {cfg.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm}, jobh)
-    edit.add_for_deletion(cfg.tmpdir .. "/libPaths")
+    Rtime = vim.fn.reltime()
+    require("r.job").start("Init R", {config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm}, jobh)
+    edit.add_for_deletion(config.tmpdir .. "/libPaths")
 end
 
 -- Get information from nvimrserver (currently only the names of loaded libraries).
@@ -422,25 +412,27 @@ end
 
 -- Called by nvimrserver when it gets an error running R code
 M.show_bol_error = function (stt)
-    if vim.fn.filereadable(cfg.tmpdir .. '/run_R_stderr') == 1 then
-        local debug_info = edit.get_debug_info()
-        local ferr = vim.fn.readfile(cfg.tmpdir .. '/run_R_stderr')
-        debug_info['Error running R code'] = 'Exit status: ' .. stt .. "\n" .. table.concat(ferr, "\n")
-        vim.notify('Error building omnils_ file. Run :RDebugInfo for details.', vim.log.levels.WARN)
-        vim.fn.delete(cfg.tmpdir .. '/run_R_stderr')
-        if string.find(debug_info['Error running R code'], "Error in library(.nvimcom.).*there is no package called .*nvimcom") then
+    if vim.fn.filereadable(config.tmpdir .. '/run_R_stderr') == 1 then
+        local ferr = table.concat(vim.fn.readfile(config.tmpdir .. '/run_R_stderr'), "\n")
+        local errmsg = 'Exit status: ' .. stt .. "\n" .. ferr
+        if ferr:find("Error in library..nvimcom...*there is no package called .*nvimcom") then
             -- This will happen if the user manually changes .libPaths
-            vim.fn.delete(cfg.compldir .. "/nvimcom_info")
-            debug_info['Error running R code'] = debug_info['Error running R code'] .. "\nPlease, restart " .. vim.v.progname
+            vim.fn.delete(config.compldir .. "/nvimcom_info")
+            errmsg = errmsg .. "\nPlease, restart " .. vim.v.progname
         end
+        edit.add_to_debug_info('Error running R code', errmsg)
+        warn('Error building omnils_ file. Run :RDebugInfo for details.')
+        vim.fn.delete(config.tmpdir .. '/run_R_stderr')
     else
-        vim.notify(cfg.tmpdir .. '/run_R_stderr not found', vim.log.levels.WARN)
+        warn(config.tmpdir .. '/run_R_stderr not found')
     end
 end
 
 -- Callback function
 M.echo_nrs_info = function (info)
-    vim.echo(info)
+    vim.schedule(function()
+        vim.api.nvim_echo({{ info }}, false, {})
+    end)
 end
 
 return M

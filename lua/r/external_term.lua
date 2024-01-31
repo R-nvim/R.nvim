@@ -28,6 +28,7 @@ local external_term_config = function ()
         end
     end
 
+    local etime = vim.fn.reltime()
     if type(config.external_term) == "boolean" then
         -- Terminal name not defined. Try to find a known one.
         local terminals = {'kitty', 'gnome-terminal', 'konsole', 'xfce4-terminal', 'alacritty', 'xterm'}
@@ -77,6 +78,7 @@ local external_term_config = function ()
     else
         term_cmd = term_cmd .. " -e"
     end
+    require("r.edit").add_to_debug_info('external term setup', vim.fn.reltimefloat(vim.fn.reltime(etime, vim.fn.reltime())), "Time")
 end
 
 local TmuxOption = function (option, isglobal)
