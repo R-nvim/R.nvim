@@ -2,10 +2,6 @@
 " Function to start R and functions that are called only after R is started.
 "==============================================================================
 
-"==============================================================================
-" Functions to start and close R
-"==============================================================================
-
 let g:SendCmdToR = luaeval('require("r.send").cmd')
 
 let g:rplugin = {}
@@ -17,69 +13,6 @@ function s:RGetBufDir()
     endif
     let rwd = substitute(rwd, '\(.*\)/.*', '\1', '')
     return rwd
-endfunction
-
-function IsSendCmdToRFake()
-    if string(g:SendCmdToR) != "function('SendCmdToR_fake')"
-        let qcmd = "\\rq"
-        let nkblist = execute("nmap")
-        let nkbls = split(nkblist, "\n")
-        for nkb in nkbls
-            if stridx(nkb, "RQuit('nosave')") > 0
-                let qls = split(nkb, " ")
-                let qcmd = qls[1]
-                break
-            endif
-        endfor
-        call RWarningMsg("As far as I know, R is already running. If it is not running, did you quit it from within ". v:progname . " (command " . qcmd . ")?")
-        return 1
-    endif
-    return 0
-endfunction
-
-function SendCmdToR_NotYet(...)
-    call RWarningMsg("Not ready yet")
-    return 0
-endfunction
-
-" This function is called by nvimrserver when its server binds to a specific port.
-let s:waiting_to_start_r = ''
-function RSetMyPort(p)
-    exe 'lua require("r.run").set_my_port(' . a:p . ')'
-endfunction
-
-" Start R
-function ReallyStartR(whatr)
-    exe 'lua require("r.run").really_start_R("' . a:whatr . '")'
-endfunction
-
-" Send SIGINT to R
-function SignalToR(signal)
-    exe 'lua require("r.run").signal_to_R(' . a:signal . ')'
-endfunction
-
-
-function CheckIfNvimcomIsRunning(...)
-    exe 'lua require("r.run").check_nvimcom_running()'
-endfunction
-
-function WaitNvimcomStart()
-    exe 'lua require("r.run").wait_nvimcom_start()'
-endfunction
-
-function SetNvimcomInfo(nvimcomversion, rpid, wid, r_info)
-    exe 'lua require("r.run").set_nvimcom_info("' . a:nvimcomversion . '", "' . a:rpid . '", "' . a:wid . '", "' . a:r_info '")'
-endfunction
-
-function SetSendCmdToR(...)
-    if exists("g:RStudio_cmd")
-        let g:SendCmdToR = function('SendCmdToRStudio')
-    elseif type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
-        let g:SendCmdToR = function('SendCmdToR_Buffer')
-    elseif has("win32")
-        let g:SendCmdToR = function('SendCmdToR_Windows')
-    endif
-    let s:wait_nvimcom = 0
 endfunction
 
 " Quit R
@@ -97,9 +30,9 @@ function RQuit(how)
     if has("win32")
 	if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term
 	    " SaveWinPos
-	    call JobStdin(g:rplugin.jobs["Server"], "84" . $NVIMR_COMPLDIR . "\n")
+	    call JobStdin("Server", "84" . $NVIMR_COMPLDIR . "\n")
 	endif
-	call JobStdin(g:rplugin.jobs["Server"], "2QuitNow\n")
+	call JobStdin("Server", "2QuitNow\n")
     endif
 
     if bufloaded('Object_Browser')
@@ -229,7 +162,7 @@ endfunction
 " Open an Object Browser window
 function RObjBrowser(...)
     " Only opens the Object Browser if R is running
-    if string(g:SendCmdToR) == "function('SendCmdToR_fake')"
+    if g:R_Nvim_status < 5
         call RWarningMsg("The Object Browser can be opened only if R is running.")
         return
     endif
@@ -242,7 +175,7 @@ function RObjBrowser(...)
     let s:running_objbr = 1
 
     " call RealUpdateRGlbEnv(1)
-    call JobStdin(g:rplugin.jobs["Server"], "31\n")
+    call JobStdin("Server", "31\n")
     call SendToNvimcom("A", "RObjBrowser")
 
     call StartObjBrowser()
@@ -259,7 +192,7 @@ function RObjBrowser(...)
 endfunction
 
 function RBrOpenCloseLs(stt)
-    call JobStdin(g:rplugin.jobs["Server"], "34" . a:stt . g:rplugin.curview . "\n")
+    call JobStdin("Server", "34" . a:stt . g:rplugin.curview . "\n")
 endfunction
 
 
@@ -865,13 +798,6 @@ function SendMotionToR(type)
     endif
 endfunction
 
-" Send file to R
-function SendFileToR(e)
- " Pass parameters to Lua function using luaeval()
-    let lua_code = 'require("r.send").source_file("' . a:e . '")'
-    call luaeval(lua_code)
-endfunction
-
 " Send block to R
 " Adapted from marksbrowser plugin
 " Function to get the marks which the cursor is between
@@ -992,11 +918,6 @@ function SendFunctionToR(e, m)
     endif
 endfunction
 
-" Send all lines above to R
-function SendAboveLinesToR()
-    lua require("r.send").above_lines()
-endfunction
-
 " Send selection to R
 function SendSelectionToR(...)
     let ispy = 0
@@ -1087,12 +1008,6 @@ function SendSelectionToR(...)
             normal! gv
         endif
     endif
-endfunction
-
-" Send paragraph to R
-function SendParagraphToR(e, m)
-    let lua_code = 'require("r.send").paragraph("' . a:e . '", "' . a:m . '")'
-    call luaeval(lua_code)
 endfunction
 
 " Send R code from the first chunk up to current line
@@ -1358,9 +1273,9 @@ function RClearConsole()
         return
     endif
     if has("win32") && type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term
-        call JobStdin(g:rplugin.jobs["Server"], "86\n")
+        call JobStdin("Server", "86\n")
         sleep 50m
-        call JobStdin(g:rplugin.jobs["Server"], "87\n")
+        call JobStdin("Server", "87\n")
     else
         call g:SendCmdToR("\014", 0)
     endif
@@ -1615,12 +1530,4 @@ function RMakeRmd(t)
         let rcmd = rcmd . ', envir = ' . g:Rcfg.rmd_environment . ', ' . substitute(g:Rcfg.rmarkdown_args, "'", '"', 'g') . ')'
     endif
     call g:SendCmdToR(rcmd)
-endfunction
-
-function RBuildTags()
-    if filereadable("etags")
-        call RWarningMsg('The file "etags" exists. Please, delete it and try again.')
-        return
-    endif
-    call g:SendCmdToR('rtags(ofile = "etags"); etags2ctags("etags", "tags"); unlink("etags")')
 endfunction

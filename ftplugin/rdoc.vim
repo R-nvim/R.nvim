@@ -108,8 +108,8 @@ let b:IsInRCode = function("RdocIsInRCode")
 "==========================================================================
 " Key bindings and menu items
 
-call RCreateSendMaps()
-call RControlMaps()
+lua require("r.maps").send()
+lua require("r.maps").control()
 
 function! RDocExSection()
     let ii = search("^Examples:$", "nW")

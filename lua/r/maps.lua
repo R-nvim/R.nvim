@@ -49,7 +49,7 @@ end
 
 M.control = function()
     -- List space, clear console, clear all
-    M.create('nvi', 'RListSpace',    'rl', ':call g:SendCmdToR("ls()")')
+    M.create('nvi', 'RListSpace',    'rl', ':lua require("r.send").cmd("ls()")')
     M.create('nvi', 'RClearConsole', 'rr', ':call RClearConsole()')
     M.create('nvi', 'RClearAll',     'rm', ':call RClearAll()')
 
@@ -111,8 +111,8 @@ end
 
 M.start = function()
     -- Start
-    M.create('nvi', 'RStart',       'rf', ':call StartR("R")')
-    M.create('nvi', 'RCustomStart', 'rc', ':call StartR("custom")')
+    M.create('nvi', 'RStart',       'rf', ':lua require("r.run").start_R("R")')
+    M.create('nvi', 'RCustomStart', 'rc', ':lua require("r.run").start_R("custom")')
 
     -- Close
     M.create('nvi', 'RClose',       'rq', ":call RQuit('nosave')")
@@ -124,7 +124,7 @@ M.edit = function()
     -- Edit
     -- Replace <M--> with ' <- '
     if cfg.assign then
-        vim.api.nvim_buf_set_keymap(0, 'i', cfg.assign_map, '<Esc>:call RAssign()<CR>a', {silent = true})
+        vim.api.nvim_buf_set_keymap(0, 'i', cfg.assign_map, '<Esc>:lua require("r.edit").assign()<CR>a', {silent = true})
     end
 end
 
@@ -175,7 +175,7 @@ M.send = function()
     M.create('i',   'RILeftPart', 'r<left>', 'l:call RSendPartOfLine("left", 1)')
     M.create('i',   'RIRightPart', 'r<right>', 'l:call RSendPartOfLine("right", 1)')
     if vim.o.filetype == "r" then
-        M.create('n', 'RSendAboveLines',  'su', ':call SendAboveLinesToR()')
+        M.create('n', 'RSendAboveLines',  'su', ':require("r.send").above_lines()')
     end
 
     -- Debug

@@ -42,12 +42,24 @@ M.set_my_port = function (p)
     my_port = p
     vim.env.NVIMR_PORT = p
     if waiting_to_start_r ~= '' then
-        M.really_start_R(waiting_to_start_r)
+        M.start_R(waiting_to_start_r)
         waiting_to_start_r = ''
     end
 end
 
-M.really_start_R = function (whatr)
+M.auto_start_R = function ()
+    if vim.g.R_Nvim_status > 3 then
+        return
+    end
+    if vim.v.vim_did_enter == 0 or vim.g.R_Nvim_status < 3 then
+        vim.fn.timer_start(100, M.auto_start_R)
+        return
+    end
+    M.start_R("R")
+end
+
+M.start_R = function (whatr)
+    vim.g.R_Nvim_status = 3
     wait_nvimcom = 1
     require("r.send").cmd = require("r.send").not_ready
 
@@ -207,10 +219,6 @@ M.really_start_R = function (whatr)
         return
     end
 
-    if vim.fn.IsSendCmdToRFake() == 1 then
-        return
-    end
-
     local args_str = table.concat(r_args, " ")
     local rcmd = config.R_app .. " " .. args_str
 
@@ -228,7 +236,7 @@ M.check_nvimcom_running = function ()
     vim.g.nseconds = vim.g.nseconds - 1
     if R_pid == 0 then
         if vim.g.nseconds > 0 then
-            vim.fn.timer_start(1000, 'CheckIfNvimcomIsRunning')
+            vim.fn.timer_start(1000, M.check_nvimcom_running)
         else
             local msg = "The package nvimcom wasn't loaded yet. Please, quit R and try again."
             warn(msg)
@@ -248,7 +256,7 @@ M.wait_nvimcom_start = function()
     end
 
     vim.g.nseconds = config.wait
-    vim.fn.timer_start(1000, 'CheckIfNvimcomIsRunning')
+    vim.fn.timer_start(1000, M.check_nvimcom_running)
 end
 
 M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
@@ -327,14 +335,13 @@ end
 M.clear_R_info = function()
     vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.NVIMR_ID))
     vim.fn.delete(config.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.NVIMR_ID))
-    vim.g.SendCmdToR = vim.fn.SendCmdToR_fake
     R_pid = 0
-
+    vim.g.R_Nvim_status = 3
     if type(config.external_term) == 'boolean' and config.external_term == false then
         vim.fn.CloseRTerm()
     end
-
     job.stdin("Server", "43\n")
+    vim.g.R_Nvim_status = 1
 end
 
 

@@ -1,6 +1,6 @@
 
 local config = require("r.config").get_config()
-
+local warn = require("r").warn
 local del_list = {}
 local rscript_name = "undefined"
 local debug_info = {Time = {}}
@@ -124,6 +124,14 @@ end
 
 M.raise_window = function(ttl)
     vim.fn.RRaiseWindow(ttl)
+end
+
+M.build_tags = function ()
+    if vim.fn.filereadable("etags") then
+        warn('The file "etags" exists. Please, delete it and try again.')
+        return
+    end
+    require("r.send").cmd('rtags(ofile = "etags"); etags2ctags("etags", "tags"); unlink("etags")')
 end
 
 return M

@@ -80,10 +80,10 @@ function! RBrowserDoubleClick()
     if line(".") == 1
         if g:rplugin.curview == "libraries"
             let g:rplugin.curview = "GlobalEnv"
-            call JobStdin(g:rplugin.jobs["Server"], "31\n")
+            call JobStdin("Server", "31\n")
         else
             let g:rplugin.curview = "libraries"
-            call JobStdin(g:rplugin.jobs["Server"], "321\n")
+            call JobStdin("Server", "321\n")
         endif
         return
     endif
@@ -96,7 +96,7 @@ function! RBrowserDoubleClick()
             call SendToNvimcom("L", key)
         elseif curline =~ "\[#.*\t" || curline =~ "\$#.*\t" || curline =~ "<#.*\t" || curline =~ ":#.*\t"
             let key = substitute(key, '`', '', 'g')
-            call JobStdin(g:rplugin.jobs["Server"], "33G" . key . "\n")
+            call JobStdin("Server", "33G" . key . "\n")
         else
             call g:SendCmdToR("str(" . key . ")")
         endif
@@ -106,7 +106,7 @@ function! RBrowserDoubleClick()
             call AskRDoc(key, RBGetPkgName(), 0)
         else
             if key =~ ":$" || curline =~ "\[#.*\t" || curline =~ "\$#.*\t" || curline =~ "<#.*\t" || curline =~ ":#.*\t"
-                call JobStdin(g:rplugin.jobs["Server"], "33L" . key . "\n")
+                call JobStdin("Server", "33L" . key . "\n")
             else
                 call g:SendCmdToR("str(" . key . ")")
             endif
@@ -271,7 +271,7 @@ function! OnOBBufUnload()
 endfunction
 
 function! PrintListTree()
-    call JobStdin(g:rplugin.jobs["Server"], "37\n")
+    call JobStdin("Server", "37\n")
 endfunction
 
 nnoremap <buffer><silent> <CR> :call RBrowserDoubleClick()<CR>
