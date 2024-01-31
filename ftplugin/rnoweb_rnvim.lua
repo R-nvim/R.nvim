@@ -11,7 +11,7 @@ if cfg.rnowebchunk then
     vim.api.nvim_buf_set_keymap(0, 'i', "<", "<Esc>:call RWriteChunk()<CR>a", {silent = true})
 end
 
-vim.cmd("source " .. vim.fn.substitute(vim.g.rplugin.home, " ", "\\ ", "g") .. "/R/rnw_fun.vim")
+vim.cmd("source " .. vim.fn.substitute(require("r.config").get_config().rnvim_home, " ", "\\ ", "g") .. "/R/rnw_fun.vim")
 
 -- Pointers to functions whose purposes are the same in rnoweb, rrst, rmd,
 -- rhelp and rdoc and which are called at common_global.vim

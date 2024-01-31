@@ -57,7 +57,7 @@ M.really_start_R = function (whatr)
             warn("Cannot start R: nvimrserver not running")
             return
         end
-        if vim.g.rplugin.nrs_running == 0 then
+        if vim.g.R_Nvim_status < 3 then
             warn("nvimrserver not ready yet")
             return
         end
@@ -115,7 +115,7 @@ M.really_start_R = function (whatr)
     else
         table.insert(start_options, 'options(nvimcom.texerrs = FALSE)')
     end
-    if vim.g.rplugin.update_glbenv then
+    if config.update_glbenv then
         table.insert(start_options, 'options(nvimcom.autoglbenv = TRUE)')
     else
         table.insert(start_options, 'options(nvimcom.autoglbenv = FALSE)')
@@ -326,7 +326,7 @@ end
 
 M.clear_R_info = function()
     vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.NVIMR_ID))
-    vim.fn.delete(vim.g.rplugin.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.NVIMR_ID))
+    vim.fn.delete(config.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.NVIMR_ID))
     vim.g.SendCmdToR = vim.fn.SendCmdToR_fake
     R_pid = 0
 

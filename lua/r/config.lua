@@ -37,7 +37,7 @@ local config = {
     listmethods         = false,
     min_editor_width    = 80,
     non_r_compl         = true,
-    notmuxconf          = false,
+    config_tmux         = true,
     nvim_wd             = 0,
     nvimpager           = "vertical",
     objbr_allnames      = false,
@@ -85,18 +85,6 @@ local config = {
 
 local user_opts = {}
 local did_global_setup = false
-
-local dir_exists = function(dir)
-    local d = tostring(dir) .. "/"
-    local ok, _, code = os.rename(d, d)
-   if not ok then
-      if code == 13 then
-         -- Permission denied, but it exists
-         return true
-      end
-   end
-   return false
-end
 
 local set_editing_mode = function ()
     local em = "emacs"
@@ -565,8 +553,6 @@ local tmux_config = function ()
             vim.fn.RWarningMsg("R-Nvim requires Tmux >= 3.0")
         end
     end
-
-    config.tmuxsname = "NvimR-" .. vim.fn.substitute(vim.fn.localtime(), '.*\\(...\\)', '\\1', '')
 end
 
 local unix_config = function ()
@@ -665,8 +651,6 @@ M.real_setup = function ()
 
     if not did_global_setup then
         global_setup()
-        vim.g.rplugin = vim.deepcopy(config)
-        vim.g.Rcfg = vim.deepcopy(config)
     end
 end
 

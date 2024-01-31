@@ -130,7 +130,7 @@ struct sockaddr_in servaddr; // Server address structure
 static int sockfd;           // socket file descriptor
 static int connfd;           // Connection file descriptor
 
-#define Debug_NRS
+#define Debug_NRS_
 __attribute__((format(printf, 1, 2))) static void
 Log(const char *fmt, ...) // Logging function for debugging
 {

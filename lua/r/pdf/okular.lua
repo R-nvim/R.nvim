@@ -1,6 +1,9 @@
 local M = {}
+local job = require("r.job")
+local warn = require("r").warn
+local config = require("r.config").get_config()
 
-local OkularJobStdout = function (_, data, _)
+local on_okular_stdout = function (_, data, _)
     for _, cmd in ipairs(data) do
         if vim.startswith(cmd, "call ") then
             vim.cmd(cmd)
@@ -9,8 +12,7 @@ local OkularJobStdout = function (_, data, _)
 end
 
 M.open = function (fullpath)
-        vim.g.rplugin.jobs["OkularSyncTeX"] = vim.fn.jobstart(
-        {
+    job.start("OkularSyncTeX", {
             "okular",
             "--unique",
             "--editor-cmd",
@@ -19,20 +21,18 @@ M.open = function (fullpath)
         },
         {
             detach = true,
-            on_stdout = vim.schedule_wrap(function(job_id, data, event_type)
-                OkularJobStdout(job_id, data, event_type)
-            end)
+            on_stdout = on_okular_stdout,
         }
     )
-    if vim.g.rplugin.jobs["Okular"] < 1 then
-        vim.notify("Failed to run Okular...")
+    if job.is_running("Okular") < 1 then
+        warn("Failed to run Okular...")
     end
 end
 
 M.SyncTeX_forward = function (tpath, ppath, texln, _)
     local texname = vim.fn.substitute(tpath, ' ', '\\ ', 'g')
     local pdfname = vim.fn.substitute(ppath, ' ', '\\ ', 'g')
-    vim.g.rplugin.jobs["OkularSyncTeX"] = vim.fn.jobstart(
+    job.start("OkularSyncTeX",
         {
             "okular",
             "--unique",
@@ -42,16 +42,14 @@ M.SyncTeX_forward = function (tpath, ppath, texln, _)
         },
         {
             detach = true,
-            on_stdout = vim.schedule_wrap(function(job_id, data, event_type)
-                OkularJobStdout(job_id, data, event_type)
-            end)
+            on_stdout = on_okular_stdout,
         }
     )
-    if vim.g.rplugin.jobs["OkularSyncTeX"] < 1 then
-        vim.notify("Failed to run Okular (SyncTeX forward)...")
+    if job.is_running("OkularSyncTeX") < 1 then
+        warn("Failed to run Okular (SyncTeX forward)...")
     end
-    if vim.g.rplugin.has_awbt then
-        vim.fn.RRaiseWindow(pdfname)
+    if config.has_awbt then
+        require("r.edit").raise_window(pdfname)
     end
 end
 

@@ -182,18 +182,7 @@ common issues.
 
 To see messages received by `nvimcom`, put in your `~/.Rprofile`:
 >r
-  options(nvimcom.verbose = 4)
-<
-To see messages received by Neovim, uncomment the first line of the function
-`ROnJobStdout()` at `R/ninit.luaom.vim` and delete the string "DEBUG:". It will
-become:
->vim
-  call writefile(a:data, "/dev/shm/nvimrserver_stdout", "a")
-<
-Then, in another terminal or in another Tmux pane, you would have to use tail
-to follow the output:
->
-  tail -f /dev/shm/nvimrserver_stdout
+  options(nvimcom.verbose = 5)
 <
 If R does not start with the <LocalLeader>rf command and you get an error
 message instead, you may want to set the path to the R executable (see
@@ -1420,17 +1409,17 @@ that the file is open in a new split window, put in your config:
 <
 
 ------------------------------------------------------------------------------
-6.12. Tmux configuration (Linux/Unix only)                      *notmuxconf*
+6.12. Tmux configuration (Linux/Unix only)                       *config_tmux*
 
 
 If Neovim is running R in an external terminal emulator, R will run in a Tmux
 session with a specially built Tmux configuration file. If you want to use
 your own ~/.tmux.conf, put in your config:
 >lua
-   notmuxconf = true
+   config_tmux = false
 <
 If you opted for using your own configuration file, the plugin will write a
-minimum configuration which will set the value of four environment variables
+minimum configuration which will set the value of environment variables
 required for the communication with R and then source your own configuration
 file (~/.tmux.conf).
 
@@ -1993,8 +1982,8 @@ stored by setting in your config the values of `tmpdir` and
 The default paths of these directories depend on the operating system. If you
 want to know what they are, while editing an R file, do in Normal mode:
 >vim
-   :echo g:rplugin.tmpdir
-   :echo g:rplugin.compldir
+   :lua print(require("r.config").get_config().tmpdir)
+   :lua print(require("r.config").get_config().compldir)
 <
 
 ------------------------------------------------------------------------------
