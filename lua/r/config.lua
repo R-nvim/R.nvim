@@ -1,5 +1,5 @@
 local warn = require("r").warn
-local utils = require("r").utils
+local utils = require("r.utils")
 
 local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
 
