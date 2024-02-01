@@ -4,17 +4,20 @@ local config = require("r.config").get_config()
 local job = require("r.job")
 local edit = require("r.edit")
 local warn = require("r").warn
+local utils = require("r.utils")
 local autosttobjbr
 local my_port = 0
 local R_pid = 0
 local r_args
 local wait_nvimcom = 0
 local waiting_to_start_r = ''
+local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
 
 local get_buf_dir = function()
     local rwd = vim.api.nvim_buf_get_name(0)
-    if vim.fn.has("win32") == 1 then
+    if is_windows then
         rwd = vim.fn.substitute(rwd, '\\', '/', 'g')
+        rwd = utils.nomralize_windows_path(rwd)
     end
     rwd = vim.fn.substitute(rwd, '\\(.*\\)/.*', '\\1', '')
     return rwd
@@ -25,7 +28,7 @@ local set_send_cmd_fun = function ()
     if config.RStudio_cmd then
         send.cmd = require("r.rstudio").send_cmd_to_RStudio
     elseif (type(config.external_term) == "boolean" and config.external_term) or type(config.external_term) == "string" then
-        if vim.fn.has("win32") == 1 then
+        if is_windows then
             send.cmd = require("r.windows").send_cmd_to_Rgui
         elseif config.is_darwin and config.applescript then
             send.cmd = require("r.osx").send_cmd_to_Rapp
@@ -170,7 +173,7 @@ M.start_R = function (whatr)
         rwd = vim.fn.getcwd()
     end
     if rwd ~= "" and not config.remote_compldir then
-        if vim.fn.has("win32") == 1 then
+        if is_windows then
             rwd = vim.fn.substitute(rwd, '\\', '/', 'g')
         end
 
@@ -214,7 +217,7 @@ M.start_R = function (whatr)
         return
     end
 
-    if vim.fn.has("win32") == 1 then
+    if is_windows then
         require("r.windows").start_Rgui()
         return
     end
@@ -287,7 +290,7 @@ M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
     end
 
     if job.is_running("Server") then
-        if vim.fn.has("win32") == 1 then
+        if is_windows then
             if vim.fn.string(vim.fn.getenv("RCONSOLE")) == "0" then
                 warn("nvimcom did not save R window ID")
             end
@@ -297,11 +300,11 @@ M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
     end
 
     if vim.fn.exists("g:RStudio_cmd") == 1 then
-        if vim.fn.has("win32") == 1 and config.arrange_windows and
+        if is_windows and config.arrange_windows and
             vim.fn.filereadable(config.compldir .. "/win_pos") == 1 then
             job.stdin("Server", "85" .. config.compldir .. "\n")
         end
-    elseif vim.fn.has("win32") == 1 then
+    elseif is_windows then
         if config.arrange_windows and vim.fn.filereadable(config.compldir .. "/win_pos") == 1 then
             job.stdin("Server", "85" .. config.compldir .. "\n")
         end
@@ -374,7 +377,7 @@ M.quit_R = function (how)
         qcmd = 'quit(save = "no")'
     end
 
-    if vim.fn.has("win32") == 1 then
+    if is_windows then
         if type(config.external_term) == "boolean" and config.external_term then
             -- SaveWinPos
             job.stdin("Server", "84" .. vim.fn.escape(vim.env.NVIMR_COMPLDIR, '\\') .. "\n")

@@ -67,7 +67,7 @@ static char *send_ge_buf; // Temporary buffer used to store the list of
 static unsigned long lastglbnvbsz;         // Previous size of glbnvbuf2.
 static unsigned long glbnvbufsize = 32768; // Current size of glbnvbuf2.
 
-static unsigned long tcp_header_len; // Lenght of nvimsecr + 9. Stored in a
+static unsigned long tcp_header_len; // Length of nvimsecr + 9. Stored in a
                                      // variable to avoid repeatedly calling
                                      // strlen().
 
