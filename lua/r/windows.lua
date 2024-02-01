@@ -52,7 +52,7 @@ M.clean_nvim_and_start_Rgui = function()
     M.start_Rgui()
 end
 
-M.send_cmd_to_Rgui = function(command)
+M.send_cmd_to_Rgui = function(command, _)
     local cmd
     if config.clear_line then
         cmd = "\001" .. "\013" .. command .. "\n"
