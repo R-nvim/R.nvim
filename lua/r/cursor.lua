@@ -39,4 +39,9 @@ end
 -- Move the cursor to next code chunk
 M.move_next_chunk = function() end
 
+M.get_first_obj = function (_)
+    vim.notify("cursor.get_first_obj() not converted from VimScript yet")
+    return ""
+end
+
 return M

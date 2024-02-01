@@ -641,8 +641,7 @@ local global_setup = function ()
     end, {nargs = 1, complete = "dir"})
 
     vim.api.nvim_create_user_command("Rhelp", function(tbl)
-        -- FIXME: it was :call RAskHelp(<q-args>)
-        vim.notify(tbl.fargs)
+        require("r.doc").ask_R_help(tbl.fargs)
     end,
     {
         nargs = 1,
