@@ -46,10 +46,11 @@ local set_buf_options = function()
     nnoremap <buffer><silent> <CR> <Cmd>lua require("r.browser").on_double_click()<CR>
     nnoremap <buffer><silent> <2-LeftMouse> <Cmd>lua require("r.browser").on_double_click()<CR>
     nnoremap <buffer><silent> <RightMouse> <Cmd>lua require("r.browser").on_right_click()<CR>
+    set syntax=rbrowser
     ]])
 
-    vim.api.nvim_buf_set_var(0, "syntax", "rbrowser")
-    require("r.maps").control()
+    -- FIXME: lua/r/maps.lua:52: attempt to call field 'create' (a nil value)
+    -- require("r.maps").control()
 end
 
 local get_name = function ()
@@ -218,8 +219,8 @@ L.start_OB = function ()
 
         set_buf_options()
         curview = "GlobalEnv"
-        ob_winnr = tonumber(vim.fn.winnr())
-        ob_buf = vim.api.nvim_win_get_buf(ob_winnr)
+        ob_winnr = vim.fn.winnr()
+        ob_buf = vim.fn.bufnr()
 
         if config.objbr_auto_start and auto_starting then
             auto_starting = false
