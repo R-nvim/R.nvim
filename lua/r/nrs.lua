@@ -180,7 +180,7 @@ local StartNServer = function ()
     vim.fn.delete(config.tmpdir .. '/run_R_stdout')
     vim.fn.delete(config.tmpdir .. '/run_R_stderr')
 
-    vim.cmd("command RGetNCSInfo :lua require('r.nrs').request_nrs_info()")
+    vim.api.nvim_create_user_command("RGetNRSInfo", require('r.nrs').request_nrs_info, {})
 end
 
 -- Check if the exit code of the script that built nvimcom was zero
@@ -341,11 +341,13 @@ local AddToRhelpList = function (lib)
 end
 
 -- Filter words for :Rhelp
-M.RLisObjs = function (arglead, _, _)
+--- arg string Argument being typed to command.
+--- _   string The complete command line, including "Rhelp".
+--- _   number Cursor position in complete command line.
+M.list_objs = function (arg, _, _)
     local lob = {}
-    local rkeyword = '^' .. arglead
-    for _, xx in ipairs(Rhelp_loaded) do
-        if string.match(xx, rkeyword) then
+    for _, xx in ipairs(Rhelp_list) do
+        if xx:sub(1, 1) == arg:sub(1, 1) then
             table.insert(lob, xx)
         end
     end
