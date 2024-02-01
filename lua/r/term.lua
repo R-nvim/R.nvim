@@ -5,6 +5,7 @@ local warn = require("r").warn
 local R_width = 80
 local number_col
 local R_bufnr = nil
+local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
 
 M.send_cmd_to_term = function(command, nl)
 
@@ -32,7 +33,7 @@ M.send_cmd_to_term = function(command, nl)
         if rwnwdth ~= R_width and rwnwdth ~= -1 and rwnwdth > 10 and rwnwdth < 999 then
             R_width = rwnwdth
             local Rwidth = R_width + number_col
-            if vim.fn.has("win32") == 1 then
+            if is_windows then
                 cmd = "options(width=" .. Rwidth .. "); " .. cmd
             else
                 require("r.run").send_to_nvimcom("E", "options(width=" .. Rwidth .. ")")
@@ -112,11 +113,11 @@ M.start_term = function ()
 
     split_window()
 
-    if vim.fn.has("win32") == 1 then
+    if is_windows then
         require("r.windows").set_R_home()
     end
     require("r.job").R_term_open(config.R_app .. ' ' .. table.concat(config.R_args, ' '))
-    if vim.fn.has("win32") == 1 then
+    if is_windows then
         vim.cmd("redraw")
         require("r.windows").unset_R_home()
     end
