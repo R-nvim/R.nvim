@@ -131,9 +131,8 @@ M.start_extern_term = function(Rcmd)
                 ' NVIMR_COMPLDIR=' .. vim.fn.substitute(config.compldir, ' ', '\\ ', 'g') ..
                 ' NVIMR_ID=' .. vim.env.NVIMR_ID ..
                 ' NVIMR_SECRET=' .. vim.env.NVIMR_SECRET ..
-                ' NVIMR_PORT=' .. config.myport ..
+                ' NVIMR_PORT=' .. vim.env.NVIMR_PORT ..
                 ' R_DEFAULT_PACKAGES=' .. vim.env.R_DEFAULT_PACKAGES ..
-                ' NVIM_IP_ADDRESS=' .. vim.env.NVIM_IP_ADDRESS ..
                 ' ' .. Rcmd
 
     vim.fn.system("tmux -L NvimR has-session -t " .. tmuxsname)
@@ -177,7 +176,7 @@ M.start_extern_term = function(Rcmd)
             on_exit = job.on_exit,
             detach = 1
         })
-        vim.fn.delete(init_file)
+        require("r.edit").add_for_deletion(init_file)
     end
 
     require("r.run").wait_nvimcom_start()
@@ -201,8 +200,8 @@ M.send_cmd_to_external_term = function(command, nl)
     end
 
     local scmd
-    if nl then
-        scmd = string.format("tmux -L NvimR set-buffer '%s\\<CR>' ; tmux -L NvimR paste-buffer -t %s.%s", str, tmuxsname, TmuxOption("pane-base-index", "window"))
+    if nl ~= false then
+        scmd = string.format("tmux -L NvimR set-buffer '%s\n' ; tmux -L NvimR paste-buffer -t %s.%s", str, tmuxsname, TmuxOption("pane-base-index", "window"))
     else
         scmd = string.format("tmux -L NvimR set-buffer '%s' ; tmux -L NvimR paste-buffer -t %s.%s", str, tmuxsname, TmuxOption("pane-base-index", "window"))
     end
