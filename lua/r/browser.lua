@@ -337,7 +337,7 @@ M.on_double_click = function ()
     else
         if vim.fn.match(curline, "(#.*\t") > -1 then
             key = vim.fn.substitute(key, '`', '', 'g')
-            vim.fn.AskRDoc(key, get_pkg_name(), 0)
+            require("r.doc").ask_R_doc(key, get_pkg_name(), false)
         else
             if vim.fn.match(key, ":$") or vim.fn.match(curline, "\\[#.*\t") > -1 or vim.fn.match(curline, "\\$#.*\t") > -1 or vim.fn.match(curline, "<#.*\t") > -1 or vim.fn.match(curline, ":#.*\t") > -1 then
                 job.stdin("Server", "33L" .. key .. "\n")
