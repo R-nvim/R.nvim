@@ -196,13 +196,3 @@ endfunction
 function JobStdin(key, cmd)
     exe 'lua require("r.job").stdin("' . a:key . '", "' . a:cmd . '")'
 endfunction
-
-command -nargs=1 -complete=customlist,RLisObjs Rinsert :call RInsert(<q-args>, "here")
-command -range=% Rformat <line1>,<line2>:call RFormatCode()
-command RBuildTags :lua require("r.edit").build_tags()
-command -nargs=? -complete=customlist,RLisObjs Rhelp :call RAskHelp(<q-args>)
-command -nargs=? -complete=dir RSourceDir :call RSourceDirectory(<q-args>)
-command RStop :lua require("r.run").signal_to_R('SIGINT')
-command RKill :lua require("r.run").signal_to_R('SIGKILL')
-command -nargs=? RSend :lua require("r.send").cmd(<q-args>)
-command RDebugInfo :lua require("r.edit").show_debug_info()
