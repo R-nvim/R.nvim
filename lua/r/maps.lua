@@ -27,22 +27,23 @@ M.create = function(mode, plug, combo, target)
         tg = target .. '<CR>'
         il = 'a'
     end
+    local opts = { silent = true, noremap = true, expr = false }
     if mode:find("n") then
-        vim.api.nvim_buf_set_keymap(0, 'n', '<Plug>' .. plug, tg, {silent = true, noremap = true, expr = false})
+        vim.api.nvim_buf_set_keymap(0, 'n', '<Plug>' .. plug, tg, opts)
         if not cfg.user_maps_only and vim.fn.hasmapto('<Plug>' .. plug, "n") == 0 then
-            vim.api.nvim_buf_set_keymap(0, 'n', '<LocalLeader>' .. combo, '<Plug>' .. plug, {silent = true, noremap = true, expr = false})
+            vim.api.nvim_buf_set_keymap(0, 'n', '<LocalLeader>' .. combo, '<Plug>' .. plug, opts)
         end
     end
     if mode:find("v") then
-        vim.api.nvim_buf_set_keymap(0, 'v', '<Plug>' .. plug, '<Esc>' .. tg, {silent = true, noremap = true, expr = false})
+        vim.api.nvim_buf_set_keymap(0, 'v', '<Plug>' .. plug, '<Esc>' .. tg, opts)
         if not cfg.user_maps_only and vim.fn.hasmapto('<Plug>' .. plug, "v") == 0 then
-            vim.api.nvim_buf_set_keymap(0, 'v', '<LocalLeader>' .. combo, '<Esc>' .. tg, {silent = true, noremap = true, expr = false})
+            vim.api.nvim_buf_set_keymap(0, 'v', '<LocalLeader>' .. combo, '<Esc>' .. tg, opts)
         end
     end
     if cfg.insert_mode_cmds and mode:find("i") then
-        vim.api.nvim_buf_set_keymap(0, 'i', '<Plug>' .. plug, '<Esc>' .. tg .. il, {silent = true, noremap = true, expr = false})
+        vim.api.nvim_buf_set_keymap(0, 'i', '<Plug>' .. plug, '<Esc>' .. tg .. il, opts)
         if not cfg.user_maps_only and vim.fn.hasmapto('<Plug>' .. plug, "i") == 0 then
-            vim.api.nvim_buf_set_keymap(0, 'i', '<LocalLeader>' .. combo, '<Esc>' .. tg .. il, {silent = true, noremap = true, expr = false})
+            vim.api.nvim_buf_set_keymap(0, 'i', '<LocalLeader>' .. combo, '<Esc>' .. tg .. il, opts)
         end
     end
 end

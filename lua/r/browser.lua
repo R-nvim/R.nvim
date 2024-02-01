@@ -23,33 +23,38 @@ local hasbrowsermenu = false
 local L = {}
 
 local set_buf_options = function()
-    vim.cmd([[
-    setlocal noswapfile
-    setlocal buftype=nofile
-    setlocal nowrap
-    setlocal iskeyword=@,48-57,_,.
-    setlocal nolist
-    setlocal nonumber
-    setlocal norelativenumber
-    setlocal nocursorline
-    setlocal nocursorcolumn
-    setlocal nospell
+    vim.api.nvim_set_option_value("wrap",           false, { scope = "local" })
+    vim.api.nvim_set_option_value("list",           false, { scope = "local" })
+    vim.api.nvim_set_option_value("number",         false, { scope = "local" })
+    vim.api.nvim_set_option_value("relativenumber", false, { scope = "local" })
+    vim.api.nvim_set_option_value("cursorline",     false, { scope = "local" })
+    vim.api.nvim_set_option_value("cursorcolumn",   false, { scope = "local" })
+    vim.api.nvim_set_option_value("spell",          false, { scope = "local" })
+    vim.api.nvim_set_option_value("winfixwidth",    false, { scope = "local" })
+    vim.api.nvim_set_option_value("swapfile",       false, { scope = "local" })
+    vim.api.nvim_set_option_value("bufhidden",     "wipe", { scope = "local" })
+    vim.api.nvim_set_option_value("buftype",     "nofile", { scope = "local" })
+    vim.api.nvim_set_option_value("syntax",    "rbrowser", { scope = "local" })
+    vim.api.nvim_set_option_value("iskeyword", "@,48-57,_,.", { scope = "local" })
 
-    setlocal winfixwidth
-    setlocal bufhidden=wipe
+    local opts = { silent = true, noremap = true, expr = false }
+    vim.api.nvim_buf_set_keymap(0, "n", "<CR>", "<Cmd>lua require('r.browser').on_double_click()<CR>", opts)
+    vim.api.nvim_buf_set_keymap(0, "n", "<2-LeftMouse>", "<Cmd>lua require('r.browser').on_double_click()<CR>", opts)
+    vim.api.nvim_buf_set_keymap(0, "n", "<RightMouse>", "<Cmd>lua require('r.browser').on_right_click()<CR>", opts)
 
-    au BufEnter <buffer> stopinsert
-    au BufUnload <buffer> lua require("r.browser").on_BufUnload()
+    vim.api.nvim_create_autocmd("BufEnter", {
+        command = "stopinsert",
+        pattern = "<buffer>"
+    })
 
-    call setline(1, ".GlobalEnv | Libraries")
+    vim.api.nvim_create_autocmd("BufUnload", {
+        command = "lua require('r.browser').on_BufUnload()",
+        pattern = "<buffer>"
+    })
 
-    nnoremap <buffer><silent> <CR> <Cmd>lua require("r.browser").on_double_click()<CR>
-    nnoremap <buffer><silent> <2-LeftMouse> <Cmd>lua require("r.browser").on_double_click()<CR>
-    nnoremap <buffer><silent> <RightMouse> <Cmd>lua require("r.browser").on_right_click()<CR>
-    set syntax=rbrowser
-    ]])
+    vim.fn.setline(1, ".GlobalEnv | Libraries")
 
-    -- FIXME: lua/r/maps.lua:52: attempt to call field 'create' (a nil value)
+    -- FIXME: lua/r/maps.lua:53: attempt to call field 'create' (a nil value)
     -- require("r.maps").control()
 end
 
