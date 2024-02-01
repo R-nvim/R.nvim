@@ -914,8 +914,7 @@ the `init.vim`. The workaround is do not include the superfluous command
 |wait|                Time to wait for nvimcom loading
 |wait_reply|          Time to wait for R reply
 |nvim_wd|             Start R in Neovim's working directory
-|after_start|         Commands to be executed after R startup
-|after_ob_open|       Commands executed after the Object Browser opening
+|hook|                Lua functions to call after certain events
 |debug|               Support for debugging functions
 |user_maps_only|      Only user specified key bindings
 |disable_cmds|        List of commands to be disabled
@@ -945,7 +944,7 @@ even if Neovim is already started, put in your config:
 >lua
    auto_start = 2
 <
-See also: |after_start|.
+See also: |hook|.
 
 If you want to always start the Object Browser immediately after starting R,
 put in your config:
@@ -1845,76 +1844,15 @@ in config:
 
 ------------------------------------------------------------------------------
 6.32. Commands to be executed after either R startup or Object Browser opening
-                                                             *after_start*
-                                                             *after_ob_open*
+                                                             *hook*
 
-If you want the execution of Neovim, R, or external commands right after R
-startup, set the value of `after_start` in your |init.lua|. The `after_start`
-variable must be a list of strings. Strings representing Vim commands must
-start with `:`, R commands must be prefixed with `R:`, and external commands
-must be prefixed with `!`.
-
-You can put commands in your `~/.Rprofile` that will be run only if R was
-started by R-Nvim as in the example below:
->r
-   if (Sys.getenv("NVIMR_TMPDIR") == "")
-       cat("~/Rprofile: R was called by R-Nvim\n", file = stderr())
-<
-However, if for any reason you `~/.Rprofile` is not being sourced, you can
-include in `after_start` R commands that should be executed during R startup
-(more precisely, during `nvimcom` loading). Example:
+If you want the execution of a Lua function just after R startup or after the
+Object Browser opening, set the `hook` config option, as in the example below:
 >lua
-   vim.g.after_start = {'R: cat("R_after_start: R was called by R-Nvim\\n", file = stderr())'}
-<
-Note: The loading of `nvimcom` will fail if the command to be executed is
-invalid. In the example above, we have had to use `\n` in VimScript but `\\n`
-in Lua.
-
-For an example of Vim command, if you want that the R script window is hidden
-right after R startup, put in your config:
->lua
-   after_start = {':hide'}
-<
-R-Nvim stores the environment variable $WINDOWID of the terminal where R is
-running as $RCONSOLE. Thus, if you are running R in a external terminal
-emulator on the X server (not on Wayland) on Linux, `~/bin` is in your path,
-and you want to resize and change the positions of the terminals containing
-Vim and R, you may create a script `~/bin/after_R_start` similar to the
-following:
->
-   #!/bin/sh
-   wmctrl -i -r $RCONSOLE -e 0,0,200,1200,800
-   wmctrl -i -r $WINDOWID -e 0,300,40,1200,800
-   wmctrl -i -r $WINDOWID -b remove,maximized_vert,maximized_horz
-<
-Then, make the script executable, and put in your config:
->lua
-   external_term = true
-   after_start = {'!after_R_start'}
-<
-Similarly, on Mac OS X, the script below (developed by songcai) will bring the
-focus to Neovim terminal window:
->
-   #!/usr/bin/env osascript
-
-   --Raise the Terminal window containing name ".R".
-   tell application "Terminal"
-     set index of window 1 where name contains ".R" to 1
-     delay 0.05
-     activate window 1
-   end tell
-
-   --Click the title bar of the raised window to bring focus to it.
-   tell application "System Events"
-     tell process "Terminal"
-       click menu item (name of window 1) of menu of menu bar item "Window" of menu bar 1
-     end tell
-   end tell
-<
-If you want that R-Nvim executes Vim commands right after the Object Browser
-is open, set the value of `after_ob_open` as a list of commands. Example:
->lua
-   after_ob_open = {':tabnew %'}
+   hook = {
+       after_R_start = function() vim.notify("R was launched") end,
+       after_ob_open = function() vim.notify("Object Browser") end,
+   },
 <
 
 ------------------------------------------------------------------------------

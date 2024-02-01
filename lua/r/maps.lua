@@ -87,9 +87,9 @@ M.control = function()
     M.create('v', 'RSPlot',        'rb', ':call RAction("plotsumm", "v")')
 
     -- Object Browser
-    M.create('nvi', 'RUpdateObjBrowser', 'ro', ':call RObjBrowser()')
-    M.create('nvi', 'ROpenLists',        'r=', ':call RBrOpenCloseLs("O")')
-    M.create('nvi', 'RCloseLists',       'r-', ':call RBrOpenCloseLs("C")')
+    M.create('nvi', 'RUpdateObjBrowser', 'ro', ':lua require("r.browser").start()')
+    M.create('nvi', 'ROpenLists',        'r=', ':lua require("r.browser").open_close_lists("O")')
+    M.create('nvi', 'RCloseLists',       'r-', ':lua require("r.browser").open_close_lists("C")')
 
     -- Render script with rmarkdown
     M.create('nvi', 'RMakeRmd',    'kr', ':call RMakeRmd("default")')

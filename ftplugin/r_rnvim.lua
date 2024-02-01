@@ -8,8 +8,9 @@ local routfile
 require("r.config").real_setup()
 
 local get_R_output = function (_)
+    local config = require("r.config").get_config()
     if vim.fn.filereadable(routfile) then
-        if vim.g.R_routnotab == 1 then
+        if config.routnotab then
             vim.api.nvim_command("split " .. routfile)
             vim.api.nvim_command("set filetype=rout")
             vim.api.nvim_command("normal! %<c-w>%<c-p>")

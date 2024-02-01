@@ -87,16 +87,16 @@ local split_window = function()
 end
 
 local re_open_win = function()
-    local wlist = vim.fn.nvim_list_wins()
+    local wlist = vim.api.nvim_list_wins()
     for _, wnr in ipairs(wlist) do
-        if vim.fn.nvim_win_get_buf(wnr) == R_bufnr then
+        if vim.api.nvim_win_get_buf(wnr) == R_bufnr then
             -- The R buffer is visible
             return
         end
     end
     local edbuf = vim.fn.bufname("%")
     split_window()
-    vim.fn.nvim_win_set_buf(0, R_bufnr)
+    vim.api.nvim_win_set_buf(0, R_bufnr)
     vim.cmd("sbuffer " .. edbuf)
 end
 
@@ -154,6 +154,10 @@ M.highlight_term = function()
     if R_bufnr then
         vim.api.nvim_set_option_value("syntax", "rout", { buf = R_bufnr })
     end
+end
+
+M.get_buf_nr = function()
+    return R_bufnr
 end
 
 return M
