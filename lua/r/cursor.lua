@@ -33,6 +33,10 @@ end
 
 -- Moe the cursor to the next line
 M.move_next_line = function()
+  if vim.fn.line('.') == vim.fn.line('$') then
+    return
+  end
+
   vim.api.nvim_win_set_cursor(0, { vim.fn.line('.') + 1, 0 })
 end
 
