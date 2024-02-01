@@ -5,7 +5,7 @@ local warn = require("r").warn
 local R_width = 80
 local number_col
 local R_bufnr = nil
-local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
+local is_windows = vim.uv.os_uname().sysname:find("Windows") ~= nil
 
 M.send_cmd_to_term = function(command, nl)
 

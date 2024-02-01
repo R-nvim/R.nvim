@@ -11,7 +11,7 @@ local pkgbuild_attempt = false
 local Rhelp_loaded = {}
 local Rhelp_list = {}
 local Rtime
-local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
+local is_windows = vim.uv.os_uname().sysname:find("Windows") ~= nil
 
 local M = {}
 
