@@ -1,4 +1,7 @@
 local warn = require("r").warn
+local utils = require("r").utils
+
+local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
 
 local config = {
     OutDec              = ".",
@@ -119,7 +122,7 @@ local set_pdf_viewer = function ()
     if config.is_darwin then
         config.pdfviewer = "skim"
     else
-        if vim.fn.has("win32") == 1 then
+        if is_windows then
             config.pdfviewer = "sumatra"
         else
             config.pdfviewer = "zathura"
@@ -179,14 +182,14 @@ local do_common_global = function()
         warn("Could not determine user name.")
     end
 
-    if vim.fn.has("win32") ~= 0 then
-        config.rnvim_home = vim.fn.substitute(config.rnvim_home, "\\", "/", "g")
-        config.uservimfiles = vim.fn.substitute(config.uservimfiles, "\\", "/", "g")
+    if is_windows then
+        config.rnvim_home = utils.normalize_windows_path(config.rnvim_home)
+        config.uservimfiles = utils.normalize_windows_path(config.uservimfiles)
     end
 
     if config.compldir then
         config.compldir = vim.fn.expand(config.compldir)
-    elseif vim.fn.has("win32") ~= 0 and vim.env.APPDATA then
+    elseif is_windows and vim.env.APPDATA then
         config.compldir = vim.fn.expand(vim.env.APPDATA) .. "\\R-Nvim"
     elseif vim.env.XDG_CACHE_HOME then
         config.compldir = vim.fn.expand(vim.env.XDG_CACHE_HOME) .. "/R-Nvim"
@@ -198,10 +201,7 @@ local do_common_global = function()
         config.compldir = config.uservimfiles .. "/R/objlist/"
     end
 
-    -- Create the directory if it doesn't exist yet
-    if vim.fn.isdirectory(config.compldir) ~= 1 then
-        vim.fn.mkdir(config.compldir, "p")
-    end
+  utils.ensure_directory_exists(config.compldir)
 
     if vim.fn.filereadable(config.compldir .. "/uname") ~= 0 then
         config.uname = vim.fn.readfile(config.compldir .. "/uname")[1]
@@ -295,7 +295,7 @@ local do_common_global = function()
     -- Check if the 'config' table has the key 'tmpdir'
     if not config.tmpdir then
         -- Set temporary directory based on the platform
-        if vim.fn.has("win32") ~= 0 then
+        if is_windows then
             if vim.fn.isdirectory(vim.env.TMP) ~= 0 then
                 config.tmpdir = vim.env.TMP .. "/NvimR-" .. config.user_login
             elseif vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
@@ -303,7 +303,7 @@ local do_common_global = function()
             else
                 config.tmpdir = config.uservimfiles .. "/R/tmp"
             end
-            config.tmpdir = vim.fn.substitute(config.tmpdir, "\\", "/", "g")
+            config.tmpdir = utils.normalize_windows_path(config.tmpdir)
         else
             if vim.fn.isdirectory(vim.env.TMPDIR) ~= 0 then
                 if vim.fn.matchstr(vim.env.TMPDIR, "/$") ~= "" then
@@ -321,11 +321,7 @@ local do_common_global = function()
         end
     end
 
-    -- Create the directory if it doesn't exist yet
-    if vim.fn.isdirectory(config.tmpdir) ~= 1 then
-        -- FIXME flag 0700 not working
-        vim.fn.mkdir(config.tmpdir, "p")
-    end
+    utils.ensure_directory_exists(config.tmpdir)
 
     -- Set local tmp directory when accessing R remotely
     config.localtmpdir = config.tmpdir
@@ -341,17 +337,13 @@ local do_common_global = function()
         vim.env.NVIMR_REMOTE_TMPDIR = config.tmpdir
     end
 
-    -- Create the directory if it doesn't exist yet
-    if vim.fn.isdirectory(config.localtmpdir) ~= 1 then
-        -- FIXME flag 0700 not working
-        vim.fn.mkdir(config.localtmpdir, "p")
-    end
+    utils.ensure_directory_exists(config.localtmpdir)
 
     vim.env.NVIMR_TMPDIR = config.tmpdir
     vim.env.NVIMR_COMPLDIR = config.compldir
 
     -- Default values of some variables
-    if vim.fn.has('win32') ~= 0 and not (type(config.external_term) == "boolean" and config.external_term == false) then
+    if is_windows and not (type(config.external_term) == "boolean" and config.external_term == false) then
         -- Sending multiple lines at once to Rgui on Windows does not work.
         config.parenblock = 0
     else
@@ -366,7 +358,7 @@ local do_common_global = function()
         config.nvimpager = 'tab'
     end
 
-    if vim.fn.has("win32") ~= 0 then
+    if is_windows then
         config.save_win_pos = 1
         config.arrange_windows = 1
     else
@@ -426,7 +418,7 @@ local do_common_global = function()
     config.has_awbt = 0
 
     -- Set the name of R executable
-    if vim.fn.has("win32") == 1 then
+    if is_windows then
         if type(config.external_term) == "boolean" and config.external_term == false then
             config.R_app = "Rterm.exe"
         else
@@ -607,7 +599,7 @@ local global_setup = function ()
     -- Fix some invalid values
     vim.cmd.runtime("R/common_global.vim")
     do_common_global()
-    if vim.fn.has("win32") == 1 then
+    if is_windows then
         windows_config()
     else
         unix_config()
