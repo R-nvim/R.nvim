@@ -597,6 +597,9 @@ local global_setup = function ()
     -- Configure more values that depend on either system features or other
     -- config values.
     -- Fix some invalid values
+    -- Calls to system() and executable() must run
+    -- asynchronously to avoid slow startup on macOS.
+    -- See https://github.com/jalvesaq/Nvim-R/issues/625
     vim.cmd.runtime("R/common_global.vim")
     do_common_global()
     if is_windows then
@@ -611,14 +614,44 @@ local global_setup = function ()
         config[k] = v
     end
 
-    vim.cmd("autocmd VimEnter * lua require('r.config').check_health()")
+    vim.fn.timer_start(1, require('r.config').check_health)
 
-    vim.fn.timer_start(1, function ()
-        require("r.nrs").check_nvimcom_version()
-    end)
-    -- The calls to system() and executable() below are in this script to run
-    -- asynchronously and avoid slow startup on macOS.
-    -- See https://github.com/jalvesaq/Nvim-R/issues/625
+    -- Commands:
+    -- See: :help lua-guide-commands-create
+    vim.api.nvim_create_user_command("Rstop", 'lua require("r.run").signal_to_R("SIGINT")', {})
+    vim.api.nvim_create_user_command("RKill", 'lua require("r.run").signal_to_R("SIGKILL")', {})
+    vim.api.nvim_create_user_command("RBuildTags", require("r.edit").build_tags, {})
+    vim.api.nvim_create_user_command("RDebugInfo", require("r.edit").show_debug_info, {})
+
+    vim.api.nvim_create_user_command("RSend", function(tbl)
+        require("r.send").cmd(tbl.fargs)
+    end, {nargs = 1})
+
+    vim.api.nvim_create_user_command("RFormat", function(tbl)
+        -- FIXME: it was :call RFormatCode()
+        vim.notify(tostring(tbl.line1) .. "  " .. tostring(tbl.line2))
+    end, {range = "%"})
+
+    vim.api.nvim_create_user_command("RInsert", function(tbl)
+        -- FIXME: it was :call RInsert(<q-args>, "here")
+        vim.notify(tbl.fargs)
+    end, {nargs = 1})
+
+    vim.api.nvim_create_user_command("RSourceDir", function(tbl)
+        -- FIXME: it was :call RSourceDirectory(<q-args>)
+        vim.notify(tbl.fargs)
+    end, {nargs = 1, complete = "dir"})
+
+    vim.api.nvim_create_user_command("Rhelp", function(tbl)
+        -- FIXME: it was :call RAskHelp(<q-args>)
+        vim.notify(tbl.fargs)
+    end,
+    {
+        nargs = 1,
+        complete = require("r.nrs").list_objs
+    })
+
+    vim.fn.timer_start(1, require("r.nrs").check_nvimcom_version)
 end
 
 M = {}
