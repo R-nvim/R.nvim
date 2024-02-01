@@ -126,20 +126,15 @@ M.setup = function ()
     local cfg = require("r.config").get_config()
 
     if type(cfg.rmdchunk) == "number" and (cfg.rmdchunk == 1 or cfg.rmdchunk == 2) then
-        vim.api.nvim_buf_set_keymap(0, 'i', "`", "<Esc>:call RWriteRmdChunk()<CR>a", {silent = true})
+        vim.api.nvim_buf_set_keymap(0, 'i', "`", "<Esc>:lua require('r.rmd').write_chunk()<CR>a", {silent = true})
     elseif type(cfg.rmdchunk) == "string" then
-        vim.api.nvim_buf_set_keymap(0, 'i', cfg.rmdchunk, "<Esc>:call RWriteRmdChunk()<CR>a", {silent = true})
+        vim.api.nvim_buf_set_keymap(0, 'i', cfg.rmdchunk, "<Esc>:lua require('r.rmd').write_chunk()<CR>a", {silent = true})
     end
 
-
-    -- Pointers to functions whose purposes are the same in rnoweb, rrst, rmd,
-    -- rhelp and rdoc:
-    vim.api.nvim_buf_set_var(0, "IsInRCode", M.is_in_R_code)
-    vim.api.nvim_buf_set_var(0, "PreviousRChunk", M.previous_chunk)
-    vim.api.nvim_buf_set_var(0, "NextRChunk", M.next_chunk)
-    vim.api.nvim_buf_set_var(0, "SendChunkToR", M.send_R_chunk)
-
     vim.api.nvim_buf_set_var(0, "rplugin_knitr_pattern", "^``` *{.*}$")
+
+    -- Pointer to function called by generic functions
+    vim.api.nvim_buf_set_var(0, "IsInRCode", M.is_in_R_code)
 
     -- Key bindings
     local m = require("r.maps")
@@ -152,12 +147,12 @@ M.setup = function ()
 
     -- Only .Rmd and .qmd files use these functions:
     m.create('nvi', 'RKnit',           'kn', ':call RKnit()')
-    m.create('ni',  'RSendChunk',      'cc', ':call b:SendChunkToR("silent", "stay")')
-    m.create('ni',  'RESendChunk',     'ce', ':call b:SendChunkToR("echo", "stay")')
-    m.create('ni',  'RDSendChunk',     'cd', ':call b:SendChunkToR("silent", "down")')
-    m.create('ni',  'REDSendChunk',    'ca', ':call b:SendChunkToR("echo", "down")')
-    m.create('n',   'RNextRChunk',     'gn', ':call b:NextRChunk()')
-    m.create('n',   'RPreviousRChunk', 'gN', ':call b:PreviousRChunk()')
+    m.create('ni',  'RSendChunk',      'cc', ':lua require("r.rmd").send_R_chunk("silent", "stay")')
+    m.create('ni',  'RESendChunk',     'ce', ':lua require("r.rmd").send_R_chunk("echo", "stay")')
+    m.create('ni',  'RDSendChunk',     'cd', ':lua require("r.rmd").send_R_chunk("silent", "down")')
+    m.create('ni',  'REDSendChunk',    'ca', ':lua require("r.rmd").send_R_chunk("echo", "down")')
+    m.create('n',   'RNextRChunk',     'gn', ':lua require("r.rmd").next_chunk()')
+    m.create('n',   'RPreviousRChunk', 'gN', ':lua require("r.rmd").previous_chunk()')
 
     vim.schedule(function ()
         require("r.pdf").setup()
@@ -165,9 +160,9 @@ M.setup = function ()
 
     -- FIXME: not working:
     if vim.fn.exists("b:undo_ftplugin") == 1 then
-        vim.api.nvim_buf_set_var(0, "undo_ftplugin", vim.b.undo_ftplugin .. " | unlet! b:IsInRCode b:PreviousRChunk b:NextRChunk b:SendChunkToR")
+        vim.api.nvim_buf_set_var(0, "undo_ftplugin", vim.b.undo_ftplugin .. " | unlet! b:IsInRCode b:rplugin_knitr_pattern")
     else
-        vim.api.nvim_buf_set_var(0, "undo_ftplugin", "unlet! b:IsInRCode b:PreviousRChunk b:NextRChunk b:SendChunkToR")
+        vim.api.nvim_buf_set_var(0, "undo_ftplugin", "unlet! b:IsInRCode b:rplugin_knitr_pattern")
     end
     require("r.edit").add_to_debug_info('rmd setup', vim.fn.reltimefloat(vim.fn.reltime(rmdtime, vim.fn.reltime())), "Time")
 end

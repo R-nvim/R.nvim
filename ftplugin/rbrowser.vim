@@ -14,7 +14,8 @@ let s:upobcnt = 0
 let s:cpo_save = &cpo
 set cpo&vim
 
-lua require("r.config").real_setup()
+" Superfluous?
+" lua require("r.config").real_setup()
 
 setlocal noswapfile
 setlocal buftype=nofile
@@ -278,7 +279,7 @@ nnoremap <buffer><silent> <CR> :call RBrowserDoubleClick()<CR>
 nnoremap <buffer><silent> <2-LeftMouse> :call RBrowserDoubleClick()<CR>
 nnoremap <buffer><silent> <RightMouse> :call RBrowserRightClick()<CR>
 
-call RControlMaps()
+lua require("r.maps").control()
 
 setlocal winfixwidth
 setlocal bufhidden=wipe
