@@ -4,13 +4,33 @@ local config = require('r.config')
 local cursor = require('r.cursor')
 local paragraph = require('r.paragraph')
 
+M.set_send_cmd_fun = function()
+    if config.RStudio_cmd then
+        M.cmd = require("r.rstudio").send_cmd_to_RStudio
+    elseif (type(config.external_term) == "boolean" and config.external_term) or type(config.external_term) == "string" then
+        if config.is_windows then
+            M.cmd = require("r.windows").send_cmd_to_Rgui
+        elseif config.is_darwin and config.applescript then
+            M.cmd = require("r.osx").send_cmd_to_Rapp
+        else
+            M.cmd = require("r.external_term").send_cmd_to_external_term
+        end
+    else
+        M.cmd = require("r.term").send_cmd_to_term
+    end
+end
+
 M.not_ready = function (_)
     require("r").warn("R is not ready yet.")
 end
 
-M.cmd = function (_)
+--- Send a string to R Console.
+---@param _ string The line to be sent.
+M.not_running = function (_)
     require("r").warn("Did you start R?")
 end
+
+M.cmd = M.not_running
 
 M.GetSourceArgs = function(e)
   -- local sargs = config.get_config().source_args or ''

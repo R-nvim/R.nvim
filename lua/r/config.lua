@@ -1,8 +1,6 @@
 local warn = require("r").warn
 local utils = require("r.utils")
 
-local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
-
 local config = {
     OutDec              = ".",
     Rout_more_colors    = false,
@@ -13,8 +11,7 @@ local config = {
     rnvim_home          = nil,
     user_login          = nil,
     R_args              = {},
-    after_ob_open       = {},
-    after_start         = {},
+    hook                = { after_R_start = nil, after_ob_open = nil },
     applescript         = false,
     arrange_windows     = true,
     assign              = true,
@@ -123,7 +120,7 @@ local set_pdf_viewer = function ()
     if config.is_darwin then
         config.pdfviewer = "skim"
     else
-        if is_windows then
+        if config.is_windows then
             config.pdfviewer = "sumatra"
         else
             config.pdfviewer = "zathura"
@@ -149,6 +146,8 @@ local validate_user_opts = function()
 end
 
 local do_common_global = function()
+    config.is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
+
     -- config.rnvim_home should be the directory where the plugin files are.
     config.rnvim_home = vim.fn.expand("<script>:h:h")
 
@@ -183,14 +182,14 @@ local do_common_global = function()
         warn("Could not determine user name.")
     end
 
-    if is_windows then
+    if config.is_windows then
         config.rnvim_home = utils.normalize_windows_path(config.rnvim_home)
         config.uservimfiles = utils.normalize_windows_path(config.uservimfiles)
     end
 
     if config.compldir then
         config.compldir = vim.fn.expand(config.compldir)
-    elseif is_windows and vim.env.APPDATA then
+    elseif config.is_windows and vim.env.APPDATA then
         config.compldir = vim.fn.expand(vim.env.APPDATA) .. "\\R-Nvim"
     elseif vim.env.XDG_CACHE_HOME then
         config.compldir = vim.fn.expand(vim.env.XDG_CACHE_HOME) .. "/R-Nvim"
@@ -296,7 +295,7 @@ local do_common_global = function()
     -- Check if the 'config' table has the key 'tmpdir'
     if not config.tmpdir then
         -- Set temporary directory based on the platform
-        if is_windows then
+        if config.is_windows then
             if vim.fn.isdirectory(vim.env.TMP) ~= 0 then
                 config.tmpdir = vim.env.TMP .. "/NvimR-" .. config.user_login
             elseif vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
@@ -344,7 +343,7 @@ local do_common_global = function()
     vim.env.NVIMR_COMPLDIR = config.compldir
 
     -- Default values of some variables
-    if is_windows and not (type(config.external_term) == "boolean" and config.external_term == false) then
+    if config.is_windows and not (type(config.external_term) == "boolean" and config.external_term == false) then
         -- Sending multiple lines at once to Rgui on Windows does not work.
         config.parenblock = 0
     else
@@ -359,7 +358,7 @@ local do_common_global = function()
         config.nvimpager = 'tab'
     end
 
-    if is_windows then
+    if config.is_windows then
         config.save_win_pos = 1
         config.arrange_windows = 1
     else
@@ -403,9 +402,7 @@ local do_common_global = function()
     end
 
     vim.cmd("autocmd BufEnter * lua require('r.edit').buf_enter()")
-    if vim.bo.filetype ~= "rbrowser" then
-        vim.cmd("autocmd VimLeave * lua require('r.edit').vim_leave()")
-    end
+    vim.cmd("autocmd VimLeave * lua require('r.edit').vim_leave()")
 
     if vim.v.windowid ~= 0 and vim.env.WINDOWID == "" then
         vim.env.WINDOWID = vim.v.windowid
@@ -419,7 +416,7 @@ local do_common_global = function()
     config.has_awbt = 0
 
     -- Set the name of R executable
-    if is_windows then
+    if config.is_windows then
         if type(config.external_term) == "boolean" and config.external_term == false then
             config.R_app = "Rterm.exe"
         else
@@ -603,7 +600,7 @@ local global_setup = function ()
     -- See https://github.com/jalvesaq/Nvim-R/issues/625
     vim.cmd.runtime("R/common_global.vim")
     do_common_global()
-    if is_windows then
+    if config.is_windows then
         windows_config()
     else
         unix_config()

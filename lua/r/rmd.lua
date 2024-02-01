@@ -1,4 +1,5 @@
 local warn = require("r").warn
+local config = require("r.config").get_config()
 
 local M = {}
 
@@ -44,7 +45,7 @@ M.write_chunk = function ()
             end
             return
         else
-            if vim.g.Rcfg.rmdchunk == 2 then
+            if config.rmdchunk == 2 then
                 vim.cmd([[normal! a`r `\<Esc>i]])
                 return
             end

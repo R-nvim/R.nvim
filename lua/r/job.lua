@@ -85,7 +85,7 @@ M.on_exit = function (job_id, data, _)
         require("r.run").clear_R_info()
     end
     if key == 'Server' then
-        vim.g.rplugin.R_Nvim_status = 1
+        vim.g.R_Nvim_status = 1
     end
 end
 
