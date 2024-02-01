@@ -4,7 +4,6 @@ local M = {}
 M.command = function(what)
     local config = require("r.config").get_config()
     local send_cmd = require("r.send").cmd
-    -- FIXME: SendCmdToR not working. Replace with Lua functions when available.
     if what == "render" then
         vim.cmd("update")
         send_cmd('quarto::quarto_render("' .. vim.fn.substitute(vim.fn.expand('%'), '\\', '/', 'g') .. '"' .. config.quarto_render_args .. ')')
