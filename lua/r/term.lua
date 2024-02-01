@@ -46,7 +46,7 @@ M.send_cmd_to_term = function(command, nl)
         vim.api.nvim_win_set_cursor(bwid, {vim.api.nvim_buf_line_count(vim.api.nvim_win_get_buf(bwid)), 0})
     end
 
-    if nl == nil or nl == true then
+    if nl ~= false then
         cmd = cmd .. "\n"
     end
     require("r.job").stdin("R", cmd)
