@@ -22,10 +22,6 @@ function RWarningMsg(wmsg)
     exe 'lua require("r").warn("' . a:wmsg . '")'
 endfunction
 
-function UpdateOB(what)
-    exe 'lua require("r.browser").update_OB("' . a:what . '")'
-endfunction
-
 " Get the word either under or after the cursor.
 " Works for word(| where | is the cursor position.
 function RGetKeyword()

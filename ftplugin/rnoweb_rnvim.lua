@@ -41,7 +41,7 @@ m.create('ni',  'RSendChunk',   'cc', ':lua require("r.rnw").send_chunk("silent"
 m.create('ni',  'RESendChunk',  'ce', ':lua require("r.rnw").send_chunk("echo", "stay")')
 m.create('ni',  'RDSendChunk',  'cd', ':lua require("r.rnw").send_chunk("silent", "down")')
 m.create('ni',  'REDSendChunk', 'ca', ':lua require("r.rnw").send_chunk("echo", "down")')
-m.create('nvi', 'ROpenPDF',     'op', ':call ROpenPDF("Get Master")')
+m.create('nvi', 'ROpenPDF',     'op', ':lua require("r.pdf").open("Get Master")')
 if config.synctex then
     m.create('ni', 'RSyncFor',  'gp', ':lua require("r.rnw").SyncTeX_forward(false)')
     m.create('ni', 'RGoToTeX',  'gt', ':lua require("r.rnw").SyncTeX_forward(true)')

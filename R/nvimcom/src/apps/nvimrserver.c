@@ -1794,7 +1794,7 @@ void omni2ob(void) {
 
     fclose(f);
     if (auto_obbr) {
-        fputs("call UpdateOB('GlobalEnv')\n", stdout);
+        fputs("lua require('r.browser').update_OB('GlobalEnv')\n", stdout);
         fflush(stdout);
     }
 }
@@ -1838,7 +1838,7 @@ void lib2ob(void) {
     }
 
     fclose(f);
-    fputs("call UpdateOB('libraries')\n", stdout);
+    fputs("lua require('r.browser').update_OB('libraries')\n", stdout);
     fflush(stdout);
 }
 
