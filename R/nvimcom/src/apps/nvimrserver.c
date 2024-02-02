@@ -102,7 +102,7 @@ HandleSigTerm(__attribute__((unused)) int s) // Signal handler for SIGTERM
 static void RegisterPort(int bindportn) // Function to register port number to R
 {
     // Register the port:
-    printf("call RSetMyPort('%d')\n", bindportn);
+    printf("lua require('r.run').set_my_port('%d')\n", bindportn);
     fflush(stdout);
 }
 
@@ -1019,7 +1019,7 @@ static int run_R_code(const char *s, int senderror) {
 
     if (exit_code != 0) {
         if (senderror) {
-            printf("call ShowBuildOmnilsError('%ld')\n", exit_code);
+            printf("lua require('r.nrs').show_bol_error('%ld')\n", exit_code);
             fflush(stdout);
         }
         return 0;
@@ -1039,7 +1039,7 @@ static int run_R_code(const char *s, int senderror) {
     int stt = system(b);
     if (stt != 0 && stt != 512) { // ssh success status seems to be 512
         if (senderror) {
-            printf("call ShowBuildOmnilsError('%d')\n", stt);
+            printf("lua require('r.nrs').show_bol_error('%d')\n", stt);
             fflush(stdout);
         }
         return 0;
@@ -1380,7 +1380,7 @@ static void finish_bol(void) {
     }
 
     // Message to Neovim: Update both syntax and Rhelp_list
-    printf("call UpdateSynRhlist()\n");
+    printf("lua require('r.nrs').update_Rhelp_list()\n");
     fflush(stdout);
 }
 
@@ -1910,7 +1910,7 @@ static void fill_inst_libs(void) {
 }
 
 static void send_nrs_info(void) {
-    printf("call EchoNCSInfo('Loaded packages:");
+    printf("lua require('r.nrs').echo_nrs_info('Loaded packages:");
     PkgData *pkg = pkgList;
     while (pkg) {
         printf(" %s", pkg->name);
@@ -2571,7 +2571,7 @@ void stdin_loop(void) {
                     fprintf(stderr, "R was already started\n");
                     fflush(stderr);
                 } else {
-                    printf("call CleanNvimAndStartR()\n");
+                    printf("lua require('r.windows').clean_and_start_Rgui()\n");
                     fflush(stdout);
                 }
                 break;
