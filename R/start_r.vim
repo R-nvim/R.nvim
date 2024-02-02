@@ -1212,20 +1212,6 @@ function SendLineToR(godown, ...)
     endif
 endfunction
 
-function RSendPartOfLine(direction, correctpos)
-    let lin = getline(".")
-    let idx = col(".") - 1
-    if a:correctpos
-        call cursor(line("."), idx)
-    endif
-    if a:direction == "right"
-        let rcmd = strpart(lin, idx)
-    else
-        let rcmd = strpart(lin, 0, idx + 1)
-    endif
-    call g:SendCmdToR(rcmd)
-endfunction
-
 " Clear the console screen
 function RClearConsole()
     if g:Rcfg.clear_console == v:false
