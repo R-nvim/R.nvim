@@ -4,12 +4,12 @@ local config = require('r.config')
 local cursor = require('r.cursor')
 local paragraph = require('r.paragraph')
 
-M.not_ready = function (_)
-    require("r").warn("R is not ready yet.")
+M.not_ready = function(_)
+  require('r').warn('R is not ready yet.')
 end
 
-M.cmd = function (_)
-    require("r").warn("Did you start R?")
+M.cmd = function(_)
+  require('r').warn('Did you start R?')
 end
 
 M.GetSourceArgs = function(e)
@@ -49,11 +49,27 @@ M.paragraph = function(e, m)
   end
 end
 
-M.line = function (m)
-    M.cmd(vim.fn.getline(vim.fn.line(".")))
-    if m == "down" then
-        cursor.move_next_line()
-    end
+M.line = function(m)
+  M.cmd(vim.fn.getline(vim.fn.line('.')))
+  if m == 'down' then
+    cursor.move_next_line()
+  end
+end
+
+M.line_part = function(direction, correctpos)
+  local lin = vim.fn.getline('.')
+  local idx = vim.fn.col('.') - 1
+  if correctpos then
+    vim.fn.cursor(vim.fn.line('.'), idx)
+  end
+  local rcmd
+  if direction == 'right' then
+    rcmd = string.sub(lin, idx + 1)
+  else
+    rcmd = string.sub(lin, 1, idx + 1)
+  end
+  vim.fn.SendCmdToR(rcmd)
+  -- vim.fn.RSourceLines(lines, '')
 end
 
 return M
