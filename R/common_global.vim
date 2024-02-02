@@ -14,10 +14,6 @@ if exists("*RWarningMsg")
     finish
 endif
 
-function UpdateLocalFunctions(...)
-    " avoid nvimrclient error until incorporating code from @she3o
-endfunction
-
 function RWarningMsg(wmsg)
     exe 'lua require("r").warn("' . a:wmsg . '")'
 endfunction

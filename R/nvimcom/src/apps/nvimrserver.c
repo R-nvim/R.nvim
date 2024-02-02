@@ -80,8 +80,6 @@ static ListStatus *listTree = NULL; // Root node of the list status tree
 PkgData *pkgList;    // Pointer to first package data
 static int nLibObjs; // Number of library objects
 
-int nGlbEnvFun; // Number of global environment functions
-
 static int r_conn;          // R connection status flag
 static char VimSecret[128]; // Secret for communication with Vim
 static int VimSecretLen;    // Length of Vim secret
@@ -1727,31 +1725,6 @@ static const char *write_ob_line(const char *p, const char *bs, char *prfx,
     return p;
 }
 
-void hi_glbenv_fun(void) {
-    char *g = glbnv_buffer;
-    char *p = compl_buffer;
-    char *s;
-
-    memset(compl_buffer, 0, compl_buffer_size);
-    p = str_cat(p, "call UpdateLocalFunctions('");
-    while (*g) {
-        s = g;
-        while (*s != 0)
-            s++;
-        s++;
-        if (*s == '\003') {
-            p = str_cat(p, g);
-            p = str_cat(p, " ");
-        }
-        while (*g != '\n')
-            g++;
-        g++;
-    }
-    p = str_cat(p, "')");
-    printf("\x11%" PRI_SIZET "\x11%s\n", strlen(compl_buffer), compl_buffer);
-    fflush(stdout);
-}
-
 /**
  * @brief Updates the buffer containing the global environment data from R.
  *
@@ -1791,11 +1764,6 @@ void update_glblenv_buffer(char *g) {
             n++;
             i += 7;
         }
-
-    if (n != nGlbEnvFun) {
-        nGlbEnvFun = n;
-        hi_glbenv_fun();
-    }
 }
 
 void omni2ob(void) {
@@ -2602,8 +2570,8 @@ void stdin_loop() {
             switch (*msg) {
             case '1': // Check if R is running
                 if (PostMessage(RConsole, WM_NULL, 0, 0)) {
-                    printf("call RWarningMsg('R was already started')\n");
-                    fflush(stdout);
+                    fprintf(stderr, "R was already started\n");
+                    fflush(stderr);
                 } else {
                     printf("call CleanNvimAndStartR()\n");
                     fflush(stdout);
