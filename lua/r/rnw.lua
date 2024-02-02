@@ -74,12 +74,12 @@ local GoToBuf = function(rnwbn, rnwf, basedir, rnwln)
         if vim.fn.bufloaded(basedir .. '/' .. rnwf) == 1 then
             local savesb = vim.o.switchbuf
             vim.o.switchbuf = 'useopen,usetab'
-            vim.cmd("sb " .. vim.fn.substitute(basedir .. '/' .. rnwf, ' ', '\\ ', 'g'))
+            vim.cmd.sb(vim.fn.substitute(basedir .. '/' .. rnwf, ' ', '\\ ', 'g'))
             vim.o.switchbuf = savesb
         elseif vim.fn.bufloaded(rnwf) > 0 then
             local savesb = vim.o.switchbuf
             vim.o.switchbuf = 'useopen,usetab'
-            vim.cmd("sb " .. vim.fn.substitute(rnwf, ' ', '\\ ', 'g'))
+            vim.cmd.sb(vim.fn.substitute(rnwf, ' ', '\\ ', 'g'))
             vim.o.switchbuf = savesb
         else
             if vim.fn.filereadable(basedir .. '/' .. rnwf) == 1 then

@@ -25,6 +25,7 @@ end
 
 local set_send_cmd_fun = function ()
     require("r.send").set_send_cmd_fun()
+    vim.g.R_Nvim_status = 5
     wait_nvimcom = 0
 end
 
@@ -239,7 +240,6 @@ M.wait_nvimcom_start = function()
 end
 
 M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
-    vim.g.R_Nvim_status = 5
     local r_home_description = vim.fn.readfile(config.rnvim_home .. '/R/nvimcom/DESCRIPTION')
     local current
     for _, v in pairs(r_home_description) do
@@ -292,18 +292,6 @@ M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
         vim.fn.delete(config.tmpdir .. "/openR")
     end
 
-    if type(config.after_start) == 'list' then
-        for _, cmd in ipairs(config.after_start) do
-            if cmd:match('^!') then
-                vim.fn.system(cmd:sub(2))
-            elseif cmd:match('^:') then
-                vim.cmd(cmd:sub(2))
-            elseif not cmd:match('^R:') then
-                warn("R_after_start must be a list of strings starting with 'R:', '!', or ':'")
-            end
-        end
-    end
-    vim.fn.timer_start(1000, set_send_cmd_fun)
     if config.objbr_auto_start then
         autosttobjbr = 1
         vim.notify("Not implemented yet autosttobjbr=" .. tostring(autosttobjbr))
@@ -313,6 +301,7 @@ M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
     if config.hook.after_R_start then
         config.hook.after_R_start()
     end
+    vim.fn.timer_start(100, set_send_cmd_fun)
 end
 
 M.clear_R_info = function()

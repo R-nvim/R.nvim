@@ -5,7 +5,6 @@ local warn = require("r").warn
 local R_width = 80
 local number_col
 local R_bufnr = nil
-local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
 
 M.send_cmd_to_term = function(command, nl)
 
@@ -33,7 +32,7 @@ M.send_cmd_to_term = function(command, nl)
         if rwnwdth ~= R_width and rwnwdth ~= -1 and rwnwdth > 10 and rwnwdth < 999 then
             R_width = rwnwdth
             local Rwidth = R_width + number_col
-            if is_windows then
+            if config.is_windows then
                 cmd = "options(width=" .. Rwidth .. "); " .. cmd
             else
                 require("r.run").send_to_nvimcom("E", "options(width=" .. Rwidth .. ")")
@@ -55,7 +54,7 @@ end
 
 M.close_term = function()
     if R_bufnr then
-        pcall(vim.cmd.sb, "sbuffer " .. R_bufnr)
+        vim.cmd.sb(R_bufnr)
         if config.close_term and R_bufnr == vim.fn.bufnr("%") then
             vim.cmd("startinsert")
             vim.fn.feedkeys(' ')
@@ -86,7 +85,7 @@ local split_window = function()
     end
 end
 
-local re_open_win = function()
+local reopen_win = function()
     local wlist = vim.api.nvim_list_wins()
     for _, wnr in ipairs(wlist) do
         if vim.api.nvim_win_get_buf(wnr) == R_bufnr then
@@ -97,13 +96,13 @@ local re_open_win = function()
     local edbuf = vim.fn.bufname("%")
     split_window()
     vim.api.nvim_win_set_buf(0, R_bufnr)
-    vim.cmd("sbuffer " .. edbuf)
+    vim.cmd.sb(edbuf)
 end
 
 M.start_term = function ()
     -- Check if R is running
     if vim.g.R_Nvim_status == 5 then
-        re_open_win()
+        reopen_win()
         return
     end
     vim.g.R_Nvim_status = 4
@@ -113,11 +112,11 @@ M.start_term = function ()
 
     split_window()
 
-    if is_windows then
+    if config.is_windows then
         require("r.windows").set_R_home()
     end
     require("r.job").R_term_open(config.R_app .. ' ' .. table.concat(config.R_args, ' '))
-    if is_windows then
+    if config.is_windows then
         vim.cmd("redraw")
         require("r.windows").unset_R_home()
     end
@@ -145,7 +144,7 @@ M.start_term = function ()
     -- Set b:pdf_is_open to avoid an error when the user has to go to R Console
     -- to deal with latex errors while compiling the pdf
     vim.b.pdf_is_open = 1
-    vim.cmd("sbuffer " .. edbuf)
+    vim.cmd.sb(edbuf)
     vim.cmd("stopinsert")
     require("r.run").wait_nvimcom_start()
 end

@@ -175,7 +175,7 @@ L.start_OB = function ()
     if vim.fn.bufloaded("Object_Browser") == 1 then
         local curwin = vim.fn.win_getid()
         local curtab = vim.fn.tabpagenr()
-        vim.cmd("sb Object_Browser")
+        vim.cmd.sb("Object_Browser")
         local objbrtab = vim.fn.tabpagenr()
         vim.cmd("quit")
         vim.fn.win_gotoid(curwin)
@@ -196,9 +196,9 @@ L.start_OB = function ()
             vim.cmd("botright split Object_Browser")
         else
             if config.objbr_place:find("console") then
-                vim.cmd("sb " .. require("r.term").get_buf_nr())
+                vim.cmd.sb(require("r.term").get_buf_nr())
             else
-                vim.cmd("sb " .. require("r.edit").get_rscript_name())
+                vim.cmd.sb(require("r.edit").get_rscript_name())
             end
 
             if config.objbr_place:find("right") then
@@ -229,7 +229,7 @@ L.start_OB = function ()
 
         if config.objbr_auto_start and auto_starting then
             auto_starting = false
-            vim.cmd(edbuf .. "sb")
+            vim.cmd.sb(edbuf)
         end
     end
 
