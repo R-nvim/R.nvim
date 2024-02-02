@@ -1226,17 +1226,6 @@ function RClearConsole()
     endif
 endfunction
 
-" Remove all objects
-function RClearAll()
-    if g:Rcfg.rmhidden
-        call g:SendCmdToR("rm(list=ls(all.names = TRUE))")
-    else
-        call g:SendCmdToR("rm(list=ls())")
-    endif
-    sleep 500m
-    call RClearConsole()
-endfunction
-
 " Set working directory to the path of current buffer
 function RSetWD()
     let wdcmd = 'setwd("' . s:RGetBufDir() . '")'

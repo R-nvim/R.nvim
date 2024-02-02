@@ -1,3 +1,5 @@
+-- TODO: Make the echo/silent option work
+
 local M = {}
 
 local config = require('r.config')
@@ -27,13 +29,22 @@ end
 
 M.above_lines = function()
   local lines = vim.fn.getline(1, vim.fn.line('.') - 1)
-  vim.fn.RSourceLines(lines, '')
+
+  -- Remove empty lines from the end of the list
+  local result = table.concat(
+    vim.tbl_filter(function(line)
+      return line ~= ''
+    end, lines),
+    '\n'
+  )
+
+  M.cmd(result)
 end
 
 M.source_file = function(e)
   local bufnr = 0
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  vim.fn.RSourceLines(lines, e)
+  M.cmd(lines)
 end
 
 -- Send the current paragraph to R. If m == 'down', move the cursor to the
@@ -42,7 +53,7 @@ M.paragraph = function(e, m)
   local start_line, end_line = paragraph.get_current()
 
   local lines = vim.fn.getline(start_line, end_line)
-  vim.fn.RSourceLines(lines, e, 'paragraph')
+  M.cmd(lines)
 
   if m == 'down' then
     cursor.move_next_paragraph()
@@ -68,8 +79,34 @@ M.line_part = function(direction, correctpos)
   else
     rcmd = string.sub(lin, 1, idx + 1)
   end
-  vim.fn.SendCmdToR(rcmd)
-  -- vim.fn.RSourceLines(lines, '')
+  M.cmd(rcmd)
+end
+
+-- Send the current function
+M.fun = function()
+  local start_line = vim.fn.searchpair('.*<-\\s*function', '', '^}', 'cbnW')
+  local end_line = vim.fn.searchpair('.*<-\\s*function', '', '^}$', 'cnW')
+
+  if start_line ~= 0 and start_line <= end_line then
+    local lines = vim.fn.getline(start_line, end_line - 1)
+    M.cmd(lines)
+  else
+    require('r').warn('Not inside a function.')
+  end
+end
+
+-- TODO: Looks like work has been done in rmd.lua to handle this
+-- Send the current code chunk
+M.chunk = function()
+  local start_line = vim.fn.searchpair('```{r', '', '```', 'cbnW')
+  local end_line = vim.fn.searchpair('```{r', '', '```', 'cnW')
+
+  if start_line ~= 0 and start_line <= end_line then
+    local lines = vim.fn.getline(start_line, end_line - 1)
+    M.cmd(lines)
+  else
+    require('r').warn('Not inside a code chunk.')
+  end
 end
 
 return M
