@@ -1,7 +1,7 @@
 local warn = require("r").warn
 local utils = require("r.utils")
 
-local is_windows = vim.uv.os_uname().sysname:find("Windows") ~= nil
+local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
 
 local config = {
     OutDec              = ".",

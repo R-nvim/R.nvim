@@ -11,7 +11,7 @@ local R_pid = 0
 local r_args
 local wait_nvimcom = 0
 local waiting_to_start_r = ''
-local is_windows = vim.uv.os_uname().sysname:find("Windows") ~= nil
+local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
 
 local get_buf_dir = function()
     local rwd = vim.api.nvim_buf_get_name(0)
