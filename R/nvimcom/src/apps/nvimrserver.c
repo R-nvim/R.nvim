@@ -67,7 +67,7 @@ void update_inst_libs(void);        // Update installed libraries
 void update_pkg_list(char *libnms); // Update package list
 void update_glblenv_buffer(char *g); // Update global environment buffer
 static void build_omnils(void);      // Build Omni lists
-static void finish_bol();            // Finish building of lists
+static void finish_bol(void);            // Finish building of lists
 void complete(const char *id, char *base, char *funcnm,
               char *args); // Perform completion
 
@@ -170,7 +170,7 @@ static void ParseMsg(char *b) // Parse the message from R
  *
  * @note For Windows, WSAStartup is called to start the Winsock API.
  */
-static void initialize_socket() {
+static void initialize_socket(void) {
     Log("initialize_socket()");
 #ifdef WIN32
     WSADATA d;
@@ -201,7 +201,7 @@ static void initialize_socket() {
  * program if it fails to bind the socket to any of the ports in the specified
  * range.
  */
-static void bind_to_port() {
+static void bind_to_port(void) {
     Log("bind_to_port()");
 
     bzero(&servaddr, sizeof(servaddr));
@@ -237,7 +237,7 @@ static void bind_to_port() {
  * requests in the queue. The function exits the program if it fails to set
  * the socket to listen state.
  */
-static void listening_for_connections() {
+static void listening_for_connections(void) {
     Log("listening_for_connections()");
 
     if ((listen(sockfd, 5)) != 0) {
@@ -256,7 +256,7 @@ static void listening_for_connections() {
  * 'connfd' and sets the 'r_conn' flag to indicate a successful connection.
  * The function exits the program if it fails to accept a connection.
  */
-static void accept_connection() {
+static void accept_connection(void) {
     Log("accept_connection()");
 #ifdef WIN32
     int len;
@@ -288,7 +288,7 @@ static void accept_connection() {
  * https://www.geeksforgeeks.org/socket-programming-in-cc-handling-multiple-clients-on-server-without-multi-threading/
  */
 static void
-setup_server_socket() // Initialise listening for incoming connections
+setup_server_socket(void) // Initialise listening for incoming connections
 {
     Log("setup_server_socket()");
     initialize_socket();
@@ -354,7 +354,7 @@ static void get_whole_msg(char *b) // Get the whole message from the socket
 static void
 receive_msg(void *arg) // Thread function to receive messages on Windows
 #else
-static void *receive_msg() // Thread function to receive messages on Unix
+static void *receive_msg(void *v) // Thread function to receive messages on Unix
 #endif
 {
     size_t blen = VimSecretLen + 9;
@@ -1347,7 +1347,7 @@ static void build_omnils(void) {
 }
 
 // Called asynchronously and only if an omnils_ file was actually built.
-static void finish_bol() {
+static void finish_bol(void) {
     Log("finish_bol()");
 
     char buf[1024];
@@ -1739,7 +1739,6 @@ static const char *write_ob_line(const char *p, const char *bs, char *prfx,
  */
 void update_glblenv_buffer(char *g) {
     Log("update_glblenv_buffer()");
-    int n = 0;
     int max;
     int glbnv_size;
 
@@ -1761,7 +1760,6 @@ void update_glblenv_buffer(char *g) {
 
     for (int i = 0; i < max; i++)
         if (glbnv_buffer[i] == '\003') {
-            n++;
             i += 7;
         }
 }
@@ -2437,7 +2435,7 @@ void complete(const char *id, char *base, char *funcnm, char *args) {
  *
  * @desc: Used in main() for continuous processing of stdin commands
  */
-void stdin_loop() {
+void stdin_loop(void) {
     char line[1024];
     FILE *f;
     char *msg;
