@@ -81,7 +81,7 @@ M.ask_R_doc = function(rkeyword, package, getclass)
     if vim.fn.bufname("%") == "Object_Browser" or vim.fn.bufnr("%") == R_bufnr then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
-        vim.cmd("sb " .. vim.fn.luaeval('require("r.edit").get_rscript_name()'))
+        vim.cmd.sb(require("r.edit").get_rscript_name())
         vim.cmd("set switchbuf=" .. savesb)
     else
         if getclass then
@@ -103,7 +103,7 @@ M.ask_R_doc = function(rkeyword, package, getclass)
     send_to_nvimcom("E", rcmd)
 end
 
-M.show_R_doc = function (rkeyword, txt)
+M.show = function (rkeyword, txt)
     if rkeyword:match("^MULTILIB") then
         local topic = vim.fn.split(rkeyword, " ")[2]
         local libs = vim.fn.split(txt, "\x14")
@@ -128,7 +128,7 @@ M.show_R_doc = function (rkeyword, txt)
     if vim.fn.bufname("%"):match("Object_Browser") or vim.fn.bufnr("%") == R_bufnr then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
-        vim.cmd("sb " .. vim.fn.luaeval('require("r.edit").get_rscript_name()'))
+        vim.cmd.sb(require("r.edit").get_rscript_name())
         vim.cmd("set switchbuf=" .. savesb)
     end
     set_text_width(rkeyword)
@@ -143,7 +143,7 @@ M.show_R_doc = function (rkeyword, txt)
         local curtabnr = vim.fn.tabpagenr()
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
-        vim.cmd("sb " .. rdoctitle)
+        vim.cmd.sb(rdoctitle)
         vim.cmd("set switchbuf=" .. savesb)
         if config.nvimpager == "tabnew" then
             vim.cmd("tabmove " .. curtabnr)
@@ -167,7 +167,7 @@ M.show_R_doc = function (rkeyword, txt)
             else
                 config.nvimpager = "tab"
             end
-            M.show_R_doc(rkeyword)
+            M.show(rkeyword)
             return
         else
             vim.cmd("echohl WarningMsg")
