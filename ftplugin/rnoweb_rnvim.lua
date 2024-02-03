@@ -11,7 +11,7 @@ if config.rnowebchunk then
     vim.api.nvim_buf_set_keymap(0, 'i', "<", "<Esc>:lua require('r.rnw').write_chunk()<CR>a", {silent = true})
 end
 
--- Pointers to functions whose purposes are the same in rnoweb, rrst, rmd,
+-- Pointers to functions whose purposes are the same in rnoweb, rmd,
 -- rhelp and rdoc and which are called at common_global.vim
 -- FIXME: replace with references to Lua functions when they are written.
 vim.b.IsInRCode = require("r.rnw").is_in_R_code

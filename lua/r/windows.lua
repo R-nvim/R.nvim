@@ -6,6 +6,7 @@ local M = {}
 M.set_R_home = function()
     -- R and Vim use different values for the $HOME variable.
     if config.set_home_env then
+        -- FIXME: try vim.system()
         require("r.edit").add_for_deletion(config.tmpdir .. "/run_cmd.bat")
         saved_home = vim.env.HOME
         local run_cmd_content = {'reg.exe QUERY "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders" /v "Personal"'}
@@ -16,7 +17,7 @@ M.set_R_home = function()
             prs = vim.fn.substitute(prs, '\n', '', 'g')
             prs = vim.fn.substitute(prs, '\r', '', 'g')
             prs = vim.fn.substitute(prs, '\\s*$', '', 'g')
-            vim.fn.setenv('HOME', prs)
+            vim.env.HOME = prs
         end
     end
 end

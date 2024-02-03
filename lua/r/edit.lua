@@ -141,10 +141,6 @@ M.add_to_debug_info = function(title, info, parent)
     end
 end
 
-M.get_debug_info = function ()
-    return debug_info
-end
-
 M.raise_window = function(ttl)
     vim.fn.RRaiseWindow(ttl)
 end
