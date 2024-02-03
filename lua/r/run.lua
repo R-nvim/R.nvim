@@ -364,4 +364,41 @@ M.quit_R = function (how)
     M.clear_R_info()
 end
 
+M.formart_code = function (tbl)
+    if vim.g.R_Nvim_status < 5 then
+        return
+    end
+
+    local wco = vim.o.textwidth
+    if wco == 0 then
+        wco = 78
+    elseif wco < 20 then
+        wco = 20
+    elseif wco > 180 then
+        wco = 180
+    end
+
+    local lns = vim.api.nvim_buf_get_lines(0, tbl.line1 - 1, tbl.line2, true)
+    vim.fn.getline(tbl.line1, tbl.line2)
+    local txt = string.gsub(string.gsub(table.concat(lns, "\x14"), '\\', '\\\\'), "'", "\x13")
+    M.send_to_nvimcom("E", "nvimcom:::nvim_format(" .. tbl.line1 .. ", " .. tbl.line2 .. ", " .. wco .. ", " .. vim.o.shiftwidth .. ", '" .. txt .. "')")
+end
+
+M.insert = function (cmd, type)
+    if vim.g.R_Nvim_status < 5 then
+        return
+    end
+    M.send_to_nvimcom("E", 'nvimcom:::nvim_insert(' .. cmd .. ', "' .. type .. '")')
+end
+
+M.insert_commented = function()
+    local lin = vim.fn.getline(vim.fn.line("."))
+    local cleanl = vim.fn.substitute(lin, '".\\{-}"', '', 'g')
+    if cleanl:find(";") then
+        warn('`print(line)` works only if `line` is a single command')
+    end
+    cleanl = string.gsub(lin, "%s*#.*", "")
+    M.insert("print(" .. cleanl .. ")", "comment")
+end
+
 return M
