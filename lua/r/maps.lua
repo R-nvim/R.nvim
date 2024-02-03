@@ -1,6 +1,4 @@
-local cfg = require("r.config").get_config()
-
-M = {}
+local config = require("r.config").get_config()
 
 --- Create maps.
 --- For each noremap we need a vnoremap including <Esc> before the :call,
@@ -11,8 +9,8 @@ M = {}
 ---@param plug string The "<Plug>" name.
 ---@param combo string Key combination.
 ---@param target string The command or function to be called.
-M.create = function(mode, plug, combo, target)
-    if cfg.disable_cmds.plug then
+local create_maps = function(mode, plug, combo, target)
+    if config.disable_cmds.plug then
         return
     end
     local tg
@@ -30,153 +28,208 @@ M.create = function(mode, plug, combo, target)
     local opts = { silent = true, noremap = true, expr = false }
     if mode:find("n") then
         vim.api.nvim_buf_set_keymap(0, 'n', '<Plug>' .. plug, tg, opts)
-        if not cfg.user_maps_only and vim.fn.hasmapto('<Plug>' .. plug, "n") == 0 then
+        if not config.user_maps_only and vim.fn.hasmapto('<Plug>' .. plug, "n") == 0 then
             vim.api.nvim_buf_set_keymap(0, 'n', '<LocalLeader>' .. combo, '<Plug>' .. plug, opts)
         end
     end
     if mode:find("v") then
         vim.api.nvim_buf_set_keymap(0, 'v', '<Plug>' .. plug, '<Esc>' .. tg, opts)
-        if not cfg.user_maps_only and vim.fn.hasmapto('<Plug>' .. plug, "v") == 0 then
+        if not config.user_maps_only and vim.fn.hasmapto('<Plug>' .. plug, "v") == 0 then
             vim.api.nvim_buf_set_keymap(0, 'v', '<LocalLeader>' .. combo, '<Esc>' .. tg, opts)
         end
     end
-    if cfg.insert_mode_cmds and mode:find("i") then
+    if config.insert_mode_cmds and mode:find("i") then
         vim.api.nvim_buf_set_keymap(0, 'i', '<Plug>' .. plug, '<Esc>' .. tg .. il, opts)
-        if not cfg.user_maps_only and vim.fn.hasmapto('<Plug>' .. plug, "i") == 0 then
+        if not config.user_maps_only and vim.fn.hasmapto('<Plug>' .. plug, "i") == 0 then
             vim.api.nvim_buf_set_keymap(0, 'i', '<LocalLeader>' .. combo, '<Esc>' .. tg .. il, opts)
         end
     end
 end
 
-M.control = function()
+local control = function(file_type)
     -- List space, clear console, clear all
-    M.create('nvi', 'RListSpace',    'rl', ':lua require("r.send").cmd("ls()")')
-    M.create('nvi', 'RClearConsole', 'rr', ':call RClearConsole()')
-    M.create('nvi', 'RClearAll',     'rm', ':call RClearAll()')
+    create_maps('nvi', 'RListSpace',    'rl', ':lua require("r.send").cmd("ls()")')
+    create_maps('nvi', 'RClearConsole', 'rr', ':call RClearConsole()')
+    create_maps('nvi', 'RClearAll',     'rm', ':call RClearAll()')
 
     -- Print, names, structure
-    M.create('ni', 'RObjectPr',    'rp', ':call RAction("print")')
-    M.create('ni', 'RObjectNames', 'rn', ':call RAction("nvim.names")')
-    M.create('ni', 'RObjectStr',   'rt', ':call RAction("str")')
-    M.create('ni', 'RViewDF',      'rv', ':call RAction("viewobj")')
-    M.create('ni', 'RViewDFs',     'vs', ':call RAction("viewobj", ", howto=\'split\'")')
-    M.create('ni', 'RViewDFv',     'vv', ':call RAction("viewobj", ", howto=\'vsplit\'")')
-    M.create('ni', 'RViewDFa',     'vh', ':call RAction("viewobj", ", howto=\'above 7split\', nrows=6")')
-    M.create('ni', 'RDputObj',     'td', ':call RAction("dputtab")')
+    create_maps('ni', 'RObjectPr',    'rp', ':call RAction("print")')
+    create_maps('ni', 'RObjectNames', 'rn', ':call RAction("nvim.names")')
+    create_maps('ni', 'RObjectStr',   'rt', ':call RAction("str")')
+    create_maps('ni', 'RViewDF',      'rv', ':call RAction("viewobj")')
+    create_maps('ni', 'RViewDFs',     'vs', ':call RAction("viewobj", ", howto=\'split\'")')
+    create_maps('ni', 'RViewDFv',     'vv', ':call RAction("viewobj", ", howto=\'vsplit\'")')
+    create_maps('ni', 'RViewDFa',     'vh', ':call RAction("viewobj", ", howto=\'above 7split\', nrows=6")')
+    create_maps('ni', 'RDputObj',     'td', ':call RAction("dputtab")')
 
-    M.create('v', 'RObjectPr',     'rp', ':call RAction("print", "v")')
-    M.create('v', 'RObjectNames',  'rn', ':call RAction("nvim.names", "v")')
-    M.create('v', 'RObjectStr',    'rt', ':call RAction("str", "v")')
-    M.create('v', 'RViewDF',       'rv', ':call RAction("viewobj", "v")')
-    M.create('v', 'RViewDFs',      'vs', ':call RAction("viewobj", "v", ", howto=\'split\'")')
-    M.create('v', 'RViewDFv',      'vv', ':call RAction("viewobj", "v", ", howto=\'vsplit\'")')
-    M.create('v', 'RViewDFa',      'vh', ':call RAction("viewobj", "v", ", howto=\'above 7split\', nrows=6")')
-    M.create('v', 'RDputObj',      'td', ':call RAction("dputtab", "v")')
+    create_maps('v', 'RObjectPr',     'rp', ':call RAction("print", "v")')
+    create_maps('v', 'RObjectNames',  'rn', ':call RAction("nvim.names", "v")')
+    create_maps('v', 'RObjectStr',    'rt', ':call RAction("str", "v")')
+    create_maps('v', 'RViewDF',       'rv', ':call RAction("viewobj", "v")')
+    create_maps('v', 'RViewDFs',      'vs', ':call RAction("viewobj", "v", ", howto=\'split\'")')
+    create_maps('v', 'RViewDFv',      'vv', ':call RAction("viewobj", "v", ", howto=\'vsplit\'")')
+    create_maps('v', 'RViewDFa',      'vh', ':call RAction("viewobj", "v", ", howto=\'above 7split\', nrows=6")')
+    create_maps('v', 'RDputObj',      'td', ':call RAction("dputtab", "v")')
 
     -- Arguments, example, help
-    M.create('nvi', 'RShowArgs',   'ra', ':call RAction("args")')
-    M.create('nvi', 'RShowEx',     're', ':call RAction("example")')
-    M.create('nvi', 'RHelp',       'rh', ':call RAction("help")')
+    create_maps('nvi', 'RShowArgs',   'ra', ':call RAction("args")')
+    create_maps('nvi', 'RShowEx',     're', ':call RAction("example")')
+    create_maps('nvi', 'RHelp',       'rh', ':call RAction("help")')
 
     -- Summary, plot, both
-    M.create('ni', 'RSummary',     'rs', ':call RAction("summary")')
-    M.create('ni', 'RPlot',        'rg', ':call RAction("plot")')
-    M.create('ni', 'RSPlot',       'rb', ':call RAction("plotsumm")')
+    create_maps('ni', 'RSummary',     'rs', ':call RAction("summary")')
+    create_maps('ni', 'RPlot',        'rg', ':call RAction("plot")')
+    create_maps('ni', 'RSPlot',       'rb', ':call RAction("plotsumm")')
 
-    M.create('v', 'RSummary',      'rs', ':call RAction("summary", "v")')
-    M.create('v', 'RPlot',         'rg', ':call RAction("plot", "v")')
-    M.create('v', 'RSPlot',        'rb', ':call RAction("plotsumm", "v")')
+    create_maps('v', 'RSummary',      'rs', ':call RAction("summary", "v")')
+    create_maps('v', 'RPlot',         'rg', ':call RAction("plot", "v")')
+    create_maps('v', 'RSPlot',        'rb', ':call RAction("plotsumm", "v")')
 
     -- Object Browser
-    M.create('nvi', 'RUpdateObjBrowser', 'ro', ':lua require("r.browser").start()')
-    M.create('nvi', 'ROpenLists',        'r=', ':lua require("r.browser").open_close_lists("O")')
-    M.create('nvi', 'RCloseLists',       'r-', ':lua require("r.browser").open_close_lists("C")')
+    create_maps('nvi', 'RUpdateObjBrowser', 'ro', ':lua require("r.browser").start()')
+    create_maps('nvi', 'ROpenLists',        'r=', ':lua require("r.browser").open_close_lists("O")')
+    create_maps('nvi', 'RCloseLists',       'r-', ':lua require("r.browser").open_close_lists("C")')
 
     -- Render script with rmarkdown
-    M.create('nvi', 'RMakeRmd',    'kr', ':call RMakeRmd("default")')
-    M.create('nvi', 'RMakeAll',    'ka', ':call RMakeRmd("all")')
-    if vim.o.filetype == "quarto" then
-        M.create('nvi', 'RMakePDFK',   'kp', ':call RMakeRmd("pdf")')
-        M.create('nvi', 'RMakePDFKb',  'kl', ':call RMakeRmd("beamer")')
-        M.create('nvi', 'RMakeWord',   'kw', ':call RMakeRmd("docx")')
-        M.create('nvi', 'RMakeHTML',   'kh', ':call RMakeRmd("html")')
-        M.create('nvi', 'RMakeODT',    'ko', ':call RMakeRmd("odt")')
+    create_maps('nvi', 'RMakeRmd',    'kr', ':call RMakeRmd("default")')
+    create_maps('nvi', 'RMakeAll',    'ka', ':call RMakeRmd("all")')
+    if file_type == "quarto" then
+        create_maps('nvi', 'RMakePDFK',   'kp', ':call RMakeRmd("pdf")')
+        create_maps('nvi', 'RMakePDFKb',  'kl', ':call RMakeRmd("beamer")')
+        create_maps('nvi', 'RMakeWord',   'kw', ':call RMakeRmd("docx")')
+        create_maps('nvi', 'RMakeHTML',   'kh', ':call RMakeRmd("html")')
+        create_maps('nvi', 'RMakeODT',    'ko', ':call RMakeRmd("odt")')
     else
-        M.create('nvi', 'RMakePDFK',   'kp', ':call RMakeRmd("pdf_document")')
-        M.create('nvi', 'RMakePDFKb',  'kl', ':call RMakeRmd("beamer_presentation")')
-        M.create('nvi', 'RMakeWord',   'kw', ':call RMakeRmd("word_document")')
-        M.create('nvi', 'RMakeHTML',   'kh', ':call RMakeRmd("html_document")')
-        M.create('nvi', 'RMakeODT',    'ko', ':call RMakeRmd("odt_document")')
+        create_maps('nvi', 'RMakePDFK',   'kp', ':call RMakeRmd("pdf_document")')
+        create_maps('nvi', 'RMakePDFKb',  'kl', ':call RMakeRmd("beamer_presentation")')
+        create_maps('nvi', 'RMakeWord',   'kw', ':call RMakeRmd("word_document")')
+        create_maps('nvi', 'RMakeHTML',   'kh', ':call RMakeRmd("html_document")')
+        create_maps('nvi', 'RMakeODT',    'ko', ':call RMakeRmd("odt_document")')
     end
 end
 
-M.start = function()
+local start = function()
     -- Start
-    M.create('nvi', 'RStart',       'rf', ':lua require("r.run").start_R("R")')
-    M.create('nvi', 'RCustomStart', 'rc', ':lua require("r.run").start_R("custom")')
+    create_maps('nvi', 'RStart',       'rf', ':lua require("r.run").start_R("R")')
+    create_maps('nvi', 'RCustomStart', 'rc', ':lua require("r.run").start_R("custom")')
 
     -- Close
-    M.create('nvi', 'RClose',       'rq', ":lua require('r.run').quit_R('nosave')")
-    M.create('nvi', 'RSaveClose',   'rw', ":lua require('r.run').quit_R('save')")
+    create_maps('nvi', 'RClose',       'rq', ":lua require('r.run').quit_R('nosave')")
+    create_maps('nvi', 'RSaveClose',   'rw', ":lua require('r.run').quit_R('save')")
 end
 
-M.edit = function()
+local edit = function()
     -- Edit
     -- Replace <M--> with ' <- '
-    if cfg.assign then
-        vim.api.nvim_buf_set_keymap(0, 'i', cfg.assign_map, '<Esc>:lua require("r.edit").assign()<CR>a', {silent = true})
+    if config.assign then
+        vim.api.nvim_buf_set_keymap(0, 'i', config.assign_map, '<Esc>:lua require("r.edit").assign()<CR>a', {silent = true})
     end
+    create_maps('nvi', 'RSetwd',    'rd', ':call RSetWD()')
 end
 
-M.send = function()
+local send = function(file_type)
     -- Block
-    M.create('ni', 'RSendMBlock',     'bb', ':call SendMBlockToR("silent", "stay")')
-    M.create('ni', 'RESendMBlock',    'be', ':call SendMBlockToR("echo", "stay")')
-    M.create('ni', 'RDSendMBlock',    'bd', ':call SendMBlockToR("silent", "down")')
-    M.create('ni', 'REDSendMBlock',   'ba', ':call SendMBlockToR("echo", "down")')
+    create_maps('ni', 'RSendMBlock',     'bb', ':call SendMBlockToR("silent", "stay")')
+    create_maps('ni', 'RESendMBlock',    'be', ':call SendMBlockToR("echo", "stay")')
+    create_maps('ni', 'RDSendMBlock',    'bd', ':call SendMBlockToR("silent", "down")')
+    create_maps('ni', 'REDSendMBlock',   'ba', ':call SendMBlockToR("echo", "down")')
 
     -- Function
-    M.create('nvi', 'RSendFunction',  'ff', ':call SendFunctionToR("silent", "stay")')
-    M.create('nvi', 'RDSendFunction', 'fe', ':call SendFunctionToR("echo", "stay")')
-    M.create('nvi', 'RDSendFunction', 'fd', ':call SendFunctionToR("silent", "down")')
-    M.create('nvi', 'RDSendFunction', 'fa', ':call SendFunctionToR("echo", "down")')
+    create_maps('nvi', 'RSendFunction',  'ff', ':call SendFunctionToR("silent", "stay")')
+    create_maps('nvi', 'RDSendFunction', 'fe', ':call SendFunctionToR("echo", "stay")')
+    create_maps('nvi', 'RDSendFunction', 'fd', ':call SendFunctionToR("silent", "down")')
+    create_maps('nvi', 'RDSendFunction', 'fa', ':call SendFunctionToR("echo", "down")')
 
     -- Selection
-    M.create('n', 'RSendSelection',   'ss', ':call SendSelectionToR("silent", "stay", "normal")')
-    M.create('n', 'RESendSelection',  'se', ':call SendSelectionToR("echo", "stay", "normal")')
-    M.create('n', 'RDSendSelection',  'sd', ':call SendSelectionToR("silent", "down", "normal")')
-    M.create('n', 'REDSendSelection', 'sa', ':call SendSelectionToR("echo", "down", "normal")')
+    create_maps('n', 'RSendSelection',   'ss', ':call SendSelectionToR("silent", "stay", "normal")')
+    create_maps('n', 'RESendSelection',  'se', ':call SendSelectionToR("echo", "stay", "normal")')
+    create_maps('n', 'RDSendSelection',  'sd', ':call SendSelectionToR("silent", "down", "normal")')
+    create_maps('n', 'REDSendSelection', 'sa', ':call SendSelectionToR("echo", "down", "normal")')
 
-    M.create('v', 'RSendSelection',   'ss', ':call SendSelectionToR("silent", "stay")')
-    M.create('v', 'RESendSelection',  'se', ':call SendSelectionToR("echo", "stay")')
-    M.create('v', 'RDSendSelection',  'sd', ':call SendSelectionToR("silent", "down")')
-    M.create('v', 'REDSendSelection', 'sa', ':call SendSelectionToR("echo", "down")')
-    M.create('v', 'RSendSelAndInsertOutput', 'so', ':call SendSelectionToR("echo", "stay", "NewtabInsert")')
+    create_maps('v', 'RSendSelection',   'ss', ':call SendSelectionToR("silent", "stay")')
+    create_maps('v', 'RESendSelection',  'se', ':call SendSelectionToR("echo", "stay")')
+    create_maps('v', 'RDSendSelection',  'sd', ':call SendSelectionToR("silent", "down")')
+    create_maps('v', 'REDSendSelection', 'sa', ':call SendSelectionToR("echo", "down")')
+    create_maps('v', 'RSendSelAndInsertOutput', 'so', ':call SendSelectionToR("echo", "stay", "NewtabInsert")')
 
     -- Paragraph
-    M.create('ni', 'RSendParagraph',   'pp', ':lua require("r.send").paragraph("silent", "stay")')
-    M.create('ni', 'RESendParagraph',  'pe', ':lua require("r.send").paragraph("echo", "stay")')
-    M.create('ni', 'RDSendParagraph',  'pd', ':lua require("r.send").paragraph("silent", "down")')
-    M.create('ni', 'REDSendParagraph', 'pa', ':lua require("r.send").paragraph("echo", "down")')
+    create_maps('ni', 'RSendParagraph',   'pp', ':lua require("r.send").paragraph("silent", "stay")')
+    create_maps('ni', 'RESendParagraph',  'pe', ':lua require("r.send").paragraph("echo", "stay")')
+    create_maps('ni', 'RDSendParagraph',  'pd', ':lua require("r.send").paragraph("silent", "down")')
+    create_maps('ni', 'REDSendParagraph', 'pa', ':lua require("r.send").paragraph("echo", "down")')
 
-    if vim.o.filetype == "rnoweb" or vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
-        M.create('ni', 'RSendChunkFH', 'ch', ':call SendFHChunkToR()')
+    if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
+        create_maps('ni', 'RSendChunkFH', 'ch', ':call SendFHChunkToR()')
     end
 
     -- *Line*
-    M.create('ni',  'RSendLine', 'l', ':lua require("r.send").line("stay")')
-    M.create('ni0', 'RDSendLine', 'd', ':lua require("r.send").line("down")')
-    M.create('ni0', '(RDSendLineAndInsertOutput)', 'o', ':call SendLineToRAndInsertOutput()')
-    M.create('v',   '(RDSendLineAndInsertOutput)', 'o', ':call RWarningMsg("This command does not work over a selection of lines.")')
-    M.create('i',   'RSendLAndOpenNewOne', 'q', ':lua require("r.send").line("newline")')
-    M.create('ni.', 'RSendMotion', 'm', ':set opfunc=SendMotionToR<CR>g@')
-    M.create('n',   'RNLeftPart', 'r<left>', ':call RSendPartOfLine("left", 0)')
-    M.create('n',   'RNRightPart', 'r<right>', ':call RSendPartOfLine("right", 0)')
-    M.create('i',   'RILeftPart', 'r<left>', 'l:call RSendPartOfLine("left", 1)')
-    M.create('i',   'RIRightPart', 'r<right>', 'l:call RSendPartOfLine("right", 1)')
-    if vim.o.filetype == "r" then
-        M.create('n', 'RSendAboveLines',  'su', ':require("r.send").above_lines()')
+    create_maps('ni',  'RSendLine', 'l', ':lua require("r.send").line("stay")')
+    create_maps('ni0', 'RDSendLine', 'd', ':lua require("r.send").line("down")')
+    create_maps('ni0', '(RInsertLineOutput)', 'o', ':lua require("r.run").insert_commented()')
+    create_maps('v',   '(RInsertLineOutput)', 'o', ':lua require("r").warn("This command does not work over a selection of lines.")')
+    create_maps('i',   'RSendLAndOpenNewOne', 'q', ':lua require("r.send").line("newline")')
+    create_maps('ni.', 'RSendMotion', 'm', ':set opfunc=SendMotionToR<CR>g@')
+    create_maps('n',   'RNLeftPart', 'r<left>', ':call RSendPartOfLine("left", 0)')
+    create_maps('n',   'RNRightPart', 'r<right>', ':call RSendPartOfLine("right", 0)')
+    create_maps('i',   'RILeftPart', 'r<left>', 'l:call RSendPartOfLine("left", 1)')
+    create_maps('i',   'RIRightPart', 'r<right>', 'l:call RSendPartOfLine("right", 1)')
+    if file_type == "r" then
+        create_maps('n', 'RSendAboveLines',  'su', ':require("r.send").above_lines()')
+        create_maps('ni', 'RSendFile',  'aa', ':require("r.send").source_file("silent")')
+        create_maps('ni', 'RESendFile', 'ae', ':require("r.send").source_file("echo")')
+        create_maps('ni', 'RShowRout',  'ao', ':lua require("r").show_R_out()')
     end
+    if file_type == "rmd" or file_type == "quarto" then
+        create_maps('nvi', 'RKnit',           'kn', ':call RKnit()')
+        create_maps('ni',  'RSendChunk',      'cc', ':lua require("r.rmd").send_R_chunk("silent", "stay")')
+        create_maps('ni',  'RESendChunk',     'ce', ':lua require("r.rmd").send_R_chunk("echo", "stay")')
+        create_maps('ni',  'RDSendChunk',     'cd', ':lua require("r.rmd").send_R_chunk("silent", "down")')
+        create_maps('ni',  'REDSendChunk',    'ca', ':lua require("r.rmd").send_R_chunk("echo", "down")')
+        create_maps('n',   'RNextRChunk',     'gn', ':lua require("r.rmd").next_chunk()')
+        create_maps('n',   'RPreviousRChunk', 'gN', ':lua require("r.rmd").previous_chunk()')
+    end
+    if file_type == "quarto" then
+        create_maps('n', 'RQuartoRender',  'qr', ':lua require("r.quarto").command("render")')
+        create_maps('n', 'RQuartoPreview', 'qp', ':lua require("r.quarto").command("preview")')
+        create_maps('n', 'RQuartoStop',    'qs', ':lua require("r.quarto").command("stop")')
+    end
+    if file_type == "rnoweb" then
+        create_maps('nvi', 'RSweave',      'sw', ':lua require("r.rnw").weave("nobib", false, false)')
+        create_maps('nvi', 'RMakePDF',     'sp', ':lua require("r.rnw").weave("nobib", false, true)')
+        create_maps('nvi', 'RBibTeX',      'sb', ':lua require("r.rnw").weave("bibtex", false, true)')
+        if config.rm_knit_cache then
+            create_maps('nvi', 'RKnitRmCache', 'kr', ':lua require("r.rnw").rm_knit_cache()')
+        end
+        create_maps('nvi', 'RKnit',        'kn', ':lua require("r.rnw").weave("nobib", true, false)')
+        create_maps('nvi', 'RMakePDFK',    'kp', ':lua require("r.rnw").weave("nobib", true, true)')
+        create_maps('nvi', 'RBibTeXK',     'kb', ':lua require("r.rnw").weave("bibtex", true, true)')
+        create_maps('ni',  'RSendChunk',   'cc', ':lua require("r.rnw").send_chunk("silent", "stay")')
+        create_maps('ni',  'RESendChunk',  'ce', ':lua require("r.rnw").send_chunk("echo", "stay")')
+        create_maps('ni',  'RDSendChunk',  'cd', ':lua require("r.rnw").send_chunk("silent", "down")')
+        create_maps('ni',  'REDSendChunk', 'ca', ':lua require("r.rnw").send_chunk("echo", "down")')
+        create_maps('nvi', 'ROpenPDF',     'op', ':lua require("r.pdf").open("Get Master")')
+        if config.synctex then
+            create_maps('ni', 'RSyncFor',  'gp', ':lua require("r.rnw").SyncTeX_forward(false)')
+            create_maps('ni', 'RGoToTeX',  'gt', ':lua require("r.rnw").SyncTeX_forward(true)')
+        end
+        create_maps('n', 'RNextRChunk',     'gn', ':lua require("r.rnw").next_chunk()')
+        create_maps('n', 'RPreviousRChunk', 'gN', ':lua require("r.rnw").previous_chunk()')
+    end
+end
+
+M = {}
+
+M.create = function (file_type)
+    control(file_type)
+    if file_type == "rbrowser" then
+        return
+    end
+    send(file_type)
+    if file_type == "rdoc" then
+        return
+    end
+    start()
+    edit()
 end
 
 return M
