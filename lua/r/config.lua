@@ -23,9 +23,6 @@ local config = {
     clear_console       = true,
     clear_line          = false,
     close_term          = true,
-    dbg_jump            = true,
-    debug               = true,
-    debug_center        = false,
     disable_cmds        = {''},
     editor_w            = 66,
     esc_term            = true,
@@ -109,9 +106,9 @@ local set_editing_mode = function ()
 end
 
 local set_pdf_viewer = function ()
-    if vim.fn.getenv("XDG_CURRENT_DESKTOP") == "sway" then
+    if vim.env.XDG_CURRENT_DESKTOP == "sway" then
         config.openpdf = 2
-    elseif config.is_darwin or vim.fn.getenv("WAYLAND_DISPLAY") ~= "" then
+    elseif config.is_darwin or vim.env.WAYLAND_DISPLAY then
         config.openpdf = 1
     else
         config.openpdf = 2
@@ -458,7 +455,7 @@ local windows_config = function ()
         vim.fn.reverse(rpath)
         for _, dir in ipairs(rpath) do
             if vim.fn.isdirectory(dir) then
-                vim.fn.system('set PATH=' .. dir .. ';' .. vim.fn.getenv('PATH'))
+                vim.env.PATH = dir .. ';' .. vim.env.PATH
             else
                 warn('"' .. dir .. '" is not a directory. Fix the value of R_path in your vimrc.')
             end
@@ -466,14 +463,14 @@ local windows_config = function ()
     else
         local RT40home = vim.env.RTOOLS40_HOME
         if vim.fn.isdirectory(RT40home .. '\\usr\\bin') then
-            vim.fn.system('set PATH=' .. RT40home .. '\\usr\\bin;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = RT40home .. '\\usr\\bin;' .. vim.env.PATH
         elseif vim.fn.isdirectory('C:\\rtools40\\usr\\bin') then
-            vim.fn.system('set PATH=C:\\rtools40\\usr\\bin;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = 'C:\\rtools40\\usr\\bin;' .. vim.env.PATH
         end
         if vim.fn.isdirectory(RT40home .. '\\mingw64\\bin\\') then
-            vim.fn.system('set PATH=' .. RT40home .. '\\mingw64\\bin;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = RT40home .. '\\mingw64\\bin;' .. vim.env.PATH
         elseif vim.fn.isdirectory('C:\\rtools40\\mingw64\\bin') then
-            vim.fn.system('set PATH=C:\\rtools40\\mingw64\\bin;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = 'C:\\rtools40\\mingw64\\bin;' .. vim.env.PATH
         end
 
         local run_cmd_content = {'reg.exe QUERY "HKLM\\SOFTWARE\\R-core\\R" /s'}
@@ -507,11 +504,11 @@ local windows_config = function ()
             isi386 = false
         end
         if hasR32 == 1 and isi386 then
-            vim.fn.system('set PATH=' .. rinstallpath .. '\\bin\\i386;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = rinstallpath .. '\\bin\\i386;' .. vim.env.PATH
         elseif hasR64 and isi386 == 0 then
-            vim.fn.system('set PATH=' .. rinstallpath .. '\\bin\\x64;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = rinstallpath .. '\\bin\\x64;' .. vim.env.PATH
         else
-            vim.fn.system('set PATH=' .. rinstallpath .. '\\bin;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = rinstallpath .. '\\bin;' .. vim.env.PATH
         end
     end
 
@@ -616,8 +613,12 @@ local global_setup = function ()
 
     -- Commands:
     -- See: :help lua-guide-commands-create
-    vim.api.nvim_create_user_command("Rstop", 'lua require("r.run").signal_to_R("SIGINT")', {})
-    vim.api.nvim_create_user_command("RKill", 'lua require("r.run").signal_to_R("SIGKILL")', {})
+    vim.api.nvim_create_user_command("Rstop", function(_)
+         require("r.run").signal_to_R("SIGINT")
+    end, {})
+    vim.api.nvim_create_user_command("RKill", function(_)
+        require("r.run").signal_to_R("SIGKILL")
+    end, {})
     vim.api.nvim_create_user_command("RBuildTags", require("r.edit").build_tags, {})
     vim.api.nvim_create_user_command("RDebugInfo", require("r.edit").show_debug_info, {})
 
