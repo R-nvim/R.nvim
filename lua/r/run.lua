@@ -123,11 +123,6 @@ M.start_R = function (whatr)
     else
         table.insert(start_options, 'options(nvimcom.autoglbenv = FALSE)')
     end
-    if config.debug then
-        table.insert(start_options, 'options(nvimcom.debug_r = TRUE)')
-    else
-        table.insert(start_options, 'options(nvimcom.debug_r = FALSE)')
-    end
     if config.setwidth and config.setwidth == 2 then
         table.insert(start_options, 'options(nvimcom.setwidth = TRUE)')
     else
@@ -207,8 +202,8 @@ end
 
 -- Send SIGINT to R
 M.signal_to_R = function(signal)
-    if R_pid then
-        vim.fn.system('kill -s ' .. signal .. ' ' .. R_pid)
+    if R_pid ~= 0 then
+        vim.system({'kill', '-s', tostring(signal), tostring(R_pid)})
     end
 end
 
@@ -253,7 +248,7 @@ M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
     end
 
     R_pid = rpid
-    vim.fn.setenv("RCONSOLE", wid)
+    vim.env.RCONSOLE = wid
 
     local Rinfo = vim.fn.split(r_info, "\x12")
     -- R_version = Rinfo[1]
@@ -267,7 +262,7 @@ M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
 
     if job.is_running("Server") then
         if config.is_windows then
-            if vim.fn.string(vim.fn.getenv("RCONSOLE")) == "0" then
+            if vim.env.RCONSOLE == "0" then
                 warn("nvimcom did not save R window ID")
             end
         end

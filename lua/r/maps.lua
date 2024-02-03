@@ -177,10 +177,6 @@ M.send = function()
     if vim.o.filetype == "r" then
         M.create('n', 'RSendAboveLines',  'su', ':require("r.send").above_lines()')
     end
-
-    -- Debug
-    M.create('n',   'RDebug', 'bg', ':call RAction("debug")')
-    M.create('n',   'RUndebug', 'ud', ':call RAction("undebug")')
 end
 
 return M
