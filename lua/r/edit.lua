@@ -61,7 +61,7 @@ end
 
 M.buf_enter = function ()
     if vim.o.filetype == "r" or vim.o.filetype == "rnoweb" or vim.o.filetype == "rmd" or
-        vim.o.filetype == "quarto" or vim.o.filetype == "rrst" or vim.o.filetype == "rhelp" then
+        vim.o.filetype == "quarto" or vim.o.filetype == "rhelp" then
         rscript_name = vim.fn.bufname("%")
     end
 end

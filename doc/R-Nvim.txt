@@ -166,7 +166,7 @@ It is recommended that you use a plugin manager to install R-Nvim.
 Note: The <LocalLeader> is '\' by default.
 
 The plugin is a |file-type| plugin. It will be active only if you are editing
-a .R, .Rnw, .Rd, .Rmd, .Rrst or .qmd file. The the key bindings will not be
+a .R, .Rnw, .Rd, .Rmd or .qmd file. The the key bindings will not be
 active while editing either unnamed files or files with name extensions other
 than the mentioned above: Hhowever, see:
 
@@ -248,14 +248,14 @@ change this behavior (see |external_term|).
 
 Note: The <LocalLeader> is '\' by default.
 
-To use the plugin, open a .R, .Rnw, .Rd, .Rmd, .Rrst, or .qmd file with Neovim
+To use the plugin, open a .R, .Rnw, .Rd, .Rmd or .qmd file with Neovim
 and type <LocalLeader>rf. Then, you will be able to use the plugin key
 bindings to send commands to R.
 
 This plugin has many key bindings, which correspond with menu entries. In the
 list below, the backslash represents the <LocalLeader>. Not all menu items and
 key bindings are enabled in all file types supported by the plugin (r, rnoweb,
-rhelp, rrst, rmd, and quarto).
+rhelp, rmd, and quarto).
 
 Menu entry                                Default shortcut
 Start/Close
@@ -904,7 +904,7 @@ the `init.vim`. The workaround is do not include the superfluous command
 |editing_mode|        The mode defined in your `~/.inputrc`
 |pdfviewer|           PDF application used to open PDF documents
 |openpdf|             Open PDF after processing rnoweb file
-|openhtml|            Open HTML after processing either Rrst or Rmd
+|openhtml|            Open HTML after processing Rmd or Quarto
 |strict_rst|          Code style for generated rst files
 |insert_mode_cmds|    Allow R commands in insert mode
 |rmhidden|            Remove hidden objects from R workspace
@@ -1670,7 +1670,7 @@ and to not run in Rgui.
 
 
 ------------------------------------------------------------------------------
-6.23. Open PDF after processing quarto, rnoweb, rmd or rrst files
+6.23. Open PDF after processing quarto, rnoweb or rmd files
                                                            *pdfviewer*
                                                            *openpdf*
                                                            *openhtml*
@@ -1726,25 +1726,6 @@ previewing). The command <LocalLeader>kr achieves basically the same result of
 <LocalLeader>kr. The difference is that the generated document is open after
 <LocalLeader>kr, and <LocalLeader>qr allows Quarto specific
 options (see |quarto_render_args|).
-
-
-------------------------------------------------------------------------------
-6.24. Support to RreStructuredText file
-                                                              *rrstcompiler*
-                                                              *strict_rst*
-                                                              *rst2pdfpath*
-                                                              *rst2pdfargs*
-
-By default, R-Nvim sends the command `render_rst(strict=TRUE)` to R
-before using R's `knit()` function to convert an Rrst file into an rst one. If
-you prefer the non strict rst code, put the following in your config:
->lua
-   strict_rst = false
-<
-You can also set the value of `rst2pdfpath` (the path to rst2pdf
-application), `rrstcompiler` (the compiler argument to be passed to R
-function knit2pdf), and `rst2pdfargs` (further arguments to be passed
-to R function knit2pdf).
 
 
 ------------------------------------------------------------------------------
@@ -1823,7 +1804,7 @@ in your config.  Example:
 ------------------------------------------------------------------------------
 6.31. Start R in working directory of Neovim                          *nvim_wd*
 
-When you are editing an R file (.R, .Rnw, .Rd, .Rmd, .Rrst, or .qmd) and start
+When you are editing an R file (.R, .Rnw, .Rd, .Rmd, or .qmd) and start
 R, the R package nvimcom runs the command `setwd()` with the directory of the
 file being edited as argument, that is, the R working directory becomes the
 same directory of the R file. If you want R's working directory to be the same
@@ -1896,7 +1877,7 @@ Below is an example on how to disable the commands that sends `setwd()` and
 If you want to disable R-Nvim for a specific file type, create the variable
 `R_filetypes` with a list of file types that should be supported. Example:
 >lua
-   vim.g.R_filetypes = {'r', 'rmd', 'rrst', 'rnoweb', 'quarto', 'rhelp'}
+   vim.g.R_filetypes = {'r', 'rmd', 'rnoweb', 'quarto', 'rhelp'}
 <
 If the variable `R_filetypes` does not exist, all file types from the above
 list will be supported.
