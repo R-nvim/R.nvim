@@ -188,7 +188,8 @@ M.show = function (rkeyword, txt)
         vim.o.filetype = "r"
         vim.fn.cursor(1, 1)
     elseif rkeyword:match('(help)') or vim.fn.search("\x08", "nw") > 0 then
-        vim.o.filetype = "rdoc"
+        require("r.rdoc").fix_rdoc()
+        require("r.rdoc").set_buf_options()
         vim.fn.cursor(1, 1)
     elseif rkeyword:find('%.Rd$') then
         -- Called by devtools::load_all().

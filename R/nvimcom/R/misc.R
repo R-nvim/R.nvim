@@ -100,6 +100,7 @@ nvim_viewobj <- function(oname, fenc = "", nrows = NULL, howto = "tabnew", R_df_
         }
         if (!is.null(R_df_viewer)) {
             .C("nvimcom_msg_to_nvim",
+               # FIXME: create a Lua function for this
                paste0("call g:SendCmdToR(printf(g:Rcfg.df_viewer, '", oname, "'))"),
                PACKAGE = "nvimcom")
             return(invisible(NULL))
