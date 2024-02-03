@@ -54,8 +54,7 @@ local set_buf_options = function()
 
     vim.fn.setline(1, ".GlobalEnv | Libraries")
 
-    -- FIXME: lua/r/maps.lua:53: attempt to call field 'create' (a nil value)
-    -- require("r.maps").control()
+    require("r.maps").create("rbrowser")
 end
 
 local get_name = function ()

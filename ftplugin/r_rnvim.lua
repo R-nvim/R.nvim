@@ -53,17 +53,9 @@ end
 vim.b.IsInRCode = is_in_R_code
 
 -- Key bindings
-require("r.maps").start()
-require("r.maps").edit()
+require("r.maps").create("r")
 
 -- Only .R files are sent to R
-require("r.maps").create('ni', 'RSendFile',  'aa', ':require("r.send").source_file("silent")')
-require("r.maps").create('ni', 'RESendFile', 'ae', ':require("r.send").source_file("echo")')
-require("r.maps").create('ni', 'RShowRout',  'ao', ':lua require("r").show_R_out()')
-
-require("r.maps").send()
-require("r.maps").control()
-require("r.maps").create('nvi', 'RSetwd',    'rd', ':call RSetWD()')
 
 if vim.b.undo_ftplugin then
     vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"

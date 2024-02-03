@@ -138,22 +138,8 @@ M.setup = function ()
     vim.api.nvim_buf_set_var(0, "IsInRCode", M.is_in_R_code)
 
     -- Key bindings
-    local m = require("r.maps")
-    m.start()
-    m.edit()
-    m.send()
-    m.control()
-
-    m.create('nvi', 'RSetwd',        'rd', ':call RSetWD()')
-
+    require("r.maps").create(vim.o.filetype)
     -- Only .Rmd and .qmd files use these functions:
-    m.create('nvi', 'RKnit',           'kn', ':call RKnit()')
-    m.create('ni',  'RSendChunk',      'cc', ':lua require("r.rmd").send_R_chunk("silent", "stay")')
-    m.create('ni',  'RESendChunk',     'ce', ':lua require("r.rmd").send_R_chunk("echo", "stay")')
-    m.create('ni',  'RDSendChunk',     'cd', ':lua require("r.rmd").send_R_chunk("silent", "down")')
-    m.create('ni',  'REDSendChunk',    'ca', ':lua require("r.rmd").send_R_chunk("echo", "down")')
-    m.create('n',   'RNextRChunk',     'gn', ':lua require("r.rmd").next_chunk()')
-    m.create('n',   'RPreviousRChunk', 'gN', ':lua require("r.rmd").previous_chunk()')
 
     vim.schedule(function ()
         require("r.pdf").setup()
