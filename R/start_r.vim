@@ -344,9 +344,6 @@ endfunction
 " Send sources to R
 function RSourceLines(...)
     let lines = a:1
-    if &filetype == "rrst"
-        let lines = map(copy(lines), 'substitute(v:val, "^\\.\\. \\?", "", "")')
-    endif
     if &filetype == "rmd" || &filetype == "quarto"
         let lines = map(copy(lines), 'substitute(v:val, "^(\\`\\`)\\?", "", "")')
     endif
@@ -410,12 +407,6 @@ function GoDown()
         let curline = getline(".")
         if curline =~ '^```$'
             call RmdNextChunk()
-            return
-        endif
-    elseif &filetype == "rrst"
-        let curline = getline(".")
-        if curline =~ '^\.\. \.\.$'
-            call RrstNextChunk()
             return
         endif
     endif
@@ -570,7 +561,7 @@ function SendSelectionToR(...)
         if (&filetype == 'rmd' || &filetype == 'quarto') && RmdIsInPythonCode(0)
             let ispy = 1
         elseif b:IsInRCode(0) != 1
-            if (&filetype == "rnoweb" && getline(".") !~ "\\Sexpr{") || ((&filetype == "rmd" || &filetype == "quarto") && getline(".") !~ "`r ") || (&filetype == "rrst" && getline(".") !~ ":r:`")
+            if (&filetype == "rnoweb" && getline(".") !~ "\\Sexpr{") || ((&filetype == "rmd" || &filetype == "quarto") && getline(".") !~ "`r ")
                 call RWarningMsg("Not inside an R code chunk.")
                 return
             endif
@@ -665,10 +656,6 @@ function SendFHChunkToR()
         let begchk = "^[ \t]*```[ ]*{r"
         let endchk = "^[ \t]*```$"
         let chdchk = "^```.*child *= *"
-    elseif &filetype == "rrst"
-        let begchk = "^\\.\\. {r"
-        let endchk = "^\\.\\. \\.\\."
-        let chdchk = "^\.\. {r.*child *= *"
     else
         " Should never happen
         call RWarningMsg('Strange filetype (SendFHChunkToR): "' . &filetype . '"')
@@ -785,23 +772,6 @@ function SendLineToR(godown, ...)
         endif
     endif
 
-    if &filetype == "rrst"
-        if line == ".. .."
-            if a:godown =~ "down"
-                call GoDown()
-            endif
-            return
-        endif
-        if line =~ "^\.\. {r.*child *= *"
-            call KnitChild(line, a:godown)
-            return
-        endif
-        let line = substitute(line, "^\\.\\. \\?", "", "")
-        if RrstIsInRCode(1) != 1
-            return
-        endif
-    endif
-
     if &filetype == "rdoc"
         if getline(1) =~ '^The topic'
             let topic = substitute(line, '.*::', '', "")
@@ -829,8 +799,6 @@ function SendLineToR(godown, ...)
             let chunkend = "```"
         elseif &filetype == "rnoweb"
             let chunkend = "@"
-        elseif &filetype == "rrst"
-            let chunkend = ".. .."
         endif
         let rpd = RParenDiff(line)
         let has_op = substitute(line, '#.*', '', '') =~ g:rplugin.op_pattern
