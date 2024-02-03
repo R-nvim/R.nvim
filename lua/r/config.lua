@@ -626,14 +626,10 @@ local global_setup = function ()
         require("r.send").cmd(tbl.fargs)
     end, {nargs = 1})
 
-    vim.api.nvim_create_user_command("RFormat", function(tbl)
-        -- FIXME: it was :call RFormatCode()
-        vim.notify(tostring(tbl.line1) .. "  " .. tostring(tbl.line2))
-    end, {range = "%"})
+    vim.api.nvim_create_user_command("RFormat", require("r.run").formart_code, { range = "%" })
 
-    vim.api.nvim_create_user_command("RInsert", function(tbl)
-        -- FIXME: it was :call RInsert(<q-args>, "here")
-        vim.notify(tbl.fargs)
+    vim.api.nvim_create_user_command("RInsert", function (tbl)
+        require("r.run").insert(table.concat(tbl.fargs, " "), "here")
     end, {nargs = 1})
 
     vim.api.nvim_create_user_command("RSourceDir", function(tbl)

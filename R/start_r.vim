@@ -55,57 +55,6 @@ endfunction
 " Functions that ask R to help editing the code
 "==============================================================================
 
-function RFormatCode() range
-    if g:rplugin.R_pid == 0
-        return
-    endif
-
-    let wco = &textwidth
-    if wco == 0
-        let wco = 78
-    elseif wco < 20
-        let wco = 20
-    elseif wco > 180
-        let wco = 180
-    endif
-
-    let lns = getline(a:firstline, a:lastline)
-    let txt = substitute(substitute(join(lns, "\x14"), '\\', '\\\\', 'g'), "'", "\x13", "g")
-    call SendToNvimcom("E", "nvimcom:::nvim_format(" . a:firstline . ", " . a:lastline . ", " . wco . ", " . &shiftwidth. ", '" . txt . "')")
-endfunction
-
-function FinishRFormatCode(lnum1, lnum2, txt)
-    let lns =  split(substitute(a:txt, "\x13", "'", "g"), "\x14")
-    silent exe a:lnum1 . "," . a:lnum2 . "delete"
-    call append(a:lnum1 - 1, lns)
-    echo (a:lnum2 - a:lnum1 + 1) . " lines formatted."
-endfunction
-
-function RInsert(cmd, type)
-    if g:rplugin.R_pid == 0
-        return
-    endif
-    call SendToNvimcom("E", 'nvimcom:::nvim_insert(' . a:cmd . ', "' . a:type . '")')
-endfunction
-
-function SendLineToRAndInsertOutput()
-    let lin = getline(".")
-    let cleanl = substitute(lin, '".\{-}"', '', 'g')
-    if cleanl =~ ';'
-        call RWarningMsg('`print(line)` works only if `line` is a single command')
-    endif
-    let cleanl = substitute(lin, '\s*#.*', "", "")
-    call RInsert("print(" . cleanl . ")", "comment")
-endfunction
-
-function FinishRInsert(type, txt)
-    let ilines = split(substitute(a:txt, "\x13", "'", "g"), "\x14")
-    if a:type == "comment"
-        call map(ilines, '"# " . v:val')
-    endif
-    call append(line('.'), ilines)
-endfunction
-
 function GetROutput(fnm, txt)
     if a:fnm == "NewtabInsert"
         let tnum = 1
@@ -761,12 +710,6 @@ endfunction
 function RKnit()
     update
     call g:SendCmdToR('require(knitr); .nvim_oldwd <- getwd(); setwd("' . s:RGetBufDir() . '"); knit("' . expand("%:t") . '"); setwd(.nvim_oldwd); rm(.nvim_oldwd)')
-endfunction
-
-function StartTxtBrowser(brwsr, url)
-    tabnew
-    call termopen(a:brwsr . " " . a:url)
-    startinsert
 endfunction
 
 function RSourceDirectory(...)

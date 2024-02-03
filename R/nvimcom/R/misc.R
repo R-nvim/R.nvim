@@ -222,7 +222,7 @@ nvim_format <- function(l1, l2, wco, sw, txt) {
     }
 
     .C("nvimcom_msg_to_nvim",
-       paste0("call FinishRFormatCode(", l1, ", ", l2, ", '", txt, "')"),
+       paste0("lua require('r.run').finish_code_formatting(", l1, ", ", l2, ", '", txt, "')"),
        PACKAGE = "nvimcom")
     return(invisible(NULL))
 }
@@ -241,7 +241,7 @@ nvim_insert <- function(cmd, howto = "tabnew") {
         o <- paste0(o, collapse = "\x14")
         o <- gsub("'", "\x13", o)
         .C("nvimcom_msg_to_nvim",
-           paste0("call FinishRInsert('", howto, "', '", o, "')"),
+           paste0("lua require('r.edit').finish_inserting('", howto, "', '", o, "')"),
            PACKAGE = "nvimcom")
     }
     return(invisible(NULL))
