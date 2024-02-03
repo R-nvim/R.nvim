@@ -215,6 +215,11 @@ local send = function(file_type)
         create_maps('n', 'RNextRChunk',     'gn', ':lua require("r.rnw").next_chunk()')
         create_maps('n', 'RPreviousRChunk', 'gN', ':lua require("r.rnw").previous_chunk()')
     end
+    if file_type == "rdoc" then
+        local opts = { silent = true, noremap = true, expr = false }
+        create_maps("n", "RDocExSection", "ge", ":lua require('r.rdoc').go_to_ex_section()")
+        vim.api.nvim_buf_set_keymap(0, "n", "q", "<Cmd>quit<CR>", opts)
+    end
 end
 
 M = {}
