@@ -373,7 +373,7 @@ M.SyncTeX_backward = function (fname, ln)
             if vim.fn.win_getid() ~= 0 then
                 vim.fn.system("wmctrl -ia " .. vim.fn.win_getid())
             elseif vim.env.WINDOWID then
-                vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID
+                vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID)
             end
         elseif vim.fn.exists('g:rplugin.has_awbt') and config.term_title then
             vim.cmd("RRaiseWindow('" .. config.term_title .. "')")
