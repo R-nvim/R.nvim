@@ -159,7 +159,7 @@ M.send = function()
     M.create('ni', 'RDSendParagraph',  'pd', ':lua require("r.send").paragraph("silent", "down")')
     M.create('ni', 'REDSendParagraph', 'pa', ':lua require("r.send").paragraph("echo", "down")')
 
-    if vim.o.filetype == "rnoweb" or vim.o.filetype == "rmd" or vim.o.filetype == "quarto" or vim.o.filetype == "rrst" then
+    if vim.o.filetype == "rnoweb" or vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
         M.create('ni', 'RSendChunkFH', 'ch', ':call SendFHChunkToR()')
     end
 

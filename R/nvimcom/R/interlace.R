@@ -321,28 +321,6 @@ nvim.interlace.rnoweb <- function(rnwf, rnwdir, latexcmd = "latexmk",
     return(invisible(NULL))
 }
 
-#' Knitr an Rrst file.
-#' @param Rrstfile Rrst file.
-#' @param rrstdir Directory where the Rrst file is.
-#' @param compiler Compiler to be used.
-#' @param ... Further arguments passed to `knitr::knitr2pdf()`.
-nvim.interlace.rrst <- function(Rrstfile, rrstdir, compiler = "rst2pdf", ...) {
-    if (!require(knitr))
-        stop("Please, install the 'knitr' package.")
-
-    oldwd <- getwd()
-    on.exit(setwd(oldwd))
-    setwd(rrstdir)
-
-    knitr::knit2pdf(Rrstfile, compiler = compiler, ...)
-
-    Sys.sleep(0.2)
-    pdff <- sub("\\.Rrst$", ".pdf", Rrstfile, ignore.case = TRUE)
-    .C("nvimcom_msg_to_nvim",
-       paste0("call ROpenDoc('", pdff, "', '')"),
-       PACKAGE = "nvimcom")
-}
-
 #' Knitr an Rmarkdown file.
 #' @param Rmdfile Rmarkdown file.
 #' @param outform Format of output.
