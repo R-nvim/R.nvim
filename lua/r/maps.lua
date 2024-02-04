@@ -13,17 +13,25 @@ local create_maps = function(mode, plug, combo, target)
     if config.disable_cmds.plug then
         return
     end
-    local tg
-    local il
-    if mode:find('0') then
-        tg = target .. '<CR>0'
-        il = 'i'
-    elseif mode:find('%.') then
-        tg = target
-        il = 'a'
-    else
-        tg = target .. '<CR>'
-        il = 'a'
+  end
+  if mode:find('v') then
+    vim.api.nvim_buf_set_keymap(
+      0,
+      'v',
+      '<Plug>' .. plug,
+      '<Esc>' .. tg,
+      { silent = true, noremap = true, expr = false }
+    )
+    if
+      not cfg.user_maps_only and vim.fn.hasmapto('<Plug>' .. plug, 'v') == 0
+    then
+      vim.api.nvim_buf_set_keymap(
+        0,
+        'v',
+        '<LocalLeader>' .. combo,
+        '<Esc>' .. tg,
+        { silent = true, noremap = true, expr = false }
+      )
     end
     local opts = { silent = true, noremap = true, expr = false }
     if mode:find("n") then
@@ -44,6 +52,7 @@ local create_maps = function(mode, plug, combo, target)
             vim.api.nvim_buf_set_keymap(0, 'i', '<LocalLeader>' .. combo, '<Esc>' .. tg .. il, opts)
         end
     end
+  end
 end
 
 local control = function(file_type)
