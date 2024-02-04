@@ -590,20 +590,6 @@ function SendLineToR(godown, ...)
     endif
 endfunction
 
-" Clear the console screen
-function RClearConsole()
-    if g:Rcfg.clear_console == v:false
-        return
-    endif
-    if has("win32") && type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term
-        call JobStdin("Server", "86\n")
-        sleep 50m
-        call JobStdin("Server", "87\n")
-    else
-        call g:SendCmdToR("\014", 0)
-    endif
-endfunction
-
 function RSourceDirectory(...)
     if has("win32")
         let dir = substitute(a:1, '\\', '/', "g")

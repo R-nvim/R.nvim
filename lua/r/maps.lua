@@ -49,8 +49,8 @@ end
 local control = function(file_type)
     -- List space, clear console, clear all
     create_maps("nvi", "RListSpace",        "rl", ":lua require('r.send').cmd('ls()')")
-    create_maps("nvi", "RClearConsole",     "rr", ":call RClearConsole()")
-    create_maps("nvi", "RClearAll",         "rm", ":call RClearAll()")
+    create_maps("nvi", "RClearConsole",     "rr", ":lua require('r.run').clear_console()")
+    create_maps("nvi", "RClearAll",         "rm", ":lua require('r.run').clear_all()")
 
     -- Print,          names,               structure
     create_maps("ni",  "RObjectPr",         "rp", ":lua require('r.run').action('print')")
