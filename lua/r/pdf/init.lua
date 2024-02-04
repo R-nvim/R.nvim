@@ -126,15 +126,4 @@ function RRaiseWindow(wttl)
     return 0
 end
 
-
--- FIXME: is this necessary?
--- if vim.bo.filetype == 'rnoweb' then
---     RSetPDFViewer()
---     SetPDFdir()
---     if cfg.synctex and vim.fn.getenv("DISPLAY") ~= "" and cfg.pdfviewer == "evince" then
---         config.evince_loop = 0
---         Run_EvinceBackward()
---     end
--- end
-
 return M

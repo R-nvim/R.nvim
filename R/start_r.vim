@@ -52,321 +52,8 @@ endfunction
 
 
 "==============================================================================
-"  Object Browser (see also ../ftplugin/rbrowser.vim)
-"==============================================================================
-
-function StartObjBrowser()
-    " Either open or close the Object Browser
-    let savesb = &switchbuf
-    set switchbuf=useopen,usetab
-    if bufloaded('Object_Browser')
-        let curwin = win_getid()
-        let curtab = tabpagenr()
-        exe 'sb Object_Browser'
-        let objbrtab = tabpagenr()
-        quit
-        call win_gotoid(curwin)
-        if curtab != objbrtab
-            call StartObjBrowser()
-        endif
-    else
-        let edbuf = bufnr()
-
-        if g:Rcfg.objbr_place =~# 'RIGHT'
-            sil exe 'botright vsplit Object_Browser'
-        elseif g:Rcfg.objbr_place =~# 'LEFT'
-            sil exe 'topleft vsplit Object_Browser'
-        elseif g:Rcfg.objbr_place =~# 'TOP'
-            sil exe 'topleft split Object_Browser'
-        elseif g:Rcfg.objbr_place =~# 'BOTTOM'
-            sil exe 'botright split Object_Browser'
-        else
-            if g:Rcfg.objbr_place =~? 'console'
-                sil exe 'sb ' . g:rplugin.R_bufnr
-            else
-                sil exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
-            endif
-            if g:Rcfg.objbr_place =~# 'right'
-                sil exe 'rightbelow vsplit Object_Browser'
-            elseif g:Rcfg.objbr_place =~# 'left'
-                sil exe 'leftabove vsplit Object_Browser'
-            elseif g:Rcfg.objbr_place =~# 'above'
-                sil exe 'aboveleft split Object_Browser'
-            elseif g:Rcfg.objbr_place =~# 'below'
-                sil exe 'belowright split Object_Browser'
-            else
-                call RWarningMsg('Invalid value for R_objbr_place: "' . R_objbr_place . '"')
-                exe "set switchbuf=" . savesb
-                return
-            endif
-        endif
-        if g:Rcfg.objbr_place =~? 'left' || g:Rcfg.objbr_place =~? 'right'
-            sil exe 'vertical resize ' . g:Rcfg.objbr_w
-        else
-            sil exe 'resize ' . g:Rcfg.objbr_h
-        endif
-        sil set filetype=rbrowser
-        let g:rplugin.curview = "GlobalEnv"
-        let g:rplugin.ob_winnr = win_getid()
-        let g:rplugin.ob_buf = nvim_win_get_buf(g:rplugin.ob_winnr)
-
-        if exists('s:autosttobjbr') && s:autosttobjbr == 1
-            let s:autosttobjbr = 0
-            exe edbuf . 'sb'
-        endif
-    endif
-    exe "set switchbuf=" . savesb
-endfunction
-
-" Open an Object Browser window
-function RObjBrowser(...)
-    " Only opens the Object Browser if R is running
-    if g:R_Nvim_status < 5
-        call RWarningMsg("The Object Browser can be opened only if R is running.")
-        return
-    endif
-
-    if s:running_objbr == 1
-        " Called twice due to BufEnter event
-        return
-    endif
-
-    let s:running_objbr = 1
-
-    " call RealUpdateRGlbEnv(1)
-    call JobStdin("Server", "31\n")
-    call SendToNvimcom("A", "RObjBrowser")
-
-    call StartObjBrowser()
-    let s:running_objbr = 0
-
-    if len(g:Rcfg.after_ob_open) > 0
-        redraw
-        for cmd in g:Rcfg.after_ob_open
-            exe substitute(cmd, '^:', '', '')
-        endfor
-    endif
-
-    return
-endfunction
-
-function RBrOpenCloseLs(stt)
-    call JobStdin("Server", "34" . a:stt . g:rplugin.curview . "\n")
-endfunction
-
-
-"==============================================================================
-" Support for debugging R code
-"==============================================================================
-
-" No support for break points
-"if synIDattr(synIDtrans(hlID("SignColumn")), "bg") =~ '^#'
-"    exe 'hi def StopSign guifg=red guibg=' . synIDattr(synIDtrans(hlID("SignColumn")), "bg")
-"else
-"    exe 'hi def StopSign ctermfg=red ctermbg=' . synIDattr(synIDtrans(hlID("SignColumn")), "bg")
-"endif
-"call sign_define('stpline', {'text': '●', 'texthl': 'StopSign', 'linehl': 'None', 'numhl': 'None'})
-
-" Functions sign_define(), sign_place() and sign_unplace() require Neovim >= 0.4.3
-"call sign_define('dbgline', {'text': '▬▶', 'texthl': 'SignColumn', 'linehl': 'QuickFixLine', 'numhl': 'Normal'})
-
-if &ambiwidth == "double"
-    sign define dbgline text==> texthl=SignColumn linehl=QuickFixLine
-else
-    sign define dbgline text=▬▶ texthl=SignColumn linehl=QuickFixLine
-endif
-
-let s:func_offset = -2
-let s:rdebugging = 0
-function StopRDebugging()
-    "call sign_unplace('rdebugcurline')
-    "sign unplace rdebugcurline
-    sign unplace 1
-    let s:func_offset = -2 " Did not seek yet
-    let s:rdebugging = 0
-endfunction
-
-function FindDebugFunc(srcref)
-    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
-        let s:func_offset = -1 " Not found
-        let sbopt = &switchbuf
-        set switchbuf=useopen,usetab
-        let curtab = tabpagenr()
-        let isnormal = mode() ==# 'n'
-        let curwin = winnr()
-        exe 'sb ' . g:rplugin.R_bufnr
-        sleep 30m " Time to fill the buffer lines
-        let rlines = getline(1, "$")
-        exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
-    elseif string(g:SendCmdToR) == "function('SendCmdToR_Term')"
-        let tout = system('tmux -L NvimR capture-pane -p -t ' . g:rplugin.tmuxsname)
-        let rlines = split(tout, "\n")
-    elseif string(g:SendCmdToR) == "function('SendCmdToR_TmuxSplit')"
-        let tout = system('tmux capture-pane -p -t ' . g:rplugin.rconsole_pane)
-        let rlines = split(tout, "\n")
-    else
-        let rlines = []
-    endif
-
-    let idx = len(rlines) - 1
-    while idx > 0
-        if rlines[idx] =~# '^debugging in: '
-            let funcnm = substitute(rlines[idx], '^debugging in: \(.\{-}\)(.*', '\1', '')
-            let s:func_offset = search('.*\<' . funcnm . '\s*<-\s*function\s*(', 'b')
-            if s:func_offset < 1
-                let s:func_offset = search('.*\<' . funcnm . '\s*=\s*function\s*(', 'b')
-            endif
-            if s:func_offset < 1
-                let s:func_offset = search('.*\<' . funcnm . '\s*<<-\s*function\s*(', 'b')
-            endif
-            if s:func_offset > 0
-                let s:func_offset -= 1
-            endif
-            if a:srcref == '<text>'
-                if &filetype == 'rmd' || &filetype == 'quarto'
-                    let s:func_offset = search('^\s*```\s*{\s*r', 'nb')
-                elseif &filetype == 'rnoweb'
-                    let s:func_offset = search('^<<', 'nb')
-                endif
-            endif
-            break
-        endif
-        let idx -= 1
-    endwhile
-
-    if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
-        if tabpagenr() != curtab
-            exe 'normal! ' . curtab . 'gt'
-        endif
-        exe curwin . 'wincmd w'
-        if isnormal
-            stopinsert
-        endif
-        exe 'set switchbuf=' . sbopt
-    endif
-endfunction
-
-function RDebugJump(fnm, lnum)
-    let saved_so = &scrolloff
-    if g:Rcfg.debug_center
-        set so=999
-    endif
-    if a:fnm == '' || a:fnm == '<text>'
-        " Functions sent directly to R Console have no associated source file
-        " and functions sourced by knitr have '<text>' as source reference.
-        if s:func_offset == -2
-            call FindDebugFunc(a:fnm)
-        endif
-        if s:func_offset < 0
-            return
-        endif
-    endif
-
-    if s:func_offset >= 0
-        let flnum = a:lnum + s:func_offset
-        let fname = luaeval('require("r.edit").get_rscript_name()')
-    else
-        let flnum = a:lnum
-        let fname = expand(a:fnm)
-    endif
-
-    let bname = bufname("%")
-
-    if !bufloaded(fname) && fname != luaeval('require("r.edit").get_rscript_name()') && fname != expand("%") && fname != expand("%:p")
-        if filereadable(fname)
-            exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
-            if &modified
-                split
-            endif
-            exe 'edit ' . fname
-        elseif glob("*") =~ fname
-            exe 'sb ' . luaeval('require("r.edit").get_rscript_name()')
-            if &modified
-                split
-            endif
-            exe 'edit ' . fname
-        else
-            return
-        endif
-    endif
-
-    if bufloaded(fname)
-        if fname != expand("%")
-            exe 'sb ' . fname
-        endif
-        exe ':' . flnum
-    endif
-
-    " Call sign_place() and sign_unplace() when requiring Vim 8.2 and Neovim 0.5
-    "call sign_unplace('rdebugcurline')
-    "call sign_place(1, 'rdebugcurline', 'dbgline', fname, {'lnum': flnum})
-    sign unplace 1
-    exe 'sign place 1 line=' . flnum . ' name=dbgline file=' . fname
-    if g:Rcfg.dbg_jump && !s:rdebugging && type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
-        exe 'sb ' . g:rplugin.R_bufnr
-        startinsert
-    elseif bname != expand("%")
-        exe 'sb ' . bname
-    endif
-    let s:rdebugging = 1
-    exe 'set so=' . saved_so
-endfunction
-
-
-"==============================================================================
 " Functions that ask R to help editing the code
 "==============================================================================
-
-function RFormatCode() range
-    if g:rplugin.R_pid == 0
-        return
-    endif
-
-    let wco = &textwidth
-    if wco == 0
-        let wco = 78
-    elseif wco < 20
-        let wco = 20
-    elseif wco > 180
-        let wco = 180
-    endif
-
-    let lns = getline(a:firstline, a:lastline)
-    let txt = substitute(substitute(join(lns, "\x14"), '\\', '\\\\', 'g'), "'", "\x13", "g")
-    call SendToNvimcom("E", "nvimcom:::nvim_format(" . a:firstline . ", " . a:lastline . ", " . wco . ", " . &shiftwidth. ", '" . txt . "')")
-endfunction
-
-function FinishRFormatCode(lnum1, lnum2, txt)
-    let lns =  split(substitute(a:txt, "\x13", "'", "g"), "\x14")
-    silent exe a:lnum1 . "," . a:lnum2 . "delete"
-    call append(a:lnum1 - 1, lns)
-    echo (a:lnum2 - a:lnum1 + 1) . " lines formatted."
-endfunction
-
-function RInsert(cmd, type)
-    if g:rplugin.R_pid == 0
-        return
-    endif
-    call SendToNvimcom("E", 'nvimcom:::nvim_insert(' . a:cmd . ', "' . a:type . '")')
-endfunction
-
-function SendLineToRAndInsertOutput()
-    let lin = getline(".")
-    let cleanl = substitute(lin, '".\{-}"', '', 'g')
-    if cleanl =~ ';'
-        call RWarningMsg('`print(line)` works only if `line` is a single command')
-    endif
-    let cleanl = substitute(lin, '\s*#.*', "", "")
-    call RInsert("print(" . cleanl . ")", "comment")
-endfunction
-
-function FinishRInsert(type, txt)
-    let ilines = split(substitute(a:txt, "\x13", "'", "g"), "\x14")
-    if a:type == "comment"
-        call map(ilines, '"# " . v:val')
-    endif
-    call append(line('.'), ilines)
-endfunction
 
 function GetROutput(fnm, txt)
     if a:fnm == "NewtabInsert"
@@ -431,216 +118,6 @@ endfunction
 
 
 "==============================================================================
-" Show R documentation
-"==============================================================================
-
-function SetRTextWidth(rkeyword)
-    if g:Rcfg.nvimpager == "tabnew"
-        let s:rdoctitle = a:rkeyword
-    else
-        let s:tnr = tabpagenr()
-        if g:Rcfg.nvimpager != "tab" && s:tnr > 1
-            let s:rdoctitle = "R_doc" . s:tnr
-        else
-            let s:rdoctitle = "R_doc"
-        endif
-        unlet s:tnr
-    endif
-    if !bufloaded(s:rdoctitle) || g:rplugin_newsize == 1
-        let g:rplugin_newsize = 0
-
-        " s:vimpager is used to calculate the width of the R help documentation
-        " and to decide whether to obey R_nvimpager = 'vertical'
-        let s:vimpager = g:Rcfg.nvimpager
-
-        let wwidth = winwidth(0)
-
-        " Not enough room to split vertically
-        if g:Rcfg.nvimpager == "vertical" && wwidth <= (g:Rcfg.help_w + g:Rcfg.editor_w)
-            let s:vimpager = "horizontal"
-        endif
-
-        if s:vimpager == "horizontal"
-            " Use the window width (at most 80 columns)
-            let htwf = (wwidth > 80) ? 88.1 : ((wwidth - 1) / 0.9)
-        elseif g:Rcfg.nvimpager == "tab" || g:Rcfg.nvimpager == "tabnew"
-            let wwidth = &columns
-            let htwf = (wwidth > 80) ? 88.1 : ((wwidth - 1) / 0.9)
-        else
-            let min_e = (g:Rcfg.editor_w > 80) ? g:Rcfg.editor_w : 80
-            let min_h = (g:Rcfg.help_w > 73) ? g:Rcfg.help_w : 73
-
-            if wwidth > (min_e + min_h)
-                " The editor window is large enough to be split
-                let s:hwidth = min_h
-            elseif wwidth > (min_e + g:Rcfg.help_w)
-                " The help window must have less than min_h columns
-                let s:hwidth = wwidth - min_e
-            else
-                " The help window must have the minimum value
-                let s:hwidth = g:Rcfg.help_w
-            endif
-            let htwf = (s:hwidth - 1) / 0.9
-        endif
-        let s:htw = float2nr(htwf)
-        let s:htw = s:htw - (&number || &relativenumber) * &numberwidth
-    endif
-endfunction
-
-function RAskHelp(...)
-    if a:1 == ""
-        call g:SendCmdToR("help.start()")
-        return
-    endif
-    if g:Rcfg.nvimpager == "no"
-        call g:SendCmdToR("help(" . a:1. ")")
-    else
-        call AskRDoc(a:1, "", 0)
-    endif
-endfunction
-
-" Show R's help doc in Nvim's buffer
-" (based  on pydoc plugin)
-function AskRDoc(rkeyword, package, getclass)
-    let firstobj = ""
-    if bufname("%") =~ "Object_Browser" || (has_key(g:rplugin, "R_bufnr") && bufnr("%") == g:rplugin.R_bufnr)
-        let savesb = &switchbuf
-        set switchbuf=useopen,usetab
-        exe "sb " . luaeval('require("r.edit").get_rscript_name()')
-        exe "set switchbuf=" . savesb
-    else
-        if a:getclass
-            let firstobj = RGetFirstObj(a:rkeyword)[0]
-        endif
-    endif
-
-    call SetRTextWidth(a:rkeyword)
-
-    if firstobj == "" && a:package == ""
-        let rcmd = 'nvimcom:::nvim.help("' . a:rkeyword . '", ' . s:htw . 'L)'
-    elseif a:package != ""
-        let rcmd = 'nvimcom:::nvim.help("' . a:rkeyword . '", ' . s:htw . 'L, package="' . a:package  . '")'
-    else
-        let rcmd = 'nvimcom:::nvim.help("' . a:rkeyword . '", ' . s:htw . 'L, "' . firstobj . '")'
-    endif
-
-    call SendToNvimcom("E", rcmd)
-endfunction
-
-" Function called by nvimcom
-function ShowRDoc(rkeyword, txt)
-    let rkeyw = a:rkeyword
-    if a:rkeyword =~ "^MULTILIB"
-        let topic = split(a:rkeyword)[1]
-        let libs = split(a:txt)
-        let msg = "The topic '" . topic . "' was found in more than one library:\n"
-        for idx in range(0, len(libs) - 1)
-            let msg .= idx + 1 . " : " . libs[idx] . "\n"
-        endfor
-        redraw
-        let chn = input(msg . "Please, select one of them: ")
-        if chn > 0 && chn <= len(libs)
-            call SendToNvimcom("E", 'nvimcom:::nvim.help("' . topic . '", ' . s:htw . 'L, package="' . libs[chn - 1] . '")')
-        endif
-        return
-    endif
-
-    if has_key(g:rplugin, "R_bufnr") && bufnr("%") == g:rplugin.R_bufnr
-        " Exit Terminal mode and go to Normal mode
-        stopinsert
-    endif
-
-    let s:running_rhelp = 0
-
-    if bufname("%") =~ "Object_Browser" || (has_key(g:rplugin, "R_bufnr") && bufnr("%") == g:rplugin.R_bufnr)
-        let savesb = &switchbuf
-        set switchbuf=useopen,usetab
-        exe "sb " . luaeval('require("r.edit").get_rscript_name()')
-        exe "set switchbuf=" . savesb
-    endif
-    call SetRTextWidth(a:rkeyword)
-
-    let rdoccaption = substitute(s:rdoctitle, '\', '', "g")
-    if a:rkeyword =~ "R History"
-        let rdoccaption = "R_History"
-        let s:rdoctitle = "R_History"
-    endif
-    if bufloaded(rdoccaption)
-        let curtabnr = tabpagenr()
-        let savesb = &switchbuf
-        set switchbuf=useopen,usetab
-        exe "sb ". s:rdoctitle
-        exe "set switchbuf=" . savesb
-        if g:Rcfg.nvimpager == "tabnew"
-            exe "tabmove " . curtabnr
-        endif
-    else
-        if g:Rcfg.nvimpager == "tab" || g:Rcfg.nvimpager == "tabnew"
-            exe 'tabnew ' . s:rdoctitle
-        elseif s:vimpager == "vertical"
-            let splr = &splitright
-            set splitright
-            exe s:hwidth . 'vsplit ' . s:rdoctitle
-            let &splitright = splr
-        elseif s:vimpager == "horizontal"
-            exe 'split ' . s:rdoctitle
-            if winheight(0) < 20
-                resize 20
-            endif
-        elseif s:vimpager == "no"
-            " The only way of ShowRDoc() being called when R_nvimpager=="no"
-            " is the user setting the value of R_nvimpager to 'no' after
-            " Neovim startup. It should be set in the vimrc.
-            if type(g:Rcfg.external_term) == v:t_bool && g:Rcfg.external_term == v:false
-                let g:Rcfg.nvimpager = "vertical"
-            else
-                let g:Rcfg.nvimpager = "tab"
-            endif
-            call ShowRDoc(a:rkeyword)
-            return
-        else
-            echohl WarningMsg
-            echomsg 'Invalid R_nvimpager value: "' . g:Rcfg.nvimpager . '". Valid values are: "tab", "vertical", "horizontal", "tabnew" and "no".'
-            echohl None
-            return
-        endif
-    endif
-
-    setlocal modifiable
-
-    let save_unnamed_reg = @@
-    set modifiable
-    sil normal! ggdG
-    let fcntt = split(substitute(a:txt, "\x13", "'", "g"), "\x14")
-    call setline(1, fcntt)
-    if a:rkeyword =~ "R History"
-        set filetype=r
-        call cursor(1, 1)
-    elseif a:rkeyword =~ '(help)' || search("\x08", "nw") > 0
-        set filetype=rdoc
-        call cursor(1, 1)
-    elseif a:rkeyword =~? '\.Rd$'
-        " Called by devtools::load_all().
-        " See https://github.com/jalvesaq/Nvim-R/issues/482
-        set filetype=rhelp
-        call cursor(1, 1)
-    else
-        set filetype=rout
-        setlocal bufhidden=wipe
-        setlocal nonumber
-        setlocal noswapfile
-        set buftype=nofile
-        nnoremap <buffer><silent> q :q<CR>
-        call cursor(1, 1)
-    endif
-    let @@ = save_unnamed_reg
-    setlocal nomodified
-    stopinsert
-    redraw
-endfunction
-
-
-"==============================================================================
 " Functions to send code directly to R Console
 "==============================================================================
 
@@ -658,9 +135,6 @@ endfunction
 " Send sources to R
 function RSourceLines(...)
     let lines = a:1
-    if &filetype == "rrst"
-        let lines = map(copy(lines), 'substitute(v:val, "^\\.\\. \\?", "", "")')
-    endif
     if &filetype == "rmd" || &filetype == "quarto"
         let lines = map(copy(lines), 'substitute(v:val, "^(\\`\\`)\\?", "", "")')
     endif
@@ -724,12 +198,6 @@ function GoDown()
         let curline = getline(".")
         if curline =~ '^```$'
             call RmdNextChunk()
-            return
-        endif
-    elseif &filetype == "rrst"
-        let curline = getline(".")
-        if curline =~ '^\.\. \.\.$'
-            call RrstNextChunk()
             return
         endif
     endif
@@ -884,7 +352,7 @@ function SendSelectionToR(...)
         if (&filetype == 'rmd' || &filetype == 'quarto') && RmdIsInPythonCode(0)
             let ispy = 1
         elseif b:IsInRCode(0) != 1
-            if (&filetype == "rnoweb" && getline(".") !~ "\\Sexpr{") || ((&filetype == "rmd" || &filetype == "quarto") && getline(".") !~ "`r ") || (&filetype == "rrst" && getline(".") !~ ":r:`")
+            if (&filetype == "rnoweb" && getline(".") !~ "\\Sexpr{") || ((&filetype == "rmd" || &filetype == "quarto") && getline(".") !~ "`r ")
                 call RWarningMsg("Not inside an R code chunk.")
                 return
             endif
@@ -979,10 +447,6 @@ function SendFHChunkToR()
         let begchk = "^[ \t]*```[ ]*{r"
         let endchk = "^[ \t]*```$"
         let chdchk = "^```.*child *= *"
-    elseif &filetype == "rrst"
-        let begchk = "^\\.\\. {r"
-        let endchk = "^\\.\\. \\.\\."
-        let chdchk = "^\.\. {r.*child *= *"
     else
         " Should never happen
         call RWarningMsg('Strange filetype (SendFHChunkToR): "' . &filetype . '"')
@@ -1099,23 +563,6 @@ function SendLineToR(godown, ...)
         endif
     endif
 
-    if &filetype == "rrst"
-        if line == ".. .."
-            if a:godown =~ "down"
-                call GoDown()
-            endif
-            return
-        endif
-        if line =~ "^\.\. {r.*child *= *"
-            call KnitChild(line, a:godown)
-            return
-        endif
-        let line = substitute(line, "^\\.\\. \\?", "", "")
-        if RrstIsInRCode(1) != 1
-            return
-        endif
-    endif
-
     if &filetype == "rdoc"
         if getline(1) =~ '^The topic'
             let topic = substitute(line, '.*::', '', "")
@@ -1143,8 +590,6 @@ function SendLineToR(godown, ...)
             let chunkend = "```"
         elseif &filetype == "rnoweb"
             let chunkend = "@"
-        elseif &filetype == "rrst"
-            let chunkend = ".. .."
         endif
         let rpd = RParenDiff(line)
         let has_op = substitute(line, '#.*', '', '') =~ g:rplugin.op_pattern
@@ -1240,12 +685,6 @@ endfunction
 function RKnit()
     update
     call g:SendCmdToR('require(knitr); .nvim_oldwd <- getwd(); setwd("' . s:RGetBufDir() . '"); knit("' . expand("%:t") . '"); setwd(.nvim_oldwd); rm(.nvim_oldwd)')
-endfunction
-
-function StartTxtBrowser(brwsr, url)
-    tabnew
-    call termopen(a:brwsr . " " . a:url)
-    startinsert
 endfunction
 
 function RSourceDirectory(...)

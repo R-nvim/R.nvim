@@ -12,8 +12,8 @@
 #include <inttypes.h>
 #include <process.h>
 #include <time.h>
-#include <winsock2.h>
 #include <windows.h>
+#include <winsock2.h>
 HWND NvimHwnd = NULL;
 HWND RConsole = NULL;
 #define bzero(b, len) (memset((b), '\0', (len)), (void)0)
@@ -30,6 +30,10 @@ HWND RConsole = NULL;
 #include <sys/socket.h>
 #define PRI_SIZET "zu"
 #endif
+
+#include "data_structures.h"
+#include "logging.h"
+#include "utilities.h"
 
 static char strL[8];        // String for last element prefix in tree view
 static char strT[8];        // String for tree element prefix in tree view
@@ -63,59 +67,18 @@ void update_inst_libs(void);        // Update installed libraries
 void update_pkg_list(char *libnms); // Update package list
 void update_glblenv_buffer(char *g); // Update global environment buffer
 static void build_omnils(void);      // Build Omni lists
-static void finish_bol();            // Finish building of lists
+static void finish_bol(void);            // Finish building of lists
 void complete(const char *id, char *base, char *funcnm,
               char *args); // Perform completion
 
-// List of paths to libraries
-typedef struct libpaths_ {
-    char *path;             // Path to library
-    struct libpaths_ *next; // Next path
-} LibPath;
-
 LibPath *libpaths; // Pointer to first library path
-
-// List of installed libraries
-typedef struct instlibs_ {
-    char *name;             // Library name
-    char *title;            // Library title
-    char *descr;            // Library description
-    int si;                 // still installed flag
-    struct instlibs_ *next; // Next installed library
-} InstLibs;
 
 InstLibs *instlibs; // Pointer to first installed library
 
-// Is a list or library open or closed in the Object Browser?
-typedef struct liststatus_ {
-    char *key; // Name of the object or library. Library names are prefixed with
-               // "package:"
-    int status;                // 0: closed; 1: open
-    struct liststatus_ *left;  // Left node
-    struct liststatus_ *right; // Right node
-} ListStatus;
-
 static ListStatus *listTree = NULL; // Root node of the list status tree
-
-// Store information from an R library
-typedef struct pkg_data_ {
-    char *name;    // the package name
-    char *version; // the package version number
-    char *fname;   // omnils_ file name in the compldir
-    char *descr;   // the package short description
-    char *omnils;  // a copy of the omnils_ file
-    char *args;    // a copy of the args_ file
-    int nobjs;     // number of objects in the omnils_
-    int loaded;    // Loaded flag in libnames_
-    int to_build;  // Flag to indicate if the name is sent to build list
-    int built;     // Flag to indicate if omnils_ found
-    struct pkg_data_ *next; // Pointer to next package data
-} PkgData;
 
 PkgData *pkgList;    // Pointer to first package data
 static int nLibObjs; // Number of library objects
-
-int nGlbEnvFun; // Number of global environment functions
 
 static int r_conn;          // R connection status flag
 static char VimSecret[128]; // Secret for communication with Vim
@@ -129,98 +92,6 @@ static pthread_t Tid; // Thread ID
 struct sockaddr_in servaddr; // Server address structure
 static int sockfd;           // socket file descriptor
 static int connfd;           // Connection file descriptor
-
-#define Debug_NRS_
-__attribute__((format(printf, 1, 2))) static void
-Log(const char *fmt, ...) // Logging function for debugging
-{
-#ifdef Debug_NRS
-    va_list argptr;
-    FILE *f = fopen("/dev/shm/nvimrserver_log", "a");
-    va_start(argptr, fmt);
-    vfprintf(f, fmt, argptr);
-    fprintf(f, "\n");
-    va_end(argptr);
-    fclose(f);
-#endif
-}
-
-static char *str_cat(char *dest,
-                     const char *src) // Function to concatenate strings
-{
-    while (*dest)
-        dest++;
-    while ((*dest++ = *src++))
-        ;
-    return --dest;
-}
-
-static int ascii_ic_cmp(const char *a,
-                        const char *b) // ASCII case-insensitive compare
-{
-    int d;
-    unsigned x, y;
-    while (*a && *b) {
-        x = (unsigned char)*a;
-        y = (unsigned char)*b;
-        if (x <= 'Z')
-            x += 32;
-        if (y <= 'Z')
-            y += 32;
-        d = x - y;
-        if (d != 0)
-            return d;
-        a++;
-        b++;
-    }
-    return 0;
-}
-
-static char *grow_buffer(char **b, unsigned long *sz,
-                         unsigned long inc) // Function to grow a buffer
-{
-    Log("grow_buffer(%lu, %lu) [%lu, %lu]", *sz, inc, compl_buffer_size,
-        fb_size);
-    *sz += inc;
-    char *tmp = calloc(*sz, sizeof(char));
-    strcpy(tmp, *b);
-    free(*b);
-    *b = tmp;
-    return tmp;
-}
-
-void fix_x13(char *s) // Replace all instances of '\x13' in the string with '\''
-{
-    while (*s != 0) {
-        if (*s == '\x13')
-            *s = '\'';
-        s++;
-    }
-}
-
-void fix_single_quote(
-    char *s) // Replace all instances of single quote in the string with '\x13'
-{
-    while (*s != 0) {
-        if (*s == '\'')
-            *s = '\x13';
-        s++;
-    }
-}
-
-int str_here(const char *o,
-             const char *b) // Check if string b is at the start of string o
-{
-    while (*b && *o) {
-        if (*o != *b)
-            return 0;
-        o++;
-        b++;
-    }
-    if (*b)
-        return 0;
-    return 1;
-}
 
 static void
 HandleSigTerm(__attribute__((unused)) int s) // Signal handler for SIGTERM
@@ -290,69 +161,111 @@ static void ParseMsg(char *b) // Parse the message from R
     fflush(stdout);
 }
 
-// Adapted from
-// https://www.geeksforgeeks.org/socket-programming-in-cc-handling-multiple-clients-on-server-without-multi-threading/
-static void init_listening() // Initialise listening for incoming connections
-{
-    Log("init_listening()");
-#ifdef WIN32
-    int len;
-#else
-    socklen_t len;
-#endif
-    struct sockaddr_in cli;
-    int res = 1;
-    int port = 10101;
-
+/**
+ * @brief Initializes the socket for the server.
+ *
+ * This function creates a socket for the server and performs necessary
+ * initializations. On Windows, it also initializes Winsock. The function
+ * exits the program if socket creation fails.
+ *
+ * @note For Windows, WSAStartup is called to start the Winsock API.
+ */
+static void initialize_socket(void) {
+    Log("initialize_socket()");
 #ifdef WIN32
     WSADATA d;
     int wr = WSAStartup(MAKEWORD(2, 2), &d);
     if (wr != 0) {
         fprintf(stderr, "WSAStartup failed: %d\n", wr);
         fflush(stderr);
+        WSACleanup();
+        exit(1);
     }
 #endif
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
     if (sockfd == -1) {
         fprintf(stderr, "socket creation failed...\n");
         fflush(stderr);
         exit(1);
     }
+}
+
+#define PORT_START 10101
+#define PORT_END 10199
+/**
+ * @brief Binds the server socket to an available port.
+ *
+ * This function initializes the server address structure and attempts to bind
+ * the server socket to an available port starting from 10101 up to 10199.
+ * It registers the port number for R to connect. The function exits the
+ * program if it fails to bind the socket to any of the ports in the specified
+ * range.
+ */
+static void bind_to_port(void) {
+    Log("bind_to_port()");
 
     bzero(&servaddr, sizeof(servaddr));
-
-    // assign IP, PORT
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    while (port < 10199) {
+    int res = 1;
+    for (int port = PORT_START; port <= PORT_END; port++) {
         servaddr.sin_port = htons(port);
         res = bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
-        if (res == 0)
+        if (res == 0) {
+            RegisterPort(port);
+            Log("bind_to_port: Bind succeeded on port %d", port);
             break;
-        port++;
+        }
     }
-    if (res == 0) {
-        RegisterPort(port);
-        Log("init_listening: RegisterPort");
-    } else {
-        fprintf(stderr, "Failed to bind to port %d\n", port);
+    if (res != 0) {
+        fprintf(stderr, "Failed to bind any port in the range %d-%d\n",
+                PORT_START, PORT_END);
         fflush(stderr);
+#ifdef WIN32
+        WSACleanup();
+#endif /* ifdef WIN32 */
         exit(2);
     }
+}
 
-    // Now server is ready to listen and verification
+/**
+ * @brief Sets the server to listen for incoming connections.
+ *
+ * This function sets the server to listen on the socket for incoming
+ * connections. It configures the socket to allow up to 5 pending connection
+ * requests in the queue. The function exits the program if it fails to set
+ * the socket to listen state.
+ */
+static void listening_for_connections(void) {
+    Log("listening_for_connections()");
+
     if ((listen(sockfd, 5)) != 0) {
         fprintf(stderr, "Listen failed...\n");
         fflush(stderr);
         exit(3);
     }
-    Log("init_listening: Listen succeeded");
+    Log("listening_for_connections: Listen succeeded");
+}
+
+/**
+ * @brief Accepts an incoming connection on the listening socket.
+ *
+ * This function waits for and accepts the first incoming connection request
+ * on the listening socket. It stores the connection file descriptor in
+ * 'connfd' and sets the 'r_conn' flag to indicate a successful connection.
+ * The function exits the program if it fails to accept a connection.
+ */
+static void accept_connection(void) {
+    Log("accept_connection()");
+#ifdef WIN32
+    int len;
+#else
+    socklen_t len;
+#endif
+    struct sockaddr_in cli;
 
     len = sizeof(cli);
-
-    // Accept the data packet from client and verification
     connfd = accept(sockfd, (struct sockaddr *)&cli, &len);
     if (connfd < 0) {
         fprintf(stderr, "server accept failed...\n");
@@ -360,7 +273,28 @@ static void init_listening() // Initialise listening for incoming connections
         exit(4);
     }
     r_conn = 1;
-    Log("init_listening: accept succeeded");
+    Log("accept_connection: accept succeeded");
+}
+
+/**
+ * @brief Initializes listening for incoming connections.
+ *
+ * This function is responsible for the entire process of setting up the
+ * server to listen for and accept incoming connections. It calls a series of
+ * functions to initialize the socket, bind it to a port, set it to listen
+ * for connections, and then accept an incoming connection.
+ *
+ * @note A previous version of this function was adapted from
+ * https://www.geeksforgeeks.org/socket-programming-in-cc-handling-multiple-clients-on-server-without-multi-threading/
+ */
+static void
+setup_server_socket(void) // Initialise listening for incoming connections
+{
+    Log("setup_server_socket()");
+    initialize_socket();
+    bind_to_port();
+    listening_for_connections();
+    accept_connection();
 }
 
 static void get_whole_msg(char *b) // Get the whole message from the socket
@@ -420,7 +354,7 @@ static void get_whole_msg(char *b) // Get the whole message from the socket
 static void
 receive_msg(void *arg) // Thread function to receive messages on Windows
 #else
-static void *receive_msg() // Thread function to receive messages on Unix
+static void *receive_msg(void *v) // Thread function to receive messages on Unix
 #endif
 {
     size_t blen = VimSecretLen + 9;
@@ -450,7 +384,7 @@ static void *receive_msg() // Thread function to receive messages on Unix
                 fflush(stderr);
                 break;
             }
-            init_listening();
+            setup_server_socket();
         }
     }
 #ifndef WIN32
@@ -686,7 +620,7 @@ void start_server(void) // Start server and listen for connections
     // Finish immediately with SIGTERM
     signal(SIGTERM, HandleSigTerm);
 
-    init_listening();
+    setup_server_socket();
 
     // Receive messages from TCP and output them to stdout
 #ifdef WIN32
@@ -696,8 +630,24 @@ void start_server(void) // Start server and listen for connections
 #endif
 }
 
-char *count_sep(char *b1, int *size) // Count separators in buffer
-{
+/**
+ * @brief Count the number of separator characters in a given buffer.
+ *
+ * This function scans a buffer and counts the number of occurrences of
+ * the separator character '\006'. It is primarily used to parse and validate
+ * data structure representations received from R. The function also checks if
+ * the size of the buffer is 1, indicating an empty package with no exported
+ * objects. In case of an unexpected number of separators, it logs an error,
+ * frees the buffer, and returns NULL.
+ *
+ * @param b1 Pointer to the buffer to be scanned.
+ * @param size Pointer to an integer where the size of the buffer will be
+ * stored.
+ * @return Returns the original buffer if the count of separators is as
+ * expected. Returns NULL in case of an error or if the count is not as
+ * expected.
+ */
+char *count_sep(char *b1, int *size) {
     *size = strlen(b1);
     // Some packages do not export any objects.
     if (*size == 1)
@@ -726,6 +676,22 @@ char *count_sep(char *b1, int *size) // Count separators in buffer
     return b1;
 }
 
+/**
+ * @brief Reads the entire contents of a specified file into a buffer.
+ *
+ * This function opens the file specified by the filename and reads its entire
+ * content into a dynamically allocated buffer. It ensures that the file is read
+ * in binary mode to preserve the data format. This function is typically used
+ * to load files containing data relevant to the Nvim-R plugin, such as
+ * completion lists or configuration data.
+ *
+ * @param fn The name of the file to be read.
+ * @param verbose Flag to indicate whether to print error messages. If set to a
+ * non-zero value, error messages are printed to stderr.
+ * @return Returns a pointer to a buffer containing the file's content if
+ * successful. Returns NULL if the file cannot be opened or in case of a read
+ * error.
+ */
 char *read_file(const char *fn, int verbose) {
     FILE *f = fopen(fn, "rb");
     if (!f) {
@@ -763,6 +729,23 @@ char *read_file(const char *fn, int verbose) {
     return buffer;
 }
 
+/**
+ * @brief Validates and prepares the buffer containing Omni completion data.
+ *
+ * This function processes a buffer that is expected to contain data for Omni
+ * completion, ensuring that there are exactly 7 '\006' separators between
+ * newline characters. It modifies the buffer in place, replacing certain
+ * control characters with their corresponding representations and ensuring the
+ * data is correctly formatted for subsequent processing. The function is part
+ * of the handling for Omni completion data in the Nvim-R plugin, facilitating
+ * the communication and data exchange between Neovim and R.
+ *
+ * @param buffer Pointer to the buffer containing Omni completion data.
+ * @param size Pointer to an integer representing the size of the buffer.
+ * @return Returns a pointer to the processed buffer if the validation is
+ * successful. Returns NULL if the buffer does not meet the expected format or
+ * validation fails.
+ */
 void *check_omils_buffer(char *buffer, int *size) {
     // Ensure that there are exactly 7 \006 between new line characters
     buffer = count_sep(buffer, size);
@@ -785,6 +768,23 @@ void *check_omils_buffer(char *buffer, int *size) {
     return buffer;
 }
 
+/**
+ * @brief Reads the contents of an Omni completion list file into a buffer.
+ *
+ * This function opens and reads the specified Omni completion file (typically
+ * named 'omnils_'). It allocates memory for the buffer and loads the file
+ * contents into it. The buffer is used to store completion items (like function
+ * names and variables) available in R packages for use in Omni completion in
+ * Neovim. If the file is empty, it indicates that no completion items are
+ * available or the file is yet to be populated.
+ *
+ * @param fn The name of the file to be read.
+ * @param size A pointer to an integer where the size of the read data will be
+ * stored.
+ * @return Returns a pointer to a buffer containing the file contents if
+ * successful. Returns NULL if the file cannot be opened, is empty, or in case
+ * of a read error.
+ */
 char *read_omnils_file(const char *fn, int *size) {
     Log("read_omnils_file(%s)", fn);
     char *buffer = read_file(fn, 1);
@@ -801,7 +801,7 @@ char *get_pkg_descr(const char *pkgnm) {
         if (strcmp(il->name, pkgnm) == 0) {
             char *s = malloc((strlen(il->title) + 1) * sizeof(char));
             strcpy(s, il->title);
-            fix_x13(s);
+            replace_char(s, '\x13', '\'');
             return s;
         }
         il = il->next;
@@ -1065,34 +1065,72 @@ int read_field_data(char *s, int i) {
     return i;
 }
 
-// Read the DESCRIPTION file to get Title and Description fields.
-void parse_descr(char *descr, const char *fnm) {
-    int m, n;
-    int z = 0;
-    int k = 0;
-    int l = strlen(descr);
-    char *ttl, *dsc;
-    ttl = NULL;
-    dsc = NULL;
-    InstLibs *lib, *ptr, *prev;
-    while (k < l) {
-        if ((k == 0 || descr[k - 1] == '\n' || descr[k - 1] == 0) &&
-            str_here(descr + k, "Title: ")) {
-            k += 7;
-            ttl = descr + k;
-            k = read_field_data(descr, k);
-            descr[k] = 0;
+/**
+ * @brief Trims consecutive spaces in a string.
+ *
+ * This function takes an input string and produces an output string where
+ * consecutive spaces are reduced to a single space. The output string is
+ * null-terminated. The function does not modify the input string.
+ *
+ * @param input The input string with potential consecutive spaces.
+ * @param output The output buffer where the trimmed string will be stored.
+ *               This buffer should be large enough to hold the result.
+ */
+void trim_consecutive_spaces(const char *input, char *output) {
+    int inputIndex = 0, outputIndex = 0;
+    while (input[inputIndex] != '\0') {
+        output[outputIndex++] = input[inputIndex];
+        if (input[inputIndex] == ' ') {
+            // Skip over additional consecutive spaces
+            while (input[inputIndex + 1] == ' ') {
+                inputIndex++;
+            }
         }
-        if ((k == 0 || descr[k - 1] == '\n' || descr[k - 1] == 0) &&
-            str_here(descr + k, "Description: ")) {
-            k += 13;
-            dsc = descr + k;
-            k = read_field_data(descr, k);
-            descr[k] = 0;
-        }
-        k++;
+        inputIndex++;
     }
-    if (ttl && dsc) {
+    output[outputIndex] = '\0'; // Null-terminate the output string
+}
+/**
+ * @brief Parses the DESCRIPTION file of an R package to extract metadata.
+ *
+ * This function reads the DESCRIPTION file of an R package and extracts key
+ * metadata, including the Title and Description fields. It is used to provide
+ * more detailed information about R packages in the Neovim environment,
+ * particularly for features like auto-completion and package management within
+ * the Nvim-R plugin. The parsed information is used to update the data
+ * structures that represent installed R libraries.
+ *
+ * @param descr Pointer to a string containing the contents of a DESCRIPTION
+ * file.
+ * @param fnm The name of the R package whose DESCRIPTION file is being parsed.
+ */
+void parse_descr(char *descr, const char *fnm) {
+    int linePosition = 0;
+    int descriptionLength = strlen(descr);
+    char *title, *description;
+    title = NULL;
+    description = NULL;
+    InstLibs *lib, *ptr, *prev;
+    while (linePosition < descriptionLength) {
+        if ((linePosition == 0 || descr[linePosition - 1] == '\n' ||
+             descr[linePosition - 1] == 0) &&
+            str_here(descr + linePosition, "Title: ")) {
+            linePosition += 7;
+            title = descr + linePosition;
+            linePosition = read_field_data(descr, linePosition);
+            descr[linePosition] = 0;
+        }
+        if ((linePosition == 0 || descr[linePosition - 1] == '\n' ||
+             descr[linePosition - 1] == 0) &&
+            str_here(descr + linePosition, "Description: ")) {
+            linePosition += 13;
+            description = descr + linePosition;
+            linePosition = read_field_data(descr, linePosition);
+            descr[linePosition] = 0;
+        }
+        linePosition++;
+    }
+    if (title && description) {
         if (instlibs == NULL) {
             instlibs = calloc(1, sizeof(InstLibs));
             lib = instlibs;
@@ -1115,23 +1153,17 @@ void parse_descr(char *descr, const char *fnm) {
         }
         lib->name = calloc(strlen(fnm) + 1, sizeof(char));
         strcpy(lib->name, fnm);
-        lib->title = calloc(strlen(ttl) + 1, sizeof(char));
-        strcpy(lib->title, ttl);
-        lib->descr = calloc(strlen(dsc) + 1 - z, sizeof(char));
+        lib->title = calloc(strlen(title) + 1, sizeof(char));
+        strcpy(lib->title, title);
+        lib->descr = calloc(strlen(description) + 1, sizeof(char));
         lib->si = 1;
-        m = 0;
-        n = 0;
-        while (dsc[m] != 0) {
-            while (dsc[m] == ' ' && dsc[m + 1] == ' ')
-                m++;
-            lib->descr[n] = dsc[m];
-            m++;
-            n++;
+        if (lib->descr != NULL) {
+            trim_consecutive_spaces(description, lib->descr);
         }
-        fix_single_quote(lib->title);
-        fix_single_quote(lib->descr);
+        replace_char(lib->title, '\'', '\x13');
+        replace_char(lib->descr, '\'', '\x13');
     } else {
-        if (ttl)
+        if (title)
             fprintf(stderr, "Failed to get Description from %s. ", fnm);
         else
             fprintf(stderr, "Failed to get Title from %s. ", fnm);
@@ -1315,7 +1347,7 @@ static void build_omnils(void) {
 }
 
 // Called asynchronously and only if an omnils_ file was actually built.
-static void finish_bol() {
+static void finish_bol(void) {
     Log("finish_bol()");
 
     char buf[1024];
@@ -1484,43 +1516,14 @@ void update_pkg_list(char *libnms) {
     }
 }
 
-ListStatus *search(const char *s) {
-    ListStatus *node = listTree;
-    int cmp = strcmp(node->key, s);
-    while (node && cmp != 0) {
-        if (cmp > 0)
-            node = node->right;
-        else
-            node = node->left;
-        if (node)
-            cmp = strcmp(node->key, s);
-    }
-    if (cmp == 0)
-        return node;
-    else
-        return NULL;
-}
-
-ListStatus *new_ListStatus(const char *s, int stt) {
-    ListStatus *p;
-    p = calloc(1, sizeof(ListStatus));
-    p->key = malloc((strlen(s) + 1) * sizeof(char));
-    strcpy(p->key, s);
-    p->status = stt;
-    return p;
-}
-
-ListStatus *insert(ListStatus *root, const char *s, int stt) {
-    if (!root)
-        return new_ListStatus(s, stt);
-    int cmp = strcmp(root->key, s);
-    if (cmp > 0)
-        root->right = insert(root->right, s, stt);
-    else
-        root->left = insert(root->left, s, stt);
-    return root;
-}
-
+/**
+ * TODO: Candidate for data_structures.c
+ *
+ * Description:
+ * @param s:
+ * @param stt:
+ * @return
+ */
 int get_list_status(const char *s, int stt) {
     if (listTree) {
         ListStatus *p = search(s);
@@ -1533,6 +1536,12 @@ int get_list_status(const char *s, int stt) {
     return stt;
 }
 
+/**
+ * TODO: Candidate for data_structures.c
+ *
+ * Description:
+ * @param s:
+ */
 void toggle_list_status(const char *s) {
     ListStatus *p = search(s);
     if (p)
@@ -1716,34 +1725,20 @@ static const char *write_ob_line(const char *p, const char *bs, char *prfx,
     return p;
 }
 
-void hi_glbenv_fun(void) {
-    char *g = glbnv_buffer;
-    char *p = compl_buffer;
-    char *s;
-
-    memset(compl_buffer, 0, compl_buffer_size);
-    p = str_cat(p, "call UpdateLocalFunctions('");
-    while (*g) {
-        s = g;
-        while (*s != 0)
-            s++;
-        s++;
-        if (*s == '\003') {
-            p = str_cat(p, g);
-            p = str_cat(p, " ");
-        }
-        while (*g != '\n')
-            g++;
-        g++;
-    }
-    p = str_cat(p, "')");
-    printf("\x11%" PRI_SIZET "\x11%s\n", strlen(compl_buffer), compl_buffer);
-    fflush(stdout);
-}
-
+/**
+ * @brief Updates the buffer containing the global environment data from R.
+ *
+ * This function is responsible for updating the global environment buffer
+ * with new data received from R. It ensures the buffer is appropriately sized
+ * and formatted for further processing. The global environment buffer contains
+ * data about the R global environment, such as variables and functions, which
+ * are used for features like auto-completion in Neovim. The function also
+ * triggers a refresh of related UI components if necessary.
+ *
+ * @param g A string containing the new global environment data.
+ */
 void update_glblenv_buffer(char *g) {
     Log("update_glblenv_buffer()");
-    int n = 0;
     int max;
     int glbnv_size;
 
@@ -1765,14 +1760,8 @@ void update_glblenv_buffer(char *g) {
 
     for (int i = 0; i < max; i++)
         if (glbnv_buffer[i] == '\003') {
-            n++;
             i += 7;
         }
-
-    if (n != nGlbEnvFun) {
-        nGlbEnvFun = n;
-        hi_glbenv_fun();
-    }
 }
 
 void omni2ob(void) {
@@ -1794,7 +1783,7 @@ void omni2ob(void) {
 
     fclose(f);
     if (auto_obbr) {
-        fputs("call UpdateOB('GlobalEnv')\n", stdout);
+        fputs("lua require('r.browser').update_OB('GlobalEnv')\n", stdout);
         fflush(stdout);
     }
 }
@@ -1838,7 +1827,7 @@ void lib2ob(void) {
     }
 
     fclose(f);
-    fputs("call UpdateOB('libraries')\n", stdout);
+    fputs("lua require('r.browser').update_OB('libraries')\n", stdout);
     fflush(stdout);
 }
 
@@ -1931,6 +1920,11 @@ static void send_nrs_info(void) {
     fflush(stdout);
 }
 
+/*
+ * TODO:: Candidate for server_init.c
+ *
+ * @desc: used before stdin_loop() in main() to initialize the server.
+ */
 static void init(void) {
 #ifdef Debug_NRS
     time_t t;
@@ -2056,8 +2050,14 @@ int count_twice(const char *b1, const char *b2, const char ch) {
     return n1 == n2;
 }
 
-// Return user_data of a specific item with function usage, title and
-// description to be displayed in the float window
+/*
+ * TODO: Candidate for completion_services.c
+ *
+ * @desc: Return user_data of a specific item with function usage, title and
+ * description to be displayed in the float window
+ * @param wrd:
+ * @param pkg:
+ * */
 void completion_info(const char *wrd, const char *pkg) {
     int i;
     unsigned long nsz;
@@ -2289,6 +2289,13 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
     }
 }
 
+/*
+ * TODO: Candidate for completion_services.c
+ *
+ * @desc:
+ * @param p:
+ * @param funcnm:
+ * */
 char *complete_args(char *p, char *funcnm) {
     // Check if function is "pkg::fun"
     char *pkg = NULL;
@@ -2335,6 +2342,15 @@ char *complete_args(char *p, char *funcnm) {
     return p;
 }
 
+/*
+ * TODO: Candidate for completion_services.c
+ *
+ * @desc:
+ * @param id:
+ * @param base:
+ * @param funcnm:
+ * @param args:
+ */
 void complete(const char *id, char *base, char *funcnm, char *args) {
     if (args)
         Log("complete(%s, %s, %s, [%c%c%c%c...])", id, base, funcnm, args[0],
@@ -2414,7 +2430,12 @@ void complete(const char *id, char *base, char *funcnm, char *args) {
     fflush(stdout);
 }
 
-void stdin_loop() {
+/*
+ * TODO: Candidate for message_handling.c
+ *
+ * @desc: Used in main() for continuous processing of stdin commands
+ */
+void stdin_loop(void) {
     char line[1024];
     FILE *f;
     char *msg;
@@ -2547,10 +2568,10 @@ void stdin_loop() {
             switch (*msg) {
             case '1': // Check if R is running
                 if (PostMessage(RConsole, WM_NULL, 0, 0)) {
-                    printf("call RWarningMsg('R was already started')\n");
-                    fflush(stdout);
+                    fprintf(stderr, "R was already started\n");
+                    fflush(stderr);
                 } else {
-                    printf("call CleanNvimAndStartR()\n");
+                    printf("lua require('r.windows').clean_and_start_Rgui()\n");
                     fflush(stdout);
                 }
                 break;

@@ -11,12 +11,18 @@ local routfile
 -- Override default values with user variable options and set internal variables.
 require('r.config').real_setup()
 
-local get_R_output = function(_)
-  if vim.fn.filereadable(routfile) then
-    if vim.g.R_routnotab == 1 then
-      vim.api.nvim_command('split ' .. routfile)
-      vim.api.nvim_command('set filetype=rout')
-      vim.api.nvim_command('normal! %<c-w>%<c-p>')
+local get_R_output = function (_)
+    local config = require("r.config").get_config()
+    if vim.fn.filereadable(routfile) then
+        if config.routnotab then
+            vim.api.nvim_command("split " .. routfile)
+            vim.api.nvim_command("set filetype=rout")
+            vim.api.nvim_command("normal! %<c-w>%<c-p>")
+        else
+            vim.api.nvim_command("tabnew " .. routfile)
+            vim.api.nvim_command("set filetype=rout")
+            vim.api.nvim_command("normal! gT")
+        end
     else
       vim.api.nvim_command('tabnew ' .. routfile)
       vim.api.nvim_command('set filetype=rout')
@@ -71,32 +77,9 @@ end
 vim.b.IsInRCode = is_in_R_code
 
 -- Key bindings
-require('r.maps').start()
-require('r.maps').edit()
+require("r.maps").create("r")
 
 -- Only .R files are sent to R
-require('r.maps').create(
-  'ni',
-  'RSendFile',
-  'aa',
-  ':lua require("r.send").source_file("silent")'
-)
-require('r.maps').create(
-  'ni',
-  'RESendFile',
-  'ae',
-  ':lua require("r.send").source_file("echo")'
-)
-require('r.maps').create(
-  'ni',
-  'RShowRout',
-  'ao',
-  ':lua require("r").show_R_out()'
-)
-
-require('r.maps').send()
-require('r.maps').control()
-require('r.maps').create('nvi', 'RSetwd', 'rd', ':call RSetWD()')
 
 if vim.b.undo_ftplugin then
   vim.b.undo_ftplugin = vim.b.undo_ftplugin .. ' | unlet! b:IsInRCode'

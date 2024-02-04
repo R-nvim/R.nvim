@@ -11,11 +11,11 @@ local R_pid = 0
 local r_args
 local wait_nvimcom = 0
 local waiting_to_start_r = ''
-local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
+local nseconds
 
 local get_buf_dir = function()
     local rwd = vim.api.nvim_buf_get_name(0)
-    if is_windows then
+    if config.is_windows then
         rwd = vim.fn.substitute(rwd, '\\', '/', 'g')
         rwd = utils.nomralize_windows_path(rwd)
     end
@@ -24,20 +24,8 @@ local get_buf_dir = function()
 end
 
 local set_send_cmd_fun = function ()
-    local send = require("r.send")
-    if config.RStudio_cmd then
-        send.cmd = require("r.rstudio").send_cmd_to_RStudio
-    elseif (type(config.external_term) == "boolean" and config.external_term) or type(config.external_term) == "string" then
-        if is_windows then
-            send.cmd = require("r.windows").send_cmd_to_Rgui
-        elseif config.is_darwin and config.applescript then
-            send.cmd = require("r.osx").send_cmd_to_Rapp
-        else
-            send.cmd = require("r.external_term").send_cmd_to_external_term
-        end
-    else
-        send.cmd = require("r.term").send_cmd_to_term
-    end
+    require("r.send").set_send_cmd_fun()
+    vim.g.R_Nvim_status = 5
     wait_nvimcom = 0
 end
 
@@ -135,11 +123,6 @@ M.start_R = function (whatr)
     else
         table.insert(start_options, 'options(nvimcom.autoglbenv = FALSE)')
     end
-    if config.debug then
-        table.insert(start_options, 'options(nvimcom.debug_r = TRUE)')
-    else
-        table.insert(start_options, 'options(nvimcom.debug_r = FALSE)')
-    end
     if config.setwidth and config.setwidth == 2 then
         table.insert(start_options, 'options(nvimcom.setwidth = TRUE)')
     else
@@ -173,7 +156,7 @@ M.start_R = function (whatr)
         rwd = vim.fn.getcwd()
     end
     if rwd ~= "" and not config.remote_compldir then
-        if is_windows then
+        if config.is_windows then
             rwd = vim.fn.substitute(rwd, '\\', '/', 'g')
         end
 
@@ -181,17 +164,6 @@ M.start_R = function (whatr)
         -- with netrw plugin
         if vim.fn.isdirectory(rwd) == 1 then
             table.insert(start_options, 'setwd("' .. rwd .. '")')
-        end
-    end
-
-    if #config.after_start > 0 then
-        local extracmds = vim.fn.deepcopy(config.after_start)
-        vim.fn.filter(extracmds, 'v:val =~ "^R:"')
-        if #extracmds > 0 then
-            vim.fn.map(extracmds, 'substitute(v:val, "^R:", "", "")')
-            for _, cmd in ipairs(extracmds) do
-                table.insert(start_options, cmd)
-            end
         end
     end
 
@@ -217,7 +189,7 @@ M.start_R = function (whatr)
         return
     end
 
-    if is_windows then
+    if config.is_windows then
         require("r.windows").start_Rgui()
         return
     end
@@ -230,15 +202,15 @@ end
 
 -- Send SIGINT to R
 M.signal_to_R = function(signal)
-    if R_pid then
-        vim.fn.system('kill -s ' .. signal .. ' ' .. R_pid)
+    if R_pid ~= 0 then
+        vim.system({'kill', '-s', tostring(signal), tostring(R_pid)})
     end
 end
 
 M.check_nvimcom_running = function ()
-    vim.g.nseconds = vim.g.nseconds - 1
+    nseconds = nseconds - 1
     if R_pid == 0 then
-        if vim.g.nseconds > 0 then
+        if nseconds > 0 then
             vim.fn.timer_start(1000, M.check_nvimcom_running)
         else
             local msg = "The package nvimcom wasn't loaded yet. Please, quit R and try again."
@@ -258,12 +230,11 @@ M.wait_nvimcom_start = function()
         config.wait = 2
     end
 
-    vim.g.nseconds = config.wait
+    nseconds = config.wait
     vim.fn.timer_start(1000, M.check_nvimcom_running)
 end
 
 M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
-    vim.g.R_Nvim_status = 5
     local r_home_description = vim.fn.readfile(config.rnvim_home .. '/R/nvimcom/DESCRIPTION')
     local current
     for _, v in pairs(r_home_description) do
@@ -277,7 +248,7 @@ M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
     end
 
     R_pid = rpid
-    vim.fn.setenv("RCONSOLE", wid)
+    vim.env.RCONSOLE = wid
 
     local Rinfo = vim.fn.split(r_info, "\x12")
     -- R_version = Rinfo[1]
@@ -290,8 +261,8 @@ M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
     end
 
     if job.is_running("Server") then
-        if is_windows then
-            if vim.fn.string(vim.fn.getenv("RCONSOLE")) == "0" then
+        if config.is_windows then
+            if vim.env.RCONSOLE == "0" then
                 warn("nvimcom did not save R window ID")
             end
         end
@@ -300,11 +271,11 @@ M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
     end
 
     if vim.fn.exists("g:RStudio_cmd") == 1 then
-        if is_windows and config.arrange_windows and
+        if config.is_windows and config.arrange_windows and
             vim.fn.filereadable(config.compldir .. "/win_pos") == 1 then
             job.stdin("Server", "85" .. config.compldir .. "\n")
         end
-    elseif is_windows then
+    elseif config.is_windows then
         if config.arrange_windows and vim.fn.filereadable(config.compldir .. "/win_pos") == 1 then
             job.stdin("Server", "85" .. config.compldir .. "\n")
         end
@@ -316,23 +287,16 @@ M.set_nvimcom_info = function (nvimcomversion, rpid, wid, r_info)
         vim.fn.delete(config.tmpdir .. "/openR")
     end
 
-    if type(config.after_start) == 'list' then
-        for _, cmd in ipairs(config.after_start) do
-            if cmd:match('^!') then
-                vim.fn.system(cmd:sub(2))
-            elseif cmd:match('^:') then
-                vim.cmd(cmd:sub(2))
-            elseif not cmd:match('^R:') then
-                warn("R_after_start must be a list of strings starting with 'R:', '!', or ':'")
-            end
-        end
-    end
-    vim.fn.timer_start(1000, set_send_cmd_fun)
     if config.objbr_auto_start then
         autosttobjbr = 1
         vim.notify("Not implemented yet autosttobjbr=" .. tostring(autosttobjbr))
         vim.fn.timer_start(1010, "RObjBrowser")
     end
+
+    if config.hook.after_R_start then
+        config.hook.after_R_start()
+    end
+    vim.fn.timer_start(100, set_send_cmd_fun)
 end
 
 M.clear_R_info = function()
@@ -377,7 +341,7 @@ M.quit_R = function (how)
         qcmd = 'quit(save = "no")'
     end
 
-    if is_windows then
+    if config.is_windows then
         if type(config.external_term) == "boolean" and config.external_term then
             -- SaveWinPos
             job.stdin("Server", "84" .. vim.fn.escape(vim.env.NVIMR_COMPLDIR, '\\') .. "\n")
@@ -398,6 +362,43 @@ M.quit_R = function (how)
 
     vim.wait(50)
     M.clear_R_info()
+end
+
+M.formart_code = function (tbl)
+    if vim.g.R_Nvim_status < 5 then
+        return
+    end
+
+    local wco = vim.o.textwidth
+    if wco == 0 then
+        wco = 78
+    elseif wco < 20 then
+        wco = 20
+    elseif wco > 180 then
+        wco = 180
+    end
+
+    local lns = vim.api.nvim_buf_get_lines(0, tbl.line1 - 1, tbl.line2, true)
+    vim.fn.getline(tbl.line1, tbl.line2)
+    local txt = string.gsub(string.gsub(table.concat(lns, "\x14"), '\\', '\\\\'), "'", "\x13")
+    M.send_to_nvimcom("E", "nvimcom:::nvim_format(" .. tbl.line1 .. ", " .. tbl.line2 .. ", " .. wco .. ", " .. vim.o.shiftwidth .. ", '" .. txt .. "')")
+end
+
+M.insert = function (cmd, type)
+    if vim.g.R_Nvim_status < 5 then
+        return
+    end
+    M.send_to_nvimcom("E", 'nvimcom:::nvim_insert(' .. cmd .. ', "' .. type .. '")')
+end
+
+M.insert_commented = function()
+    local lin = vim.fn.getline(vim.fn.line("."))
+    local cleanl = vim.fn.substitute(lin, '".\\{-}"', '', 'g')
+    if cleanl:find(";") then
+        warn('`print(line)` works only if `line` is a single command')
+    end
+    cleanl = string.gsub(lin, "%s*#.*", "")
+    M.insert("print(" .. cleanl .. ")", "comment")
 end
 
 return M

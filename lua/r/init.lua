@@ -5,9 +5,11 @@ M.warn = function (msg)
 end
 
 --- Quick setup: simply store user options
----@param opts table
+---@param opts table | nil
 M.setup = function(opts)
-  require('r.config').store_user_opts(opts)
+    if opts then
+        require('r.config').store_user_opts(opts)
+    end
 end
 
 return M

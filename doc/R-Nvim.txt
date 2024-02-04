@@ -61,7 +61,6 @@ Git pull requests are welcome.
       - Syntax highlighting of the Object Browser.
   * SyncTeX support for Rnoweb.
   * Special highlighting for R output (.Rout files).
-  * Limited support for debugging R functions.
   * Most of the plugin's behavior is customizable.
 
 
@@ -166,7 +165,7 @@ It is recommended that you use a plugin manager to install R-Nvim.
 Note: The <LocalLeader> is '\' by default.
 
 The plugin is a |file-type| plugin. It will be active only if you are editing
-a .R, .Rnw, .Rd, .Rmd, .Rrst or .qmd file. The the key bindings will not be
+a .R, .Rnw, .Rd, .Rmd or .qmd file. The the key bindings will not be
 active while editing either unnamed files or files with name extensions other
 than the mentioned above: Hhowever, see:
 
@@ -248,14 +247,14 @@ change this behavior (see |external_term|).
 
 Note: The <LocalLeader> is '\' by default.
 
-To use the plugin, open a .R, .Rnw, .Rd, .Rmd, .Rrst, or .qmd file with Neovim
+To use the plugin, open a .R, .Rnw, .Rd, .Rmd or .qmd file with Neovim
 and type <LocalLeader>rf. Then, you will be able to use the plugin key
 bindings to send commands to R.
 
 This plugin has many key bindings, which correspond with menu entries. In the
 list below, the backslash represents the <LocalLeader>. Not all menu items and
 key bindings are enabled in all file types supported by the plugin (r, rnoweb,
-rhelp, rrst, rmd, and quarto).
+rhelp, rmd, and quarto).
 
 Menu entry                                Default shortcut
 Start/Close
@@ -357,9 +356,6 @@ Command
   . Search forward (SyncTeX)                           \gp
   . Go to LaTeX (SyncTeX)                              \gt
   --------------------------------------------------------
-  . Debug (function)                                   \bg
-  . Undebug (function)                                 \ud
-  --------------------------------------------------------
   . Build tags file (cur dir)                  :RBuildTags
 -----------------------------------------------------------
 
@@ -408,11 +404,8 @@ mode (see |mark|). Normally, marks are not visible, but there are plugins
 that highlight them.
 
 You can also use the command `:RSend` to type and, then, send a line of code
-to R. If you use this command frequently, you may consider creating a map for
-it in your |init.lua|. For example:
->vim
-   nmap <LocalLeader>: :RSend
-<
+to R.
+
 Observe that there is an empty space after `:RSend`, so you do not have to
 type it.
 
@@ -657,78 +650,6 @@ in the current directory.
 
 
 ------------------------------------------------------------------------------
-4.6. Debugging R functions (Unix only)                     *debug-R-functions*
-
-The R-Nvim-Plugin has limited debugging facilities available on Unix systems
-(not available on Windows). To debug a function with R-Nvim you have to do the
-following:
-
-   1. Source the R script where the function is with the `source()` function
-      of the `base` package.
-
-   2. In the R Console, run either `debug(funcname)` or `debugonce(funcname)`
-      where `funcname` is the name of the function (not quoted). R-Nvim will
-      send this command to R Console if you press <LocalLeader>db in Normal
-      mode with the cursor over the function name.
-
-   3. Call the function.
-
-See `:Rh browser` for available commands in debugging mode.
-
-For example, if you have a file named `my_function.R` with the following
-contents:
->r
-   add.one <- function(x){
-       y <- x + 1
-       print(y)
-       return(invisible(NULL))
-   }
-<
-You could debug the `add.one()` function from another script such as:
->r
-   source("path/to/my_function.R")
-   debug(add.one)
-   add.one(7)
-<
-If you do not want to start debugging the function from its first line,
-instead of calling `debug(funcname)` before calling the function, you should
-add the line `browser()` to the function at the line where the debugging
-session should start. Example:
->r
-   add.one <- function(x){
-       y <- x + 1
-       browser()
-       print(y)
-       return(invisible(NULL))
-   }
-<
-If you want a conditional breakpoint, you should call the `browser()` command
-only if a condition is satisfied. Example:
->r
-   add.one <- function(x){
-       y <- x + 1
-       if(x > 9)
-           browser()
-       print(y)
-       return(invisible(NULL))
-   }
-<
-One limitation is that R-Nvim also does not help you setting breakpoints.
-You have to set them manually as explained above.
-
-Another limitation of R-Nvim is that it might be unable to jump to the line in
-the source code that is being evaluated if either you have sent the function
-directly to the R Console or the function has been sent by the `knitr`
-package, without calling the function `source()`. In either case, R-Nvim will
-try to find the pattern `funcname <- function(` in the buffer being edited. If
-the pattern is found, the cursor will jump to its position.
-
-The highlighting group used to highlight the line being debugged is the
-QuickFixLine (see |hl-QuickFixLine|). Its foreground and background colors are
-defined by your colorscheme.
-
-
-------------------------------------------------------------------------------
 4.7. Syntax highlight of .Rout files
 
 You can set both foreground and background colors of R output in your
@@ -907,16 +828,14 @@ the `init.vim`. The workaround is do not include the superfluous command
 |editing_mode|        The mode defined in your `~/.inputrc`
 |pdfviewer|           PDF application used to open PDF documents
 |openpdf|             Open PDF after processing rnoweb file
-|openhtml|            Open HTML after processing either Rrst or Rmd
+|openhtml|            Open HTML after processing Rmd or Quarto
 |strict_rst|          Code style for generated rst files
 |insert_mode_cmds|    Allow R commands in insert mode
 |rmhidden|            Remove hidden objects from R workspace
 |wait|                Time to wait for nvimcom loading
 |wait_reply|          Time to wait for R reply
 |nvim_wd|             Start R in Neovim's working directory
-|after_start|         Commands to be executed after R startup
-|after_ob_open|       Commands executed after the Object Browser opening
-|debug|               Support for debugging functions
+|hook|                Lua functions to call after certain events
 |user_maps_only|      Only user specified key bindings
 |disable_cmds|        List of commands to be disabled
 |tmpdir|              Where temporary files are created
@@ -945,14 +864,14 @@ even if Neovim is already started, put in your config:
 >lua
    auto_start = 2
 <
-See also: |after_start|.
+See also: |hook|.
 
 If you want to always start the Object Browser immediately after starting R,
 put in your config:
 >lua
    objbr_auto_start = true
 <
-See also: |after_ob_open|.
+See also: |hook|.
 
 
 ------------------------------------------------------------------------------
@@ -1122,9 +1041,9 @@ put in your config:
                                                            *Rtools-path*
 If R cannot find either `make` or `gcc` while trying to compile nvimcom, you
 should add their directories to the beginning of the `PATH` environment
-variable in your config:
->vim
-   let $PATH = "C:\\rtools40\\mingw64\\bin;C:\\rtools40\\usr\\bin;" . $PATH
+variable in your |init.lua|:
+>lua
+   vim.env.PATH = "C:\\rtools40\\mingw64\\bin;C:\\rtools40\\usr\\bin;" .. $PATH
 <
 By default, R-Nvim will save the positions of R Console and Neovim windows
 when you quit R with the <LocalLeader>rq command, and it will restore the
@@ -1556,9 +1475,9 @@ By default, R's `source()` is called with the arguments `print.eval=TRUE` and
 `spaced=FALSE`. The argument `local=parent.frame()` is passed to `source()`
 too because it is run inside another function. But you can either add or
 change the arguments passed to it. Examples:
- >vim
-   let source_args = 'echo = TRUE'
-   let source_args = 'print.eval = FALSE, echo = TRUE, spaced = TRUE'
+ >lua
+   source_args = 'echo = TRUE'
+   source_args = 'print.eval = FALSE, echo = TRUE, spaced = TRUE'
 <
 The option `commented_lines` was dropped because it unduly removed lines from
 multi-line raw strings if they included a hashtag. See:
@@ -1674,7 +1593,7 @@ and to not run in Rgui.
 
 
 ------------------------------------------------------------------------------
-6.23. Open PDF after processing quarto, rnoweb, rmd or rrst files
+6.23. Open PDF after processing quarto, rnoweb or rmd files
                                                            *pdfviewer*
                                                            *openpdf*
                                                            *openhtml*
@@ -1730,25 +1649,6 @@ previewing). The command <LocalLeader>kr achieves basically the same result of
 <LocalLeader>kr. The difference is that the generated document is open after
 <LocalLeader>kr, and <LocalLeader>qr allows Quarto specific
 options (see |quarto_render_args|).
-
-
-------------------------------------------------------------------------------
-6.24. Support to RreStructuredText file
-                                                              *rrstcompiler*
-                                                              *strict_rst*
-                                                              *rst2pdfpath*
-                                                              *rst2pdfargs*
-
-By default, R-Nvim sends the command `render_rst(strict=TRUE)` to R
-before using R's `knit()` function to convert an Rrst file into an rst one. If
-you prefer the non strict rst code, put the following in your config:
->lua
-   strict_rst = false
-<
-You can also set the value of `rst2pdfpath` (the path to rst2pdf
-application), `rrstcompiler` (the compiler argument to be passed to R
-function knit2pdf), and `rst2pdfargs` (further arguments to be passed
-to R function knit2pdf).
 
 
 ------------------------------------------------------------------------------
@@ -1827,7 +1727,7 @@ in your config.  Example:
 ------------------------------------------------------------------------------
 6.31. Start R in working directory of Neovim                          *nvim_wd*
 
-When you are editing an R file (.R, .Rnw, .Rd, .Rmd, .Rrst, or .qmd) and start
+When you are editing an R file (.R, .Rnw, .Rd, .Rmd, or .qmd) and start
 R, the R package nvimcom runs the command `setwd()` with the directory of the
 file being edited as argument, that is, the R working directory becomes the
 same directory of the R file. If you want R's working directory to be the same
@@ -1845,97 +1745,15 @@ in config:
 
 ------------------------------------------------------------------------------
 6.32. Commands to be executed after either R startup or Object Browser opening
-                                                             *after_start*
-                                                             *after_ob_open*
+                                                             *hook*
 
-If you want the execution of Neovim, R, or external commands right after R
-startup, set the value of `after_start` in your |init.lua|. The `after_start`
-variable must be a list of strings. Strings representing Vim commands must
-start with `:`, R commands must be prefixed with `R:`, and external commands
-must be prefixed with `!`.
-
-You can put commands in your `~/.Rprofile` that will be run only if R was
-started by R-Nvim as in the example below:
->r
-   if (Sys.getenv("NVIMR_TMPDIR") == "")
-       cat("~/Rprofile: R was called by R-Nvim\n", file = stderr())
-<
-However, if for any reason you `~/.Rprofile` is not being sourced, you can
-include in `after_start` R commands that should be executed during R startup
-(more precisely, during `nvimcom` loading). Example:
+If you want the execution of a Lua function just after R startup or after the
+Object Browser opening, set the `hook` config option, as in the example below:
 >lua
-   vim.g.after_start = {'R: cat("R_after_start: R was called by R-Nvim\\n", file = stderr())'}
-<
-Note: The loading of `nvimcom` will fail if the command to be executed is
-invalid. In the example above, we have had to use `\n` in VimScript but `\\n`
-in Lua.
-
-For an example of Vim command, if you want that the R script window is hidden
-right after R startup, put in your config:
->lua
-   after_start = {':hide'}
-<
-R-Nvim stores the environment variable $WINDOWID of the terminal where R is
-running as $RCONSOLE. Thus, if you are running R in a external terminal
-emulator on the X server (not on Wayland) on Linux, `~/bin` is in your path,
-and you want to resize and change the positions of the terminals containing
-Vim and R, you may create a script `~/bin/after_R_start` similar to the
-following:
->
-   #!/bin/sh
-   wmctrl -i -r $RCONSOLE -e 0,0,200,1200,800
-   wmctrl -i -r $WINDOWID -e 0,300,40,1200,800
-   wmctrl -i -r $WINDOWID -b remove,maximized_vert,maximized_horz
-<
-Then, make the script executable, and put in your config:
->lua
-   external_term = true
-   after_start = {'!after_R_start'}
-<
-Similarly, on Mac OS X, the script below (developed by songcai) will bring the
-focus to Neovim terminal window:
->
-   #!/usr/bin/env osascript
-
-   --Raise the Terminal window containing name ".R".
-   tell application "Terminal"
-     set index of window 1 where name contains ".R" to 1
-     delay 0.05
-     activate window 1
-   end tell
-
-   --Click the title bar of the raised window to bring focus to it.
-   tell application "System Events"
-     tell process "Terminal"
-       click menu item (name of window 1) of menu of menu bar item "Window" of menu bar 1
-     end tell
-   end tell
-<
-If you want that R-Nvim executes Vim commands right after the Object Browser
-is open, set the value of `after_ob_open` as a list of commands. Example:
->lua
-   after_ob_open = {':tabnew %'}
-<
-
-------------------------------------------------------------------------------
-6.33. Support for debugging functions                                *debug*
-
-Put the line below in your config if do not want that the cursor jumps to the
-line being debugged (when `browser()` is run). Highlighting of the line being
-debugged will also be disabled.
->lua
-   debug = false
-<
-R-Nvim puts the cursor in the R Console when the debugging starts. If you do
-not want this, put in your config:
->lua
-   dbg_jump = false
-<
-The highlighted debugged line incrementally moves down the buffer with code
-execution and, with long scripts, it may stay at the bottom of the window as you
-debug. You can hold the highlighted line in the middle of the window with
->lua
-    debug_center = true
+   hook = {
+       after_R_start = function() vim.notify("R was launched") end,
+       after_ob_open = function() vim.notify("Object Browser") end,
+   },
 <
 
 ------------------------------------------------------------------------------
@@ -1961,7 +1779,7 @@ Below is an example on how to disable the commands that sends `setwd()` and
 If you want to disable R-Nvim for a specific file type, create the variable
 `R_filetypes` with a list of file types that should be supported. Example:
 >lua
-   vim.g.R_filetypes = {'r', 'rmd', 'rrst', 'rnoweb', 'quarto', 'rhelp'}
+   vim.g.R_filetypes = {'r', 'rmd', 'rnoweb', 'quarto', 'rhelp'}
 <
 If the variable `R_filetypes` does not exist, all file types from the above
 list will be supported.
@@ -2179,17 +1997,8 @@ each Vim mode. Thus, key bindings must be made for Normal mode, Insert mode,
 and Visual mode.
 
 To customize a key binding you could put something like this in your |init.lua|:
->vim
-    function! s:customNvimRMappings()
-       nmap <buffer> <Leader>sr <Plug>RStart
-       imap <buffer> <Leader>sr <Plug>RStart
-       vmap <buffer> <Leader>sr <Plug>RStart
-    endfunction
-    augroup myNvimR
-       au!
-       autocmd filetype r call s:customNvimRMappings()
-    augroup end
-
+>lua
+   vim.keymap.set('n', '<LocalLeader>sr', '<Plug>RStart')
 <
 The above example shows how to add a key binding to start R for <Leader>sr
 for just r buffers. The default <LocalLeader>rf still exists. After changing
@@ -2297,10 +2106,6 @@ the list of the names for custom key bindings (the prefix RE means "echo"; RD,
    RQuartoPreview
    RQuartoStop
 
-   Debugging functions:
-   RDebug
-   RUndebug
-
    Object browser:
    RUpdateObjBrowser
    ROpenLists
@@ -2320,14 +2125,15 @@ you call the RAction function, with an argument such as levels, Neovim will
 pass the command `levels(gender)` to R, which will show you the levels of the
 object gender. To make it even easier to use this and other functions, you
 could write custom key bindings in your |init.lua|, as in the examples below:
->vim
-   nmap <silent> <LocalLeader>rk :call RAction("levels")<CR>
-   nmap <silent> <LocalLeader>t :call RAction("tail")<CR>
-   nmap <silent> <LocalLeader>H :call RAction("head")<CR>
+>lua
+   -- FIXME: test
+   vim.keymap.set('n', '<LocalLeader>l', '<Cmd>lua require("r.FIXME").action("levels")<CR>')
+   vim.keymap.set('n', '<LocalLeader>t', '<Cmd>lua require("r.FIXME").action("tail")<CR>')
 <
 If you want an action over an selection, then the second argument must be the
 string `"v"`:
 >vim
+   FIXME: convert to Lua
    vmap <silent> <LocalLeader>h :call RAction("head", "v")<CR>
 <
 In this case, the beginning and the end of the selection must be in the same
@@ -2336,12 +2142,14 @@ line.
 If either a second or a third optional argument starts with a comma, it will
 be inserted as argument(s) to the RAction function. Examples:
 >vim
+   FIXME: convert to Lua
    nmap <silent> <LocalLeader>h :call RAction('head', ', n = 10')<CR>
    nmap <silent> <LocalLeader>t :call RAction('tail', ', n = 10, addrownums = FALSE')<CR>
 <
 If the command that you want to send does not require an R object as argument,
 you can create a shortcut to it by following the example:
 >vim
+   FIXME: convert to Lua
    map <silent> <LocalLeader>s :call g:SendCmdToR("search()")<CR>
 <
 See also: |source|.

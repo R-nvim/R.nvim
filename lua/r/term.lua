@@ -5,7 +5,6 @@ local warn = require('r').warn
 local R_width = 80
 local number_col
 local R_bufnr = nil
-local is_windows = vim.loop.os_uname().sysname:find('Windows') ~= nil
 
 M.send_cmd_to_term = function(command, nl)
   local is_running
@@ -26,24 +25,20 @@ M.send_cmd_to_term = function(command, nl)
     cmd = command
   end
 
-  -- Update the width, if necessary
-  local bwid = vim.fn.bufwinid(R_bufnr)
-  if config.setwidth ~= 0 and config.setwidth ~= 2 and bwid ~= -1 then
-    local rwnwdth = vim.fn.winwidth(bwid)
-    if
-      rwnwdth ~= R_width
-      and rwnwdth ~= -1
-      and rwnwdth > 10
-      and rwnwdth < 999
-    then
-      R_width = rwnwdth
-      local Rwidth = R_width + number_col
-      if is_windows then
-        cmd = 'options(width=' .. Rwidth .. '); ' .. cmd
-      else
-        require('r.run').send_to_nvimcom('E', 'options(width=' .. Rwidth .. ')')
-        vim.wait(10)
-      end
+    -- Update the width, if necessary
+    local bwid = vim.fn.bufwinid(R_bufnr)
+    if config.setwidth ~= 0 and config.setwidth ~= 2 and bwid ~= -1 then
+        local rwnwdth = vim.fn.winwidth(bwid)
+        if rwnwdth ~= R_width and rwnwdth ~= -1 and rwnwdth > 10 and rwnwdth < 999 then
+            R_width = rwnwdth
+            local Rwidth = R_width + number_col
+            if config.is_windows then
+                cmd = "options(width=" .. Rwidth .. "); " .. cmd
+            else
+                require("r.run").send_to_nvimcom("E", "options(width=" .. Rwidth .. ")")
+                vim.wait(10)
+            end
+        end
     end
   end
 
@@ -67,11 +62,13 @@ M.send_cmd_to_term = function(command, nl)
 end
 
 M.close_term = function()
-  if R_bufnr then
-    pcall(vim.cmd.sb, 'sbuffer ' .. R_bufnr)
-    if config.close_term and R_bufnr == vim.fn.bufnr('%') then
-      vim.cmd('startinsert')
-      vim.fn.feedkeys(' ')
+    if R_bufnr then
+        vim.cmd.sb(R_bufnr)
+        if config.close_term and R_bufnr == vim.fn.bufnr("%") then
+            vim.cmd("startinsert")
+            vim.fn.feedkeys(' ')
+        end
+        R_bufnr = nil
     end
     R_bufnr = nil
   end
@@ -109,59 +106,51 @@ local split_window = function()
   end
 end
 
-local re_open_win = function()
-  local wlist = vim.fn.nvim_list_wins()
-  for _, wnr in ipairs(wlist) do
-    if vim.fn.nvim_win_get_buf(wnr) == R_bufnr then
-      -- The R buffer is visible
-      return
+local reopen_win = function()
+    local wlist = vim.api.nvim_list_wins()
+    for _, wnr in ipairs(wlist) do
+        if vim.api.nvim_win_get_buf(wnr) == R_bufnr then
+            -- The R buffer is visible
+            return
+        end
     end
-  end
-  local edbuf = vim.fn.bufname('%')
-  split_window()
-  vim.fn.nvim_win_set_buf(0, R_bufnr)
-  vim.cmd('sbuffer ' .. edbuf)
+    local edbuf = vim.fn.bufname("%")
+    split_window()
+    vim.api.nvim_win_set_buf(0, R_bufnr)
+    vim.cmd.sb(edbuf)
 end
 
-M.start_term = function()
-  -- Check if R is running
-  if vim.g.R_Nvim_status == 5 then
-    re_open_win()
-    return
-  end
-  vim.g.R_Nvim_status = 4
+M.start_term = function ()
+    -- Check if R is running
+    if vim.g.R_Nvim_status == 5 then
+        reopen_win()
+        return
+    end
+    vim.g.R_Nvim_status = 4
 
   local edbuf = vim.fn.bufname('%')
   vim.o.switchbuf = 'useopen'
 
   split_window()
 
-  if is_windows then
-    require('r.windows').set_R_home()
-  end
-  require('r.job').R_term_open(
-    config.R_app .. ' ' .. table.concat(config.R_args, ' ')
-  )
-  if is_windows then
-    vim.cmd('redraw')
-    require('r.windows').unset_R_home()
-  end
-  R_bufnr = vim.fn.bufnr('%')
-  if config.hl_term then
-    vim.cmd('silent set syntax=rout')
-  end
-  if config.esc_term then
-    vim.api.nvim_buf_set_keymap(
-      0,
-      't',
-      '<Esc>',
-      '<C-\\><C-n>',
-      { noremap = true, silent = true }
-    )
-  end
-  for _, optn in ipairs(vim.fn.split(config.buffer_opts, '\n')) do
-    vim.cmd('setlocal ' .. optn)
-  end
+    if config.is_windows then
+        require("r.windows").set_R_home()
+    end
+    require("r.job").R_term_open(config.R_app .. ' ' .. table.concat(config.R_args, ' '))
+    if config.is_windows then
+        vim.cmd("redraw")
+        require("r.windows").unset_R_home()
+    end
+    R_bufnr = vim.fn.bufnr("%")
+    if config.hl_term then
+        vim.cmd('silent set syntax=rout')
+    end
+    if config.esc_term then
+        vim.api.nvim_buf_set_keymap(0, 't', '<Esc>', '<C-\\><C-n>', { noremap = true, silent = true })
+    end
+    for _, optn in ipairs(vim.fn.split(config.buffer_opts, '\n')) do
+        vim.cmd('setlocal ' .. optn)
+    end
 
   if vim.b.number then
     if config.setwidth < 0 and config.setwidth > -17 then
@@ -173,12 +162,12 @@ M.start_term = function()
     number_col = 0
   end
 
-  -- Set b:pdf_is_open to avoid an error when the user has to go to R Console
-  -- to deal with latex errors while compiling the pdf
-  vim.b.pdf_is_open = 1
-  vim.cmd('sbuffer ' .. edbuf)
-  vim.cmd('stopinsert')
-  require('r.run').wait_nvimcom_start()
+    -- Set b:pdf_is_open to avoid an error when the user has to go to R Console
+    -- to deal with latex errors while compiling the pdf
+    vim.b.pdf_is_open = 1
+    vim.cmd.sb(edbuf)
+    vim.cmd("stopinsert")
+    require("r.run").wait_nvimcom_start()
 end
 
 M.highlight_term = function()
@@ -211,6 +200,10 @@ M.clear_all = function()
   end
 
   M.clear_console()
+end
+
+M.get_buf_nr = function()
+    return R_bufnr
 end
 
 return M
