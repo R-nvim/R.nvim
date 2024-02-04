@@ -664,43 +664,6 @@ function RAction(rcmd, ...)
     " see: require("r.run").action(rcmd)
 endfunction
 
-function RLoadHTML(fullpath, browser)
-    if g:Rcfg.openhtml == v:false
-        return
-    endif
-
-    if a:browser == ''
-        if has('win32') || g:rplugin.is_darwin
-            let cmd = ['open', a:fullpath]
-        else
-            let cmd = ['xdg-open', a:fullpath]
-        endif
-    else
-        let cmd = split(a:browser) + [a:fullpath]
-    endif
-
-    call jobstart(cmd, {'detach': 1})
-endfunction
-
-function ROpenDoc(fullpath, browser)
-    if a:fullpath == ""
-        return
-    endif
-    if !filereadable(a:fullpath)
-        call RWarningMsg('The file "' . a:fullpath . '" does not exist.')
-        return
-    endif
-    if a:fullpath =~ '.odt$' || a:fullpath =~ '.docx$'
-        call system('lowriter ' . a:fullpath . ' &')
-    elseif a:fullpath =~ '.pdf$'
-        call ROpenPDF(a:fullpath)
-    elseif a:fullpath =~ '.html$'
-        call RLoadHTML(a:fullpath, a:browser)
-    else
-        call RWarningMsg("Unknown file type from nvim.interlace: " . a:fullpath)
-    endif
-endfunction
-
 " render a document with rmarkdown
 function RMakeRmd(t)
     update

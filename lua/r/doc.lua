@@ -1,5 +1,6 @@
 local config = require("r.config").get_config()
 local send_to_nvimcom = require("r.run").send_to_nvimcom
+local warn = require("r").warn
 local has_new_width = true
 local rdoctitle = "R_doc"
 local htw
@@ -237,6 +238,41 @@ M.show = function(rkeyword, txt)
     vim.cmd("setlocal nomodified")
     vim.cmd("stopinsert")
     vim.cmd("redraw")
+end
+
+M.load_html = function(fullpath, browser)
+    if not config.openhtml then return end
+
+    local cmd
+    if browser == "" then
+        if config.is_windows or config.is_darwin then
+            cmd = { "open", fullpath }
+        else
+            cmd = { "xdg-open", fullpath }
+        end
+    else
+        cmd = table.insert(vim.split(browser, " "), fullpath)
+    end
+
+    require("r.job").start()
+    vim.fn.jobstart(cmd, { detach = 1 })
+end
+
+M.open = function(fullpath, browser)
+    if fullpath == "" then return end
+    if vim.fn.filereadable(fullpath) == 0 then
+        warn('The file "' .. fullpath .. '" does not exist.')
+        return
+    end
+    if fullpath:match(".odt$") or fullpath:match(".docx$") then
+        vim.fn.system("lowriter " .. fullpath .. " &")
+    elseif fullpath:match(".pdf$") then
+        require("r.pdf").open(fullpath)
+    elseif fullpath:match(".html$") then
+        M.load_html(fullpath, browser)
+    else
+        warn("Unknown file type from nvim.interlace: " .. fullpath)
+    end
 end
 
 return M
