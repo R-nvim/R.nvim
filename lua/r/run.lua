@@ -763,4 +763,15 @@ end
 -- Set working directory to the path of current buffer
 M.setwd = function() send.cmd('setwd("' .. get_buf_dir() .. '")') end
 
+M.show_obj = function(howto, bname, ftype, txt)
+    vim.notify("show_obj")
+    local bfnm = vim.fn.substitute(bname, "[[:punct:]]", "_", "g")
+    edit.add_for_deletion(config.tmpdir .. "/" .. bfnm)
+    vim.cmd({ cmd = howto, args = { config.tmpdir .. "/" .. bfnm } })
+    vim.o.filetype = ftype
+    local lines = vim.split(txt:gsub("\x13", "'"), "\x14")
+    vim.api.nvim_buf_set_lines(0, 0, 0, true, lines)
+    vim.api.nvim_buf_set_var(0, "modified", false)
+end
+
 return M

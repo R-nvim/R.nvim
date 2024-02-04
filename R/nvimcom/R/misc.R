@@ -55,7 +55,7 @@ nvim_dput <- function(oname, howto = "tabnew") {
     o <- paste0(o, collapse = "\x14")
     o <- gsub("'", "\x13", o)
     .C("nvimcom_msg_to_nvim",
-       paste0("call ShowRObj('", howto, "', '", oname, "', 'r', '", o, "')"),
+       paste0("lua require('r.run').show_obj('", howto, "', '", oname, "', 'r', '", o, "')"),
        PACKAGE = "nvimcom")
 }
 

@@ -21,15 +21,6 @@ endfunction
 "  Functions triggered by nvimcom after user action on R Console
 "==============================================================================
 
-function ShowRObj(howto, bname, ftype, txt)
-    let bfnm = substitute(a:bname, '[ [:punct:]]', '_', 'g')
-    call AddForDeletion(g:rplugin.tmpdir . "/" . bfnm)
-    silent exe a:howto . ' ' . substitute(g:rplugin.tmpdir, ' ', '\\ ', 'g') . '/' . bfnm
-    silent exe 'set ft=' . a:ftype
-    call setline(1, split(substitute(a:txt, "\x13", "'", "g"), "\x14"))
-    set nomodified
-endfunction
-
 " This function is called by nvimcom
 function EditRObject(fname)
     let fcont = readfile(a:fname)
@@ -718,109 +709,7 @@ endfunction
 
 " Call R functions for the word under cursor
 function RAction(rcmd, ...)
-    if &filetype == "rdoc"
-        let rkeyword = expand('<cword>')
-    elseif &filetype == "rbrowser"
-        let rkeyword = RBrowserGetName()
-    elseif a:0 == 1 && a:1 == "v" && line("'<") == line("'>")
-        let rkeyword = strpart(getline("'>"), col("'<") - 1, col("'>") - col("'<") + 1)
-    elseif a:0 == 1 && a:1 != "v" && a:1 !~ '^,'
-        let rkeyword = RGetKeyword()
-    else
-        let rkeyword = RGetKeyword()
-    endif
-    if strlen(rkeyword) > 0
-        if a:rcmd == "help"
-            if rkeyword =~ "::"
-                let rhelplist = split(rkeyword, "::")
-                let rhelppkg = rhelplist[0]
-                let rhelptopic = rhelplist[1]
-            else
-                let rhelppkg = ""
-                let rhelptopic = rkeyword
-            endif
-            let s:running_rhelp = 1
-            if g:Rcfg.nvimpager == "no"
-                call g:SendCmdToR("help(" . rkeyword . ")")
-            else
-                if bufname("%") =~ "Object_Browser"
-                    if g:rplugin.curview == "libraries"
-                        let pkg = RBGetPkgName()
-                    else
-                        let pkg = ""
-                    endif
-                endif
-                call AskRDoc(rhelptopic, rhelppkg, 1)
-            endif
-            return
-        endif
-        if a:rcmd == "print"
-            call PrintRObject(rkeyword)
-            return
-        endif
-        let rfun = a:rcmd
-        if a:rcmd == "args"
-            if g:Rcfg.listmethods && rkeyword !~ '::'
-                call g:SendCmdToR('nvim.list.args("' . rkeyword . '")')
-            else
-                call g:SendCmdToR('args(' . rkeyword . ')')
-            endif
-            return
-        endif
-        if a:rcmd == "plot" && g:Rcfg.specialplot
-            let rfun = "nvim.plot"
-        endif
-        if a:rcmd == "plotsumm"
-            if g:Rcfg.specialplot
-                let raction = "nvim.plot(" . rkeyword . "); summary(" . rkeyword . ")"
-            else
-                let raction = "plot(" . rkeyword . "); summary(" . rkeyword . ")"
-            endif
-            call g:SendCmdToR(raction)
-            return
-        endif
-
-        if g:Rcfg.open_example && a:rcmd == "example"
-            call SendToNvimcom("E", 'nvimcom:::nvim.example("' . rkeyword . '")')
-            return
-        endif
-
-        if a:0 == 1 && a:1 =~ '^,'
-            let argmnts = a:1
-        elseif a:0 == 2 && a:2 =~ '^,'
-            let argmnts = a:2
-        else
-            let argmnts = ''
-        endif
-
-        if a:rcmd == "viewobj" || a:rcmd == "dputtab"
-            if a:rcmd == "viewobj"
-                if has_key(g:Rcfg, "df_viewer")
-                    let argmnts .= ', R_df_viewer = "' . g:Rcfg.df_viewer . '"'
-                endif
-                if rkeyword =~ '::'
-                    call SendToNvimcom("E",
-                                \'nvimcom:::nvim_viewobj(' . rkeyword . argmnts . ')')
-                else
-                    if has("win32") && &encoding == "utf-8"
-                        call SendToNvimcom("E",
-                                    \'nvimcom:::nvim_viewobj("' . rkeyword . '"' . argmnts .
-                                    \', fenc="UTF-8"' . ')')
-                    else
-                        call SendToNvimcom("E",
-                                    \'nvimcom:::nvim_viewobj("' . rkeyword . '"' . argmnts . ')')
-                    endif
-                endif
-            else
-                call SendToNvimcom("E",
-                            \'nvimcom:::nvim_dput("' . rkeyword . '"' . argmnts . ')')
-            endif
-            return
-        endif
-
-        let raction = rfun . '(' . rkeyword . argmnts . ')'
-        call g:SendCmdToR(raction)
-    endif
+    " see: require("r.run").action(rcmd)
 endfunction
 
 function RLoadHTML(fullpath, browser)
