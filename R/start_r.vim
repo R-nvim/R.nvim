@@ -7,25 +7,6 @@
 " Functions that ask R to help editing the code
 "==============================================================================
 
-function GetROutput(fnm, txt)
-    if a:fnm == "NewtabInsert"
-        let tnum = 1
-        while bufexists("so" . tnum)
-            let tnum += 1
-        endwhile
-        exe 'tabnew so' . tnum
-        call setline(1, split(substitute(a:txt, "\x13", "'", "g"), "\x14"))
-        set filetype=rout
-        setlocal buftype=nofile
-        setlocal noswapfile
-    else
-        exe 'tabnew ' a:fnm
-        call setline(1, split(substitute(a:txt, "\x13", "'", "g"), "\x14"))
-    endif
-    normal! gT
-    redraw
-endfunction
-
 
 function RViewDF(oname, howto, txt)
     if has_key(g:Rcfg, 'csv_app')

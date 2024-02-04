@@ -42,7 +42,7 @@ nvim_capture_source_output <- function(s, nm) {
     o <- capture.output(base::source(s, echo = TRUE), file = NULL)
     o <- paste0(o, collapse = "\x14")
     o <- gsub("'", "\x13", o)
-    .C("nvimcom_msg_to_nvim", paste0("call GetROutput('", nm, "', '", o, "')"),
+    .C("nvimcom_msg_to_nvim", paste0("lua require('r.edit').get_output('", nm, "', '", o, "')"),
        PACKAGE = "nvimcom")
 }
 
