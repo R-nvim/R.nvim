@@ -72,7 +72,7 @@ end
 vim.b.IsInRCode = is_in_R_code
 
 -- Key bindings
-require("r.maps").create()
+require("r.maps").create("r")
 
 if vim.b.undo_ftplugin then
     vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"

@@ -21,9 +21,8 @@ if config.rnowebchunk then
     )
 end
 
--- Pointers to functions whose purposes are the same in rnoweb, rmd,
--- rhelp and rdoc and which are called at common_global.vim
--- FIXME: replace with references to Lua functions when they are written.
+-- Pointers to function whose purpose is the same in rnoweb, rmd,
+-- rhelp and rdoc.
 vim.b.IsInRCode = require("r.rnw").is_in_R_code
 
 vim.api.nvim_buf_set_var(0, "rplugin_knitr_pattern", "^<<.*>>=$")
