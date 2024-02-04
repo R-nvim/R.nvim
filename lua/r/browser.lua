@@ -77,68 +77,6 @@ local set_buf_options = function()
     require("r.maps").create("rbrowser")
 end
 
-local get_name = function()
-    local line = vim.fn.getline(vim.fn.line("."))
-    if vim.fn.match(line, "^$") > -1 or vim.fn.line(".") < 3 then return "" end
-
-    local curpos = vim.fn.stridx(line, "#")
-    local word = vim.fn.substitute(line, ".\\{-}\\(.#\\)\\(\\(.-\\)\\)\\t.*", "\\3", "")
-
-    if
-        vim.fn.match(word, " ") > -1
-        or vim.fn.match(word, "^[0-9]") > -1
-        or vim.fn.match(word, punct) > -1
-        or vim.fn.match(word, "^" .. reserved .. "$") > -1
-    then
-        word = "`" .. word .. "`"
-    end
-
-    if curpos == 4 then
-        -- top level object
-        word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
-        if curview == "libraries" then
-            return word .. ":"
-        else
-            return word
-        end
-    else
-        if curview == "libraries" then
-            if isutf8 then
-                if curpos == 11 then
-                    word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
-                    return word
-                end
-            elseif curpos == 7 then
-                word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
-                return word
-            end
-        end
-        if curpos > 4 then
-            -- Find the parent data.frame or list
-            word = L.find_parent(word, vim.fn.line("."), curpos - 1)
-            word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
-            return word
-        else
-            -- Wrong object name delimiter: should never happen.
-            local msg = "R-plugin Error: (curpos = " .. curpos .. ") " .. word
-            vim.fn.echoerr(msg)
-            return ""
-        end
-    end
-end
-
-local get_pkg_name = function()
-    local lnum = vim.fn.line(".")
-    while lnum > 0 do
-        local line = vim.fn.getline(lnum)
-        if vim.fn.match(line, ".*##[0-9a-zA-Z\\.]*\t") > -1 then
-            return vim.fn.substitute(line, ".*##\\(.\\{-}\\)\t.*", "\\1", "")
-        end
-        lnum = lnum - 1
-    end
-    return ""
-end
-
 L.find_parent = function(word, curline, curpos)
     local line
     while curline > 1 and curpos >= curpos do
@@ -288,6 +226,70 @@ M.start = function(_)
     end
 end
 
+M.get_curview = function() return curview end
+
+M.get_pkg_name = function()
+    local lnum = vim.fn.line(".")
+    while lnum > 0 do
+        local line = vim.fn.getline(lnum)
+        if vim.fn.match(line, ".*##[0-9a-zA-Z\\.]*\t") > -1 then
+            return vim.fn.substitute(line, ".*##\\(.\\{-}\\)\t.*", "\\1", "")
+        end
+        lnum = lnum - 1
+    end
+    return ""
+end
+
+M.get_name = function()
+    local line = vim.fn.getline(vim.fn.line("."))
+    if vim.fn.match(line, "^$") > -1 or vim.fn.line(".") < 3 then return "" end
+
+    local curpos = vim.fn.stridx(line, "#")
+    local word = vim.fn.substitute(line, ".\\{-}\\(.#\\)\\(\\(.-\\)\\)\\t.*", "\\3", "")
+
+    if
+        vim.fn.match(word, " ") > -1
+        or vim.fn.match(word, "^[0-9]") > -1
+        or vim.fn.match(word, punct) > -1
+        or vim.fn.match(word, "^" .. reserved .. "$") > -1
+    then
+        word = "`" .. word .. "`"
+    end
+
+    if curpos == 4 then
+        -- top level object
+        word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
+        if curview == "libraries" then
+            return word .. ":"
+        else
+            return word
+        end
+    else
+        if curview == "libraries" then
+            if isutf8 then
+                if curpos == 11 then
+                    word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
+                    return word
+                end
+            elseif curpos == 7 then
+                word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
+                return word
+            end
+        end
+        if curpos > 4 then
+            -- Find the parent data.frame or list
+            word = L.find_parent(word, vim.fn.line("."), curpos - 1)
+            word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
+            return word
+        else
+            -- Wrong object name delimiter: should never happen.
+            local msg = "R-plugin Error: (curpos = " .. curpos .. ") " .. word
+            vim.fn.echoerr(msg)
+            return ""
+        end
+    end
+end
+
 M.open_close_lists = function(stt) job.stdin("Server", "34" .. stt .. curview .. "\n") end
 
 M.update_OB = function(what)
@@ -345,7 +347,7 @@ M.on_double_click = function()
     end
 
     -- Toggle state of list or data.frame: open X closed
-    local key = get_name()
+    local key = M.get_name()
     local curline = vim.fn.getline(vim.fn.line("."))
     if curview == "GlobalEnv" then
         if vim.fn.match(curline, "&#.*\t") > -1 then
@@ -364,7 +366,7 @@ M.on_double_click = function()
     else
         if vim.fn.match(curline, "(#.*\t") > -1 then
             key = vim.fn.substitute(key, "`", "", "g")
-            require("r.doc").ask_R_doc(key, get_pkg_name(), false)
+            require("r.doc").ask_R_doc(key, M.get_pkg_name(), false)
         else
             if
                 vim.fn.match(key, ":$")
@@ -384,7 +386,7 @@ end
 M.on_right_click = function()
     if vim.fn.line(".") == 1 then return end
 
-    local key = get_name()
+    local key = M.get_name()
     if key == "" then return end
 
     local line = vim.fn.getline(vim.fn.line("."))
