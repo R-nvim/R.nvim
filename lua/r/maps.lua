@@ -125,7 +125,7 @@ local edit = function()
         vim.api.nvim_buf_set_keymap(0, "i", config.assign_map,
             '<Esc>:lua require("r.edit").assign()<CR>a', { silent = true })
     end
-    create_maps("nvi", "RSetwd", "rd", ":call RSetWD()")
+    create_maps("nvi", "RSetwd", "rd", ":lua require('r.run').setwd()")
 end
 
 local send = function(file_type)
@@ -181,7 +181,7 @@ local send = function(file_type)
         create_maps("ni",  "RShowRout",       "ao", ':lua require("r").show_R_out()')
     end
     if file_type == "rmd" or file_type == "quarto" then
-        create_maps("nvi", "RKnit",           "kn", ":call RKnit()")
+        create_maps("nvi", "RKnit",           "kn", ":lua require('r.run').knit()")
         create_maps("ni",  "RSendChunk",      "cc", ':lua require("r.rmd").send_R_chunk("silent", "stay")')
         create_maps("ni",  "RESendChunk",     "ce", ':lua require("r.rmd").send_R_chunk("echo",   "stay")')
         create_maps("ni",  "RDSendChunk",     "cd", ':lua require("r.rmd").send_R_chunk("silent", "down")')
