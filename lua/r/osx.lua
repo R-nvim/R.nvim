@@ -27,7 +27,6 @@ M.start_Rapp = function()
     if vim.v.shell_error ~= 0 then
         warn(rlog)
     end
-    vim.g.SendCmdToR = function(...) return M.send_cmd_to_Rapp(...) end
     require("r.run").wait_nvimcom_start()
 end
 

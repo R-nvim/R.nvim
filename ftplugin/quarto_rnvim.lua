@@ -5,8 +5,3 @@ end
 
 require("r.config").real_setup()
 require("r.rmd").setup()
-
-local m = require("r.maps")
-m.create('n', 'RQuartoRender',  'qr', ':lua require("r.quarto").cmd("render")')
-m.create('n', 'RQuartoPreview', 'qp', ':lua require("r.quarto").cmd("preview")')
-m.create('n', 'RQuartoStop',    'qs', ':lua require("r.quarto").cmd("stop")')

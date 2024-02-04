@@ -11,7 +11,6 @@ local pkgbuild_attempt = false
 local Rhelp_loaded = {}
 local Rhelp_list = {}
 local Rtime
-local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
 
 local M = {}
 
@@ -86,7 +85,7 @@ end
 -- Find the path to the nvimrserver executable in the specified library directory.
 local FindNCSpath = function (libdir)
     local nrs
-    if is_windows then
+    if config.is_windows then
         nrs = 'nvimrserver.exe'
     else
         nrs = 'nvimrserver'
@@ -139,7 +138,7 @@ local StartNServer = function ()
     local nrs_env = {}
 
     -- Some pdf viewers run nvimrserver to send SyncTeX messages back to Vim
-    if not is_windows then
+    if not config.is_windows then
         nrs_env["PATH"] = nrs_dir .. ':' .. vim.env.PATH
     else
         nrs_env["PATH"] = nrs_dir .. ':' .. vim.env.PATH
@@ -160,7 +159,7 @@ local StartNServer = function ()
 
     -- We have to set R's home directory on Windows because nvimrserver will
     -- run R to build the list for omni completion.
-    if is_windows then
+    if config.is_windows then
         require("r.windows").set_R_home()
     end
 
@@ -173,7 +172,7 @@ local StartNServer = function ()
     require("r.job").start("Server", {nrs_path}, nrs_opts)
     vim.g.R_Nvim_status = 2
 
-    if is_windows then
+    if config.is_windows then
         require("r.windows").unset_R_home()
     end
 
@@ -196,7 +195,7 @@ local RInitExit = function (_, data, _)
         RBerr = vim.list_extend(RBerr, RWarn)
         RWarn = {}
         MkRdir()
-    elseif data == 72 and not is_windows and not pkgbuild_attempt then
+    elseif data == 72 and not config.is_windows and not pkgbuild_attempt then
         -- R-Nvim/R/nvimcom directory not found. Perhaps R running in remote machine...
         -- Try to use local R to build the nvimcom package.
         pkgbuild_attempt = true

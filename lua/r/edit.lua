@@ -61,7 +61,7 @@ end
 
 M.buf_enter = function ()
     if vim.o.filetype == "r" or vim.o.filetype == "rnoweb" or vim.o.filetype == "rmd" or
-        vim.o.filetype == "quarto" or vim.o.filetype == "rrst" or vim.o.filetype == "rhelp" then
+        vim.o.filetype == "quarto" or vim.o.filetype == "rhelp" then
         rscript_name = vim.fn.bufname("%")
     end
 end
@@ -125,7 +125,6 @@ M.show_debug_info = function()
         else
             warn("debug_info error: " .. type(v))
         end
-        -- vim.notify("Empty: " .. tostring(k) .. " " .. tostring(v))
     end
     vim.api.nvim_echo(info, false, {})
 end
@@ -141,10 +140,6 @@ M.add_to_debug_info = function(title, info, parent)
     end
 end
 
-M.get_debug_info = function ()
-    return debug_info
-end
-
 M.raise_window = function(ttl)
     vim.fn.RRaiseWindow(ttl)
 end
@@ -155,6 +150,30 @@ M.build_tags = function ()
         return
     end
     require("r.send").cmd('rtags(ofile = "etags"); etags2ctags("etags", "tags"); unlink("etags")')
+end
+
+--- Receive formatted code from the nvimcom and change the buffer accordingly
+---@param lnum1 number First selected line of unformatted code.
+---@param lnum2 number Last selected line of unformatted code.
+---@param txt string Formatted text.
+M.finish_code_formatting = function (lnum1, lnum2, txt)
+    local lns =  vim.split(txt:gsub("\x13", "'"), "\x14")
+    vim.api.nvim_buf_set_lines(0, lnum1 - 1, lnum2, true, lns)
+    vim.api.nvim_echo({{ tostring(lnum2 - lnum1 + 1) .. " lines formatted." }}, false, {})
+end
+
+M.finish_inserting = function(type, txt)
+    local lns =  vim.split(txt:gsub("\x13", "'"), "\x14")
+    local lines
+    if type == "comment" then
+        lines = {}
+        for _, v in pairs(lns) do
+            table.insert(lines, "# " .. v)
+        end
+    else
+        lines = lns
+    end
+    vim.api.nvim_buf_set_lines(0, vim.fn.line("."), vim.fn.line("."), true, lines)
 end
 
 return M

@@ -1,8 +1,6 @@
 local warn = require("r").warn
 local utils = require("r.utils")
 
-local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
-
 local config = {
     OutDec              = ".",
     Rout_more_colors    = false,
@@ -13,8 +11,7 @@ local config = {
     rnvim_home          = nil,
     user_login          = nil,
     R_args              = {},
-    after_ob_open       = {},
-    after_start         = {},
+    hook                = { after_R_start = nil, after_ob_open = nil },
     applescript         = false,
     arrange_windows     = true,
     assign              = true,
@@ -26,9 +23,6 @@ local config = {
     clear_console       = true,
     clear_line          = false,
     close_term          = true,
-    dbg_jump            = true,
-    debug               = true,
-    debug_center        = false,
     disable_cmds        = {''},
     editor_w            = 66,
     esc_term            = true,
@@ -111,9 +105,9 @@ local set_editing_mode = function ()
 end
 
 local set_pdf_viewer = function ()
-    if vim.fn.getenv("XDG_CURRENT_DESKTOP") == "sway" then
+    if vim.env.XDG_CURRENT_DESKTOP == "sway" then
         config.openpdf = 2
-    elseif config.is_darwin or vim.fn.getenv("WAYLAND_DISPLAY") ~= "" then
+    elseif config.is_darwin or vim.env.WAYLAND_DISPLAY then
         config.openpdf = 1
     else
         config.openpdf = 2
@@ -122,7 +116,7 @@ local set_pdf_viewer = function ()
     if config.is_darwin then
         config.pdfviewer = "skim"
     else
-        if is_windows then
+        if config.is_windows then
             config.pdfviewer = "sumatra"
         else
             config.pdfviewer = "zathura"
@@ -148,6 +142,8 @@ local validate_user_opts = function()
 end
 
 local do_common_global = function()
+    config.is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
+
     -- config.rnvim_home should be the directory where the plugin files are.
     config.rnvim_home = vim.fn.expand("<script>:h:h")
 
@@ -182,14 +178,14 @@ local do_common_global = function()
         warn("Could not determine user name.")
     end
 
-    if is_windows then
+    if config.is_windows then
         config.rnvim_home = utils.normalize_windows_path(config.rnvim_home)
         config.uservimfiles = utils.normalize_windows_path(config.uservimfiles)
     end
 
     if config.compldir then
         config.compldir = vim.fn.expand(config.compldir)
-    elseif is_windows and vim.env.APPDATA then
+    elseif config.is_windows and vim.env.APPDATA then
         config.compldir = vim.fn.expand(vim.env.APPDATA) .. "\\R-Nvim"
     elseif vim.env.XDG_CACHE_HOME then
         config.compldir = vim.fn.expand(vim.env.XDG_CACHE_HOME) .. "/R-Nvim"
@@ -295,7 +291,7 @@ local do_common_global = function()
     -- Check if the 'config' table has the key 'tmpdir'
     if not config.tmpdir then
         -- Set temporary directory based on the platform
-        if is_windows then
+        if config.is_windows then
             if vim.fn.isdirectory(vim.env.TMP) ~= 0 then
                 config.tmpdir = vim.env.TMP .. "/NvimR-" .. config.user_login
             elseif vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
@@ -343,7 +339,7 @@ local do_common_global = function()
     vim.env.NVIMR_COMPLDIR = config.compldir
 
     -- Default values of some variables
-    if is_windows and not (type(config.external_term) == "boolean" and config.external_term == false) then
+    if config.is_windows and not (type(config.external_term) == "boolean" and config.external_term == false) then
         -- Sending multiple lines at once to Rgui on Windows does not work.
         config.parenblock = 0
     else
@@ -358,7 +354,7 @@ local do_common_global = function()
         config.nvimpager = 'tab'
     end
 
-    if is_windows then
+    if config.is_windows then
         config.save_win_pos = 1
         config.arrange_windows = 1
     else
@@ -402,9 +398,7 @@ local do_common_global = function()
     end
 
     vim.cmd("autocmd BufEnter * lua require('r.edit').buf_enter()")
-    if vim.bo.filetype ~= "rbrowser" then
-        vim.cmd("autocmd VimLeave * lua require('r.edit').vim_leave()")
-    end
+    vim.cmd("autocmd VimLeave * lua require('r.edit').vim_leave()")
 
     if vim.v.windowid ~= 0 and vim.env.WINDOWID == "" then
         vim.env.WINDOWID = vim.v.windowid
@@ -418,7 +412,7 @@ local do_common_global = function()
     config.has_awbt = 0
 
     -- Set the name of R executable
-    if is_windows then
+    if config.is_windows then
         if type(config.external_term) == "boolean" and config.external_term == false then
             config.R_app = "Rterm.exe"
         else
@@ -460,7 +454,7 @@ local windows_config = function ()
         vim.fn.reverse(rpath)
         for _, dir in ipairs(rpath) do
             if vim.fn.isdirectory(dir) then
-                vim.fn.system('set PATH=' .. dir .. ';' .. vim.fn.getenv('PATH'))
+                vim.env.PATH = dir .. ';' .. vim.env.PATH
             else
                 warn('"' .. dir .. '" is not a directory. Fix the value of R_path in your vimrc.')
             end
@@ -468,14 +462,14 @@ local windows_config = function ()
     else
         local RT40home = vim.env.RTOOLS40_HOME
         if vim.fn.isdirectory(RT40home .. '\\usr\\bin') then
-            vim.fn.system('set PATH=' .. RT40home .. '\\usr\\bin;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = RT40home .. '\\usr\\bin;' .. vim.env.PATH
         elseif vim.fn.isdirectory('C:\\rtools40\\usr\\bin') then
-            vim.fn.system('set PATH=C:\\rtools40\\usr\\bin;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = 'C:\\rtools40\\usr\\bin;' .. vim.env.PATH
         end
         if vim.fn.isdirectory(RT40home .. '\\mingw64\\bin\\') then
-            vim.fn.system('set PATH=' .. RT40home .. '\\mingw64\\bin;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = RT40home .. '\\mingw64\\bin;' .. vim.env.PATH
         elseif vim.fn.isdirectory('C:\\rtools40\\mingw64\\bin') then
-            vim.fn.system('set PATH=C:\\rtools40\\mingw64\\bin;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = 'C:\\rtools40\\mingw64\\bin;' .. vim.env.PATH
         end
 
         local run_cmd_content = {'reg.exe QUERY "HKLM\\SOFTWARE\\R-core\\R" /s'}
@@ -509,11 +503,11 @@ local windows_config = function ()
             isi386 = false
         end
         if hasR32 == 1 and isi386 then
-            vim.fn.system('set PATH=' .. rinstallpath .. '\\bin\\i386;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = rinstallpath .. '\\bin\\i386;' .. vim.env.PATH
         elseif hasR64 and isi386 == 0 then
-            vim.fn.system('set PATH=' .. rinstallpath .. '\\bin\\x64;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = rinstallpath .. '\\bin\\x64;' .. vim.env.PATH
         else
-            vim.fn.system('set PATH=' .. rinstallpath .. '\\bin;' .. vim.fn.getenv('PATH'))
+            vim.env.PATH = rinstallpath .. '\\bin;' .. vim.env.PATH
         end
     end
 
@@ -602,7 +596,7 @@ local global_setup = function ()
     -- See https://github.com/jalvesaq/Nvim-R/issues/625
     vim.cmd.runtime("R/common_global.vim")
     do_common_global()
-    if is_windows then
+    if config.is_windows then
         windows_config()
     else
         unix_config()
@@ -618,8 +612,12 @@ local global_setup = function ()
 
     -- Commands:
     -- See: :help lua-guide-commands-create
-    vim.api.nvim_create_user_command("Rstop", 'lua require("r.run").signal_to_R("SIGINT")', {})
-    vim.api.nvim_create_user_command("RKill", 'lua require("r.run").signal_to_R("SIGKILL")', {})
+    vim.api.nvim_create_user_command("Rstop", function(_)
+         require("r.run").signal_to_R("SIGINT")
+    end, {})
+    vim.api.nvim_create_user_command("RKill", function(_)
+        require("r.run").signal_to_R("SIGKILL")
+    end, {})
     vim.api.nvim_create_user_command("RBuildTags", require("r.edit").build_tags, {})
     vim.api.nvim_create_user_command("RDebugInfo", require("r.edit").show_debug_info, {})
 
@@ -627,14 +625,10 @@ local global_setup = function ()
         require("r.send").cmd(tbl.fargs)
     end, {nargs = 1})
 
-    vim.api.nvim_create_user_command("RFormat", function(tbl)
-        -- FIXME: it was :call RFormatCode()
-        vim.notify(tostring(tbl.line1) .. "  " .. tostring(tbl.line2))
-    end, {range = "%"})
+    vim.api.nvim_create_user_command("RFormat", require("r.run").formart_code, { range = "%" })
 
-    vim.api.nvim_create_user_command("RInsert", function(tbl)
-        -- FIXME: it was :call RInsert(<q-args>, "here")
-        vim.notify(tbl.fargs)
+    vim.api.nvim_create_user_command("RInsert", function (tbl)
+        require("r.run").insert(table.concat(tbl.fargs, " "), "here")
     end, {nargs = 1})
 
     vim.api.nvim_create_user_command("RSourceDir", function(tbl)
@@ -643,8 +637,7 @@ local global_setup = function ()
     end, {nargs = 1, complete = "dir"})
 
     vim.api.nvim_create_user_command("Rhelp", function(tbl)
-        -- FIXME: it was :call RAskHelp(<q-args>)
-        vim.notify(tbl.fargs)
+        require("r.doc").ask_R_help(tbl.fargs)
     end,
     {
         nargs = 1,

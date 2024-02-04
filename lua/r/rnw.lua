@@ -1,6 +1,101 @@
 local warn = require("r").warn
 local send = require("r.send")
 local config = require("r.config").get_config()
+local check_latexcmd = true
+
+local check_latex_cmd = function()
+    check_latexcmd = false
+    if config.latexcmd[1] == "default" then
+        if vim.fn.executable("xelatex") == 0 then
+            if vim.fn.executable("pdflatex") == 1 then
+                config.latexcmd = {'latexmk', '-pdf', '-pdflatex="pdflatex %O -file-line-error -interaction=nonstopmode -synctex=1 %S"'}
+            else
+                vim.fn.RWarningMsg("You should install 'xelatex' to be able to compile pdf documents.")
+            end
+        end
+        if (config.latexcmd[1] == "default" or config.latexcmd[1] == "latexmk") and vim.fn.executable("latexmk") == 0 then
+            if vim.fn.executable("xelatex") == 1 then
+                config.latexcmd = {'xelatex', '-file-line-error', '-interaction=nonstopmode', '-synctex=1'}
+            elseif vim.fn.executable("pdflatex") == 1 then
+                config.latexcmd = {'pdflatex', '-file-line-error', '-interaction=nonstopmode', '-synctex=1'}
+            else
+                vim.fn.RWarningMsg("You should install both 'xelatex' and 'latexmk' to be able to compile pdf documents.")
+            end
+        end
+    end
+end
+
+local SyncTeX_readconc = function(basenm)
+    local texidx = 0
+    local ntexln = #vim.fn.readfile(basenm .. ".tex")
+    local lstexln = vim.fn.range(1, ntexln)
+    local lsrnwf = vim.fn.range(1, ntexln)
+    local lsrnwl = vim.fn.range(1, ntexln)
+    local conc = vim.fn.readfile(basenm .. "-concordance.tex")
+    local idx = 0
+    local maxidx = #conc
+    while idx < maxidx and texidx < ntexln and vim.fn.match(conc[idx], "Sconcordance") > -1 do
+        local rnwf = vim.fn.substitute(conc[idx], '\\Sconcordance{concordance:.*:\\(.*\\):.*', '\\1', 'g')
+        idx = idx + 1
+        local concnum = ""
+        while idx < maxidx and vim.fn.match(conc[idx], "Sconcordance") == -1 do
+            concnum = concnum .. conc[idx]
+            idx = idx + 1
+        end
+        concnum = vim.fn.substitute(concnum, '%%', '', 'g')
+        concnum = vim.fn.substitute(concnum, '}', '', '')
+        local concl = vim.fn.split(concnum)
+        local ii = 0
+        local maxii = #concl - 2
+        local rnwl = vim.fn.str2nr(concl[1])
+        lsrnwl[texidx + 1] = rnwl
+        lsrnwf[texidx + 1] = rnwf
+        texidx = texidx + 1
+        while ii < maxii and texidx < ntexln do
+            ii = ii + 1
+            local lnrange = vim.fn.range(1, concl[ii])
+            ii = ii + 1
+            for _, _ in ipairs(lnrange) do
+                if texidx >= ntexln then
+                    break
+                end
+                rnwl = rnwl + concl[ii]
+                lsrnwl[texidx + 1] = rnwl
+                lsrnwf[texidx + 1] = rnwf
+                texidx = texidx + 1
+            end
+        end
+    end
+    return {texlnum = lstexln, rnwfile = lsrnwf, rnwline = lsrnwl}
+end
+
+local GoToBuf = function(rnwbn, rnwf, basedir, rnwln)
+    if vim.fn.expand("%:t") ~= rnwbn then
+        if vim.fn.bufloaded(basedir .. '/' .. rnwf) == 1 then
+            local savesb = vim.o.switchbuf
+            vim.o.switchbuf = 'useopen,usetab'
+            vim.cmd.sb(vim.fn.substitute(basedir .. '/' .. rnwf, ' ', '\\ ', 'g'))
+            vim.o.switchbuf = savesb
+        elseif vim.fn.bufloaded(rnwf) > 0 then
+            local savesb = vim.o.switchbuf
+            vim.o.switchbuf = 'useopen,usetab'
+            vim.cmd.sb(vim.fn.substitute(rnwf, ' ', '\\ ', 'g'))
+            vim.o.switchbuf = savesb
+        else
+            if vim.fn.filereadable(basedir .. '/' .. rnwf) == 1 then
+                vim.cmd("tabnew " .. vim.fn.substitute(basedir .. '/' .. rnwf, ' ', '\\ ', 'g'))
+            elseif vim.fn.filereadable(rnwf) > 0 then
+                vim.cmd("tabnew " .. vim.fn.substitute(rnwf, ' ', '\\ ', 'g'))
+            else
+                warn('Could not find either "' .. rnwbn .. ' or "' .. rnwf .. '" in "' .. basedir .. '".')
+                return 0
+            end
+        end
+    end
+    vim.cmd(rnwln)
+    vim.cmd('redraw')
+    return 1
+end
 
 local M = {}
 
@@ -105,26 +200,8 @@ M.rm_knit_cache = function ()
 end
 
 M.weave = function (bibtex, knit, pdf)
-    if not vim.g.s_check_latexcmd then
-        vim.g.s_check_latexcmd = 1
-        if config.latexcmd[1] == "default" then
-            if vim.fn.executable("xelatex") == 0 then
-                if vim.fn.executable("pdflatex") == 1 then
-                    config.latexcmd = {'latexmk', '-pdf', '-pdflatex="pdflatex %O -file-line-error -interaction=nonstopmode -synctex=1 %S"'}
-                else
-                    vim.fn.RWarningMsg("You should install 'xelatex' to be able to compile pdf documents.")
-                end
-            end
-            if (config.latexcmd[1] == "default" or config.latexcmd[1] == "latexmk") and vim.fn.executable("latexmk") == 0 then
-                if vim.fn.executable("xelatex") == 1 then
-                    config.latexcmd = {'xelatex', '-file-line-error', '-interaction=nonstopmode', '-synctex=1'}
-                elseif vim.fn.executable("pdflatex") == 1 then
-                    config.latexcmd = {'pdflatex', '-file-line-error', '-interaction=nonstopmode', '-synctex=1'}
-                else
-                    vim.fn.RWarningMsg("You should install both 'xelatex' and 'latexmk' to be able to compile pdf documents.")
-                end
-            end
-        end
+    if check_latexcmd then
+        check_latex_cmd()
     end
 
     vim.cmd("update")
@@ -242,78 +319,6 @@ M.SyncTeX_GetMaster = function()
     end
 end
 
-local SyncTeX_readconc = function(basenm)
-    local texidx = 0
-    local ntexln = #vim.fn.readfile(basenm .. ".tex")
-    local lstexln = vim.fn.range(1, ntexln)
-    local lsrnwf = vim.fn.range(1, ntexln)
-    local lsrnwl = vim.fn.range(1, ntexln)
-    local conc = vim.fn.readfile(basenm .. "-concordance.tex")
-    local idx = 0
-    local maxidx = #conc
-    while idx < maxidx and texidx < ntexln and vim.fn.match(conc[idx], "Sconcordance") > -1 do
-        local rnwf = vim.fn.substitute(conc[idx], '\\Sconcordance{concordance:.*:\\(.*\\):.*', '\\1', 'g')
-        idx = idx + 1
-        local concnum = ""
-        while idx < maxidx and vim.fn.match(conc[idx], "Sconcordance") == -1 do
-            concnum = concnum .. conc[idx]
-            idx = idx + 1
-        end
-        concnum = vim.fn.substitute(concnum, '%%', '', 'g')
-        concnum = vim.fn.substitute(concnum, '}', '', '')
-        local concl = vim.fn.split(concnum)
-        local ii = 0
-        local maxii = #concl - 2
-        local rnwl = vim.fn.str2nr(concl[1])
-        lsrnwl[texidx + 1] = rnwl
-        lsrnwf[texidx + 1] = rnwf
-        texidx = texidx + 1
-        while ii < maxii and texidx < ntexln do
-            ii = ii + 1
-            local lnrange = vim.fn.range(1, concl[ii])
-            ii = ii + 1
-            for _, _ in ipairs(lnrange) do
-                if texidx >= ntexln then
-                    break
-                end
-                rnwl = rnwl + concl[ii]
-                lsrnwl[texidx + 1] = rnwl
-                lsrnwf[texidx + 1] = rnwf
-                texidx = texidx + 1
-            end
-        end
-    end
-    return {texlnum = lstexln, rnwfile = lsrnwf, rnwline = lsrnwl}
-end
-
-local GoToBuf = function(rnwbn, rnwf, basedir, rnwln)
-    if vim.fn.expand("%:t") ~= rnwbn then
-        if vim.fn.bufloaded(basedir .. '/' .. rnwf) == 1 then
-            local savesb = vim.o.switchbuf
-            vim.o.switchbuf = 'useopen,usetab'
-            vim.cmd("sb " .. vim.fn.substitute(basedir .. '/' .. rnwf, ' ', '\\ ', 'g'))
-            vim.o.switchbuf = savesb
-        elseif vim.fn.bufloaded(rnwf) > 0 then
-            local savesb = vim.o.switchbuf
-            vim.o.switchbuf = 'useopen,usetab'
-            vim.cmd("sb " .. vim.fn.substitute(rnwf, ' ', '\\ ', 'g'))
-            vim.o.switchbuf = savesb
-        else
-            if vim.fn.filereadable(basedir .. '/' .. rnwf) == 1 then
-                vim.cmd("tabnew " .. vim.fn.substitute(basedir .. '/' .. rnwf, ' ', '\\ ', 'g'))
-            elseif vim.fn.filereadable(rnwf) > 0 then
-                vim.cmd("tabnew " .. vim.fn.substitute(rnwf, ' ', '\\ ', 'g'))
-            else
-                warn('Could not find either "' .. rnwbn .. ' or "' .. rnwf .. '" in "' .. basedir .. '".')
-                return 0
-            end
-        end
-    end
-    vim.cmd(rnwln)
-    vim.cmd('redraw')
-    return 1
-end
-
 M.SyncTeX_backward = function (fname, ln)
     local flnm = vim.fn.substitute(fname, '/\\./', '/', '')   -- Okular
     local basenm = vim.fn.substitute(flnm, "\\....$", "", "")   -- Delete extension
@@ -367,8 +372,8 @@ M.SyncTeX_backward = function (fname, ln)
         if vim.fn.exists('g:rplugin.has_wmctrl') == 1 then
             if vim.fn.win_getid() ~= 0 then
                 vim.fn.system("wmctrl -ia " .. vim.fn.win_getid())
-            elseif vim.fn.getenv('WINDOWID') ~= '' then
-                vim.fn.system("wmctrl -ia " .. vim.fn.getenv('WINDOWID'))
+            elseif vim.env.WINDOWID then
+                vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID)
             end
         elseif vim.fn.exists('g:rplugin.has_awbt') and config.term_title then
             vim.cmd("RRaiseWindow('" .. config.term_title .. "')")

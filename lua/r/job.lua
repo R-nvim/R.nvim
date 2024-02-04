@@ -16,7 +16,7 @@ end
 
 M.on_stdout = function (job_id, data, _)
     local cmd
-    -- vim.fn.system("echo 'on_stdout 1: " .. tostring(data) .. "' >> /dev/shm/r-nvim-lua-log")
+    -- vim.fn.system("echo 'on_stdout 1: " .. table.concat(data, "") .. "' >> /dev/shm/r-nvim-lua-log")
     for _, v in pairs(data) do
         cmd = v:gsub('\r', '')
         if #cmd == 0 then
@@ -85,7 +85,7 @@ M.on_exit = function (job_id, data, _)
         require("r.run").clear_R_info()
     end
     if key == 'Server' then
-        vim.g.rplugin.R_Nvim_status = 1
+        vim.g.R_Nvim_status = 1
     end
 end
 
