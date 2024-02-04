@@ -159,4 +159,38 @@ M.setup = function()
     )
 end
 
+M.make = function(outform)
+    vim.api.nvim_command("update")
+
+    local rmddir = require("r.run").get_buf_dir()
+    local rcmd
+    if outform == "default" then
+        rcmd = 'nvim.interlace.rmd("'
+            .. vim.fn.expand("%:t")
+            .. '", rmddir = "'
+            .. rmddir
+            .. '"'
+    else
+        rcmd = 'nvim.interlace.rmd("'
+            .. vim.fn.expand("%:t")
+            .. '", outform = "'
+            .. outform
+            .. '", rmddir = "'
+            .. rmddir
+            .. '"'
+    end
+
+    if config.rmarkdown_args == "" then
+        rcmd = rcmd .. ", envir = " .. config.rmd_environment .. ")"
+    else
+        rcmd = rcmd
+            .. ", envir = "
+            .. config.rmd_environment
+            .. ", "
+            .. config.rmarkdown_args:gsub("'", '"')
+            .. ")"
+    end
+    require("r.send").cmd(rcmd)
+end
+
 return M

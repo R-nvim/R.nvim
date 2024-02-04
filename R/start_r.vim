@@ -650,21 +650,3 @@ function RAction(rcmd, ...)
     " see: require("r.run").action(rcmd)
 endfunction
 
-" render a document with rmarkdown
-function RMakeRmd(t)
-    update
-
-    let rmddir = r.run.get_buf_dir()
-    if a:t == "default"
-        let rcmd = 'nvim.interlace.rmd("' . expand("%:t") . '", rmddir = "' . rmddir . '"'
-    else
-        let rcmd = 'nvim.interlace.rmd("' . expand("%:t") . '", outform = "' . a:t .'", rmddir = "' . rmddir . '"'
-    endif
-
-    if g:Rcfg.rmarkdown_args == ''
-        let rcmd = rcmd . ', envir = ' . g:Rcfg.rmd_environment . ')'
-    else
-        let rcmd = rcmd . ', envir = ' . g:Rcfg.rmd_environment . ', ' . substitute(g:Rcfg.rmarkdown_args, "'", '"', 'g') . ')'
-    endif
-    call g:SendCmdToR(rcmd)
-endfunction

@@ -15,16 +15,6 @@ local waiting_to_start_r = ""
 local running_rhelp = false
 local nseconds
 
-local get_buf_dir = function()
-    local rwd = vim.api.nvim_buf_get_name(0)
-    if config.is_windows then
-        rwd = vim.fn.substitute(rwd, "\\", "/", "g")
-        rwd = utils.nomralize_windows_path(rwd)
-    end
-    rwd = vim.fn.substitute(rwd, "\\(.*\\)/.*", "\\1", "")
-    return rwd
-end
-
 local set_send_cmd_fun = function()
     require("r.send").set_send_cmd_fun()
     vim.g.R_Nvim_status = 5
@@ -159,7 +149,7 @@ M.start_R = function(whatr)
 
     local rwd = ""
     if config.nvim_wd == 0 then
-        rwd = get_buf_dir()
+        rwd = M.get_buf_dir()
     elseif config.nvim_wd == 1 then
         rwd = vim.fn.getcwd()
     end
@@ -753,7 +743,7 @@ M.knit = function()
     vim.cmd("update")
     send.cmd(
         "require(knitr); .nvim_oldwd <- getwd(); setwd('"
-            .. get_buf_dir()
+            .. M.get_buf_dir()
             .. "'); knit('"
             .. vim.fn.expand("%:t")
             .. "'); setwd(.nvim_oldwd); rm(.nvim_oldwd)"
@@ -761,7 +751,7 @@ M.knit = function()
 end
 
 -- Set working directory to the path of current buffer
-M.setwd = function() send.cmd('setwd("' .. get_buf_dir() .. '")') end
+M.setwd = function() send.cmd('setwd("' .. M.get_buf_dir() .. '")') end
 
 M.show_obj = function(howto, bname, ftype, txt)
     vim.notify("show_obj")
@@ -799,6 +789,16 @@ M.clear_all = function()
     end
     vim.wait(30)
     M.clear_console()
+end
+
+M.get_buf_dir = function()
+    local rwd = vim.api.nvim_buf_get_name(0)
+    if config.is_windows then
+        rwd = vim.fn.substitute(rwd, "\\", "/", "g")
+        rwd = utils.nomralize_windows_path(rwd)
+    end
+    rwd = vim.fn.substitute(rwd, "\\(.*\\)/.*", "\\1", "")
+    return rwd
 end
 
 return M
