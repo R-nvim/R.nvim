@@ -91,20 +91,20 @@ local control = function(file_type)
     create_maps("nvi", "RCloseLists",       "r-", ":lua require('r.browser').open_close_lists('C')")
 
     -- Render script with rmarkdown
-    create_maps("nvi", "RMakeRmd",          "kr", ":call RMakeRmd('default')")
-    create_maps("nvi", "RMakeAll",          "ka", ":call RMakeRmd('all')")
+    create_maps("nvi", "RMakeRmd",          "kr", ":lua require('r.rmd').make('default')")
+    create_maps("nvi", "RMakeAll",          "ka", ":lua require('r.rmd').make('all')")
     if file_type == "quarto" then
-        create_maps("nvi", "RMakePDFK",  "kp", ":call RMakeRmd('pdf')")
-        create_maps("nvi", "RMakePDFKb", "kl", ":call RMakeRmd('beamer')")
-        create_maps("nvi", "RMakeWord",  "kw", ":call RMakeRmd('docx')")
-        create_maps("nvi", "RMakeHTML",  "kh", ":call RMakeRmd('html')")
-        create_maps("nvi", "RMakeODT",   "ko", ":call RMakeRmd('odt')")
+        create_maps("nvi", "RMakePDFK",  "kp", ":lua require('r.rmd').make('pdf')")
+        create_maps("nvi", "RMakePDFKb", "kl", ":lua require('r.rmd').make('beamer')")
+        create_maps("nvi", "RMakeWord",  "kw", ":lua require('r.rmd').make('docx')")
+        create_maps("nvi", "RMakeHTML",  "kh", ":lua require('r.rmd').make('html')")
+        create_maps("nvi", "RMakeODT",   "ko", ":lua require('r.rmd').make('odt')")
     else
-        create_maps("nvi", "RMakePDFK",  "kp", ":call RMakeRmd('pdf_document')")
-        create_maps("nvi", "RMakePDFKb", "kl", ":call RMakeRmd('beamer_presentation')")
-        create_maps("nvi", "RMakeWord",  "kw", ":call RMakeRmd('word_document')")
-        create_maps("nvi", "RMakeHTML",  "kh", ":call RMakeRmd('html_document')")
-        create_maps("nvi", "RMakeODT",   "ko", ":call RMakeRmd('odt_document')")
+        create_maps("nvi", "RMakePDFK",  "kp", ":lua require('r.rmd').make('pdf_document')")
+        create_maps("nvi", "RMakePDFKb", "kl", ":lua require('r.rmd').make('beamer_presentation')")
+        create_maps("nvi", "RMakeWord",  "kw", ":lua require('r.rmd').make('word_document')")
+        create_maps("nvi", "RMakeHTML",  "kh", ":lua require('r.rmd').make('html_document')")
+        create_maps("nvi", "RMakeODT",   "ko", ":lua require('r.rmd').make('odt_document')")
     end
 end
 
