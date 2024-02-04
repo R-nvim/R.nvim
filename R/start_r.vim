@@ -657,20 +657,6 @@ function SendLineToR(godown, ...)
     endif
 endfunction
 
-function RSendPartOfLine(direction, correctpos)
-    let lin = getline(".")
-    let idx = col(".") - 1
-    if a:correctpos
-        call cursor(line("."), idx)
-    endif
-    if a:direction == "right"
-        let rcmd = strpart(lin, idx)
-    else
-        let rcmd = strpart(lin, 0, idx + 1)
-    endif
-    call g:SendCmdToR(rcmd)
-endfunction
-
 " Clear the console screen
 function RClearConsole()
     if g:Rcfg.clear_console == v:false
@@ -683,17 +669,6 @@ function RClearConsole()
     else
         call g:SendCmdToR("\014", 0)
     endif
-endfunction
-
-" Remove all objects
-function RClearAll()
-    if g:Rcfg.rmhidden
-        call g:SendCmdToR("rm(list=ls(all.names = TRUE))")
-    else
-        call g:SendCmdToR("rm(list=ls())")
-    endif
-    sleep 500m
-    call RClearConsole()
 endfunction
 
 " Set working directory to the path of current buffer

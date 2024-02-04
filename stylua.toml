@@ -1,4 +1,4 @@
-collapse_simple_statement = "always"
+collapse_simple_statement = "Always"
 [sort_requires]
 enabled = true
 
