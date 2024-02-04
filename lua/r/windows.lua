@@ -9,14 +9,16 @@ M.set_R_home = function()
         -- FIXME: try vim.system()
         require("r.edit").add_for_deletion(config.tmpdir .. "/run_cmd.bat")
         saved_home = vim.env.HOME
-        local run_cmd_content = {'reg.exe QUERY "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders" /v "Personal"'}
+        local run_cmd_content = {
+            'reg.exe QUERY "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders" /v "Personal"',
+        }
         vim.fn.writefile(run_cmd_content, config.tmpdir .. "/run_cmd.bat")
         local prs = vim.fn.system(config.tmpdir .. "/run_cmd.bat")
         if #prs > 0 then
-            prs = vim.fn.substitute(prs, '.*REG_SZ\\s*', '', '')
-            prs = vim.fn.substitute(prs, '\n', '', 'g')
-            prs = vim.fn.substitute(prs, '\r', '', 'g')
-            prs = vim.fn.substitute(prs, '\\s*$', '', 'g')
+            prs = vim.fn.substitute(prs, ".*REG_SZ\\s*", "", "")
+            prs = vim.fn.substitute(prs, "\n", "", "g")
+            prs = vim.fn.substitute(prs, "\r", "", "g")
+            prs = vim.fn.substitute(prs, "\\s*$", "", "g")
             vim.env.HOME = prs
         end
     end
@@ -30,18 +32,16 @@ M.unset_R_home = function()
 end
 
 M.start_Rgui = function()
-    if vim.g.R_Nvim_status == 5 then
-        return
-    end
+    if vim.g.R_Nvim_status == 5 then return end
     vim.g.R_Nvim_status = 4
 
-    if vim.fn.match(config.R_app, 'Rterm') then
+    if vim.fn.match(config.R_app, "Rterm") then
         warn('"R_app" cannot be "Rterm.exe". R will crash if you send any command.')
         vim.wait(200)
     end
 
     M.set_R_home()
-    vim.fn.system("start " .. config.R_app .. ' ' .. table.concat(config.R_args, ' '))
+    vim.fn.system("start " .. config.R_app .. " " .. table.concat(config.R_args, " "))
     M.unset_R_home()
 
     require("r.run").wait_nvimcom_start()
