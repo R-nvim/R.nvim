@@ -3,20 +3,38 @@
 # Redirect output to stderr.
 exec 1>&2
 
-# Check for clang-format
-if ! [ -x "$(command -v clang-format)" ]; then
-	echo "clang-format is not installed. install and rerun"
-	exit 1
+function check_tool_installed {
+    local tool_name=$1
+    if ! [ -x "$(command -v "$tool_name")" ]; then
+        echo "$tool_name is not installed. Please install it and rerun"
+        exit 1
+    fi
+}
+
+function format_files {
+    local file_pattern=$1
+    local format_command=$2
+    local format_options=$3
+
+    for FILE in $(git diff --staged --name-only --diff-filter=ACMR "$file_pattern"); do
+        $format_command $format_options "$FILE"
+        git add "$FILE"
+    done
+}
+
+# Check and format .c and .h files
+if git diff --staged --name-only --diff-filter=ACMR | grep -E '\.(c|h)$' > /dev/null; then
+    check_tool_installed "clang-format"
+    format_files "*.c" "clang-format" "--style={BasedOnStyle: llvm, IndentWidth: 4, SortIncludes: Never} -i"
+    format_files "*.h" "clang-format" "--style={BasedOnStyle: llvm, IndentWidth: 4, SortIncludes: Never} -i"
 fi
 
-# Run clang-format on allstaged .c files
-for FILE in $(git diff --staged --name-only --diff-filter=ACMR "*.c" "*.h"); do
-	# Format each file
-	clang-format --style="{BasedOnStyle: llvm, IndentWidth: 4, SortIncludes: Never}" -i "$FILE"
-
-	# Add file to staging
-	git add "$FILE"
-done
+# Check and format .lua files
+if git diff --staged --name-only --diff-filter=ACMR | grep -E '\.lua$' > /dev/null; then
+    check_tool_installed "stylua"
+    format_files "*.lua" "stylua" ""
+fi
 
 # Now we can commit
 exit 0
+
