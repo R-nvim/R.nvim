@@ -53,37 +53,37 @@ local control = function(file_type)
     create_maps("nvi", "RClearAll",         "rm", ":call RClearAll()")
 
     -- Print,          names,               structure
-    create_maps("ni",  "RObjectPr",         "rp", ':call RAction("print")')
-    create_maps("ni",  "RObjectNames",      "rn", ':call RAction("nvim.names")')
-    create_maps("ni",  "RObjectStr",        "rt", ':call RAction("str")')
-    create_maps("ni",  "RViewDF",           "rv", ':call RAction("viewobj")')
-    create_maps("ni",  "RViewDFs",          "vs", ':call RAction("viewobj", ", howto=\'split\'")')
-    create_maps("ni",  "RViewDFv",          "vv", ':call RAction("viewobj", ", howto=\'vsplit\'")')
-    create_maps("ni",  "RViewDFa",          "vh", ':call RAction("viewobj", ", howto=\'above 7split\', nrows=6")')
-    create_maps("ni",  "RDputObj",          "td", ':call RAction("dputtab")')
+    create_maps("ni",  "RObjectPr",         "rp", ':lua require("r.run").action("print")')
+    create_maps("ni",  "RObjectNames",      "rn", ':lua require("r.run").action("nvim.names")')
+    create_maps("ni",  "RObjectStr",        "rt", ':lua require("r.run").action("str")')
+    create_maps("ni",  "RViewDF",           "rv", ':lua require("r.run").action("viewobj")')
+    create_maps("ni",  "RViewDFs",          "vs", ':lua require("r.run").action("viewobj", ", howto=\'split\'")')
+    create_maps("ni",  "RViewDFv",          "vv", ':lua require("r.run").action("viewobj", ", howto=\'vsplit\'")')
+    create_maps("ni",  "RViewDFa",          "vh", ':lua require("r.run").action("viewobj", ", howto=\'above 7split\', nrows=6")')
+    create_maps("ni",  "RDputObj",          "td", ':lua require("r.run").action("dputtab")')
 
-    create_maps("v",   "RObjectPr",         "rp", ':call RAction("print", "v")')
-    create_maps("v",   "RObjectNames",      "rn", ':call RAction("nvim.names", "v")')
-    create_maps("v",   "RObjectStr",        "rt", ':call RAction("str", "v")')
-    create_maps("v",   "RViewDF",           "rv", ':call RAction("viewobj", "v")')
-    create_maps("v",   "RViewDFs",          "vs", ':call RAction("viewobj", "v", ", howto=\'split\'")')
-    create_maps("v",   "RViewDFv",          "vv", ':call RAction("viewobj", "v", ", howto=\'vsplit\'")')
-    create_maps("v",   "RViewDFa",          "vh", ':call RAction("viewobj", "v", ", howto=\'above 7split\', nrows=6")')
-    create_maps("v",   "RDputObj",          "td", ':call RAction("dputtab", "v")')
+    create_maps("v",   "RObjectPr",         "rp", ':lua require("r.run").action("print", "v")')
+    create_maps("v",   "RObjectNames",      "rn", ':lua require("r.run").action("nvim.names", "v")')
+    create_maps("v",   "RObjectStr",        "rt", ':lua require("r.run").action("str", "v")')
+    create_maps("v",   "RViewDF",           "rv", ':lua require("r.run").action("viewobj", "v")')
+    create_maps("v",   "RViewDFs",          "vs", ':lua require("r.run").action("viewobj", "v", ", howto=\'split\'")')
+    create_maps("v",   "RViewDFv",          "vv", ':lua require("r.run").action("viewobj", "v", ", howto=\'vsplit\'")')
+    create_maps("v",   "RViewDFa",          "vh", ':lua require("r.run").action("viewobj", "v", ", howto=\'above 7split\', nrows=6")')
+    create_maps("v",   "RDputObj",          "td", ':lua require("r.run").action("dputtab", "v")')
 
     -- Arguments,      example,             help
-    create_maps("nvi", "RShowArgs",         "ra", ':call RAction("args")')
-    create_maps("nvi", "RShowEx",           "re", ':call RAction("example")')
-    create_maps("nvi", "RHelp",             "rh", ':call RAction("help")')
+    create_maps("nvi", "RShowArgs",         "ra", ':lua require("r.run").action("args")')
+    create_maps("nvi", "RShowEx",           "re", ':lua require("r.run").action("example")')
+    create_maps("nvi", "RHelp",             "rh", ':lua require("r.run").action("help")')
 
     -- Summary,        plot,                both
-    create_maps("ni",  "RSummary",          "rs", ':call RAction("summary")')
-    create_maps("ni",  "RPlot",             "rg", ':call RAction("plot")')
-    create_maps("ni",  "RSPlot",            "rb", ':call RAction("plotsumm")')
+    create_maps("ni",  "RSummary",          "rs", ':lua require("r.run").action("summary")')
+    create_maps("ni",  "RPlot",             "rg", ':lua require("r.run").action("plot")')
+    create_maps("ni",  "RSPlot",            "rb", ':lua require("r.run").action("plotsumm")')
 
-    create_maps("v",   "RSummary",          "rs", ':call RAction("summary", "v")')
-    create_maps("v",   "RPlot",             "rg", ':call RAction("plot", "v")')
-    create_maps("v",   "RSPlot",            "rb", ':call RAction("plotsumm", "v")')
+    create_maps("v",   "RSummary",          "rs", ':lua require("r.run").action("summary", "v")')
+    create_maps("v",   "RPlot",             "rg", ':lua require("r.run").action("plot", "v")')
+    create_maps("v",   "RSPlot",            "rb", ':lua require("r.run").action("plotsumm", "v")')
 
     -- Object Browser
     create_maps("nvi", "RUpdateObjBrowser", "ro", ':lua require("r.browser").start()')
@@ -130,10 +130,10 @@ end
 
 local send = function(file_type)
     -- Block
-    create_maps("ni",  "RSendMBlock",      "bb", ':call SendMBlockToR("silent",        "stay")')
-    create_maps("ni",  "RESendMBlock",     "be", ':call SendMBlockToR("echo",          "stay")')
-    create_maps("ni",  "RDSendMBlock",     "bd", ':call SendMBlockToR("silent",        "down")')
-    create_maps("ni",  "REDSendMBlock",    "ba", ':call SendMBlockToR("echo",          "down")')
+    create_maps("ni",  "RSendMBlock",      "bb", ':call SendMBlockToR("silent", "stay")')
+    create_maps("ni",  "RESendMBlock",     "be", ':call SendMBlockToR("echo",   "stay")')
+    create_maps("ni",  "RDSendMBlock",     "bd", ':call SendMBlockToR("silent", "down")')
+    create_maps("ni",  "REDSendMBlock",    "ba", ':call SendMBlockToR("echo",   "down")')
 
     -- Function
     create_maps("nvi", "RSendFunction",    "ff", ':lua require("r.send").fun("silent", "stay")')
@@ -142,15 +142,15 @@ local send = function(file_type)
     create_maps("nvi", "RDSendFunction",   "fa", ':lua require("r.send").fun("echo",   "down")')
 
     -- Selection
-    create_maps("n",   "RSendSelection",   "ss", ':call SendSelectionToR("silent",     "stay", "normal")')
-    create_maps("n",   "RESendSelection",  "se", ':call SendSelectionToR("echo",       "stay", "normal")')
-    create_maps("n",   "RDSendSelection",  "sd", ':call SendSelectionToR("silent",     "down", "normal")')
-    create_maps("n",   "REDSendSelection", "sa", ':call SendSelectionToR("echo",       "down", "normal")')
+    create_maps("n",   "RSendSelection",   "ss", ':call SendSelectionToR("silent", "stay", "normal")')
+    create_maps("n",   "RESendSelection",  "se", ':call SendSelectionToR("echo",   "stay", "normal")')
+    create_maps("n",   "RDSendSelection",  "sd", ':call SendSelectionToR("silent", "down", "normal")')
+    create_maps("n",   "REDSendSelection", "sa", ':call SendSelectionToR("echo",   "down", "normal")')
 
-    create_maps("v",   "RSendSelection",   "ss", ':call SendSelectionToR("silent",     "stay")')
-    create_maps("v",   "RESendSelection",  "se", ':call SendSelectionToR("echo",       "stay")')
-    create_maps("v",   "RDSendSelection",  "sd", ':call SendSelectionToR("silent",     "down")')
-    create_maps("v",   "REDSendSelection", "sa", ':call SendSelectionToR("echo",       "down")')
+    create_maps("v",   "RSendSelection",   "ss", ':call SendSelectionToR("silent", "stay")')
+    create_maps("v",   "RESendSelection",  "se", ':call SendSelectionToR("echo",   "stay")')
+    create_maps("v",   "RDSendSelection",  "sd", ':call SendSelectionToR("silent", "down")')
+    create_maps("v",   "REDSendSelection", "sa", ':call SendSelectionToR("echo",   "down")')
     create_maps("v", "RSendSelAndInsertOutput", "so", ':call SendSelectionToR("echo", "stay", "NewtabInsert")')
 
     -- Paragraph
@@ -195,19 +195,19 @@ local send = function(file_type)
         create_maps("n",   "RQuartoStop",     "qs", ':lua require("r.quarto").command("stop")')
     end
     if file_type == "rnoweb" then
-        create_maps("nvi", "RSweave",         "sw", ':lua require("r.rnw").weave("nobib", false, false)')
-        create_maps("nvi", "RMakePDF",        "sp", ':lua require("r.rnw").weave("nobib", false, true)')
+        create_maps("nvi", "RSweave",         "sw", ':lua require("r.rnw").weave("nobib",  false, false)')
+        create_maps("nvi", "RMakePDF",        "sp", ':lua require("r.rnw").weave("nobib",  false, true)')
         create_maps("nvi", "RBibTeX",         "sb", ':lua require("r.rnw").weave("bibtex", false, true)')
         if config.rm_knit_cache then
             create_maps("nvi", "RKnitRmCache", "kr", ':lua require("r.rnw").rm_knit_cache()')
         end
-        create_maps("nvi", "RKnit",        "kn", ':lua require("r.rnw").weave("nobib", true, false)')
-        create_maps("nvi", "RMakePDFK",    "kp", ':lua require("r.rnw").weave("nobib", true, true)')
+        create_maps("nvi", "RKnit",        "kn", ':lua require("r.rnw").weave("nobib",  true, false)')
+        create_maps("nvi", "RMakePDFK",    "kp", ':lua require("r.rnw").weave("nobib",  true, true)')
         create_maps("nvi", "RBibTeXK",     "kb", ':lua require("r.rnw").weave("bibtex", true, true)')
         create_maps("ni",  "RSendChunk",   "cc", ':lua require("r.rnw").send_chunk("silent", "stay")')
-        create_maps("ni",  "RESendChunk",  "ce", ':lua require("r.rnw").send_chunk("echo", "stay")')
+        create_maps("ni",  "RESendChunk",  "ce", ':lua require("r.rnw").send_chunk("echo",   "stay")')
         create_maps("ni",  "RDSendChunk",  "cd", ':lua require("r.rnw").send_chunk("silent", "down")')
-        create_maps("ni",  "REDSendChunk", "ca", ':lua require("r.rnw").send_chunk("echo", "down")')
+        create_maps("ni",  "REDSendChunk", "ca", ':lua require("r.rnw").send_chunk("echo",   "down")')
         create_maps("nvi", "ROpenPDF",     "op", ':lua require("r.pdf").open("Get Master")')
         if config.synctex then
             create_maps("ni", "RSyncFor", "gp", ':lua require("r.rnw").SyncTeX_forward(false)')
