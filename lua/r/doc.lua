@@ -87,7 +87,7 @@ M.ask_R_doc = function(rkeyword, package, getclass)
         vim.cmd.sb(require("r.edit").get_rscript_name())
         vim.cmd("set switchbuf=" .. savesb)
     else
-        if getclass then firstobj = require("r.cursor").get_first_obj(rkeyword) end
+        if getclass then firstobj = require("r.run").get_first_obj(rkeyword)[1] end
     end
 
     set_text_width(rkeyword)

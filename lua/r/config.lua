@@ -682,7 +682,6 @@ local global_setup = function()
     -- Calls to system() and executable() must run
     -- asynchronously to avoid slow startup on macOS.
     -- See https://github.com/jalvesaq/Nvim-R/issues/625
-    vim.cmd.runtime("R/common_global.vim")
     do_common_global()
     if config.is_windows then
         windows_config()

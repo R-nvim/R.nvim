@@ -5,12 +5,14 @@ local job = require("r.job")
 local edit = require("r.edit")
 local warn = require("r").warn
 local utils = require("r.utils")
+local send = require("r.send")
 local autosttobjbr
 local my_port = 0
 local R_pid = 0
 local r_args
-local wait_nvimcom = 0
+local wait_nvimcom = false
 local waiting_to_start_r = ""
+local running_rhelp = false
 local nseconds
 
 local get_buf_dir = function()
@@ -26,7 +28,7 @@ end
 local set_send_cmd_fun = function()
     require("r.send").set_send_cmd_fun()
     vim.g.R_Nvim_status = 5
-    wait_nvimcom = 0
+    wait_nvimcom = false
 end
 
 M.set_my_port = function(p)
@@ -49,7 +51,7 @@ end
 
 M.start_R = function(whatr)
     vim.g.R_Nvim_status = 3
-    wait_nvimcom = 1
+    wait_nvimcom = true
     require("r.send").cmd = require("r.send").not_ready
 
     if my_port == 0 then
@@ -417,6 +419,333 @@ M.insert_commented = function()
     end
     cleanl = string.gsub(lin, "%s*#.*", "")
     M.insert("print(" .. cleanl .. ")", "comment")
+end
+
+-- Get the word either under or after the cursor.
+-- Works for word(| where | is the cursor position.
+-- Completely broken
+M.get_keyword = function()
+    local line = vim.fn.getline(vim.fn.line("."))
+    if #line == 0 then return "" end
+
+    local i = vim.fn.col(".")
+
+    -- Skip opening braces
+    local char
+    while i > 1 do
+        char = line:sub(i, i)
+        if char == "[" or char == "(" or char == "{" then
+            i = i - 1
+        else
+            break
+        end
+    end
+
+    -- Go to the beginning of the word
+    while
+        i > 1
+        and (
+            line:sub(i - 1, i - 1):match("[%w@:$:_%.]")
+            or (line:byte(i - 1) > 0x80 and line:byte(i - 1) < 0xf5)
+        )
+    do
+        i = i - 1
+    end
+    -- Go to the end of the word
+    local j = i
+    while
+        line:sub(j, j):match("[%w@:$:_%.]")
+        or (line:byte(j) > 0x80 and line:byte(j) < 0xf5)
+    do
+        j = j + 1
+    end
+    local rkeyword = line:sub(i, j - 1)
+    return rkeyword
+end
+
+-- Call R functions for the word under cursor
+M.action = function(rcmd, mode, args)
+    local rkeyword
+
+    if vim.o.filetype == "rdoc" then
+        rkeyword = vim.fn.expand("<cword>")
+    elseif vim.o.filetype == "rbrowser" then
+        rkeyword = require("r.browser").get_name()
+    elseif mode and mode == "v" and vim.fn.line("'<") == vim.fn.line("'>") then
+        rkeyword = vim.fn.strpart(
+            vim.fn.getline(vim.fn.line("'>")),
+            vim.fn.col("'<") - 1,
+            vim.fn.col("'>") - vim.fn.col("'<") + 1
+        )
+    elseif mode and mode ~= "v" and mode ~= "^," then
+        rkeyword = M.get_keyword()
+    else
+        rkeyword = M.get_keyword()
+    end
+
+    if #rkeyword > 0 then
+        if rcmd == "help" then
+            local rhelppkg, rhelptopic
+
+            if rkeyword:find("::") then
+                local rhelplist = vim.fn.split(rkeyword, "::")
+                rhelppkg = rhelplist[1]
+                rhelptopic = rhelplist[2]
+            else
+                rhelppkg = ""
+                rhelptopic = rkeyword
+            end
+
+            running_rhelp = true
+
+            if config.nvimpager == "no" then
+                send.cmd("help(" .. rkeyword .. ")")
+            else
+                if vim.fn.bufname("%") == "Object_Browser" then
+                    if require("r.browser").get_curview() == "libraries" then
+                        rhelppkg = require("r.browser").get_pkg_name()
+                    end
+                end
+                require("r.doc").ask_R_doc(rhelptopic, rhelppkg, true)
+            end
+
+            return
+        end
+
+        if rcmd == "print" then
+            M.print_object(rkeyword)
+            return
+        end
+
+        local rfun = rcmd
+
+        if rcmd == "args" then
+            if config.listmethods and not rkeyword:find("::") then
+                send.cmd('nvim.list.args("' .. rkeyword .. '")')
+            else
+                send.cmd("args(" .. rkeyword .. ")")
+            end
+
+            return
+        end
+
+        if rcmd == "plot" and config.specialplot then rfun = "nvim.plot" end
+
+        if rcmd == "plotsumm" then
+            local raction
+
+            if config.specialplot then
+                raction = "nvim.plot(" .. rkeyword .. "); summary(" .. rkeyword .. ")"
+            else
+                raction = "plot(" .. rkeyword .. "); summary(" .. rkeyword .. ")"
+            end
+
+            send.cmd(raction)
+            return
+        end
+
+        if config.open_example and rcmd == "example" then
+            M.send_to_nvimcom("E", 'nvimcom:::nvim.example("' .. rkeyword .. '")')
+            return
+        end
+
+        local argmnts = args or ""
+
+        if rcmd == "viewobj" or rcmd == "dputtab" then
+            if rcmd == "viewobj" then
+                if config.df_viewer then
+                    argmnts = argmnts .. ', R_df_viewer = "' .. config.df_viewer .. '"'
+                end
+
+                if rkeyword:find("::") then
+                    M.send_to_nvimcom(
+                        "E",
+                        "nvimcom:::nvim_viewobj(" .. rkeyword .. argmnts .. ")"
+                    )
+                else
+                    local fenc = config.is_windows
+                            and vim.o.encoding == "utf-8"
+                            and ', fenc="UTF-8"'
+                        or ""
+                    M.send_to_nvimcom(
+                        "E",
+                        'nvimcom:::nvim_viewobj("'
+                            .. rkeyword
+                            .. '"'
+                            .. argmnts
+                            .. fenc
+                            .. ")"
+                    )
+                end
+            else
+                M.send_to_nvimcom(
+                    "E",
+                    'nvimcom:::nvim_dput("' .. rkeyword .. '"' .. argmnts .. ")"
+                )
+            end
+
+            return
+        end
+
+        local raction = rfun .. "(" .. rkeyword .. argmnts .. ")"
+        send.cmd(raction)
+    end
+end
+
+M.get_first_obj = function(rkeyword)
+    local firstobj = ""
+    local line = vim.fn.substitute(vim.fn.getline(vim.fn.line(".")), "#.*", "", "")
+    local begin = vim.fn.col(".")
+
+    if vim.fn.strlen(line) > begin then
+        local piece = vim.fn.substitute(vim.fn.strpart(line, begin), "\\s*$", "", "")
+        while not piece:find("^" .. rkeyword) and begin >= 0 do
+            begin = begin - 1
+            piece = vim.fn.strpart(line, begin)
+        end
+
+        -- check if the first argument is being passed through a pipe operator
+        if begin > 2 then
+            local part1 = vim.fn.strpart(line, 0, begin)
+            if part1:find("%k+\\s*\\(|>\\|%>%\\)\\s*") then
+                local pipeobj = vim.fn.substitute(
+                    part1,
+                    ".\\{-}\\(\\k\\+\\)\\s*\\(|>\\|%>%\\)\\s*",
+                    "\\1",
+                    ""
+                )
+                return { pipeobj, true }
+            end
+        end
+
+        local pline =
+            vim.fn.substitute(vim.fn.getline(vim.fn.line(".") - 1), "#.*$", "", "")
+        if pline:find("\\k+\\s*\\(|>\\|%>%\\)\\s*$") then
+            local pipeobj = vim.fn.substitute(
+                pline,
+                ".\\{-}\\(\\k\\+\\)\\s*\\(|>\\|%>%\\)\\s*$",
+                "\\1",
+                ""
+            )
+            return { pipeobj, true }
+        end
+
+        line = piece
+        if not line:find("^\\k*\\s*(") then return { firstobj, false } end
+        begin = 1
+        local linelen = vim.fn.strlen(line)
+        while line:sub(begin, begin) ~= "(" and begin < linelen do
+            begin = begin + 1
+        end
+        begin = begin + 1
+        line = vim.fn.strpart(line, begin)
+        line = vim.fn.substitute(line, "^\\s*", "", "")
+        if
+            (line:find("^\\k*\\s*\\(") or line:find("^\\k*\\s*=\\s*\\k*\\s*\\("))
+            and not line:find("[.*(")
+        then
+            local idx = 0
+            while line:sub(idx, idx) ~= "(" do
+                idx = idx + 1
+            end
+            idx = idx + 1
+            local nparen = 1
+            local len = vim.fn.strlen(line)
+            local lnum = vim.fn.line(".")
+            while nparen ~= 0 do
+                if idx == len then
+                    lnum = lnum + 1
+                    while
+                        lnum <= vim.fn.line("$")
+                        and vim.fn.strlen(
+                                vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
+                            )
+                            == 0
+                    do
+                        lnum = lnum + 1
+                    end
+                    if lnum > vim.fn.line("$") then return { "", false } end
+                    line = line .. vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
+                    len = vim.fn.strlen(line)
+                end
+                if line:sub(idx, idx) == "(" then
+                    nparen = nparen + 1
+                else
+                    if line:sub(idx, idx) == ")" then nparen = nparen - 1 end
+                end
+                idx = idx + 1
+            end
+            firstobj = vim.fn.strpart(line, 0, idx)
+        elseif
+            line:find("^\\(\\k\\|\\$\\)*\\s*\\[")
+            or line:find("^\\(k\\|\\$\\)*\\s*=\\s*\\(\\k\\|\\$\\)*\\s*[.*(")
+        then
+            local idx = 0
+            while line:sub(idx, idx) ~= "[" do
+                idx = idx + 1
+            end
+            idx = idx + 1
+            local nparen = 1
+            local len = vim.fn.strlen(line)
+            local lnum = vim.fn.line(".")
+            while nparen ~= 0 do
+                if idx == len then
+                    lnum = lnum + 1
+                    while
+                        lnum <= vim.fn.line("$")
+                        and vim.fn.strlen(
+                                vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
+                            )
+                            == 0
+                    do
+                        lnum = lnum + 1
+                    end
+                    if lnum > vim.fn.line("$") then return { "", false } end
+                    line = line .. vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
+                    len = vim.fn.strlen(line)
+                end
+                if line:sub(idx, idx) == "[" then
+                    nparen = nparen + 1
+                else
+                    if line:sub(idx, idx) == "]" then nparen = nparen - 1 end
+                end
+                idx = idx + 1
+            end
+            firstobj = vim.fn.strpart(line, 0, idx)
+        else
+            firstobj = vim.fn.substitute(line, ").*", "", "")
+            firstobj = vim.fn.substitute(firstobj, ",.*", "", "")
+            firstobj = vim.fn.substitute(firstobj, " .*", "", "")
+        end
+    end
+
+    if firstobj:find("=" .. vim.fn.char2nr('"')) then firstobj = "" end
+
+    if firstobj:sub(1, 1) == '"' or firstobj:sub(1, 1) == "'" then
+        firstobj = "#c#"
+    elseif firstobj:sub(1, 1) >= "0" and firstobj:sub(1, 1) <= "9" then
+        firstobj = "#n#"
+    end
+
+    if firstobj:find('"') then firstobj = vim.fn.substitute(firstobj, '"', '\\"', "g") end
+
+    return { firstobj, false }
+end
+
+M.print_object = function(rkeyword)
+    local firstobj
+
+    if vim.fn.bufname("%") == "Object_Browser" then
+        firstobj = ""
+    else
+        firstobj = M.get_first_obj(rkeyword)[1]
+    end
+
+    if firstobj == "" then
+        send.cmd("print(" .. rkeyword .. ")")
+    else
+        send.cmd('nvim.print("' .. rkeyword .. '", "' .. firstobj .. '")')
+    end
 end
 
 return M
