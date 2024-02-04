@@ -172,15 +172,15 @@ M.show = function(rkeyword, txt)
     else
         if config.nvimpager == "tab" or config.nvimpager == "tabnew" then
             vim.cmd("tabnew " .. rdoctitle)
-        elseif config.vimpager == "vertical" then
+        elseif config.nvimpager == "vertical" then
             local splr = vim.o.splitright
             vim.o.splitright = true
             vim.cmd(htw .. "vsplit " .. rdoctitle)
             vim.o.splitright = splr
-        elseif config.vimpager == "horizontal" then
+        elseif config.nvimpager == "horizontal" then
             vim.cmd("split " .. rdoctitle)
             if vim.fn.winheight(0) < 20 then vim.cmd("resize 20") end
-        elseif config.vimpager == "no" then
+        elseif config.nvimpager == "no" then
             if type(config.external_term) == "boolean" and not config.external_term then
                 config.nvimpager = "vertical"
             else
@@ -189,13 +189,11 @@ M.show = function(rkeyword, txt)
             M.show(rkeyword)
             return
         else
-            vim.cmd("echohl WarningMsg")
-            vim.cmd(
-                "echomsg 'Invalid R_nvimpager value: \""
+            warn(
+                'Invalid `nvimpager` value: "'
                     .. config.nvimpager
-                    .. '". Valid values are: "tab", "vertical", "horizontal", "tabnew" and "no".\''
+                    .. '". Valid values are: "tab", "vertical", "horizontal", "tabnew" and "no".'
             )
-            vim.cmd("echohl None")
             return
         end
     end
@@ -205,13 +203,18 @@ M.show = function(rkeyword, txt)
     local save_unnamed_reg = vim.fn.getreg("@@")
     vim.o.modifiable = true
     vim.cmd("silent normal! ggdG")
-    local fcntt = vim.fn.split(txt:gsub("\x13", "'"), "\x14")
-    vim.fn.setline(1, fcntt)
+    txt = txt:gsub("\x13", "'")
+    local lines
+    if txt:find("\x08") then
+        lines = require("r.rdoc").fix_rdoc(txt)
+    else
+        lines = vim.split(txt, "\x14")
+    end
+    vim.fn.setline(1, lines)
     if rkeyword:match("R History") then
         vim.o.filetype = "r"
         vim.fn.cursor(1, 1)
     elseif rkeyword:match("(help)") or vim.fn.search("\x08", "nw") > 0 then
-        require("r.rdoc").fix_rdoc()
         require("r.rdoc").set_buf_options()
         vim.fn.cursor(1, 1)
     elseif rkeyword:find("%.Rd$") then
