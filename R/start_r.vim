@@ -2,35 +2,6 @@
 " Function to start R and functions that are called only after R is started.
 "==============================================================================
 
-let g:SendCmdToR = luaeval('require("r.send").cmd')
-
-let g:rplugin = {}
-
-"==============================================================================
-" Internal communication with R
-"==============================================================================
-
-" Send a message to nvimrserver job which will send the message to nvimcom
-" through a TCP connection.
-function SendToNvimcom(code, attch)
-    exe 'lua require("r.run").send_to_nvimcom("' . a:code . '", "' . a:attch . '")'
-endfunction
-
-
-"==============================================================================
-"  Functions triggered by nvimcom after user action on R Console
-"==============================================================================
-
-" This function is called by nvimcom
-function EditRObject(fname)
-    let fcont = readfile(a:fname)
-    exe "tabnew " . substitute($NVIMR_TMPDIR . "/edit_" . $NVIMR_ID, ' ', '\\ ', 'g')
-    call setline(".", fcont)
-    set filetype=r
-    stopinsert
-    autocmd BufUnload <buffer> call delete($NVIMR_TMPDIR . "/edit_" . $NVIMR_ID . "_wait") | startinsert
-endfunction
-
 
 "==============================================================================
 " Functions that ask R to help editing the code
