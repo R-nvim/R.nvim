@@ -150,4 +150,23 @@ M.obj = function(fname)
     )
 end
 
+M.get_output = function(fnm, txt)
+    if fnm == "NewtabInsert" then
+        local tnum = 1
+        while vim.fn.bufexists("so" .. tnum) == 1 do
+            tnum = tnum + 1
+        end
+        vim.cmd("tabnew so" .. tnum)
+        vim.fn.setline(1, vim.split(string.gsub(txt, "\x13", "'"), "\x14"))
+        vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
+        vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
+        vim.api.nvim_set_option_value("syntax", "rout", { scope = "local" })
+    else
+        vim.cmd("tabnew " .. fnm)
+        vim.fn.setline(1, vim.fn.split(vim.fn.substitute(txt, "\x13", "'", "g"), "\x14"))
+    end
+    vim.cmd("normal! gT")
+    vim.cmd("redraw")
+end
+
 return M
