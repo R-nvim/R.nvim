@@ -6,16 +6,6 @@ let g:SendCmdToR = luaeval('require("r.send").cmd')
 
 let g:rplugin = {}
 
-function s:RGetBufDir()
-    let rwd = nvim_buf_get_name(0)
-    if has("win32")
-        let rwd = substitute(rwd, '\\', '/', 'g')
-    endif
-    let rwd = substitute(rwd, '\(.*\)/.*', '\1', '')
-    return rwd
-endfunction
-
-
 "==============================================================================
 " Internal communication with R
 "==============================================================================
@@ -671,22 +661,6 @@ function RClearConsole()
     endif
 endfunction
 
-" Set working directory to the path of current buffer
-function RSetWD()
-    let wdcmd = 'setwd("' . s:RGetBufDir() . '")'
-    if has("win32")
-        let wdcmd = substitute(wdcmd, "\\", "/", "g")
-    endif
-    call g:SendCmdToR(wdcmd)
-    sleep 100m
-endfunction
-
-" knit the current buffer content
-function RKnit()
-    update
-    call g:SendCmdToR('require(knitr); .nvim_oldwd <- getwd(); setwd("' . s:RGetBufDir() . '"); knit("' . expand("%:t") . '"); setwd(.nvim_oldwd); rm(.nvim_oldwd)')
-endfunction
-
 function RSourceDirectory(...)
     if has("win32")
         let dir = substitute(a:1, '\\', '/', "g")
@@ -890,7 +864,7 @@ endfunction
 function RMakeRmd(t)
     update
 
-    let rmddir = s:RGetBufDir()
+    let rmddir = r.run.get_buf_dir()
     if a:t == "default"
         let rcmd = 'nvim.interlace.rmd("' . expand("%:t") . '", rmddir = "' . rmddir . '"'
     else

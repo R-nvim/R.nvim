@@ -748,4 +748,19 @@ M.print_object = function(rkeyword)
     end
 end
 
+-- knit the current buffer content
+M.knit = function()
+    vim.cmd("update")
+    send.cmd(
+        "require(knitr); .nvim_oldwd <- getwd(); setwd('"
+            .. get_buf_dir()
+            .. "'); knit('"
+            .. vim.fn.expand("%:t")
+            .. "'); setwd(.nvim_oldwd); rm(.nvim_oldwd)"
+    )
+end
+
+-- Set working directory to the path of current buffer
+M.setwd = function() send.cmd('setwd("' .. get_buf_dir() .. '")') end
+
 return M
