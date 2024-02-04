@@ -5,7 +5,6 @@ local warn = require("r").warn
 local R_width = 80
 local number_col
 local R_bufnr = nil
-local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
 
 M.send_cmd_to_term = function(command, nl)
     local is_running
@@ -173,30 +172,6 @@ end
 
 M.highlight_term = function()
     if R_bufnr then vim.api.nvim_set_option_value("syntax", "rout", { buf = R_bufnr }) end
-end
-
-M.clear_console = function()
-    if config.clear_console == false then return end
-
-    if
-        vim.fn.has("win32")
-        and type(config.external_term) == "boolean"
-        and config.external_term
-    then
-    -- TODO
-    else
-        -- TODO
-    end
-end
-
-M.clear_all = function()
-    if config.rmhidden then
-        M.send_cmd_to_term("rm(list=ls(all.names = TRUE))", true)
-    else
-        M.send_cmd_to_term("rm(list = ls())", true)
-    end
-
-    M.clear_console()
 end
 
 M.get_buf_nr = function() return R_bufnr end

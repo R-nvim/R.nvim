@@ -774,4 +774,31 @@ M.show_obj = function(howto, bname, ftype, txt)
     vim.api.nvim_buf_set_var(0, "modified", false)
 end
 
+-- Clear the console screen
+M.clear_console = function()
+    if config.clear_console == false then return end
+
+    if
+        config.is_windows
+        and type(config.external_term) == "boolean"
+        and config.external_term
+    then
+        job.stdin("Server", "86\n")
+        vim.wait(50)
+        job.stdin("Server", "87\n")
+    else
+        send.cmd("\014", 0)
+    end
+end
+
+M.clear_all = function()
+    if config.rmhidden then
+        M.send.cmd("rm(list=ls(all.names = TRUE))", true)
+    else
+        send.cmd("rm(list = ls())", true)
+    end
+    vim.wait(30)
+    M.clear_console()
+end
+
 return M
