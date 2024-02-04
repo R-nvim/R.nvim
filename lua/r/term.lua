@@ -7,23 +7,23 @@ local number_col
 local R_bufnr = nil
 
 M.send_cmd_to_term = function(command, nl)
-  local is_running
-  require('r.job').is_running('R')
-  if is_running == 0 then
-    warn('Is R running?')
-    return 0
-  end
-
-  local cmd
-  if config.clear_line then
-    if config.editing_mode == 'emacs' then
-      cmd = '\001\013' .. command
-    else
-      cmd = '\x1b0Da' .. command
+    local is_running
+    require("r.job").is_running("R")
+    if is_running == 0 then
+        warn("Is R running?")
+        return 0
     end
-  else
-    cmd = command
-  end
+
+    local cmd
+    if config.clear_line then
+        if config.editing_mode == "emacs" then
+            cmd = "\001\013" .. command
+        else
+            cmd = "\x1b0Da" .. command
+        end
+    else
+        cmd = command
+    end
 
     -- Update the width, if necessary
     local bwid = vim.fn.bufwinid(R_bufnr)
@@ -40,25 +40,24 @@ M.send_cmd_to_term = function(command, nl)
             end
         end
     end
-  end
 
-  -- if config.auto_scroll and not string.find(cmd, '^quit(') and bwid ~= -1 then
-  if config.auto_scroll and bwid ~= -1 then
-    vim.api.nvim_win_set_cursor(
-      bwid,
-      { vim.api.nvim_buf_line_count(vim.api.nvim_win_get_buf(bwid)), 0 }
-    )
-  end
-
-  if nl ~= false then
-    if type(cmd) == 'table' then
-      cmd = table.concat(cmd, '\n') .. '\n'
-    else
-      cmd = cmd .. '\n'
+    -- if config.auto_scroll and not string.find(cmd, '^quit(') and bwid ~= -1 then
+    if config.auto_scroll and bwid ~= -1 then
+        vim.api.nvim_win_set_cursor(
+            bwid,
+            { vim.api.nvim_buf_line_count(vim.api.nvim_win_get_buf(bwid)), 0 }
+        )
     end
-  end
-  require('r.job').stdin('R', cmd)
-  return 1
+
+    if nl ~= false then
+        if type(cmd) == "table" then
+            cmd = table.concat(cmd, "\n") .. "\n"
+        else
+            cmd = cmd .. "\n"
+        end
+    end
+    require("r.job").stdin("R", cmd)
+    return 1
 end
 
 M.close_term = function()
@@ -66,44 +65,43 @@ M.close_term = function()
         vim.cmd.sb(R_bufnr)
         if config.close_term and R_bufnr == vim.fn.bufnr("%") then
             vim.cmd("startinsert")
-            vim.fn.feedkeys(' ')
+            vim.fn.feedkeys(" ")
         end
         R_bufnr = nil
     end
     R_bufnr = nil
-  end
 end
 
 local split_window = function()
-  local n
-  if vim.o.number then
-    n = 1
-  else
-    n = 0
-  end
-  if
-    config.rconsole_width > 0
-    and vim.fn.winwidth(0)
-      > (config.rconsole_width + config.min_editor_width + 1 + (n * vim.o.numberwidth))
-  then
-    if
-      config.rconsole_width > 16
-      and config.rconsole_width < (vim.fn.winwidth(0) - 17)
-    then
-      vim.cmd("silent exe 'belowright " .. config.rconsole_width .. "vnew'")
+    local n
+    if vim.o.number then
+        n = 1
     else
-      vim.cmd('silent belowright vnew')
+        n = 0
     end
-  else
     if
-      config.rconsole_height > 0
-      and config.rconsole_height < (vim.fn.winheight(0) - 1)
+        config.rconsole_width > 0
+        and vim.fn.winwidth(0)
+            > (config.rconsole_width + config.min_editor_width + 1 + (n * vim.o.numberwidth))
     then
-      vim.cmd("silent exe 'belowright " .. config.rconsole_height .. "new'")
+        if
+            config.rconsole_width > 16
+            and config.rconsole_width < (vim.fn.winwidth(0) - 17)
+        then
+            vim.cmd("silent exe 'belowright " .. config.rconsole_width .. "vnew'")
+        else
+            vim.cmd("silent belowright vnew")
+        end
     else
-      vim.cmd('silent belowright new')
+        if
+            config.rconsole_height > 0
+            and config.rconsole_height < (vim.fn.winheight(0) - 1)
+        then
+            vim.cmd("silent exe 'belowright " .. config.rconsole_height .. "new'")
+        else
+            vim.cmd("silent belowright new")
+        end
     end
-  end
 end
 
 local reopen_win = function()
@@ -120,7 +118,7 @@ local reopen_win = function()
     vim.cmd.sb(edbuf)
 end
 
-M.start_term = function ()
+M.start_term = function()
     -- Check if R is running
     if vim.g.R_Nvim_status == 5 then
         reopen_win()
@@ -128,39 +126,41 @@ M.start_term = function ()
     end
     vim.g.R_Nvim_status = 4
 
-  local edbuf = vim.fn.bufname('%')
-  vim.o.switchbuf = 'useopen'
+    local edbuf = vim.fn.bufname("%")
+    vim.o.switchbuf = "useopen"
 
-  split_window()
+    split_window()
 
-    if config.is_windows then
-        require("r.windows").set_R_home()
-    end
-    require("r.job").R_term_open(config.R_app .. ' ' .. table.concat(config.R_args, ' '))
+    if config.is_windows then require("r.windows").set_R_home() end
+    require("r.job").R_term_open(config.R_app .. " " .. table.concat(config.R_args, " "))
     if config.is_windows then
         vim.cmd("redraw")
         require("r.windows").unset_R_home()
     end
     R_bufnr = vim.fn.bufnr("%")
-    if config.hl_term then
-        vim.cmd('silent set syntax=rout')
-    end
+    if config.hl_term then vim.cmd("silent set syntax=rout") end
     if config.esc_term then
-        vim.api.nvim_buf_set_keymap(0, 't', '<Esc>', '<C-\\><C-n>', { noremap = true, silent = true })
+        vim.api.nvim_buf_set_keymap(
+            0,
+            "t",
+            "<Esc>",
+            "<C-\\><C-n>",
+            { noremap = true, silent = true }
+        )
     end
-    for _, optn in ipairs(vim.fn.split(config.buffer_opts, '\n')) do
-        vim.cmd('setlocal ' .. optn)
+    for _, optn in ipairs(vim.fn.split(config.buffer_opts, "\n")) do
+        vim.cmd("setlocal " .. optn)
     end
 
-  if vim.b.number then
-    if config.setwidth < 0 and config.setwidth > -17 then
-      number_col = config.setwidth
+    if vim.b.number then
+        if config.setwidth < 0 and config.setwidth > -17 then
+            number_col = config.setwidth
+        else
+            number_col = -6
+        end
     else
-      number_col = -6
+        number_col = 0
     end
-  else
-    number_col = 0
-  end
 
     -- Set b:pdf_is_open to avoid an error when the user has to go to R Console
     -- to deal with latex errors while compiling the pdf
@@ -171,35 +171,31 @@ M.start_term = function ()
 end
 
 M.highlight_term = function()
-  if R_bufnr then
-    vim.api.nvim_set_option_value('syntax', 'rout', { buf = R_bufnr })
-  end
+    if R_bufnr then vim.api.nvim_set_option_value("syntax", "rout", { buf = R_bufnr }) end
 end
 
 M.clear_console = function()
-  if config.clear_console == false then
-    return
-  end
+    if config.clear_console == false then return end
 
-  if
-    vim.fn.has('win32')
-    and type(config.external_term) == 'boolean'
-    and config.external_term
-  then
+    if
+        vim.fn.has("win32")
+        and type(config.external_term) == "boolean"
+        and config.external_term
+    then
     -- TODO
-  else
-    -- TODO
-  end
+    else
+        -- TODO
+    end
 end
 
 M.clear_all = function()
-  if config.rmhidden then
-    M.send_cmd_to_term('rm(list=ls(all.names = TRUE))', true)
-  else
-    M.send_cmd_to_term('rm(list = ls())', true)
-  end
+    if config.rmhidden then
+        M.send_cmd_to_term("rm(list=ls(all.names = TRUE))", true)
+    else
+        M.send_cmd_to_term("rm(list = ls())", true)
+    end
 
-  M.clear_console()
+    M.clear_console()
 end
 
 M.get_buf_nr = function()

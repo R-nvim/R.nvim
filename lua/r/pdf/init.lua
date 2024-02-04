@@ -3,7 +3,11 @@ local warn = require("r").warn
 
 local check_installed = function()
     if vim.fn.executable(config.pdfviewer) == 0 then
-        warn("R-Nvim: Please, set the value of `pdfviewer`. The application `" .. config.pdfviewer .. "` was not found.")
+        warn(
+            "R-Nvim: Please, set the value of `pdfviewer`. The application `"
+                .. config.pdfviewer
+                .. "` was not found."
+        )
     end
 end
 
@@ -38,12 +42,18 @@ M.setup = function()
     config.has_wmctrl = 0
     config.has_awbt = 0
 
-    if vim.fn.has("win32") == 0 and not config.is_darwin and os.getenv("WAYLAND_DISPLAY") == "" then
+    if
+        vim.fn.has("win32") == 0
+        and not config.is_darwin
+        and os.getenv("WAYLAND_DISPLAY") == ""
+    then
         if vim.fn.executable("wmctrl") > 0 then
             config.has_wmctrl = 1
         else
             if vim.o.filetype == "rnoweb" and config.synctex then
-                warn("The application wmctrl must be installed to edit Rnoweb effectively.")
+                warn(
+                    "The application wmctrl must be installed to edit Rnoweb effectively."
+                )
             end
         end
     end
@@ -59,13 +69,15 @@ M.setup = function()
     --         end
     --     end
     -- end
-    require("r.edit").add_to_debug_info('pdf setup', vim.fn.reltimefloat(vim.fn.reltime(ptime, vim.fn.reltime())), "Time")
+    require("r.edit").add_to_debug_info(
+        "pdf setup",
+        vim.fn.reltimefloat(vim.fn.reltime(ptime, vim.fn.reltime())),
+        "Time"
+    )
 end
 
-M.open = function (fullpath)
-    if config.openpdf == 0 then
-        return
-    end
+M.open = function(fullpath)
+    if config.openpdf == 0 then return end
 
     if fullpath == "Get Master" then
         local fpath = vim.fn.SyncTeX_GetMaster() .. ".pdf"
@@ -75,9 +87,7 @@ M.open = function (fullpath)
     end
 
     if not vim.b.pdf_is_open then
-        if config.openpdf == 1 then
-            vim.b.pdf_is_open = true
-        end
+        if config.openpdf == 1 then vim.b.pdf_is_open = true end
         M.open2(fullpath)
     end
 end
@@ -92,19 +102,25 @@ function RRaiseWindow(wttl)
         end
     elseif os.getenv("WAYLAND_DISPLAY") ~= "" then
         if os.getenv("GNOME_SHELL_SESSION_MODE") ~= "" and config.has_awbt then
-            local sout = vim.fn.system("busctl --user call org.gnome.Shell " ..
-                        "/de/lucaswerkmeister/ActivateWindowByTitle " ..
-                        "de.lucaswerkmeister.ActivateWindowByTitle " ..
-                        "activateBySubstring s '" .. wttl .. "'")
+            local sout = vim.fn.system(
+                "busctl --user call org.gnome.Shell "
+                    .. "/de/lucaswerkmeister/ActivateWindowByTitle "
+                    .. "de.lucaswerkmeister.ActivateWindowByTitle "
+                    .. "activateBySubstring s '"
+                    .. wttl
+                    .. "'"
+            )
             if vim.v.shell_error == 0 then
-                if sout:find('false') then
+                if sout:find("false") then
                     return 0
                 else
                     return 1
                 end
             else
-                warn('Error running Gnome Shell Extension "Activate Window By Title": ' ..
-                            vim.fn.substitute(sout, "\n", " ", "g"))
+                warn(
+                    'Error running Gnome Shell Extension "Activate Window By Title": '
+                        .. vim.fn.substitute(sout, "\n", " ", "g")
+                )
                 return 0
             end
         elseif os.getenv("XDG_CURRENT_DESKTOP") == "sway" then
@@ -118,7 +134,7 @@ function RRaiseWindow(wttl)
                     return 0
                 end
             else
-                warn('Error running swaymsg: ' .. vim.fn.substitute(sout, "\n", " ", "g"))
+                warn("Error running swaymsg: " .. vim.fn.substitute(sout, "\n", " ", "g"))
                 return 0
             end
         end

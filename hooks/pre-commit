@@ -32,7 +32,7 @@ fi
 # Check and format .lua files
 if git diff --staged --name-only --diff-filter=ACMR | grep -E '\.lua$' > /dev/null; then
     check_tool_installed "stylua"
-    format_files "*.lua" "stylua" ""
+    format_files "*.lua" "stylua" "--respect-ignores"
 fi
 
 # Now we can commit

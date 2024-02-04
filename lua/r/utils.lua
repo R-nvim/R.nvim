@@ -19,9 +19,7 @@ end
 -- with Windows systems, where backslashes are commonly used as path separators.
 -- @param path string The file path to normalize.
 -- @return string The normalized file path with all backslashes replaced by forward slashes.
-function M.normalize_windows_path(path)
-    return path:gsub("\\", "/")
-end
+function M.normalize_windows_path(path) return path:gsub("\\", "/") end
 
 --- Ensures that a given directory exists on the file system.
 -- If the directory does not exist, it attempts to create it, including any
@@ -34,9 +32,7 @@ end
 function M.ensure_directory_exists(dir_path)
     -- Using pcall to catch any errors during directory creation
     local status, err = pcall(function()
-        if vim.fn.isdirectory(dir_path) ~= 1 then
-            vim.fn.mkdir(dir_path, "p")
-        end
+        if vim.fn.isdirectory(dir_path) ~= 1 then vim.fn.mkdir(dir_path, "p") end
     end)
 
     -- Check if pcall caught an error

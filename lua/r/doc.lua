@@ -26,7 +26,10 @@ local set_text_width = function(rkeyword)
         local wwidth = vim.fn.winwidth(0)
 
         -- Not enough room to split vertically
-        if config.nvimpager == "vertical" and wwidth <= (config.help_w + config.editor_w) then
+        if
+            config.nvimpager == "vertical"
+            and wwidth <= (config.help_w + config.editor_w)
+        then
             vimpager = "horizontal"
         end
 
@@ -63,7 +66,7 @@ end
 
 local M = {}
 
-M.ask_R_help = function (topic)
+M.ask_R_help = function(topic)
     if topic == "" then
         require("r.send").cmd("help.start()")
         return
@@ -84,26 +87,36 @@ M.ask_R_doc = function(rkeyword, package, getclass)
         vim.cmd.sb(require("r.edit").get_rscript_name())
         vim.cmd("set switchbuf=" .. savesb)
     else
-        if getclass then
-            firstobj = require("r.cursor").get_first_obj(rkeyword)
-        end
+        if getclass then firstobj = require("r.cursor").get_first_obj(rkeyword) end
     end
 
     set_text_width(rkeyword)
 
     local rcmd
     if firstobj == "" and package == "" then
-        rcmd = 'nvimcom:::nvim.help("' .. rkeyword .. '", ' .. htw .. 'L)'
+        rcmd = 'nvimcom:::nvim.help("' .. rkeyword .. '", ' .. htw .. "L)"
     elseif package ~= "" then
-        rcmd = 'nvimcom:::nvim.help("' .. rkeyword .. '", ' .. htw .. 'L, package="' .. package  .. '")'
+        rcmd = 'nvimcom:::nvim.help("'
+            .. rkeyword
+            .. '", '
+            .. htw
+            .. 'L, package="'
+            .. package
+            .. '")'
     else
-        rcmd = 'nvimcom:::nvim.help("' .. rkeyword .. '", ' .. htw .. 'L, "' .. firstobj .. '")'
+        rcmd = 'nvimcom:::nvim.help("'
+            .. rkeyword
+            .. '", '
+            .. htw
+            .. 'L, "'
+            .. firstobj
+            .. '")'
     end
 
     send_to_nvimcom("E", rcmd)
 end
 
-M.show = function (rkeyword, txt)
+M.show = function(rkeyword, txt)
     if rkeyword:match("^MULTILIB") then
         local topic = vim.fn.split(rkeyword, " ")[2]
         local libs = vim.fn.split(txt, "\x14")
@@ -114,7 +127,16 @@ M.show = function (rkeyword, txt)
         vim.cmd("redraw")
         local chn = vim.fn.input(msg .. "Please, select one of them: ")
         if tonumber(chn) and tonumber(chn) > 0 and tonumber(chn) <= #libs then
-            send_to_nvimcom("E", 'nvimcom:::nvim.help("' .. topic .. '", ' .. htw .. 'L, package="' .. libs[tonumber(chn)] .. '")')
+            send_to_nvimcom(
+                "E",
+                'nvimcom:::nvim.help("'
+                    .. topic
+                    .. '", '
+                    .. htw
+                    .. 'L, package="'
+                    .. libs[tonumber(chn)]
+                    .. '")'
+            )
         end
         return
     end
@@ -145,22 +167,18 @@ M.show = function (rkeyword, txt)
         vim.o.switchbuf = "useopen,usetab"
         vim.cmd.sb(rdoctitle)
         vim.cmd("set switchbuf=" .. savesb)
-        if config.nvimpager == "tabnew" then
-            vim.cmd("tabmove " .. curtabnr)
-        end
+        if config.nvimpager == "tabnew" then vim.cmd("tabmove " .. curtabnr) end
     else
         if config.nvimpager == "tab" or config.nvimpager == "tabnew" then
-            vim.cmd('tabnew ' .. rdoctitle)
+            vim.cmd("tabnew " .. rdoctitle)
         elseif config.vimpager == "vertical" then
             local splr = vim.o.splitright
             vim.o.splitright = true
-            vim.cmd(htw .. 'vsplit ' .. rdoctitle)
+            vim.cmd(htw .. "vsplit " .. rdoctitle)
             vim.o.splitright = splr
         elseif config.vimpager == "horizontal" then
-            vim.cmd('split ' .. rdoctitle)
-            if vim.fn.winheight(0) < 20 then
-                vim.cmd('resize 20')
-            end
+            vim.cmd("split " .. rdoctitle)
+            if vim.fn.winheight(0) < 20 then vim.cmd("resize 20") end
         elseif config.vimpager == "no" then
             if type(config.external_term) == "boolean" and not config.external_term then
                 config.nvimpager = "vertical"
@@ -171,7 +189,11 @@ M.show = function (rkeyword, txt)
             return
         else
             vim.cmd("echohl WarningMsg")
-            vim.cmd('echomsg \'Invalid R_nvimpager value: "' .. config.nvimpager .. '". Valid values are: "tab", "vertical", "horizontal", "tabnew" and "no".\'')
+            vim.cmd(
+                "echomsg 'Invalid R_nvimpager value: \""
+                    .. config.nvimpager
+                    .. '". Valid values are: "tab", "vertical", "horizontal", "tabnew" and "no".\''
+            )
             vim.cmd("echohl None")
             return
         end
@@ -187,11 +209,11 @@ M.show = function (rkeyword, txt)
     if rkeyword:match("R History") then
         vim.o.filetype = "r"
         vim.fn.cursor(1, 1)
-    elseif rkeyword:match('(help)') or vim.fn.search("\x08", "nw") > 0 then
+    elseif rkeyword:match("(help)") or vim.fn.search("\x08", "nw") > 0 then
         require("r.rdoc").fix_rdoc()
         require("r.rdoc").set_buf_options()
         vim.fn.cursor(1, 1)
-    elseif rkeyword:find('%.Rd$') then
+    elseif rkeyword:find("%.Rd$") then
         -- Called by devtools::load_all().
         -- See https://github.com/jalvesaq/Nvim-R/issues/482
         vim.o.filetype = "rhelp"
@@ -202,7 +224,13 @@ M.show = function (rkeyword, txt)
         vim.cmd("setlocal nonumber")
         vim.cmd("setlocal noswapfile")
         vim.o.buftype = "nofile"
-        vim.api.nvim_buf_set_keymap(0, "n", "q", ":q<CR>", { noremap = true, silent = true })
+        vim.api.nvim_buf_set_keymap(
+            0,
+            "n",
+            "q",
+            ":q<CR>",
+            { noremap = true, silent = true }
+        )
         vim.fn.cursor(1, 1)
     end
     vim.fn.setreg("@@", save_unnamed_reg)

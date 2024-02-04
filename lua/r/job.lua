@@ -19,49 +19,46 @@ M.on_stdout = function (job_id, data, _)
     -- vim.fn.system("echo 'on_stdout 1: " .. table.concat(data, "") .. "' >> /dev/shm/r-nvim-lua-log")
     for _, v in pairs(data) do
         cmd = v:gsub('\r', '')
-        if #cmd == 0 then
-            goto continue
-        end
-
-        if cmd:sub(1, 1) == "\x11" then
-            local cmdsplt = vim.fn.split(cmd, "\x11")
-            local size = vim.fn.str2nr(cmdsplt[1])
-            local received = vim.fn.strlen(cmdsplt[2])
-            if size == received then
-                cmd = cmdsplt[2]
-            else
-                waiting_more_input = true
-                incomplete_input.size = size
-                incomplete_input.received = received
-                incomplete_input.str = cmdsplt[2]
-                vim.fn.timer_start(100, stop_waiting_nsr)
-                goto continue
-            end
-        end
-
-        if waiting_more_input then
-            incomplete_input.received = incomplete_input.received + cmd:len()
-            if incomplete_input.received == incomplete_input.size then
-                waiting_more_input = true
-                cmd = incomplete_input.str .. cmd
-            else
-                incomplete_input.str = incomplete_input.str .. cmd
-                if incomplete_input.received > incomplete_input.size then
-                    warn('Received larger than expected message.')
+        if #cmd > 0 then
+            if cmd:sub(1, 1) == "\x11" then
+                local cmdsplt = vim.fn.split(cmd, "\x11")
+                local size = vim.fn.str2nr(cmdsplt[1])
+                local received = vim.fn.strlen(cmdsplt[2])
+                if size == received then
+                    cmd = cmdsplt[2]
+                else
+                    waiting_more_input = true
+                    incomplete_input.size = size
+                    incomplete_input.received = received
+                    incomplete_input.str = cmdsplt[2]
+                    vim.fn.timer_start(100, stop_waiting_nsr)
+                    goto continue
                 end
-                goto continue
+            end
+
+            if waiting_more_input then
+                incomplete_input.received = incomplete_input.received + cmd:len()
+                if incomplete_input.received == incomplete_input.size then
+                    waiting_more_input = true
+                    cmd = incomplete_input.str .. cmd
+                else
+                    incomplete_input.str = incomplete_input.str .. cmd
+                    if incomplete_input.received > incomplete_input.size then
+                        warn('Received larger than expected message.')
+                    end
+                    goto continue
+                end
+            end
+
+            if cmd:match("^lua ") or cmd:match("^call ") or cmd:match("^let ") or cmd:match("^unlet ") then
+                vim.fn.execute(cmd)
+            else
+                if cmd:len() > 128 then
+                    cmd = cmd:sub(1, 128) .. ' [...]'
+                end
+                warn("[" .. M.get_title(job_id) .. "] Unknown command: " .. cmd)
             end
         end
-
-        if cmd:match("^lua ") or cmd:match("^call ") or cmd:match("^let ") or cmd:match("^unlet ") then
-            vim.fn.execute(cmd)
-        else
-            if cmd:len() > 128 then
-                cmd = cmd:sub(1, 128) .. ' [...]'
-            end
-            warn("[" .. M.get_title(job_id) .. "] Unknown command: " .. cmd)
-        end
-
         ::continue::
     end
 end

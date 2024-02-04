@@ -3,9 +3,11 @@ local warn = require("r").warn
 local job = require("r.job")
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 
-local reserved = '\\%(if\\|else\\|repeat\\|while\\|function\\|for\\|in\\|next\\|break\\|TRUE\\|FALSE\\|NULL\\|Inf\\|NaN\\|NA\\|NA_integer_\\|NA_real_\\|NA_complex_\\|NA_character_\\)'
+local reserved =
+    "\\%(if\\|else\\|repeat\\|while\\|function\\|for\\|in\\|next\\|break\\|TRUE\\|FALSE\\|NULL\\|Inf\\|NaN\\|NA\\|NA_integer_\\|NA_real_\\|NA_complex_\\|NA_character_\\)"
 
-local punct = '\\(!\\|\'\'\\|"\\|#\\|%\\|&\\|(\\|)\\|*\\|+\\|,\\|-\\|/\\|\\\\\\|:\\|;\\|<\\|=\\|>\\|?\\|@\\|[\\|/\\|]\\|\\^\\|\\$\\|{\\||\\|}\\|\\~\\)'
+local punct =
+    "\\(!\\|''\\|\"\\|#\\|%\\|&\\|(\\|)\\|*\\|+\\|,\\|-\\|/\\|\\\\\\|:\\|;\\|<\\|=\\|>\\|?\\|@\\|[\\|/\\|]\\|\\^\\|\\$\\|{\\||\\|}\\|\\~\\)"
 
 local envstring = vim.fn.tolower(vim.env.LC_MESSAGES .. vim.env.LC_ALL .. vim.env.LANG)
 local isutf8 = (envstring:find("utf-8") or envstring:find("utf8")) and 1 or 0
@@ -23,33 +25,51 @@ local hasbrowsermenu = false
 local L = {}
 
 local set_buf_options = function()
-    vim.api.nvim_set_option_value("wrap",           false, { scope = "local" })
-    vim.api.nvim_set_option_value("list",           false, { scope = "local" })
-    vim.api.nvim_set_option_value("number",         false, { scope = "local" })
+    vim.api.nvim_set_option_value("wrap", false, { scope = "local" })
+    vim.api.nvim_set_option_value("list", false, { scope = "local" })
+    vim.api.nvim_set_option_value("number", false, { scope = "local" })
     vim.api.nvim_set_option_value("relativenumber", false, { scope = "local" })
-    vim.api.nvim_set_option_value("cursorline",     false, { scope = "local" })
-    vim.api.nvim_set_option_value("cursorcolumn",   false, { scope = "local" })
-    vim.api.nvim_set_option_value("spell",          false, { scope = "local" })
-    vim.api.nvim_set_option_value("winfixwidth",    false, { scope = "local" })
-    vim.api.nvim_set_option_value("swapfile",       false, { scope = "local" })
-    vim.api.nvim_set_option_value("bufhidden",     "wipe", { scope = "local" })
-    vim.api.nvim_set_option_value("buftype",     "nofile", { scope = "local" })
-    vim.api.nvim_set_option_value("syntax",    "rbrowser", { scope = "local" })
+    vim.api.nvim_set_option_value("cursorline", false, { scope = "local" })
+    vim.api.nvim_set_option_value("cursorcolumn", false, { scope = "local" })
+    vim.api.nvim_set_option_value("spell", false, { scope = "local" })
+    vim.api.nvim_set_option_value("winfixwidth", false, { scope = "local" })
+    vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
+    vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
+    vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
+    vim.api.nvim_set_option_value("syntax", "rbrowser", { scope = "local" })
     vim.api.nvim_set_option_value("iskeyword", "@,48-57,_,.", { scope = "local" })
 
     local opts = { silent = true, noremap = true, expr = false }
-    vim.api.nvim_buf_set_keymap(0, "n", "<CR>", "<Cmd>lua require('r.browser').on_double_click()<CR>", opts)
-    vim.api.nvim_buf_set_keymap(0, "n", "<2-LeftMouse>", "<Cmd>lua require('r.browser').on_double_click()<CR>", opts)
-    vim.api.nvim_buf_set_keymap(0, "n", "<RightMouse>", "<Cmd>lua require('r.browser').on_right_click()<CR>", opts)
+    vim.api.nvim_buf_set_keymap(
+        0,
+        "n",
+        "<CR>",
+        "<Cmd>lua require('r.browser').on_double_click()<CR>",
+        opts
+    )
+    vim.api.nvim_buf_set_keymap(
+        0,
+        "n",
+        "<2-LeftMouse>",
+        "<Cmd>lua require('r.browser').on_double_click()<CR>",
+        opts
+    )
+    vim.api.nvim_buf_set_keymap(
+        0,
+        "n",
+        "<RightMouse>",
+        "<Cmd>lua require('r.browser').on_right_click()<CR>",
+        opts
+    )
 
     vim.api.nvim_create_autocmd("BufEnter", {
         command = "stopinsert",
-        pattern = "<buffer>"
+        pattern = "<buffer>",
     })
 
     vim.api.nvim_create_autocmd("BufUnload", {
         command = "lua require('r.browser').on_BufUnload()",
-        pattern = "<buffer>"
+        pattern = "<buffer>",
     })
 
     vim.fn.setline(1, ".GlobalEnv | Libraries")
@@ -57,24 +77,27 @@ local set_buf_options = function()
     require("r.maps").create("rbrowser")
 end
 
-local get_name = function ()
+local get_name = function()
     local line = vim.fn.getline(vim.fn.line("."))
-    if vim.fn.match(line, "^$") > -1 or vim.fn.line(".") < 3 then
-        return ""
-    end
+    if vim.fn.match(line, "^$") > -1 or vim.fn.line(".") < 3 then return "" end
 
     local curpos = vim.fn.stridx(line, "#")
-    local word = vim.fn.substitute(line, '.\\{-}\\(.#\\)\\(\\(.-\\)\\)\\t.*', '\\3', '')
+    local word = vim.fn.substitute(line, ".\\{-}\\(.#\\)\\(\\(.-\\)\\)\\t.*", "\\3", "")
 
-    if vim.fn.match(word, ' ') > -1 or vim.fn.match(word, '^[0-9]') > -1 or vim.fn.match(word, punct) > -1 or vim.fn.match(word, '^' .. reserved .. '$') > -1 then
-        word = '`' .. word .. '`'
+    if
+        vim.fn.match(word, " ") > -1
+        or vim.fn.match(word, "^[0-9]") > -1
+        or vim.fn.match(word, punct) > -1
+        or vim.fn.match(word, "^" .. reserved .. "$") > -1
+    then
+        word = "`" .. word .. "`"
     end
 
     if curpos == 4 then
         -- top level object
-        word = vim.fn.substitute(word, '\\$\\[\\[', '[[', "g")
+        word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
         if curview == "libraries" then
-            return word .. ':'
+            return word .. ":"
         else
             return word
         end
@@ -82,18 +105,18 @@ local get_name = function ()
         if curview == "libraries" then
             if isutf8 then
                 if curpos == 11 then
-                    word = vim.fn.substitute(word, '\\$\\[\\[', '[[', "g")
+                    word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
                     return word
                 end
             elseif curpos == 7 then
-                word = vim.fn.substitute(word, '\\$\\[\\[', '[[', "g")
+                word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
                 return word
             end
         end
         if curpos > 4 then
             -- Find the parent data.frame or list
             word = L.find_parent(word, vim.fn.line("."), curpos - 1)
-            word = vim.fn.substitute(word, '\\$\\[\\[', '[[', "g")
+            word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
             return word
         else
             -- Wrong object name delimiter: should never happen.
@@ -104,32 +127,29 @@ local get_name = function ()
     end
 end
 
-local get_pkg_name = function ()
+local get_pkg_name = function()
     local lnum = vim.fn.line(".")
     while lnum > 0 do
         local line = vim.fn.getline(lnum)
-        if vim.fn.match(line, '.*##[0-9a-zA-Z\\.]*\t') > -1 then
-            return vim.fn.substitute(line, '.*##\\(.\\{-}\\)\t.*', '\\1', "")
+        if vim.fn.match(line, ".*##[0-9a-zA-Z\\.]*\t") > -1 then
+            return vim.fn.substitute(line, ".*##\\(.\\{-}\\)\t.*", "\\1", "")
         end
         lnum = lnum - 1
     end
     return ""
 end
 
-
-L.find_parent = function (word, curline, curpos)
+L.find_parent = function(word, curline, curpos)
     local line
     while curline > 1 and curpos >= curpos do
         curline = curline - 1
         line = vim.fn.substitute(vim.fn.getline(curline), "\x09.*", "", "")
-        curpos = vim.fn.stridx(line, '[#')
+        curpos = vim.fn.stridx(line, "[#")
         if curpos == -1 then
-            curpos = vim.fn.stridx(line, '$#')
+            curpos = vim.fn.stridx(line, "$#")
             if curpos == -1 then
-                curpos = vim.fn.stridx(line, '<#')
-                if curpos == -1 then
-                    curpos = curpos
-                end
+                curpos = vim.fn.stridx(line, "<#")
+                if curpos == -1 then curpos = curpos end
             end
         end
     end
@@ -143,30 +163,35 @@ L.find_parent = function (word, curline, curpos)
 
     if curline > 1 then
         local suffix
-        if vim.fn.match(line, ' <#') > -1 then
-            suffix = '@'
+        if vim.fn.match(line, " <#") > -1 then
+            suffix = "@"
         else
-            suffix = '$'
+            suffix = "$"
         end
-        local thisword = vim.fn.substitute(line, '^.\\{-}#', '', '')
-        if vim.fn.match(thisword, " ") > -1 or vim.fn.match(thisword, '^[0-9_]') > -1 or vim.fn.match(thisword, punct) > -1 then
-            thisword = '`' .. thisword .. '`'
+        local thisword = vim.fn.substitute(line, "^.\\{-}#", "", "")
+        if
+            vim.fn.match(thisword, " ") > -1
+            or vim.fn.match(thisword, "^[0-9_]") > -1
+            or vim.fn.match(thisword, punct) > -1
+        then
+            thisword = "`" .. thisword .. "`"
         end
         word = thisword .. suffix .. word
-        if curpos ~= spacelimit then
-            word = L.find_parent(word, line("."), curpos)
-        end
+        if curpos ~= spacelimit then word = L.find_parent(word, line("."), curpos) end
         return word
     else
         -- Didn't find the parent: should never happen.
-        vim.notify("R-Nvim Error: " .. word .. ":" .. curline, vim.log.levels.ERROR, {title = "R-Nvim"})
+        vim.notify(
+            "R-Nvim Error: " .. word .. ":" .. curline,
+            vim.log.levels.ERROR,
+            { title = "R-Nvim" }
+        )
     end
     return ""
 end
 
-
 -- Start Object Browser
-L.start_OB = function ()
+L.start_OB = function()
     -- Either open or close the Object Browser
     local savesb = vim.o.switchbuf
     vim.o.switchbuf = "useopen,usetab"
@@ -179,9 +204,7 @@ L.start_OB = function ()
         vim.cmd("quit")
         vim.fn.win_gotoid(curwin)
 
-        if curtab ~= objbrtab then
-            L.start_OB()
-        end
+        if curtab ~= objbrtab then L.start_OB() end
     else
         local edbuf = vim.fn.bufnr()
 
@@ -238,7 +261,7 @@ end
 local M = {}
 
 -- Open an Object Browser window
-M.start = function (_)
+M.start = function(_)
     -- Only opens the Object Browser if R is running
     if vim.g.R_Nvim_status < 5 then
         warn("The Object Browser can be opened only if R is running.")
@@ -265,15 +288,11 @@ M.start = function (_)
     end
 end
 
-M.open_close_lists = function (stt)
-    job.stdin("Server", "34" .. stt .. curview .. "\n")
-end
+M.open_close_lists = function(stt) job.stdin("Server", "34" .. stt .. curview .. "\n") end
 
-M.update_OB = function (what)
+M.update_OB = function(what)
     local wht = what == "both" and curview or what
-    if curview ~= wht then
-        return "curview != what"
-    end
+    if curview ~= wht then return "curview != what" end
     if upobcnt then
         -- vim.api.nvim_err_writeln("OB called twice")
         return "OB called twice"
@@ -310,10 +329,8 @@ M.update_OB = function (what)
     upobcnt = false
 end
 
-M.on_double_click = function ()
-    if vim.fn.line(".") == 2 then
-        return
-    end
+M.on_double_click = function()
+    if vim.fn.line(".") == 2 then return end
 
     -- Toggle view: Objects in the workspace X List of libraries
     if vim.fn.line(".") == 1 then
@@ -333,73 +350,72 @@ M.on_double_click = function ()
     if curview == "GlobalEnv" then
         if vim.fn.match(curline, "&#.*\t") > -1 then
             send_to_nvimcom("L", key)
-        elseif vim.fn.match(curline, "\\[#.*\t") > -1 or vim.fn.match(curline, "\\$#.*\t") > -1 or vim.fn.match(curline, "<#.*\t") > -1 or vim.fn.match(curline, ":#.*\t") > -1 then
-            key = vim.fn.substitute(key, '`', '', 'g')
+        elseif
+            vim.fn.match(curline, "\\[#.*\t") > -1
+            or vim.fn.match(curline, "\\$#.*\t") > -1
+            or vim.fn.match(curline, "<#.*\t") > -1
+            or vim.fn.match(curline, ":#.*\t") > -1
+        then
+            key = vim.fn.substitute(key, "`", "", "g")
             job.stdin("Server", "33G" .. key .. "\n")
         else
-            require("r.send").cmd('str(' .. key .. ')')
+            require("r.send").cmd("str(" .. key .. ")")
         end
     else
         if vim.fn.match(curline, "(#.*\t") > -1 then
-            key = vim.fn.substitute(key, '`', '', 'g')
+            key = vim.fn.substitute(key, "`", "", "g")
             require("r.doc").ask_R_doc(key, get_pkg_name(), false)
         else
-            if vim.fn.match(key, ":$") or vim.fn.match(curline, "\\[#.*\t") > -1 or vim.fn.match(curline, "\\$#.*\t") > -1 or vim.fn.match(curline, "<#.*\t") > -1 or vim.fn.match(curline, ":#.*\t") > -1 then
+            if
+                vim.fn.match(key, ":$")
+                or vim.fn.match(curline, "\\[#.*\t") > -1
+                or vim.fn.match(curline, "\\$#.*\t") > -1
+                or vim.fn.match(curline, "<#.*\t") > -1
+                or vim.fn.match(curline, ":#.*\t") > -1
+            then
                 job.stdin("Server", "33L" .. key .. "\n")
             else
-                require("r.send").cmd('str(' .. key .. ')')
+                require("r.send").cmd("str(" .. key .. ")")
             end
         end
     end
 end
 
-M.on_right_click = function ()
-    if vim.fn.line(".") == 1 then
-        return
-    end
+M.on_right_click = function()
+    if vim.fn.line(".") == 1 then return end
 
     local key = get_name()
-    if key == "" then
-        return
-    end
+    if key == "" then return end
 
     local line = vim.fn.getline(vim.fn.line("."))
-    if vim.fn.match(line, "^   ##") > -1 then
-        return
-    end
+    if vim.fn.match(line, "^   ##") > -1 then return end
 
     local isfunction = 0
-    if vim.fn.match(line, "(#.*\t") > -1 then
-        isfunction = 1
-    end
+    if vim.fn.match(line, "(#.*\t") > -1 then isfunction = 1 end
 
-    if hasbrowsermenu then
-        vim.fn.aunmenu("]RBrowser")
-    end
+    if hasbrowsermenu then vim.fn.aunmenu("]RBrowser") end
 
-    key = vim.fn.substitute(key, '\\.', '\\\\.', "g")
-    key = vim.fn.substitute(key, ' ', '\\ ', "g")
+    key = vim.fn.substitute(key, "\\.", "\\\\.", "g")
+    key = vim.fn.substitute(key, " ", "\\ ", "g")
 
-    vim.fn.execute('amenu ]RBrowser.summary(' .. key .. ') :call RAction("summary")<CR>')
-    vim.fn.execute('amenu ]RBrowser.str('     .. key .. ') :call RAction("str")<CR>')
-    vim.fn.execute('amenu ]RBrowser.names('   .. key .. ') :call RAction("names")<CR>')
-    vim.fn.execute('amenu ]RBrowser.plot('    .. key .. ') :call RAction("plot")<CR>')
-    vim.fn.execute('amenu ]RBrowser.print('   .. key .. ') :call RAction("print")<CR>')
-    vim.fn.execute('amenu ]RBrowser.-sep01- <nul>')
-    vim.fn.execute('amenu ]RBrowser.example(' .. key .. ') :call RAction("example")<CR>')
-    vim.fn.execute('amenu ]RBrowser.help('    .. key .. ') :call RAction("help")<CR>')
+    vim.fn.execute("amenu ]RBrowser.summary(" .. key .. ') :call RAction("summary")<CR>')
+    vim.fn.execute("amenu ]RBrowser.str(" .. key .. ') :call RAction("str")<CR>')
+    vim.fn.execute("amenu ]RBrowser.names(" .. key .. ') :call RAction("names")<CR>')
+    vim.fn.execute("amenu ]RBrowser.plot(" .. key .. ') :call RAction("plot")<CR>')
+    vim.fn.execute("amenu ]RBrowser.print(" .. key .. ') :call RAction("print")<CR>')
+    vim.fn.execute("amenu ]RBrowser.-sep01- <nul>")
+    vim.fn.execute("amenu ]RBrowser.example(" .. key .. ') :call RAction("example")<CR>')
+    vim.fn.execute("amenu ]RBrowser.help(" .. key .. ') :call RAction("help")<CR>')
     if isfunction then
-        vim.fn.execute('amenu ]RBrowser.args('.. key .. ') :call RAction("args")<CR>')
+        vim.fn.execute("amenu ]RBrowser.args(" .. key .. ') :call RAction("args")<CR>')
     end
-    vim.fn.popup_menu "]RBrowser"
+    vim.fn.popup_menu("]RBrowser")
     hasbrowsermenu = true
 end
 
-M.on_BufUnload = function ()
-    send_to_nvimcom("N", "OnOBBufUnload")
-end
+M.on_BufUnload = function() send_to_nvimcom("N", "OnOBBufUnload") end
 
-M.print_list_tree = function ()
+M.print_list_tree = function()
     -- FIXME: document this function as a debugging tool or delete it and the
     -- correspoding nvimrserver function.
     job.stdin("Server", "37\n")
