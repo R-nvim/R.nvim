@@ -134,4 +134,20 @@ M.finish_inserting = function(type, txt)
     vim.api.nvim_buf_set_lines(0, vim.fn.line("."), vim.fn.line("."), true, lines)
 end
 
+-- This function is called by nvimcom
+M.obj = function(fname)
+    local fcont = vim.fn.readfile(fname)
+    vim.cmd({ cmd = "tabnew", args = config.tmpdir .. "/edit_" .. vim.env.NVIMR_ID })
+    vim.fn.setline(vim.fn.line("."), fcont)
+    vim.api.nvim_set_option_value("filetype", "r", { scope = "local" })
+    vim.cmd("stopinsert")
+    vim.cmd(
+        "autocmd BufUnload <buffer> lua require('os').remove('"
+            .. config.tmpdir
+            .. "/edit_"
+            .. vim.env.NVIMR_ID
+            .. "_wait')"
+    )
+end
+
 return M
