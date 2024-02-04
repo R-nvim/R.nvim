@@ -108,7 +108,12 @@ static void RegisterPort(int bindportn) // Function to register port number to R
 
 static void ParseMsg(char *b) // Parse the message from R
 {
-    Log("ParseMsg(): strlen(b) = %" PRI_SIZET "", strlen(b));
+#ifdef Debug_NRS
+    if (strlen(b) > 500)
+        Log("ParseMsg(): strlen(b) = %" PRI_SIZET "", strlen(b));
+    else
+        Log("ParseMsg():\n%s", b);
+#endif
 
     if (*b == '+') {
         b++;

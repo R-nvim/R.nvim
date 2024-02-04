@@ -33,18 +33,18 @@ syn region rdocPackage start="^[A-Za-z]\S*::" end="[\s\r]" contains=rdocPackName
 syn match rdocPackName "^[A-Za-z][A-Za-z0-9\.]*" contained
 syn match rdocFuncName "::[A-Za-z0-9\.\-_]*" contained
 
-syn region rdocArgReg matchgroup=rdocArgTitle start="^Arguments:" matchgroup=NONE end="^ \t" contains=rdocArg,rdocArgTitle,rdocPackage,rdocFuncName,rdocStringS keepend transparent
+syn region rdocArgReg matchgroup=rdocArgTitle start="^Arguments:" matchgroup=NONE end="\t$" contains=rdocArg,rdocArgTitle,rdocPackage,rdocFuncName,rdocStringS keepend transparent
 syn match rdocArg "^\s*\([A-Z]\|[a-z]\|[0-9]\|\.\|_\)*\ze:" contained extend
 
 syn include @rdocR syntax/r.vim
 syn region rdocExample matchgroup=rdocExTitle start="^Examples:$" matchgroup=rdocExEnd end='^###$' contains=@rdocR keepend
-syn region rdocUsage matchgroup=rdocTitle start="^Usage:$" matchgroup=NONE end='^\t' contains=@rdocR
+syn region rdocUsage matchgroup=rdocTitle start="^Usage:$" matchgroup=NONE end='\t$' contains=@rdocR
 
 syn sync match rdocSyncExample grouphere rdocExample "^Examples:$"
 syn sync match rdocSyncUsage grouphere rdocUsage "^Usage:$"
 syn sync match rdocSyncArg grouphere rdocArgReg "^Arguments:"
-syn sync match rdocSyncNONE grouphere NONE "^\t$"
-syn sync match rdocSyncNONE grouphere NONE "^ \t$"
+syn sync match rdocSyncNONE grouphere NONE "\t$"
+syn sync match rdocSyncNONE grouphere NONE "\t$"
 
 
 " Define the default highlighting.

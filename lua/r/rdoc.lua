@@ -27,72 +27,28 @@ M.set_buf_options = function()
 end
 
 -- Prepare R documentation output to be displayed by Nvim
-M.fix_rdoc = function()
-    local lnr = vim.fn.line("$")
-    for ii = 1, lnr do
-        local lii = vim.fn.getline(ii)
-        lii = string.gsub(lii, "_\010", "")
-        lii = string.gsub(lii, "<URL: %([^>]*%)>", " |%1|")
-        lii = string.gsub(lii, "<email: %([^>]*%)>", " |%1|")
-        if not config.is_windows then
-            -- curly single quotes only if the environment is UTF-8
-            lii = string.gsub(lii, "\x91", "‘")
-            lii = string.gsub(lii, "\x92", "’")
-        end
-        vim.fn.setline(ii, lii)
+M.fix_rdoc = function(txt)
+    txt = string.gsub(txt, "%_\x08", "")
+    txt = string.gsub(txt, "<URL: %([^>]*%)>", " |%1|")
+    txt = string.gsub(txt, "<email: %([^>]*%)>", " |%1|")
+    if not config.is_windows then
+        -- curly single quotes only if the environment is UTF-8
+        txt = string.gsub(txt, "\x91", "‘")
+        txt = string.gsub(txt, "\x92", "’")
     end
 
     -- Mark the end of Examples
-    local ii = vim.fn.search("^Examples:$", "nw")
-    if ii ~= 0 then
-        if vim.fn.getline(vim.fn.line("$")) ~= "^###$" then
-            lnr = vim.fn.line("$") + 1
-            vim.fn.setline(lnr, "###")
-        end
+    if txt:find("\x14Examples:\x14") then txt = txt .. "\x14###" end
+
+    local lines = vim.split(txt, "\x14")
+    local n = 1
+    local N = #lines
+    while n < N do
+        -- Add a tab character before each section to mark its end.
+        if lines[n]:match("^[A-Z][a-z]+:") then lines[n - 1] = lines[n - 1] .. "\t" end
+        n = n + 1
     end
-
-    -- Add a tab character at the end of the Arguments section to mark its end.
-    ii = vim.fn.search("^Arguments:$", "nw")
-    if ii ~= 0 then
-        -- A space after 'Arguments:' is necessary for correct syntax highlight
-        -- of the first argument
-        vim.fn.setline(ii, "Arguments: ")
-        local doclength = vim.fn.line("$")
-        ii = ii + 2
-        local lin = vim.fn.getline(ii)
-        while not lin:match("^[A-Z].*:") and ii < doclength do
-            ii = ii + 1
-            lin = vim.fn.getline(ii)
-        end
-        if ii < doclength then
-            ii = ii - 1
-            if vim.fn.getline(ii) == "^$" then vim.fn.setline(ii, " \t") end
-        end
-    end
-
-    -- Add a tab character at the end of the Usage section to mark its end.
-    ii = vim.fn.search("^Usage:$", "nw")
-    if ii ~= 0 then
-        local doclength = vim.fn.line("$")
-        ii = ii + 2
-        local lin = vim.fn.getline(ii)
-        while not lin:match("^[A-Z].*:") and ii < doclength do
-            ii = ii + 1
-            lin = vim.fn.getline(ii)
-        end
-        if ii < doclength then
-            ii = ii - 1
-            if vim.fn.getline(ii) == "^ *$" then vim.fn.setline(ii, "\t") end
-        end
-    end
-
-    vim.cmd("normal! gg")
-
-    -- Clear undo history
-    local old_undolevels = vim.o.undolevels
-    vim.o.undolevels = -1
-    vim.cmd([[normal! a \<BS>\<Esc>]])
-    vim.o.undolevels = old_undolevels
+    return lines
 end
 
 -- Move the cursor to the Examples section in R documentation
