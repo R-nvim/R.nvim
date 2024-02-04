@@ -33,11 +33,7 @@ end
 vim.b.IsInRCode = is_in_R_code
 
 -- Key bindings and menu items
-require("r.maps").start()
-require("r.maps").edit()
-require("r.maps").send()
-require("r.maps").control()
-require("r.maps").create("nvi", "RSetwd", "rd", ":call RSetWD()")
+require("r.maps").create("rhelp")
 
 if vim.b.undo_ftplugin then
     vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
