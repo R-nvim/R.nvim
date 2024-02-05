@@ -16,7 +16,6 @@ end
 
 M.on_stdout = function (job_id, data, _)
     local cmd
-    -- vim.fn.system("echo 'on_stdout 1: " .. table.concat(data, "") .. "' >> /dev/shm/r-nvim-lua-log")
     for _, v in pairs(data) do
         cmd = v:gsub('\r', '')
         if #cmd > 0 then
