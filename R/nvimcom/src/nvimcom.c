@@ -66,7 +66,7 @@ static int curdepth = 0; // Current level of the list or S4 object being parsed
                          // for omni-completion.
 static int autoglbenv = 0; // Should the list of objects in .GlobalEnv be
 // automatically updated after each top level command is executed? It will
-// always be 1 if cmp-nvim-r is installed or the Object Browser is open.
+// always be 1 if cmp-r is installed or the Object Browser is open.
 static clock_t tm; // Time when the listing of objects from .GlobalEnv started.
 
 static char tmpdir[512]; // The environment variable NVIMR_TMPDIR.
