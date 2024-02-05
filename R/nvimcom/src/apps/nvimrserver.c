@@ -2273,7 +2273,7 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
                                     s++;
                                 s++;
                                 printf("call "
-                                       "v:lua.require'cmp_nvim_r'.finish_get_"
+                                       "v:lua.require'cmp_r'.finish_get_"
                                        "args('%s')\n",
                                        s);
                                 fflush(stdout);
