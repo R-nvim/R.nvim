@@ -32,8 +32,7 @@ M.unset_R_home = function()
 end
 
 M.start_Rgui = function()
-    if vim.g.R_Nvim_status == 5 then return end
-    vim.g.R_Nvim_status = 4
+    vim.g.R_Nvim_status = 6
 
     if vim.fn.match(config.R_app, "Rterm") then
         warn('"R_app" cannot be "Rterm.exe". R will crash if you send any command.')

@@ -29,7 +29,7 @@ local config = {
     esc_term            = true,
     external_term       = false, -- might be a string
     fun_data_1          = { "select", "rename", "mutate", "filter" },
-    fun_data_2          = { ggplot        = { "aes" }, with    = "*" },
+    fun_data_2          = { ggplot = { "aes" }, with = "*" },
     help_w              = 46,
     hi_fun_paren        = false,
     hook                = { after_R_start = nil, after_ob_open = nil },
@@ -244,17 +244,17 @@ local do_common_global = function()
 
     -- Create or update the README (omnils_ files will be regenerated if older than
     -- the README).
-    local need_readme = 0
+    local need_readme = false
     local first_line = "Last change in this file: 2024-01-30"
     if
         vim.fn.filereadable(config.compldir .. "/README") == 0
         or vim.fn.readfile(config.compldir .. "/README")[1] ~= first_line
     then
-        need_readme = 1
+        need_readme = true
         vim.notify("Need README") -- FIXME: delete this line
     end
 
-    if need_readme == 1 then
+    if need_readme then
         vim.fn.delete(config.compldir .. "/nvimcom_info")
         vim.fn.delete(config.compldir .. "/pack_descriptions")
         vim.fn.delete(config.compldir .. "/path_to_nvimcom")
@@ -383,33 +383,34 @@ local do_common_global = function()
         )
     then
         -- Sending multiple lines at once to Rgui on Windows does not work.
-        config.parenblock = 0
+        config.parenblock = false
     else
-        config.parenblock = 1
+        config.parenblock = true
     end
 
     if type(config.external_term) == "boolean" and config.external_term == false then
         config.nvimpager = "vertical"
-        config.save_win_pos = 0
-        config.arrange_windows = 0
+        config.save_win_pos = false
+        config.arrange_windows = false
     else
         config.nvimpager = "tab"
+        config.objbr_place = string.gsub(config.objbr_place, "console", "script")
     end
 
     if config.is_windows then
-        config.save_win_pos = 1
-        config.arrange_windows = 1
+        config.save_win_pos = true
+        config.arrange_windows = true
     else
-        config.save_win_pos = 0
-        config.arrange_windows = 0
+        config.save_win_pos = false
+        config.arrange_windows = false
     end
 
     -- The environment variables NVIMR_COMPLCB and NVIMR_COMPLInfo must be defined
     -- before starting the nvimrserver because it needs them at startup.
-    config.update_glbenv = 0
-    if type(package.loaded["cmp_nvim_r"]) == "table" then config.update_glbenv = 1 end
-    vim.env.NVIMR_COMPLCB = "v:lua.require'cmp_nvim_r'.asynccb"
-    vim.env.NVIMR_COMPLInfo = "v:lua.require'cmp_nvim_r'.complinfo"
+    config.update_glbenv = false
+    if type(package.loaded["cmp_r"]) == "table" then config.update_glbenv = true end
+    vim.env.NVIMR_COMPLCB = "v:lua.require'cmp_r'.asynccb"
+    vim.env.NVIMR_COMPLInfo = "v:lua.require'cmp_r'.complinfo"
 
     -- Look for invalid options
     local objbrplace = vim.split(config.objbr_place, ",")
@@ -452,8 +453,8 @@ local do_common_global = function()
     config.curview = "None"
 
     -- SyncTeX options
-    config.has_wmctrl = 0
-    config.has_awbt = 0
+    config.has_wmctrl = false
+    config.has_awbt = false
 
     -- Set the name of R executable
     if config.is_windows then
@@ -597,7 +598,7 @@ local tmux_config = function()
     local ttime = vim.fn.reltime()
     -- Check whether Tmux is OK
     if vim.fn.executable("tmux") == 0 then
-        config.external_term = 0
+        config.external_term = false
         warn("tmux executable not found")
         return
     end
@@ -757,8 +758,10 @@ M.store_user_opts = function(opts)
     -- 1: ftplugin/* sourced, but nclientserver not started yet.
     -- 2: nclientserver started, but not ready yet.
     -- 3: nclientserver is ready.
-    -- 4: R started, but nvimcom was not loaded yet.
-    -- 5: nvimcom is loaded.
+    -- 4: nclientserver started the TCP server
+    -- 5: TCP server is ready
+    -- 6: R started, but nvimcom was not loaded yet.
+    -- 7: nvimcom is loaded.
     vim.g.R_Nvim_status = 0
 
     user_opts = opts

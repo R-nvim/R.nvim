@@ -42,7 +42,7 @@ Git pull requests are welcome.
       - Send commands with the object under cursor as argument: help, args,
         plot, print, str, summary, example, names.
       - Send to R the Sweave, knit and pdflatex commands.
-  * Auto completion of (with `cmp-nvim-r`):
+  * Auto completion of (with `cmp-r`):
       - R objects (.GlobalEnv and loaded packages).
       - function arguments (if R is running).
       - knitr chunk options.
@@ -87,8 +87,8 @@ Main dependencies:
       https://github.com/neovim/neovim/releases
       See also: https://github.com/neovim/neovim/wiki/Installing-Neovim
 
-      Also cmp-nvim-r if you want auto completion from R-Nvim:
-      https://github.com/jalvesaq/cmp-nvim-r
+      Also cmp-r if you want auto completion from R-Nvim:
+      https://github.com/jalvesaq/cmp-r
 
 
    R >= 4.0.0:
@@ -114,7 +114,7 @@ Main dependencies:
 Additional dependencies for automatic code completion (Neovim only):
 
    - https://github.com/hrsh7th/nvim-cmp
-   - https://github.com/jalvesaq/cmp-nvim-r
+   - https://github.com/jalvesaq/cmp-r
 
 Additional dependencies for editing Rnoweb documents:
 
@@ -552,7 +552,7 @@ In any case, the pdf viewer must be started by the R-Nvim plugin. See
 ------------------------------------------------------------------------------
 4.3. Omni completion
 
-If `cmp-nvim-r` (a source for `nvim-cmp`) is installed, Neovim can
+If `cmp-r` (a source for `nvim-cmp`) is installed, Neovim can
 automatically complete the names of R objects as you type them.
 
 R-Nvim does not complete the names of all functions of all installed packages
@@ -626,7 +626,7 @@ background):
 <
 Notes:
 
-  - If either the Object Browser is open or cmp-nvim-r is installed, the
+  - If either the Object Browser is open or cmp-r is installed, the
     list of .GlobalEnv objects will be automatically updated by R after each
     successful evaluation of command. This may slowdown R if its workspace has
     too many objects, data.frames with too many columns or lists with too many
@@ -1814,7 +1814,7 @@ There are two ways of getting automatic completion of R objects names while
 you type: using R-Nvim's built-in completion system (as a source for
 `nvim-cmp`) and using a language server. See:
 
-   https://github.com/jalvesaq/cmp-nvim-r
+   https://github.com/jalvesaq/cmp-r
    https://github.com/REditorSupport/languageserver
 
 The advantage of R-Nvim's built-in system is the ability to complete objects
@@ -1822,13 +1822,13 @@ of the R's workspace (`.GlobalEnv`), including column names of data.frames.
 
 Note: If you are using the `languageserver` package, you should disable its
 auto completion feature in your `~/.Rprofile` to get completions from
-`cmp-nvim-r`:
+`cmp-r`:
 >r
    options(languageserver.server_capabilities =
            list(completionProvider = FALSE,
                 completionItemResolve = FALSE))
 <
-If you prefer to get completions from the language server, `cmp-nvim-r` should
+If you prefer to get completions from the language server, `cmp-r` should
 not be installed.
 
 While completing function arguments, R-Nvim may include column names from the

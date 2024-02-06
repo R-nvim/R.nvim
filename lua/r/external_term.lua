@@ -159,49 +159,36 @@ M.start_extern_term = function(Rcmd)
         .. " "
         .. Rcmd
 
-    vim.fn.system("tmux -L NvimR has-session -t " .. tmuxsname)
-    if vim.v.shell_error ~= 0 then
-        if config.is_darwin then
-            open_cmd = string.format(
-                "tmux -L NvimR -2 %s new-session -s %s '%s'",
-                tmuxcnf,
-                tmuxsname,
-                cmd
-            )
-            local open_file = vim.fn.tempname() .. "/openR"
-            vim.fn.writefile({ "#!/bin/sh", open_cmd }, open_file)
-            vim.fn.system("chmod +x '" .. open_file .. "'")
-            open_cmd = "open '" .. open_file .. "'"
-        elseif term_name == "konsole" then
-            open_cmd = string.format(
-                "%s 'tmux -L NvimR -2 %s new-session -s %s \"%s\"'",
-                term_cmd,
-                tmuxcnf,
-                tmuxsname,
-                cmd
-            )
-        else
-            open_cmd = string.format(
-                '%s tmux -L NvimR -2 %s new-session -s %s "%s"',
-                term_cmd,
-                tmuxcnf,
-                tmuxsname,
-                cmd
-            )
-        end
-    else
-        if config.is_darwin then
-            print("Tmux session with R is already running")
-            return
-        end
+    if config.is_darwin then
         open_cmd = string.format(
-            "%s tmux -L NvimR -2 %s attach-session -d -t %s",
+            "tmux -L NvimR -2 %s new-session -s %s '%s'",
+            tmuxcnf,
+            tmuxsname,
+            cmd
+        )
+        local open_file = vim.fn.tempname() .. "/openR"
+        vim.fn.writefile({ "#!/bin/sh", open_cmd }, open_file)
+        vim.fn.system("chmod +x '" .. open_file .. "'")
+        open_cmd = "open '" .. open_file .. "'"
+    elseif term_name == "konsole" then
+        open_cmd = string.format(
+            "%s 'tmux -L NvimR -2 %s new-session -s %s \"%s\"'",
             term_cmd,
             tmuxcnf,
-            tmuxsname
+            tmuxsname,
+            cmd
+        )
+    else
+        open_cmd = string.format(
+            '%s tmux -L NvimR -2 %s new-session -s %s "%s"',
+            term_cmd,
+            tmuxcnf,
+            tmuxsname,
+            cmd
         )
     end
 
+    vim.g.R_Nvim_status = 6
     if config.silent_term then
         open_cmd = open_cmd .. " &"
         local rlog = vim.fn.system(open_cmd)

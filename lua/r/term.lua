@@ -104,7 +104,7 @@ local split_window = function()
     end
 end
 
-local reopen_win = function()
+M.reopen_win = function()
     local wlist = vim.api.nvim_list_wins()
     for _, wnr in ipairs(wlist) do
         if vim.api.nvim_win_get_buf(wnr) == R_bufnr then
@@ -119,12 +119,7 @@ local reopen_win = function()
 end
 
 M.start_term = function()
-    -- Check if R is running
-    if vim.g.R_Nvim_status == 5 then
-        reopen_win()
-        return
-    end
-    vim.g.R_Nvim_status = 4
+    vim.g.R_Nvim_status = 6
 
     local edbuf = vim.fn.bufname("%")
     vim.o.switchbuf = "useopen"
