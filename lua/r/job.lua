@@ -78,6 +78,11 @@ M.on_exit = function (job_id, data, _)
         warn('"' .. key .. '"' .. ' exited with status ' .. data)
     end
     if key == 'R' or key == 'RStudio' then
+        if M.is_running("Server") then
+            vim.g.R_Nvim_status = 3
+        else
+            vim.g.R_Nvim_status = 1
+        end
         require("r.run").clear_R_info()
     end
     if key == 'Server' then
