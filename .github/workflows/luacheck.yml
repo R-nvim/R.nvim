@@ -5,6 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Luacheck linter
         uses: lunarmodules/luacheck@v1
+        with:
+          args: . --std luajit --globals vim
