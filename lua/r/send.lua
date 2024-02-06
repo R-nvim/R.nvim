@@ -1,6 +1,7 @@
 -- TODO: Make the echo/silent option work
 
 local config = require("r.config").get_config()
+local warn = require("r").warn
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 
@@ -33,13 +34,57 @@ end
 
 M.cmd = M.not_running
 
-M.GetSourceArgs = function(e)
+M.get_source_args = function(e)
     -- local sargs = config.source_args or ''
     local sargs = ""
     if config.source_args ~= "" then sargs = ", " .. config.source_args end
 
     if e == "echo" then sargs = sargs .. ", echo=TRUE" end
     return sargs
+end
+
+M.source_lines = function(lines, verbose, what)
+    require("r.edit").add_for_deletion(config.source_write)
+
+    if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
+        lines =
+            vim.fn.map(vim.deepcopy(lines), 'substitute(v:val, "^\\(``\\)\\?", "", "")')
+    end
+
+    if what and what == "NewtabInsert" then
+        vim.fn.writefile(lines, config.source_write)
+        require("r.run").send_to_nvimcom(
+            "E",
+            'nvimcom:::nvim_capture_source_output("'
+                .. config.source_read
+                .. '", "NewtabInsert")'
+        )
+        return 1
+    end
+
+    local rcmd
+
+    -- The "bracketed paste" option is not documented because it is not well
+    -- tested and source() have always worked flawlessly.
+    -- FIXME: document it
+    if config.source_args == "bracketed paste" then
+        rcmd = "\033[200~" .. table.concat(lines, "\n") .. "\033[201~"
+    else
+        vim.fn.writefile(lines, config.source_write)
+        local sargs = string.gsub(M.get_source_args(verbose), "^, ", "")
+        if what then
+            rcmd = "NvimR." .. what .. "(" .. sargs .. ")"
+        else
+            rcmd = "NvimR.source(" .. sargs .. ")"
+        end
+    end
+
+    if what and what == "PythonCode" then
+        rcmd = 'reticulate::py_run_file("' .. config.source_read .. '")'
+    end
+
+    local ok = M.cmd(rcmd)
+    return ok
 end
 
 M.above_lines = function()
@@ -71,9 +116,10 @@ end
 
 M.line = function(m)
     local current_line = vim.fn.line(".")
-    local lines = vim.api.nvim_buf_get_lines(0, current_line - 1, current_line, false)
+    local line = vim.api.nvim_buf_get_lines(0, current_line - 1, current_line, false)[1]
+    if line == "" and m == "down" then cursor.move_next_line() end
 
-    M.cmd(lines[1])
+    M.cmd(line)
 
     if m == "down" then cursor.move_next_line() end
 end
@@ -93,15 +139,9 @@ end
 
 -- Send the current function
 M.fun = function()
-    local start_line = vim.fn.searchpair(".*<-\\s*function", "", "^}", "cbnW")
-    local end_line = vim.fn.searchpair(".*<-\\s*function", "", "^}$", "cnW")
-
-    if start_line ~= 0 and start_line <= end_line then
-        local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
-        M.cmd(lines)
-    else
-        require("r").warn("Not inside a function.")
-    end
+    warn(
+        "Sending function not implemented. It will be either implemented using treesitter or never implemented."
+    )
 end
 
 return M

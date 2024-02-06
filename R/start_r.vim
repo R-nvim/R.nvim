@@ -1,64 +1,5 @@
-"==============================================================================
-" Function to start R and functions that are called only after R is started.
-"==============================================================================
-
-
-"==============================================================================
-" Functions that ask R to help editing the code
-"==============================================================================
-
-
-
-"==============================================================================
-" Functions to send code directly to R Console
-"==============================================================================
-
-function GetSourceArgs(e)
-    let sargs = ""
-    if g:Rcfg.source_args != ""
-        let sargs = ", " . g:Rcfg.source_args
-    endif
-    if a:e == "echo"
-        let sargs .= ', echo=TRUE'
-    endif
-    return sargs
-endfunction
 
 " Send sources to R
-function RSourceLines(...)
-    let lines = a:1
-    if &filetype == "rmd" || &filetype == "quarto"
-        let lines = map(copy(lines), 'substitute(v:val, "^(\\`\\`)\\?", "", "")')
-    endif
-
-    if a:0 == 3 && a:3 == "NewtabInsert"
-        call writefile(lines, s:Rsource_write)
-        call SendToNvimcom("E", 'nvimcom:::nvim_capture_source_output("' . s:Rsource_read . '", "NewtabInsert")')
-        return 1
-    endif
-
-    " The "brackted paste" option is not documented because it is not well
-    " tested and source() have always worked flawlessly.
-    if g:Rcfg.source_args == "bracketed paste"
-        let rcmd = "\x1b[200~" . join(lines, "\n") . "\x1b[201~"
-    else
-        call writefile(lines, s:Rsource_write)
-        let sargs = substitute(GetSourceArgs(a:2), '^, ', '', '')
-        if a:0 == 3
-            let rcmd = 'NvimR.' . a:3 . '(' . sargs . ')'
-        else
-            let rcmd = 'NvimR.source(' . sargs . ')'
-        endif
-    endif
-
-    if a:0 == 3 && a:3 == "PythonCode"
-        let rcmd = 'reticulate::py_run_file("' . s:Rsource_read . '")'
-    endif
-
-    let ok = g:SendCmdToR(rcmd)
-    return ok
-endfunction
-
 function CleanOxygenLine(line)
     let cline = a:line
     if cline =~ "^\s*#\\{1,2}'"
@@ -166,75 +107,6 @@ function CountBraces(line)
     let line3 = substitute(a:line, "}", "", "g")
     let result = strlen(line3) - strlen(line2)
     return result
-endfunction
-
-" Send functions to R
-function SendFunctionToR(e, m)
-    if &filetype != "r" && b:IsInRCode(1) != 1
-        return
-    endif
-
-    let startline = line(".")
-    let save_cursor = getpos(".")
-    let line = SanitizeRLine(getline("."))
-    let i = line(".")
-    while i > 0 && line !~ "function"
-        let i -= 1
-        let line = SanitizeRLine(getline(i))
-    endwhile
-    if i == 0
-        call RWarningMsg("Begin of function not found.")
-        return
-    endif
-    let functionline = i
-    while i > 0 && line !~ '\(<-\|=\)[[:space:]]*\($\|function\)'
-        let i -= 1
-        let line = SanitizeRLine(getline(i))
-    endwhile
-    if i == 0
-        call RWarningMsg("The function assign operator  <-  was not found.")
-        return
-    endif
-    let firstline = i
-    let i = functionline
-    let line = SanitizeRLine(getline(i))
-    let tt = line("$")
-    while i < tt && line !~ "{"
-        let i += 1
-        let line = SanitizeRLine(getline(i))
-    endwhile
-    if i == tt
-        call RWarningMsg("The function opening brace was not found.")
-        return
-    endif
-    let nb = CountBraces(line)
-    while i < tt && nb > 0
-        let i += 1
-        let line = SanitizeRLine(getline(i))
-        let nb += CountBraces(line)
-    endwhile
-    if nb != 0
-        call RWarningMsg("The function closing brace was not found.")
-        return
-    endif
-    let lastline = i
-
-    if startline > lastline
-        call setpos(".", [0, firstline - 1, 1])
-        call SendFunctionToR(a:e, a:m)
-        call setpos(".", save_cursor)
-        return
-    endif
-
-    let lines = getline(firstline, lastline)
-    let ok = RSourceLines(lines, a:e, "function")
-    if  ok == 0
-        return
-    endif
-    if a:m == "down"
-        call cursor(lastline, 1)
-        call GoDown()
-    endif
 endfunction
 
 " Send selection to R
@@ -400,12 +272,6 @@ function RParenDiff(str)
     return llen1 - llen2
 endfunction
 
-if exists('g:r_indent_op_pattern')
-    let g:rplugin.op_pattern = g:r_indent_op_pattern
-else
-    let g:rplugin.op_pattern = '\(&\||\|+\|-\|\*\|/\|=\|\~\|%\|->\||>\)\s*$'
-endif
-
 " Send current line to R.
 function SendLineToR(godown, ...)
     let lnum = get(a:, 1, ".")
@@ -549,28 +415,3 @@ function SendLineToR(godown, ...)
     endif
 endfunction
 
-function RSourceDirectory(...)
-    if has("win32")
-        let dir = substitute(a:1, '\\', '/', "g")
-    else
-        let dir = a:1
-    endif
-    if dir == ""
-        call g:SendCmdToR("nvim.srcdir()")
-    else
-        call g:SendCmdToR("nvim.srcdir('" . dir . "')")
-    endif
-endfunction
-
-function PrintRObject(rkeyword)
-    if bufname("%") =~ "Object_Browser"
-        let firstobj = ""
-    else
-        let firstobj = RGetFirstObj(a:rkeyword)[0]
-    endif
-    if firstobj == ""
-        call g:SendCmdToR("print(" . a:rkeyword . ")")
-    else
-        call g:SendCmdToR('nvim.print("' . a:rkeyword . '", "' . firstobj . '")')
-    endif
-endfunction
