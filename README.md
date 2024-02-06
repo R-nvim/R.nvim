@@ -1,3 +1,6 @@
+
+[![Luacheck](https://img.shields.io/github/actions/workflow/status/lunarmodules/lua_cliargs/luacheck.yml?branch=master&label=Luacheck&logo=Lua)](https://github.com/lunarmodules/lua_cliargs/actions?workflow=Luacheck)
+
 # R-Nvim
 
 This is the development code of R-Nvim which improves Neovim's support to edit
