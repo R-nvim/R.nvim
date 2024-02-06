@@ -374,6 +374,17 @@ local do_common_global = function()
     vim.env.NVIMR_TMPDIR = config.tmpdir
     vim.env.NVIMR_COMPLDIR = config.compldir
 
+    -- Make the file name of files to be sourced
+    if config.remote_compldir then
+        config.source_read = config.compl_tmpdir .. "/tmp/Rsource-" .. vim.fn.getpid()
+    else
+        config.source_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
+    end
+    config.source_write = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
+
+    -- FIXME: convert to Lua pattern
+    config.op_pattern = [[\(&\||\|+\|-\|\*\|/\|=\|\~\|%\|->\||>\)\s*$']]
+
     -- Default values of some variables
     if
         config.is_windows
@@ -730,10 +741,11 @@ local global_setup = function()
         { nargs = 1 }
     )
 
-    vim.api.nvim_create_user_command("RSourceDir", function(tbl)
-        -- FIXME: it was :call RSourceDirectory(<q-args>)
-        vim.notify(tbl.fargs)
-    end, { nargs = 1, complete = "dir" })
+    vim.api.nvim_create_user_command(
+        "RSourceDir",
+        function(tbl) require("r.run").source_dir(tbl.fargs) end,
+        { nargs = 1, complete = "dir" }
+    )
 
     vim.api.nvim_create_user_command(
         "Rhelp",

@@ -805,4 +805,13 @@ M.get_buf_dir = function()
     return rwd
 end
 
+M.source_dir = function(dir)
+    if config.is_windows then dir = utils.nomralize_windows_path(dir) end
+    if dir == "" then
+        send.cmd("nvim.srcdir()")
+    else
+        send.cmd("nvim.srcdir('" .. dir .. "')")
+    end
+end
+
 return M
