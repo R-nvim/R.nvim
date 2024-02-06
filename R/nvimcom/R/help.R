@@ -124,7 +124,7 @@ nvim.example <- function(topic) {
         if (is.character(ret)) {
             if (length(ret) > 0) {
                 writeLines(ret, paste0(Sys.getenv("NVIMR_TMPDIR"), "/example.R"))
-                .C("nvimcom_msg_to_nvim", "call OpenRExample()", PACKAGE = "nvimcom")
+                .C("nvimcom_msg_to_nvim", "lua require('r.edit').open_example()", PACKAGE = "nvimcom")
             } else {
                 .C("nvimcom_msg_to_nvim",
                    paste0("lua require('r').warn('There is no example for \"", topic, "\"')"),
