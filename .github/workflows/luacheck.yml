@@ -1,3 +1,4 @@
+# https://github.com/Kampfkarren/selene/issues/284
 name: Luacheck
 on: [push, pull_request]
 jobs:
@@ -7,6 +8,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Luacheck linter
-        uses: lunarmodules/luacheck@v1
-        with:
-          args: . --std luajit --globals vim
+        run: selene lua
+        # uses: lunarmodules/luacheck@v1
+        # with:
+        #   args: . --globals vim --max-line-length 150
