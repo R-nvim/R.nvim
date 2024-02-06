@@ -5,6 +5,23 @@ local warn = require("r").warn
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 
+local clean_oxygen_line = function(line)
+    if line:find("^%s*#'") then
+        local synID = vim.fn.synID(vim.fn.line("."), vim.fn.col("."), 1)
+        local synName = vim.fn.synIDattr(synID, "name")
+        if synName == "rOExamples" then line = string.gsub(line, "^%s*#'", "") end
+    end
+    return line
+end
+
+local clean_current_line = function()
+    local lnum = vim.fn.line(".")
+    local curline = vim.api.nvim_buf_get_lines(0, lnum, lnum, true)[1]
+    curline = string.gsub(curline, "^%s*", "")
+    if vim.bo.filetype == "r" then curline = clean_oxygen_line(curline) end
+    return curline
+end
+
 local M = {}
 
 M.set_send_cmd_fun = function()

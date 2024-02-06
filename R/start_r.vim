@@ -1,24 +1,4 @@
 
-" Send sources to R
-function CleanOxygenLine(line)
-    let cline = a:line
-    if cline =~ "^\s*#\\{1,2}'"
-        let synName = synIDattr(synID(line("."), col("."), 1), "name")
-        if synName == "rOExamples"
-            let cline = substitute(cline, "^\s*#\\{1,2}'", "", "")
-        endif
-    endif
-    return cline
-endfunction
-
-function CleanCurrentLine()
-    let curline = substitute(getline("."), '^\s*', "", "")
-    if &filetype == "r"
-        let curline = CleanOxygenLine(curline)
-    endif
-    return curline
-endfunction
-
 " Skip empty lines and lines whose first non blank char is '#'
 function GoDown()
     if &filetype == "rnoweb"
@@ -99,14 +79,6 @@ function SendMBlockToR(e, m)
         call cursor(lineB, 1)
         call GoDown()
     endif
-endfunction
-
-" Count braces
-function CountBraces(line)
-    let line2 = substitute(a:line, "{", "", "g")
-    let line3 = substitute(a:line, "}", "", "g")
-    let result = strlen(line3) - strlen(line2)
-    return result
 endfunction
 
 " Send selection to R
