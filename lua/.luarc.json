@@ -2,5 +2,8 @@
     "diagnostics.globals": [
         "GetSourceArgs",
         "vim"
+    ],
+    "diagnostics.disable": [
+        "unused-local"
     ]
 }
