@@ -29,7 +29,7 @@ local config = {
     esc_term            = true,
     external_term       = false, -- might be a string
     fun_data_1          = { "select", "rename", "mutate", "filter" },
-    fun_data_2          = { ggplot        = { "aes" }, with    = "*" },
+    fun_data_2          = { ggplot = { "aes" }, with = "*" },
     help_w              = 46,
     hi_fun_paren        = false,
     hook                = { after_R_start = nil, after_ob_open = nil },
@@ -407,9 +407,9 @@ local do_common_global = function()
     -- The environment variables NVIMR_COMPLCB and NVIMR_COMPLInfo must be defined
     -- before starting the nvimrserver because it needs them at startup.
     config.update_glbenv = 0
-    if type(package.loaded["cmp_nvim_r"]) == "table" then config.update_glbenv = 1 end
-    vim.env.NVIMR_COMPLCB = "v:lua.require'cmp_nvim_r'.asynccb"
-    vim.env.NVIMR_COMPLInfo = "v:lua.require'cmp_nvim_r'.complinfo"
+    if type(package.loaded["cmp_r"]) == "table" then config.update_glbenv = 1 end
+    vim.env.NVIMR_COMPLCB = "v:lua.require'cmp_r'.asynccb"
+    vim.env.NVIMR_COMPLInfo = "v:lua.require'cmp_r'.complinfo"
 
     -- Look for invalid options
     local objbrplace = vim.split(config.objbr_place, ",")
