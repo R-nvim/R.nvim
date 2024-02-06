@@ -115,7 +115,7 @@ nvim_viewobj <- function(oname, fenc = "", nrows = NULL, howto = "tabnew", R_df_
         txt <- paste0(txt, collapse = "\x14")
         txt <- gsub("'", "\x13", txt)
         .C("nvimcom_msg_to_nvim",
-           paste0("call RViewDF('", oname, "', '", howto, "', '", txt, "')"),
+           paste0("lua require('r.edit').view_df('", oname, "', '", howto, "', '", txt, "')"),
            PACKAGE = "nvimcom")
     } else {
         nvim_dput(oname, howto)
@@ -259,7 +259,7 @@ nvim.GlobalEnv.fun.args <- function(funcname) {
     txt <- gsub('\\\\\\"', '\005', txt)
     txt <- gsub('"', '\\\\"', txt)
     .C("nvimcom_msg_to_nvim",
-       paste0("call v:lua.require'cmp_r'.finish_ge_fun_args(\"", txt, '")'),
+       paste0("lua require('cmp_r').finish_ge_fun_args(\"", txt, '")'),
        PACKAGE = "nvimcom")
     return(invisible(NULL))
 }
@@ -296,7 +296,7 @@ nvim.get.summary <- function(obj, wdth) {
     txt <- paste0(txt, collapse = "\n")
     txt <- gsub("'", "\x13", gsub("\n", "\x14", txt))
 
-    .C("nvimcom_msg_to_nvim", paste0("call v:lua.require'cmp_r'.finish_summary('", txt, "')"),
+    .C("nvimcom_msg_to_nvim", paste0("lua require('cmp_r').finish_summary('", txt, "')"),
        PACKAGE = "nvimcom")
     return(invisible(NULL))
 }

@@ -169,4 +169,83 @@ M.get_output = function(fnm, txt)
     vim.cmd("redraw")
 end
 
+M.view_df = function(oname, howto, txt)
+    local csv_lines = vim.split(string.gsub(txt, "\023", "'"), "\024")
+
+    if config.csv_app then
+        local tsvnm = config.tmpdir .. "/" .. oname .. ".tsv"
+        vim.fn.writefile(csv_lines, tsvnm)
+        M.add_for_deletion(tsvnm)
+
+        if type(config.csv_app) == "function" then
+            config.csv_app(tsvnm)
+            return
+        end
+
+        local cmd
+        if string.find(config.csv_app, "%%s") then
+            cmd = string.format(config.csv_app, tsvnm)
+        else
+            cmd = config.csv_app .. " " .. tsvnm
+        end
+
+        if string.find(config.csv_app, "^terminal:") == 0 then
+            cmd = string.gsub(cmd, "^terminal:", "")
+            vim.cmd("tabnew | terminal " .. cmd)
+            vim.cmd("startinsert")
+            return
+        end
+
+        local appcmd = vim.fn.split(cmd)
+        require("r.job").start(appcmd, { detach = true })
+        return
+    end
+
+    local location = howto
+    vim.cmd("silent execute " .. location .. " " .. oname)
+    vim.api.nvim_buf_set_lines(0, 1, 1, true, csv_lines)
+    vim.fn.setline(1, csv_lines)
+
+    vim.api.nvim_set_option_value("modifiable", false, { scope = "local" })
+    vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
+    vim.api.nvim_set_option_value("filetype", "csv", { scope = "local" })
+end
+
+M.open_example = function()
+    if vim.fn.bufloaded(config.tmpdir .. "/example.R") ~= 0 then
+        vim.cmd("bunload! " .. vim.fn.substitute(config.tmpdir, " ", "\\ ", "g"))
+    end
+    if config.nvimpager == "tabnew" or config.nvimpager == "tab" then
+        vim.cmd(
+            "tabnew " .. vim.fn.substitute(config.tmpdir, " ", "\\ ", "g") .. "/example.R"
+        )
+    else
+        local nvimpager = config.nvimpager
+        if config.nvimpager == "vertical" then
+            local wwidth = vim.fn.winwidth(0)
+            local min_e = (config.editor_w > 78) and config.editor_w or 78
+            local min_h = (config.help_w > 78) and config.help_w or 78
+            if wwidth < (min_e + min_h) then nvimpager = "horizontal" end
+        end
+        if nvimpager == "vertical" then
+            vim.cmd(
+                "belowright vsplit "
+                    .. vim.fn.substitute(config.tmpdir, " ", "\\ ", "g")
+                    .. "/example.R"
+            )
+        else
+            vim.cmd(
+                "belowright split "
+                    .. vim.fn.substitute(config.tmpdir, " ", "\\ ", "g")
+                    .. "/example.R"
+            )
+        end
+    end
+    vim.api.nvim_buf_set_keymap(0, "n", "q", ":q<CR>", { noremap = true, silent = true })
+    vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
+    vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
+    vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
+    vim.fn.delete(config.tmpdir .. "/example.R")
+end
+
 return M
