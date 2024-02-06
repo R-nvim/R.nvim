@@ -8,7 +8,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Luacheck linter
-        run: selene lua
-        # uses: lunarmodules/luacheck@v1
-        # with:
-        #   args: . --globals vim --max-line-length 150
+        uses: NTBBloodbath/selene-action@v1.0.0
+        with:
+          # Github secret token
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # selene arguments
+          args: --display-style=quiet .
+          # selene version
+          version: 0.26.1
