@@ -102,7 +102,7 @@ HandleSigTerm(__attribute__((unused)) int s) // Signal handler for SIGTERM
 static void RegisterPort(int bindportn) // Function to register port number to R
 {
     // Register the port:
-    printf("lua require('r.run').set_my_port('%d')\n", bindportn);
+    printf("lua require('r.run').set_nrs_port('%d')\n", bindportn);
     fflush(stdout);
 }
 
@@ -387,9 +387,8 @@ static void *receive_msg(void *v) // Thread function to receive messages on Unix
                         "\n",
                         blen, rlen);
                 fflush(stderr);
-                break;
             }
-            setup_server_socket();
+            break;
         }
     }
 #ifndef WIN32
