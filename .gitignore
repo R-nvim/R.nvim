@@ -12,3 +12,4 @@ R/nvimcom/src/apps/nvimrserver.exe
 R/nvimcom/src/apps/compile_flags.txt
 R/__pycache__/
 R/*.pyc
+.tests
