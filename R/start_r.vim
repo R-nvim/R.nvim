@@ -8,47 +8,6 @@
 "==============================================================================
 
 
-function RViewDF(oname, howto, txt)
-    if has_key(g:Rcfg, 'csv_app')
-        let tsvnm = g:rplugin.tmpdir . '/' . a:oname . '.tsv'
-        call writefile(split(substitute(a:txt, "\x13", "'", "g"), "\x14"), tsvnm)
-        call AddForDeletion(tsvnm)
-
-        if g:Rcfg.csv_app =~ '%s'
-            let cmd = printf(g:Rcfg.csv_app, tsvnm)
-        else
-            let cmd = g:Rcfg.csv_app . ' ' . tsvnm
-        endif
-
-        if g:Rcfg.csv_app =~# '^:'
-            exe cmd
-            return
-        elseif g:Rcfg.csv_app =~# '^terminal:'
-            let cmd = substitute(cmd, '^terminal:', '', '')
-            tabnew
-            exe 'terminal ' . cmd
-            startinsert
-            return
-        endif
-
-        normal! :<Esc>
-        let appcmd = split(cmd)
-        call jobstart(appcmd, {'detach': v:true})
-        return
-    endif
-
-    let location = a:howto
-    silent exe location . ' ' . a:oname
-    " silent 1,$d
-    call setline(1, split(substitute(a:txt, "\x13", "'", "g"), "\x14"))
-    setlocal filetype=csv
-    setlocal nomodified
-    setlocal bufhidden=wipe
-    setlocal noswapfile
-    set buftype=nofile
-    redraw
-endfunction
-
 
 "==============================================================================
 " Functions to send code directly to R Console
@@ -615,38 +574,3 @@ function PrintRObject(rkeyword)
         call g:SendCmdToR('nvim.print("' . a:rkeyword . '", "' . firstobj . '")')
     endif
 endfunction
-
-function OpenRExample()
-    if bufloaded(g:rplugin.tmpdir . "/example.R")
-        exe "bunload! " . substitute(g:rplugin.tmpdir, ' ', '\\ ', 'g')
-    endif
-    if g:Rcfg.nvimpager == "tabnew" || g:Rcfg.nvimpager == "tab"
-        exe "tabnew " . substitute(g:rplugin.tmpdir, ' ', '\\ ', 'g') . "/example.R"
-    else
-        let nvimpager = g:Rcfg.nvimpager
-        if g:Rcfg.nvimpager == "vertical"
-            let wwidth = winwidth(0)
-            let min_e = (g:Rcfg.editor_w > 78) ? g:Rcfg.editor_w : 78
-            let min_h = (g:Rcfg.help_w > 78) ? g:Rcfg.help_w : 78
-            if wwidth < (min_e + min_h)
-                let nvimpager = "horizontal"
-            endif
-        endif
-        if nvimpager == "vertical"
-            exe "belowright vsplit " . substitute(g:rplugin.tmpdir, ' ', '\\ ', 'g') . "/example.R"
-        else
-            exe "belowright split " . substitute(g:rplugin.tmpdir, ' ', '\\ ', 'g') . "/example.R"
-        endif
-    endif
-    nnoremap <buffer><silent> q :q<CR>
-    setlocal bufhidden=wipe
-    setlocal noswapfile
-    set buftype=nofile
-    call delete(g:rplugin.tmpdir . "/example.R")
-endfunction
-
-" Call R functions for the word under cursor
-function RAction(rcmd, ...)
-    " see: require("r.run").action(rcmd)
-endfunction
-
