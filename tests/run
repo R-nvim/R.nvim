@@ -1,0 +1,5 @@
+#!/bin/sh
+
+TEST_DIR="tests"
+INIT_FILE="${TEST_DIR}/init.lua"
+nvim --headless -u "${INIT_FILE}" -c "PlenaryBustedDirectory ${TEST_DIR}/ {minimal_init = '${INIT_FILE}', sequential = true}"

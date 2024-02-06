@@ -7,67 +7,19 @@ local warn = require("r").warn
 local utils = require("r.utils")
 local send = require("r.send")
 local autosttobjbr
-local my_port = 0
+local what_R = "R"
 local R_pid = 0
 local r_args
-local wait_nvimcom = false
-local waiting_to_start_r = ""
-local running_rhelp = false
 local nseconds
 
-local set_send_cmd_fun = function()
-    require("r.send").set_send_cmd_fun()
-    vim.g.R_Nvim_status = 5
-    wait_nvimcom = false
-end
-
-M.set_my_port = function(p)
-    my_port = p
-    vim.env.NVIMR_PORT = p
-    if waiting_to_start_r ~= "" then
-        M.start_R(waiting_to_start_r)
-        waiting_to_start_r = ""
-    end
-end
-
-M.auto_start_R = function()
-    if vim.g.R_Nvim_status > 3 then return end
-    if vim.v.vim_did_enter == 0 or vim.g.R_Nvim_status < 3 then
-        vim.fn.timer_start(100, M.auto_start_R)
-        return
-    end
-    M.start_R("R")
-end
-
-M.start_R = function(whatr)
-    vim.g.R_Nvim_status = 3
-    wait_nvimcom = true
-    require("r.send").cmd = require("r.send").not_ready
-
-    if my_port == 0 then
-        local running = require("r.job").is_running("Server")
-        if not running then
-            warn("Cannot start R: nvimrserver not running")
-            return
-        end
-        if vim.g.R_Nvim_status < 3 then
-            warn("nvimrserver not ready yet")
-            return
-        end
-        waiting_to_start_r = whatr
-        job.stdin("Server", "1\n") -- Start the TCP server
+local start_R2
+start_R2 = function()
+    if vim.g.R_Nvim_status == 4 then
+        vim.fn.timer_start(30, start_R2)
         return
     end
 
-    if
-        (type(config.external_term) == "boolean" and config.external_term)
-        or type(config.external_term) == "string"
-    then
-        config.objbr_place =
-            vim.fn.substitute(config.objbr_place, "console", "script", "")
-    end
-
-    if whatr:find("custom") then
+    if what_R:find("custom") then
         r_args = vim.fn.split(vim.fn.input("Enter parameters for R: "))
     else
         r_args = config.R_args
@@ -169,7 +121,7 @@ M.start_R = function(whatr)
         vim.fn.writefile(start_options, config.tmpdir .. "/start_options.R")
     end
 
-    if vim.fn.exists("g:RStudio_cmd") == 1 then
+    if config.RStudio_cmd then
         vim.env.R_DEFAULT_PACKAGES = rdp .. ",rstudioapi"
         require("r.rstudio").start_RStudio()
         return
@@ -196,6 +148,62 @@ M.start_R = function(whatr)
     require("r.external_term").start_extern_term(rcmd)
 end
 
+M.auto_start_R = function()
+    if vim.g.R_Nvim_status > 3 then return end
+    if vim.v.vim_did_enter == 0 or vim.g.R_Nvim_status < 3 then
+        vim.fn.timer_start(100, M.auto_start_R)
+        return
+    end
+    M.start_R("R")
+end
+
+M.set_nrs_port = function(p)
+    vim.g.R_Nvim_status = 5
+    vim.env.NVIMR_PORT = p
+end
+
+M.start_R = function(whatr)
+    -- R started and nvimcom loaded
+    if vim.g.R_Nvim_status == 7 then
+        if type(config.external_term) == "boolean" and config.external_term == false then
+            require("r.term").reopen_win()
+        elseif not config.applescript and not config.is_windows then
+            -- FIXME: restart Tmux
+        end
+        return
+    end
+
+    -- R already started
+    if vim.g.R_Nvim_status == 6 then return end
+
+    if vim.g.R_Nvim_status == 4 then
+        warn("Cannot start R: TCP server not ready yet.")
+        return
+    end
+    if vim.g.R_Nvim_status == 5 then
+        warn("R is already starting...")
+        return
+    end
+    if vim.g.R_Nvim_status == 2 then
+        warn("Cannot start R: nvimrserver not ready yet.")
+        return
+    end
+
+    if vim.g.R_Nvim_status == 1 then
+        warn("Cannot start R: nvimrserver not started yet.")
+        return
+    end
+
+    if vim.g.R_Nvim_status == 3 then
+        vim.g.R_Nvim_status = 4
+        job.stdin("Server", "1\n") -- Start the TCP server
+        require("r.send").cmd = require("r.send").not_ready
+        what_R = whatr
+        vim.fn.timer_start(30, start_R2)
+        return
+    end
+end
+
 -- Send SIGINT to R
 M.signal_to_R = function(signal)
     if R_pid ~= 0 then vim.system({ "kill", "-s", tostring(signal), tostring(R_pid) }) end
@@ -210,7 +218,6 @@ M.check_nvimcom_running = function()
             local msg =
                 "The package nvimcom wasn't loaded yet. Please, quit R and try again."
             warn(msg)
-            vim.wait(500)
         end
     end
 end
@@ -264,7 +271,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         warn("nvimcom is not running")
     end
 
-    if vim.fn.exists("g:RStudio_cmd") == 1 then
+    if config.RStudio_cmd then
         if
             config.is_windows
             and config.arrange_windows
@@ -296,19 +303,17 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     end
 
     if config.hook.after_R_start then config.hook.after_R_start() end
-    vim.fn.timer_start(100, set_send_cmd_fun)
+    vim.fn.timer_start(100, require("r.send").set_send_cmd_fun)
 end
 
 M.clear_R_info = function()
     vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.NVIMR_ID))
     vim.fn.delete(config.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.NVIMR_ID))
     R_pid = 0
-    vim.g.R_Nvim_status = 3
     if type(config.external_term) == "boolean" and config.external_term == false then
         require("r.term").close_term()
     end
     job.stdin("Server", "43\n")
-    vim.g.R_Nvim_status = 1
 end
 
 -- Background communication with R
@@ -316,12 +321,13 @@ end
 -- Send a message to nvimrserver job which will send the message to nvimcom
 -- through a TCP connection.
 M.send_to_nvimcom = function(code, attch)
-    if wait_nvimcom and R_pid == 0 then
-        warn("R is not ready yet")
+    if vim.g.R_Nvim_status < 6 then
+        warn("R is not running")
         return
     end
-    if R_pid == 0 then
-        warn("R is not running")
+
+    if vim.g.R_Nvim_status < 7 then
+        warn("R is not ready yet")
         return
     end
 
@@ -365,7 +371,7 @@ M.quit_R = function(how)
 end
 
 M.formart_code = function(tbl)
-    if vim.g.R_Nvim_status < 5 then return end
+    if vim.g.R_Nvim_status < 7 then return end
 
     local wco = vim.o.textwidth
     if wco == 0 then
@@ -397,7 +403,7 @@ M.formart_code = function(tbl)
 end
 
 M.insert = function(cmd, type)
-    if vim.g.R_Nvim_status < 5 then return end
+    if vim.g.R_Nvim_status < 7 then return end
     M.send_to_nvimcom("E", "nvimcom:::nvim_insert(" .. cmd .. ', "' .. type .. '")')
 end
 
@@ -485,8 +491,6 @@ M.action = function(rcmd, mode, args)
                 rhelppkg = ""
                 rhelptopic = rkeyword
             end
-
-            running_rhelp = true
 
             if config.nvimpager == "no" then
                 send.cmd("help(" .. rkeyword .. ")")

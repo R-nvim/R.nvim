@@ -3,8 +3,7 @@ local warn = require("r").warn
 local M = {}
 
 M.start_RStudio = function()
-    if vim.g.R_Nvim_status == 5 then return end
-    vim.g.R_Nvim_status = 4
+    vim.g.R_Nvim_status = 6
 
     if vim.fn.has("win32") ~= 0 then require("r.windows").set_R_home() end
 

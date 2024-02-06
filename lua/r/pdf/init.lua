@@ -39,8 +39,8 @@ M.setup = function()
         M.SyncTeX_forward = require("r.pdf.generic").SyncTeX_forward
     end
 
-    config.has_wmctrl = 0
-    config.has_awbt = 0
+    config.has_wmctrl = false
+    config.has_awbt = false
 
     if
         vim.fn.has("win32") == 0
@@ -48,7 +48,7 @@ M.setup = function()
         and os.getenv("WAYLAND_DISPLAY") == ""
     then
         if vim.fn.executable("wmctrl") > 0 then
-            config.has_wmctrl = 1
+            config.has_wmctrl = true
         else
             if vim.o.filetype == "rnoweb" and config.synctex then
                 warn(
@@ -65,7 +65,7 @@ M.setup = function()
     --                 '/org/gnome/Shell/Extensions org.gnome.Shell.Extensions ' ..
     --                 'GetExtensionInfo "s" "activate-window-by-title@lucaswerkmeister.de"')
     --         if sout:find('Activate Window') then
-    --             config.has_awbt = 1
+    --             config.has_awbt = true
     --         end
     --     end
     -- end

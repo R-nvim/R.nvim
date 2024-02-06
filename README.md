@@ -116,7 +116,7 @@ but temporary files are used in a few cases.
 
 ## See also:
 
-   - [cmp-nvim-r](https://github.com/jalvesaq/cmp-nvim-r): [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) source using Nvim-R as backend.
+   - [cmp-r](https://github.com/R.nvim/cmp-r): [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) source using Nvim-R as backend.
 
    - [languageserver](https://cran.r-project.org/web/packages/languageserver/index.html): a language server for R.
 

@@ -259,7 +259,7 @@ nvim.GlobalEnv.fun.args <- function(funcname) {
     txt <- gsub('\\\\\\"', '\005', txt)
     txt <- gsub('"', '\\\\"', txt)
     .C("nvimcom_msg_to_nvim",
-       paste0("call v:lua.require'cmp_nvim_r'.finish_ge_fun_args(\"", txt, '")'),
+       paste0("call v:lua.require'cmp_r'.finish_ge_fun_args(\"", txt, '")'),
        PACKAGE = "nvimcom")
     return(invisible(NULL))
 }
@@ -296,7 +296,7 @@ nvim.get.summary <- function(obj, wdth) {
     txt <- paste0(txt, collapse = "\n")
     txt <- gsub("'", "\x13", gsub("\n", "\x14", txt))
 
-    .C("nvimcom_msg_to_nvim", paste0("call v:lua.require'cmp_nvim_r'.finish_summary('", txt, "')"),
+    .C("nvimcom_msg_to_nvim", paste0("call v:lua.require'cmp_r'.finish_summary('", txt, "')"),
        PACKAGE = "nvimcom")
     return(invisible(NULL))
 }
@@ -380,7 +380,7 @@ nvim.getclass <- function(x) {
 }
 
 #' Complete arguments of functions.
-#' Called during omni-completion or nvim-cmp completion with cmp-nvim-r as
+#' Called during omni-completion or nvim-cmp completion with cmp-r as
 #' source.
 #' @param id Completion identification number.
 #' @param rkeyword0 Name of function whose arguments are being completed.

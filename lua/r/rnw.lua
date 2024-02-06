@@ -403,13 +403,13 @@ M.SyncTeX_backward = function(fname, ln)
     rnwf = vim.fn.substitute(rnwf, "^\\.\\/", "", "")
 
     if GoToBuf(rnwbn, rnwf, basedir, rnwln) > 0 then
-        if vim.fn.exists("g:rplugin.has_wmctrl") == 1 then
+        if config.has_wmctrl then
             if vim.fn.win_getid() ~= 0 then
                 vim.fn.system("wmctrl -ia " .. vim.fn.win_getid())
             elseif vim.env.WINDOWID then
                 vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID)
             end
-        elseif vim.fn.exists("g:rplugin.has_awbt") and config.term_title then
+        elseif config.has_awbt and config.term_title then
             vim.cmd("RRaiseWindow('" .. config.term_title .. "')")
         end
     end
