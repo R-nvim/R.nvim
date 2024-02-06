@@ -5,8 +5,7 @@ local R64app = nil
 local M = {}
 
 M.start_Rapp = function()
-    if vim.g.R_Nvim_status == 5 then return end
-    vim.g.R_Nvim_status = 4
+    vim.g.R_Nvim_status = 6
 
     if not R64app then R64app = vim.fn.isdirectory("/Applications/R64.app") == 1 end
 
