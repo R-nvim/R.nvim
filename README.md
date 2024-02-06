@@ -1,4 +1,4 @@
-[![Luacheck](https://img.shields.io/github/actions/workflow/status/lunarmodules/luasocket/luacheck.yml?branch=master&label=Luacheck&logo=Lua)](https://github.com/PMassicotte/tmp-R-Nvim/actions?workflow=Luacheck)
+[![Luacheck](https://img.shields.io/github/actions/workflow/status/jalvesaq/tmp-R-Nvim/luacheck.yml?branch=luacheck-action&label=Luacheck&logo=Lua)](https://github.com/jalvesaq/tmp-R-Nvim/actions?workflow=Luacheck)
 
 # R-Nvim
 
