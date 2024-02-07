@@ -77,7 +77,8 @@ local set_buf_options = function()
     require("r.maps").create("rbrowser")
 end
 
-L.find_parent = function(word, curline, curpos)
+local find_parent
+find_parent = function(word, curline, curpos)
     local line
     while curline > 1 and curpos >= curpos do
         curline = curline - 1
@@ -115,7 +116,7 @@ L.find_parent = function(word, curline, curpos)
             thisword = "`" .. thisword .. "`"
         end
         word = thisword .. suffix .. word
-        if curpos ~= spacelimit then word = L.find_parent(word, line("."), curpos) end
+        if curpos ~= spacelimit then word = find_parent(word, line("."), curpos) end
         return word
     else
         -- Didn't find the parent: should never happen.
@@ -129,7 +130,8 @@ L.find_parent = function(word, curline, curpos)
 end
 
 -- Start Object Browser
-L.start_OB = function()
+local start_OB
+start_OB = function()
     -- Either open or close the Object Browser
     local savesb = vim.o.switchbuf
     vim.o.switchbuf = "useopen,usetab"
@@ -142,7 +144,7 @@ L.start_OB = function()
         vim.cmd("quit")
         vim.fn.win_gotoid(curwin)
 
-        if curtab ~= objbrtab then L.start_OB() end
+        if curtab ~= objbrtab then start_OB() end
     else
         local edbuf = vim.fn.bufnr()
 
@@ -217,7 +219,7 @@ M.start = function(_)
     job.stdin("Server", "31\n")
     send_to_nvimcom("A", "RObjBrowser")
 
-    L.start_OB()
+    start_OB()
     running_objbr = false
 
     if config.hook.after_ob_open then
@@ -278,7 +280,7 @@ M.get_name = function()
         end
         if curpos > 4 then
             -- Find the parent data.frame or list
-            word = L.find_parent(word, vim.fn.line("."), curpos - 1)
+            word = find_parent(word, vim.fn.line("."), curpos - 1)
             word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
             return word
         else
@@ -350,13 +352,13 @@ M.on_double_click = function()
     local key = M.get_name()
     local curline = vim.fn.getline(vim.fn.line("."))
     if curview == "GlobalEnv" then
-        if vim.fn.match(curline, "&#.*\t") > -1 then
+        if string.find(curline, "&#.*	") then
             send_to_nvimcom("L", key)
         elseif
-            vim.fn.match(curline, "\\[#.*\t") > -1
-            or vim.fn.match(curline, "\\$#.*\t") > -1
-            or vim.fn.match(curline, "<#.*\t") > -1
-            or vim.fn.match(curline, ":#.*\t") > -1
+            string.find(curline, "%[#.*	")
+            or string.find(curline, "%$#.*	")
+            or string.find(curline, "<#.*	")
+            or string.find(curline, ":#.*	")
         then
             key = vim.fn.substitute(key, "`", "", "g")
             job.stdin("Server", "33G" .. key .. "\n")
@@ -364,16 +366,16 @@ M.on_double_click = function()
             require("r.send").cmd("str(" .. key .. ")")
         end
     else
-        if vim.fn.match(curline, "(#.*\t") > -1 then
+        if string.find(curline, "(#.*	") then
             key = vim.fn.substitute(key, "`", "", "g")
             require("r.doc").ask_R_doc(key, M.get_pkg_name(), false)
         else
             if
-                vim.fn.match(key, ":$")
-                or vim.fn.match(curline, "\\[#.*\t") > -1
-                or vim.fn.match(curline, "\\$#.*\t") > -1
-                or vim.fn.match(curline, "<#.*\t") > -1
-                or vim.fn.match(curline, ":#.*\t") > -1
+                string.find(key, ":%$")
+                or string.find(curline, "%[#.*	")
+                or string.find(curline, "%$#.*	")
+                or string.find(curline, "<#.*	")
+                or string.find(curline, ":#.*	")
             then
                 job.stdin("Server", "33L" .. key .. "\n")
             else
