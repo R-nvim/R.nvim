@@ -6,6 +6,7 @@ local edit = require("r.edit")
 local warn = require("r").warn
 local utils = require("r.utils")
 local send = require("r.send")
+local cursor = require("r.cursor")
 local autosttobjbr
 local what_R = "R"
 local R_pid = 0
@@ -169,6 +170,7 @@ M.start_R = function(whatr)
             require("r.term").reopen_win()
         elseif not config.applescript and not config.is_windows then
             -- FIXME: restart Tmux
+            vim.notify("FIXME: keep R running, but restart tmux.")
         end
         return
     end
@@ -253,7 +255,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     R_pid = rpid
     vim.env.RCONSOLE = wid
 
-    local Rinfo = vim.fn.split(r_info, "\x12")
+    local Rinfo = vim.fn.split(r_info, "\018")
     -- R_version = Rinfo[1]
     config.OutDec = Rinfo[2]
     config.R_prompt_str = vim.fn.substitute(Rinfo[3], " $", "", "")
@@ -385,7 +387,7 @@ M.formart_code = function(tbl)
     local lns = vim.api.nvim_buf_get_lines(0, tbl.line1 - 1, tbl.line2, true)
     vim.fn.getline(tbl.line1, tbl.line2)
     local txt =
-        string.gsub(string.gsub(table.concat(lns, "\x14"), "\\", "\\\\"), "'", "\x13")
+        string.gsub(string.gsub(table.concat(lns, "\020"), "\\", "\\\\"), "'", "\019")
     M.send_to_nvimcom(
         "E",
         "nvimcom:::nvim_format("
@@ -473,8 +475,6 @@ M.action = function(rcmd, mode, args)
             vim.fn.col("'<") - 1,
             vim.fn.col("'>") - vim.fn.col("'<") + 1
         )
-    elseif mode and mode ~= "v" and mode ~= "^," then
-        rkeyword = M.get_keyword()
     else
         rkeyword = M.get_keyword()
     end
@@ -586,153 +586,13 @@ M.action = function(rcmd, mode, args)
     end
 end
 
-M.get_first_obj = function(rkeyword)
-    local firstobj = ""
-    local line = vim.fn.substitute(vim.fn.getline(vim.fn.line(".")), "#.*", "", "")
-    local begin = vim.fn.col(".")
-
-    if vim.fn.strlen(line) > begin then
-        local piece = vim.fn.substitute(vim.fn.strpart(line, begin), "\\s*$", "", "")
-        while not piece:find("^" .. rkeyword) and begin >= 0 do
-            begin = begin - 1
-            piece = vim.fn.strpart(line, begin)
-        end
-
-        -- check if the first argument is being passed through a pipe operator
-        if begin > 2 then
-            local part1 = vim.fn.strpart(line, 0, begin)
-            if part1:find("%k+\\s*\\(|>\\|%>%\\)\\s*") then
-                local pipeobj = vim.fn.substitute(
-                    part1,
-                    ".\\{-}\\(\\k\\+\\)\\s*\\(|>\\|%>%\\)\\s*",
-                    "\\1",
-                    ""
-                )
-                return { pipeobj, true }
-            end
-        end
-
-        local pline =
-            vim.fn.substitute(vim.fn.getline(vim.fn.line(".") - 1), "#.*$", "", "")
-        if pline:find("\\k+\\s*\\(|>\\|%>%\\)\\s*$") then
-            local pipeobj = vim.fn.substitute(
-                pline,
-                ".\\{-}\\(\\k\\+\\)\\s*\\(|>\\|%>%\\)\\s*$",
-                "\\1",
-                ""
-            )
-            return { pipeobj, true }
-        end
-
-        line = piece
-        if not line:find("^\\k*\\s*(") then return { firstobj, false } end
-        begin = 1
-        local linelen = vim.fn.strlen(line)
-        while line:sub(begin, begin) ~= "(" and begin < linelen do
-            begin = begin + 1
-        end
-        begin = begin + 1
-        line = vim.fn.strpart(line, begin)
-        line = vim.fn.substitute(line, "^\\s*", "", "")
-        if
-            (line:find("^\\k*\\s*\\(") or line:find("^\\k*\\s*=\\s*\\k*\\s*\\("))
-            and not line:find("[.*(")
-        then
-            local idx = 0
-            while line:sub(idx, idx) ~= "(" do
-                idx = idx + 1
-            end
-            idx = idx + 1
-            local nparen = 1
-            local len = vim.fn.strlen(line)
-            local lnum = vim.fn.line(".")
-            while nparen ~= 0 do
-                if idx == len then
-                    lnum = lnum + 1
-                    while
-                        lnum <= vim.fn.line("$")
-                        and vim.fn.strlen(
-                                vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
-                            )
-                            == 0
-                    do
-                        lnum = lnum + 1
-                    end
-                    if lnum > vim.fn.line("$") then return { "", false } end
-                    line = line .. vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
-                    len = vim.fn.strlen(line)
-                end
-                if line:sub(idx, idx) == "(" then
-                    nparen = nparen + 1
-                else
-                    if line:sub(idx, idx) == ")" then nparen = nparen - 1 end
-                end
-                idx = idx + 1
-            end
-            firstobj = vim.fn.strpart(line, 0, idx)
-        elseif
-            line:find("^\\(\\k\\|\\$\\)*\\s*\\[")
-            or line:find("^\\(k\\|\\$\\)*\\s*=\\s*\\(\\k\\|\\$\\)*\\s*[.*(")
-        then
-            local idx = 0
-            while line:sub(idx, idx) ~= "[" do
-                idx = idx + 1
-            end
-            idx = idx + 1
-            local nparen = 1
-            local len = vim.fn.strlen(line)
-            local lnum = vim.fn.line(".")
-            while nparen ~= 0 do
-                if idx == len then
-                    lnum = lnum + 1
-                    while
-                        lnum <= vim.fn.line("$")
-                        and vim.fn.strlen(
-                                vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
-                            )
-                            == 0
-                    do
-                        lnum = lnum + 1
-                    end
-                    if lnum > vim.fn.line("$") then return { "", false } end
-                    line = line .. vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
-                    len = vim.fn.strlen(line)
-                end
-                if line:sub(idx, idx) == "[" then
-                    nparen = nparen + 1
-                else
-                    if line:sub(idx, idx) == "]" then nparen = nparen - 1 end
-                end
-                idx = idx + 1
-            end
-            firstobj = vim.fn.strpart(line, 0, idx)
-        else
-            firstobj = vim.fn.substitute(line, ").*", "", "")
-            firstobj = vim.fn.substitute(firstobj, ",.*", "", "")
-            firstobj = vim.fn.substitute(firstobj, " .*", "", "")
-        end
-    end
-
-    if firstobj:find("=" .. vim.fn.char2nr('"')) then firstobj = "" end
-
-    if firstobj:sub(1, 1) == '"' or firstobj:sub(1, 1) == "'" then
-        firstobj = "#c#"
-    elseif firstobj:sub(1, 1) >= "0" and firstobj:sub(1, 1) <= "9" then
-        firstobj = "#n#"
-    end
-
-    if firstobj:find('"') then firstobj = vim.fn.substitute(firstobj, '"', '\\"', "g") end
-
-    return { firstobj, false }
-end
-
 M.print_object = function(rkeyword)
     local firstobj
 
     if vim.fn.bufname("%") == "Object_Browser" then
         firstobj = ""
     else
-        firstobj = M.get_first_obj(rkeyword)[1]
+        firstobj = cursor.get_first_obj(rkeyword)[1]
     end
 
     if firstobj == "" then
@@ -763,7 +623,7 @@ M.show_obj = function(howto, bname, ftype, txt)
     edit.add_for_deletion(config.tmpdir .. "/" .. bfnm)
     vim.cmd({ cmd = howto, args = { config.tmpdir .. "/" .. bfnm } })
     vim.o.filetype = ftype
-    local lines = vim.split(txt:gsub("\x13", "'"), "\x14")
+    local lines = vim.split(txt:gsub("\019", "'"), "\020")
     vim.api.nvim_buf_set_lines(0, 0, 0, true, lines)
     vim.api.nvim_buf_set_var(0, "modified", false)
 end

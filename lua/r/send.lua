@@ -4,22 +4,19 @@ local config = require("r.config").get_config()
 local warn = require("r").warn
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
+local all_marks = "abcdefghijklmnopqrstuvwxyz"
+-- FIXME: convert to Lua pattern
+local op_pattern = [[\(&\||\|+\|-\|\*\|/\|=\|\~\|%\|->\||>\)\s*$']]
 
-local clean_oxygen_line = function(line)
-    if line:find("^%s*#'") then
-        local synID = vim.fn.synID(vim.fn.line("."), vim.fn.col("."), 1)
-        local synName = vim.fn.synIDattr(synID, "name")
-        if synName == "rOExamples" then line = string.gsub(line, "^%s*#'", "") end
-    end
-    return line
-end
-
-local clean_current_line = function()
-    local lnum = vim.fn.line(".")
-    local curline = vim.api.nvim_buf_get_lines(0, lnum, lnum, true)[1]
-    curline = string.gsub(curline, "^%s*", "")
-    if vim.bo.filetype == "r" then curline = clean_oxygen_line(curline) end
-    return curline
+local paren_diff = function(str)
+    local clnln = string.gsub(str, '\\"', "")
+    clnln = string.gsub(clnln, "\\\\'", "")
+    clnln = string.gsub(clnln, '".-"', "")
+    clnln = string.gsub(clnln, "'.-'", "")
+    clnln = string.gsub(clnln, "#.*", "")
+    local llen1 = string.len(string.gsub(clnln, "[{(\\[]", ""))
+    local llen2 = string.len(string.gsub(clnln, "[})\\]]", ""))
+    return llen1 - llen2
 end
 
 local M = {}
@@ -39,11 +36,11 @@ M.set_send_cmd_fun = function()
     vim.g.R_Nvim_status = 7
 end
 
-M.not_ready = function(_) require("r").warn("R is not ready yet.") end
+M.not_ready = function(_) warn("R is not ready yet.") end
 
 --- Send a string to R Console.
 ---@param _ string The line to be sent.
-M.not_running = function(_) require("r").warn("Did you start R?") end
+M.not_running = function(_) warn("Did you start R?") end
 
 M.cmd = M.not_running
 
@@ -127,16 +124,6 @@ M.paragraph = function(e, m)
     if m == "down" then cursor.move_next_paragraph() end
 end
 
-M.line = function(m)
-    local current_line = vim.fn.line(".")
-    local line = vim.api.nvim_buf_get_lines(0, current_line - 1, current_line, false)[1]
-    if line == "" and m == "down" then cursor.move_next_line() end
-
-    M.cmd(line)
-
-    if m == "down" then cursor.move_next_line() end
-end
-
 M.line_part = function(direction, correctpos)
     local lin = vim.api.nvim_buf_get_lines(0, vim.fn.line("."), vim.fn.line("."), true)[1]
     local idx = vim.fn.col(".") - 1
@@ -155,6 +142,368 @@ M.fun = function()
     warn(
         "Sending function not implemented. It will be either implemented using treesitter or never implemented."
     )
+end
+
+local knit_child = function(line, godown)
+    local nline = vim.fn.substitute(line, ".*child *= *", "", "")
+    local cfile = vim.fn.substitute(nline, nline:sub(1, 1), "", "")
+    cfile = vim.fn.substitute(cfile, nline:sub(1, 1) .. ".*", "", "")
+    if vim.fn.filereadable(cfile) == 1 then
+        local ok =
+            vim.fn["g:M.cmd"]("require(knitr); knit('" .. cfile .. "', output=NULL)")
+        if godown:find("down") then
+            vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
+            vim.cmd("call cursor.move_next_line()")
+        end
+    else
+        warn("File not found: '" .. cfile .. "'")
+    end
+end
+
+M.chunks_up_to_here = function()
+    local filetype = vim.o.filetype
+    local codelines = {}
+    local here = vim.fn.line(".")
+    local curbuf = vim.fn.getline(1, "$")
+    local idx = 0
+
+    while idx < here do
+        local begchk, endchk, chdchk
+
+        if filetype == "rnoweb" then
+            begchk = "^<<.*>>=\\$"
+            endchk = "^@"
+            chdchk = "^<<.*child *= *"
+        elseif filetype == "rmd" or filetype == "quarto" then
+            begchk = "^[ \t]*```[ ]*{r"
+            endchk = "^[ \t]*```$"
+            chdchk = "^```.*child *= *"
+        else
+            -- Should never happen
+            warn('Strange filetype (SendFHChunkToR): "' .. filetype .. '"')
+            return
+        end
+
+        if
+            curbuf[idx + 1]:match(begchk)
+            and not curbuf[idx + 1]:match("\\<eval\\s*=\\s*F")
+        then
+            -- Child R chunk
+            if curbuf[idx + 1]:match(chdchk) then
+                -- First, run everything up to the child chunk and reset buffer
+                vim.fn["M.source_lines"](codelines, "silent", "chunk")
+                codelines = {}
+
+                -- Next, run the child chunk and continue
+                knit_child(curbuf[idx + 1], "stay")
+                idx = idx + 1
+            else
+                idx = idx + 1
+                while not curbuf[idx + 1]:match(endchk) and idx < here do
+                    table.insert(codelines, curbuf[idx + 1])
+                    idx = idx + 1
+                end
+            end
+        else
+            idx = idx + 1
+        end
+    end
+
+    vim.fn["M.source_lines"](codelines, "silent", "chunk")
+end
+
+-- Send motion to R
+M.motion = function(type)
+    local lstart = vim.fn.line("'[")
+    local lend = vim.fn.line("']")
+    if lstart == lend then
+        M.line("stay", lstart)
+    else
+        local lines = vim.fn["getline"](lstart, lend)
+        vim.fn.M.source_lines(lines, "", "block")
+    end
+end
+
+-- Send block to R (Adapted from marksbrowser plugin)
+-- Function to get the marks which the cursor is between
+M.marked_block = function(e, m)
+    if vim.o.filetype ~= "r" and vim.fn["IsInRCode"](1) ~= 1 then return end
+
+    local curline = vim.fn.line(".")
+    local lineA = 1
+    local lineB = vim.fn.line("$")
+    local maxmarks = string.len(all_marks)
+    local n = 0
+
+    while n < maxmarks do
+        local c = string.sub(all_marks, n + 1, n + 1)
+        local lnum = vim.fn.line("'" .. c)
+
+        if lnum ~= 0 then
+            if lnum <= curline and lnum > lineA then
+                lineA = lnum
+            elseif lnum > curline and lnum < lineB then
+                lineB = lnum
+            end
+        end
+
+        n = n + 1
+    end
+
+    if lineA == 1 and lineB == vim.fn.line("$") then
+        warn("The file has no mark!")
+        return
+    end
+
+    if lineB < vim.fn.line("$") then lineB = lineB - 1 end
+
+    local lines = vim.fn["getline"](lineA, lineB)
+    local ok = vim.fn.M.source_lines(lines, e, "block")
+
+    if ok == 0 then return end
+
+    if m == "down" and lineB ~= vim.fn.line("$") then
+        vim.fn.cursor(lineB, 1)
+        vim.fn.cursor.move_next_line()
+    end
+end
+
+M.selection = function()
+    local ispy = 0
+
+    if vim.o.filetype ~= "r" then
+        if
+            (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
+            and require("r.rmd").is_in_Py_code(0)
+        then
+            ispy = 1
+        elseif vim.b.IsInRCode(0) ~= 1 then
+            if
+                (
+                    vim.o.filetype == "rnoweb"
+                    and vim.fn.getline(vim.fn.line(".")) ~= "\\Sexpr{"
+                )
+                or (
+                    (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
+                    and vim.fn.getline(vim.fn.line(".")) ~= "`r "
+                )
+            then
+                warn("Not inside an R code chunk.")
+                return
+            end
+        end
+    end
+
+    local start_line = vim.fn.line("'<")
+    local end_line = vim.fn.line("'>")
+
+    if start_line == end_line then
+        local i = vim.fn.col("'<") - 1
+        local j = vim.fn.col("'>") - i
+        local l = vim.fn.getline(vim.fn.line("'<"))
+        local line = string.sub(l, i, i + j)
+        if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
+        local ok = M.cmd(line)
+        if ok and vim.fn.a[2] == "down" then cursor.move_next_line() end
+        return
+    end
+
+    local lines =
+        vim.api.nvim_buf_get_lines(0, vim.fn.line("'<"), vim.fn.line("'>"), true)
+    if vim.visualmode() == "\\<C-V>" then
+        local lj = vim.fn.line("'<")
+        local cj = vim.fn.col("'<")
+        local lk = vim.fn.line("'>")
+        local ck = vim.fn.col("'>")
+        local bb, ee
+        if cj > ck then
+            bb = ck - 1
+            ee = cj - ck + 1
+        else
+            bb = cj - 1
+            ee = ck - cj + 1
+        end
+        local cutlines = {}
+        for k, v in pairs(lines) do
+            table.insert(cutlines, v:sub(cj, ck))
+        end
+        lines = cutlines
+    else
+        local i = vim.fn.col("'<") - 1
+        local j = vim.fn.col("'>")
+        lines[1] = string.sub(lines[1], i)
+        local llen = #lines
+        lines[llen] = string.sub(lines[llen], 0, j - 1)
+    end
+
+    local curpos = vim.fn.getpos(".")
+    local curline = vim.fn.line("'<")
+    for idx, line in ipairs(lines) do
+        vim.fn.setpos(".", { 0, curline, 1, 0 })
+        if vim.o.filetype == "r" then lines[idx] = cursor.clean_oxygen_line(line) end
+        curline = curline + 1
+    end
+    vim.fn.setpos(".", curpos)
+
+    local ok
+    if vim.fn.a[0] == 3 and vim.fn.a[3] == "NewtabInsert" then
+        ok = M.source_lines(lines, vim.fn.a[1], "NewtabInsert")
+    elseif ispy then
+        ok = M.source_lines(lines, vim.fn.a[1], "PythonCode")
+    else
+        ok = M.source_lines(lines, vim.fn.a[1], "selection")
+    end
+
+    if ok == 0 then return end
+
+    if vim.fn.a[2] == "down" then
+        cursor.move_next_line()
+    else
+        if vim.fn.a[0] < 3 or (vim.fn.a[0] == 3 and vim.fn.a[3] ~= "normal") then
+            vim.cmd("normal! gv")
+        end
+    end
+end
+
+--- Send current line to R Console
+---@param move string Movement to do after sending the line.
+---@param lnum number Number of line to send (optional).
+M.line = function(move, lnum)
+    if not lnum then lnum = vim.fn.line(".") end
+    local line = vim.fn.getline(lnum)
+    if #line == 0 then
+        if move == "down" then cursor.move_next_line() end
+        return
+    end
+
+    if vim.o.filetype == "rnoweb" then
+        if line == "@" then
+            if move == "down" then cursor.move_next_line() end
+            return
+        end
+        if line:find("^<<.*child *= *") then
+            knit_child(lnum, move)
+            return
+        end
+        if not require("r.rnw").is_in_R_code(true) then return end
+    end
+
+    if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
+        if line == "```" then
+            if move == "down" then cursor.move_next_line() end
+            return
+        end
+        if vim.fn.match(line, "^```.*child *= *") > -1 then
+            knit_child(lnum, move)
+            return
+        end
+        line = vim.fn.substitute(line, "^(\\`\\`)\\?", "", "")
+        if not require("r.rmd").is_in_R_code(false) then
+            if not require("r.rmd").is_in_Py_code(false) then
+                warn("Not inside either R or Python code chunk.")
+            else
+                line = 'reticulate::py_run_string("'
+                    .. vim.fn.substitute(line, '"', '\\"', "g")
+                    .. '")'
+            end
+            return
+        end
+    end
+
+    -- FIXME: filetype rdoc no longer exists
+    if vim.o.filetype == "rdoc" then
+        local line1 = vim.fn.getline(vim.fn.line("."))
+        if line1:find("^The topic") then
+            local topic = vim.fn.substitute(line, ".*::", "", "")
+            local package = vim.fn.substitute(line, "::.*", "", "")
+            require("r.rdoc").ask_R_doc(topic, package, true)
+            return
+        end
+        if not require("r.rdoc").is_in_R_code(true) then return end
+    end
+
+    if vim.o.filetype == "rhelp" and not require("r.rhelp").is_in_R_code(true) then
+        return
+    end
+
+    if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
+
+    M.cmd(line)
+
+    -- FIXME: Send the whole block within curly braces
+    -- local block = 0
+    -- if config.parenblock then
+    --     local chunkend = ""
+    --     if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
+    --         chunkend = "```"
+    --     elseif vim.o.filetype == "rnoweb" then
+    --         chunkend = "@"
+    --     end
+    --     local rpd = paren_diff(line)
+    --     local has_op = line:gsub("#.*", ""):find(op_pattern) and true or false
+    --     if rpd < 0 then
+    --         local line1 = lnum
+    --         local cline = line1 + 1
+    --         while cline <= vim.fn.line("$") do
+    --             local txt = vim.fn.getline(cline)
+    --             if chunkend ~= "" and txt == chunkend then break end
+    --             rpd = rpd + paren_diff(txt)
+    --             if rpd == 0 then
+    --                 has_op = vim.fn.getline(cline):gsub("#.*", ""):find(op_pattern)
+    --                         and true
+    --                     or false
+    --                 for ln in vim.fn.range(line1, cline) do
+    --                     local ok
+    --                     if config.bracketed_paste then
+    --                         if ln == line1 and ln == cline then
+    --                             ok = M.cmd(
+    --                                 "\033[200~" .. vim.fn.getline(ln) .. "\033[201~\n",
+    --                                 0
+    --                             )
+    --                         elseif ln == line1 then
+    --                             ok = M.cmd("\033[200~" .. vim.fn.getline(ln))
+    --                         elseif ln == cline then
+    --                             ok = M.cmd(vim.fn.getline(ln) .. "\033[201~\n", 0)
+    --                         else
+    --                             ok = M.cmd(vim.fn.getline(ln))
+    --                         end
+    --                     else
+    --                         ok = M.cmd(vim.fn.getline(ln))
+    --                     end
+    --                     if not ok then
+    --                         -- always close bracketed mode upon failure
+    --                         if config.bracketed_paste then M.cmd("\033[201~\n", 0) end
+    --                         return
+    --                     end
+    --                 end
+    --                 vim.fn.cursor(cline, 1)
+    --                 block = 1
+    --                 break
+    --             end
+    --             cline = cline + 1
+    --         end
+    --     end
+    -- end
+
+    -- if not block then
+    --     local ok
+    --     if config.bracketed_paste then
+    --         ok = M.cmd("\033[200~" .. line .. "\033[201~\n", 0)
+    --     else
+    --         ok = M.cmd(line)
+    --     end
+    -- end
+
+    if move == "down" then
+        cursor.move_next_line()
+        -- FIXME: Send the whole chain of piped lines
+        -- local has_op = vim.fn.getline(vim.fn.line(".")):gsub("#.*", ""):find(op_pattern)
+        --         and true
+        --     or false
+        -- if has_op then M.line(move, lnum) end
+    elseif move == "newline" then
+        vim.cmd("normal! o")
+    end
 end
 
 return M
