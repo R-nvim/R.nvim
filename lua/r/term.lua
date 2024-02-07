@@ -1,4 +1,4 @@
-M = {}
+local M = {}
 
 local config = require("r.config").get_config()
 local warn = require("r").warn
@@ -17,9 +17,9 @@ M.send_cmd_to_term = function(command, nl)
     local cmd
     if config.clear_line then
         if config.editing_mode == "emacs" then
-            cmd = "\001\013" .. command
+            cmd = "\001\011" .. command
         else
-            cmd = "\x1b0Da" .. command
+            cmd = "\0270Da" .. command
         end
     else
         cmd = command

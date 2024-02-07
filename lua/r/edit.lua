@@ -94,8 +94,6 @@ M.add_to_debug_info = function(title, info, parent)
     end
 end
 
-M.raise_window = function(ttl) vim.fn.RRaiseWindow(ttl) end
-
 M.build_tags = function()
     if vim.fn.filereadable("etags") then
         warn('The file "etags" exists. Please, delete it and try again.')
@@ -111,7 +109,7 @@ end
 ---@param lnum2 number Last selected line of unformatted code.
 ---@param txt string Formatted text.
 M.finish_code_formatting = function(lnum1, lnum2, txt)
-    local lns = vim.split(txt:gsub("\x13", "'"), "\x14")
+    local lns = vim.split(txt:gsub("\019", "'"), "\020")
     vim.api.nvim_buf_set_lines(0, lnum1 - 1, lnum2, true, lns)
     vim.api.nvim_echo(
         { { tostring(lnum2 - lnum1 + 1) .. " lines formatted." } },
@@ -121,7 +119,7 @@ M.finish_code_formatting = function(lnum1, lnum2, txt)
 end
 
 M.finish_inserting = function(type, txt)
-    local lns = vim.split(txt:gsub("\x13", "'"), "\x14")
+    local lns = vim.split(txt:gsub("\019", "'"), "\020")
     local lines
     if type == "comment" then
         lines = {}
@@ -157,20 +155,20 @@ M.get_output = function(fnm, txt)
             tnum = tnum + 1
         end
         vim.cmd("tabnew so" .. tnum)
-        vim.fn.setline(1, vim.split(string.gsub(txt, "\x13", "'"), "\x14"))
+        vim.fn.setline(1, vim.split(string.gsub(txt, "\019", "'"), "\020"))
         vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
         vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
         vim.api.nvim_set_option_value("syntax", "rout", { scope = "local" })
     else
         vim.cmd("tabnew " .. fnm)
-        vim.fn.setline(1, vim.fn.split(vim.fn.substitute(txt, "\x13", "'", "g"), "\x14"))
+        vim.fn.setline(1, vim.fn.split(vim.fn.substitute(txt, "\019", "'", "g"), "\020"))
     end
     vim.cmd("normal! gT")
     vim.cmd("redraw")
 end
 
 M.view_df = function(oname, howto, txt)
-    local csv_lines = vim.split(string.gsub(txt, "\023", "'"), "\024")
+    local csv_lines = vim.split(string.gsub(txt, "\019", "'"), "\020")
 
     if config.csv_app then
         local tsvnm = config.tmpdir .. "/" .. oname .. ".tsv"

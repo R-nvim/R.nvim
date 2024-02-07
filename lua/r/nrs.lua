@@ -19,7 +19,7 @@ local RInitStdout = function(_, data, _)
     local rcmd = vim.fn.substitute(table.concat(data, ""), "\r", "", "g")
     if RoutLine ~= "" then
         rcmd = RoutLine .. rcmd
-        if rcmd:find("\x14") == nil then
+        if rcmd:find("\020") == nil then
             RoutLine = rcmd
             return
         end
@@ -30,14 +30,14 @@ local RInitStdout = function(_, data, _)
         or rcmd:find("^WARN: ")
         or rcmd:find("^LIBD: ")
     then
-        if rcmd:find("\x14") == nil then
+        if rcmd:find("\020") == nil then
             RoutLine = rcmd
             return
         end
         RoutLine = ""
 
         -- In spite of flush(stdout()), rcmd might be concatenating two commands
-        local rcmdl = vim.fn.split(rcmd, "\x14", 0)
+        local rcmdl = vim.fn.split(rcmd, "\020", 0)
         for _, c in ipairs(rcmdl) do
             if c:find("^WARN: ") then
                 table.insert(RWarn, c:sub(7))
@@ -139,8 +139,8 @@ local StartNServer = function()
     local nrs_env = {}
 
     -- Some pdf viewers run nvimrserver to send SyncTeX messages back to Vim
-    if not config.is_windows then
-        nrs_env["PATH"] = nrs_dir .. ":" .. vim.env.PATH
+    if config.is_windows then
+        nrs_env["PATH"] = nrs_dir .. ";" .. vim.env.PATH
     else
         nrs_env["PATH"] = nrs_dir .. ":" .. vim.env.PATH
     end
@@ -335,7 +335,7 @@ local AddToRhelpList = function(lib)
 
     -- List of objects for :Rhelp completion
     for _, xx in ipairs(olist) do
-        local xxx = vim.fn.split(xx, "\x06")
+        local xxx = vim.fn.split(xx, "\006")
         if #xxx > 0 and not string.match(xxx[1], "\\$") then
             table.insert(Rhelp_list, xxx[1])
         end

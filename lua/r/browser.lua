@@ -81,7 +81,7 @@ L.find_parent = function(word, curline, curpos)
     local line
     while curline > 1 and curpos >= curpos do
         curline = curline - 1
-        line = vim.fn.substitute(vim.fn.getline(curline), "\x09.*", "", "")
+        line = vim.fn.substitute(vim.fn.getline(curline), "\009.*", "", "")
         curpos = vim.fn.stridx(line, "[#")
         if curpos == -1 then
             curpos = vim.fn.stridx(line, "$#")
