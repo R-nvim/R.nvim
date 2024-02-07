@@ -7,7 +7,6 @@ local warn = require("r").warn
 local utils = require("r.utils")
 local send = require("r.send")
 local cursor = require("r.cursor")
-local autosttobjbr
 local what_R = "R"
 local R_pid = 0
 local r_args
@@ -299,9 +298,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     end
 
     if config.objbr_auto_start then
-        autosttobjbr = 1
-        vim.notify("Not implemented yet autosttobjbr=" .. tostring(autosttobjbr))
-        vim.fn.timer_start(1010, "RObjBrowser")
+        vim.fn.timer_start(1010, require("r.browser").start)
     end
 
     if config.hook.after_R_start then config.hook.after_R_start() end
