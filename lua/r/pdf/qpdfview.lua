@@ -26,7 +26,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
             .. texln
             .. ":1 2> /dev/null >/dev/null &"
     )
-    vim.fn.RRaiseWindow(string.gsub(string.gsub(ppath, ".*/", ""), ".pdf$", ""))
+    require("r.pdf").raise_window(string.gsub(string.gsub(ppath, ".*/", ""), ".pdf$", ""))
 end
 
 return M

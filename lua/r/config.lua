@@ -110,9 +110,10 @@ local set_editing_mode = function()
 end
 
 local set_pdf_viewer = function()
-    if vim.env.XDG_CURRENT_DESKTOP == "sway" then
-        config.openpdf = 2
-    elseif config.is_darwin or vim.env.WAYLAND_DISPLAY then
+    if
+        (config.is_darwin or vim.env.WAYLAND_DISPLAY)
+        and vim.env.XDG_CURRENT_DESKTOP ~= "sway"
+    then
         config.openpdf = 1
     else
         config.openpdf = 2
@@ -292,7 +293,7 @@ local do_common_global = function()
             "regenerated.",
             "",
             "All lines in the omnils_ files have 7 fields with information on the object",
-            "separated by the byte \006:",
+            "separated by the byte \\006:",
             "",
             "  1. Name.",
             "",
@@ -313,13 +314,13 @@ local do_common_global = function()
             "",
             "Notes:",
             "",
-            "  - There is a final \006 at the end of the line.",
+            "  - There is a final \\006 at the end of the line.",
             "",
-            "  - All single quotes are replaced with the byte \x13.",
+            "  - All single quotes are replaced with the byte \\x13.",
             "",
-            "  - All \x12 will later be replaced with single quotes.",
+            "  - All \\x12 will later be replaced with single quotes.",
             "",
-            "  - Line breaks are indicated by \x14.",
+            "  - Line breaks are indicated by \\x14.",
         }
 
         vim.fn.writefile(readme, config.compldir .. "/README")
@@ -374,6 +375,14 @@ local do_common_global = function()
 
     vim.env.NVIMR_TMPDIR = config.tmpdir
     vim.env.NVIMR_COMPLDIR = config.compldir
+
+    -- Make the file name of files to be sourced
+    if config.remote_compldir then
+        config.source_read = config.compl_tmpdir .. "/tmp/Rsource-" .. vim.fn.getpid()
+    else
+        config.source_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
+    end
+    config.source_write = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
 
     -- Default values of some variables
     if
@@ -731,10 +740,11 @@ local global_setup = function()
         { nargs = 1 }
     )
 
-    vim.api.nvim_create_user_command("RSourceDir", function(tbl)
-        -- FIXME: it was :call RSourceDirectory(<q-args>)
-        vim.notify(tbl.fargs)
-    end, { nargs = 1, complete = "dir" })
+    vim.api.nvim_create_user_command(
+        "RSourceDir",
+        function(tbl) require("r.run").source_dir(tbl.fargs) end,
+        { nargs = 1, complete = "dir" }
+    )
 
     vim.api.nvim_create_user_command(
         "Rhelp",
@@ -748,7 +758,7 @@ local global_setup = function()
     vim.fn.timer_start(1, require("r.nrs").check_nvimcom_version)
 end
 
-M = {}
+local M = {}
 
 --- Store user options
 ---@param opts table User options

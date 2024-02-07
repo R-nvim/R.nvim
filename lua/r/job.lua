@@ -19,8 +19,8 @@ M.on_stdout = function (job_id, data, _)
     for _, v in pairs(data) do
         cmd = v:gsub('\r', '')
         if #cmd > 0 then
-            if cmd:sub(1, 1) == "\x11" then
-                local cmdsplt = vim.fn.split(cmd, "\x11")
+            if cmd:sub(1, 1) == "\017" then
+                local cmdsplt = vim.fn.split(cmd, "\017")
                 local size = vim.fn.str2nr(cmdsplt[1])
                 local received = vim.fn.strlen(cmdsplt[2])
                 if size == received then

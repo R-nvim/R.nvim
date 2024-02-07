@@ -28,19 +28,19 @@ end
 
 -- Prepare R documentation output to be displayed by Nvim
 M.fix_rdoc = function(txt)
-    txt = string.gsub(txt, "%_\x08", "")
+    txt = string.gsub(txt, "%_\008", "")
     txt = string.gsub(txt, "<URL: %([^>]*%)>", " |%1|")
     txt = string.gsub(txt, "<email: %([^>]*%)>", " |%1|")
     if not config.is_windows then
         -- curly single quotes only if the environment is UTF-8
-        txt = string.gsub(txt, "\x91", "‘")
-        txt = string.gsub(txt, "\x92", "’")
+        txt = string.gsub(txt, "\145", "‘")
+        txt = string.gsub(txt, "\146", "’")
     end
 
     -- Mark the end of Examples
-    if txt:find("\x14Examples:\x14") then txt = txt .. "\x14###" end
+    if txt:find("\020Examples:\020") then txt = txt .. "\020###" end
 
-    local lines = vim.split(txt, "\x14")
+    local lines = vim.split(txt, "\020")
     local n = 1
     local N = #lines
     while n < N do

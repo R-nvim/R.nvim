@@ -394,14 +394,25 @@ follows <LocalLeader>m, e.g. <LocalLeader>m} (from the current line to the end
 of paragraph) or <LocalLeader>m3j (the next 3 lines including the current
 line).
 
-If the cursor is between any two marks, the plugin will send the lines between
-them to R if you press <LocalLeader>bb. If the cursor is above the first mark,
-the plugin will send from the beginning of the file to the mark. If the cursor
-is below the last mark, the plugin will send from the mark to the end of the
-file. The mark above the cursor is included and the mark below is excluded
-from the block to be sent to R. To create a mark, press m<letter> in Normal
-mode (see |mark|). Normally, marks are not visible, but there are plugins
-that highlight them.
+If the cursor is between manually inserted marks, the plugin will send the
+lines between them to R if you press <LocalLeader>bb. If the cursor is above
+the first mark, the plugin will send from the beginning of the file to the
+mark. If the cursor is below the last mark, the plugin will send from the mark
+to the end of the file. The mark above the cursor is included and the mark
+below is excluded from the block to be sent to R. To create a mark, press
+m<letter> in Normal mode (see |mark|). For example, consider the following
+code (with line numbers):
+>
+   1
+   2  x <- 3
+   3  y <- 2
+   4
+   5  z <- x + y
+   6
+
+In Normal mode, go to line 1 and press `ma`; go to line 6 and press `mb`; go
+to line 4 and press `<LocalLeader>bb` to send lines 1 to 5 to R. Normally, Vim
+marks are not visible, but there are plugins that highlight them.
 
 You can also use the command `:RSend` to type and, then, send a line of code
 to R.

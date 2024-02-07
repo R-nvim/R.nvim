@@ -130,10 +130,10 @@ end
 
 local send = function(file_type)
     -- Block
-    create_maps("ni",  "RSendMBlock",      "bb", ":call SendMBlockToR('silent', 'stay')")
-    create_maps("ni",  "RESendMBlock",     "be", ":call SendMBlockToR('echo',   'stay')")
-    create_maps("ni",  "RDSendMBlock",     "bd", ":call SendMBlockToR('silent', 'down')")
-    create_maps("ni",  "REDSendMBlock",    "ba", ":call SendMBlockToR('echo',   'down')")
+    create_maps("ni",  "RSendMBlock",      "bb", ":lua require('r.send').marked_block('silent', 'stay')")
+    create_maps("ni",  "RESendMBlock",     "be", ":lua require('r.send').marked_block('echo',   'stay')")
+    create_maps("ni",  "RDSendMBlock",     "bd", ":lua require('r.send').marked_block('silent', 'down')")
+    create_maps("ni",  "REDSendMBlock",    "ba", ":lua require('r.send').marked_block('echo',   'down')")
 
     -- Function
     create_maps("nvi", "RSendFunction",    "ff", ":lua require('r.send').fun('silent', 'stay')")
@@ -142,16 +142,16 @@ local send = function(file_type)
     create_maps("nvi", "RDSendFunction",   "fa", ":lua require('r.send').fun('echo',   'down')")
 
     -- Selection
-    create_maps("n",   "RSendSelection",   "ss", ":call SendSelectionToR('silent', 'stay', 'normal')")
-    create_maps("n",   "RESendSelection",  "se", ":call SendSelectionToR('echo',   'stay', 'normal')")
-    create_maps("n",   "RDSendSelection",  "sd", ":call SendSelectionToR('silent', 'down', 'normal')")
-    create_maps("n",   "REDSendSelection", "sa", ":call SendSelectionToR('echo',   'down', 'normal')")
+    create_maps("n",   "RSendSelection",   "ss", ":lua require('r.send').selection('silent', 'stay', 'normal')")
+    create_maps("n",   "RESendSelection",  "se", ":lua require('r.send').selection('echo',   'stay', 'normal')")
+    create_maps("n",   "RDSendSelection",  "sd", ":lua require('r.send').selection('silent', 'down', 'normal')")
+    create_maps("n",   "REDSendSelection", "sa", ":lua require('r.send').selection('echo',   'down', 'normal')")
 
-    create_maps("v",   "RSendSelection",   "ss", ":call SendSelectionToR('silent', 'stay')")
-    create_maps("v",   "RESendSelection",  "se", ":call SendSelectionToR('echo',   'stay')")
-    create_maps("v",   "RDSendSelection",  "sd", ":call SendSelectionToR('silent', 'down')")
-    create_maps("v",   "REDSendSelection", "sa", ":call SendSelectionToR('echo',   'down')")
-    create_maps("v", "RSendSelAndInsertOutput", "so", ":call SendSelectionToR('echo', 'stay', 'NewtabInsert')")
+    create_maps("v",   "RSendSelection",   "ss", ":lua require('r.send').selection('silent', 'stay')")
+    create_maps("v",   "RESendSelection",  "se", ":lua require('r.send').selection('echo',   'stay')")
+    create_maps("v",   "RDSendSelection",  "sd", ":lua require('r.send').selection('silent', 'down')")
+    create_maps("v",   "REDSendSelection", "sa", ":lua require('r.send').selection('echo',   'down')")
+    create_maps("v", "RSendSelAndInsertOutput", "so", ":lua require('r.send').selection('echo', 'stay', 'NewtabInsert')")
 
     -- Paragraph
     create_maps("ni", "RSendParagraph",   "pp", ":lua require('r.send').paragraph('silent', 'stay')")
@@ -160,7 +160,7 @@ local send = function(file_type)
     create_maps("ni", "REDSendParagraph", "pa", ":lua require('r.send').paragraph('echo',   'down')")
 
     if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
-        create_maps("ni", "RSendChunkFH", "ch", ":call SendFHChunkToR()")
+        create_maps("ni", "RSendChunkFH", "ch", ":lua require('r.send').chunks_up_to_here()")
     end
 
     -- *Line*
@@ -169,11 +169,11 @@ local send = function(file_type)
     create_maps("ni0", "(RInsertLineOutput)", "o",        ":lua require('r.run').insert_commented()")
     create_maps("v",   "(RInsertLineOutput)", "o",        ":lua require('r').warn('This command does not work over a selection of lines.')")
     create_maps("i",   "RSendLAndOpenNewOne", "q",        ":lua require('r.send').line('newline')")
-    create_maps("ni.", "RSendMotion",         "m",        ":set opfunc=SendMotionToR<CR>g@")
-    create_maps("n",   "RNLeftPart",          "r<left>",  ":call RSendPartOfLine('left',   0)")
-    create_maps("n",   "RNRightPart",         "r<right>", ":call RSendPartOfLine('right',  0)")
-    create_maps("i",   "RILeftPart",          "r<left>",  "l:call RSendPartOfLine('left',  1)")
-    create_maps("i",   "RIRightPart",         "r<right>", "l:call RSendPartOfLine('right', 1)")
+    create_maps("ni.", "RSendMotion",         "m",        ":set opfunc=v:lua.require('r.send').motion<CR>g@")
+    create_maps("n",   "RNLeftPart",          "r<left>",  ":lua require('r.send').line_part('left',  false)")
+    create_maps("n",   "RNRightPart",         "r<right>", ":lua require('r.send').line_part('right', false)")
+    create_maps("i",   "RILeftPart",          "r<left>",  ":lua require('r.send').line_part('left',  true)")
+    create_maps("i",   "RIRightPart",         "r<right>", ":lua require('r.send').line_part('right', true)")
     if file_type == "r" then
         create_maps("n",   "RSendAboveLines", "su", ":lua require('r.send').above_lines()")
         create_maps("ni",  "RSendFile",       "aa", ":lua require('r.send').source_file('silent')")
@@ -225,7 +225,7 @@ end
 
 -- stylua: ignore end
 
-M = {}
+local M = {}
 
 M.create = function(file_type)
     control(file_type)
