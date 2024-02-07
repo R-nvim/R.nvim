@@ -13,6 +13,5 @@ jobs:
           # Github secret token
           token: ${{ secrets.GITHUB_TOKEN }}
           # selene arguments
-          args: --display-style=quiet .
-          # selene version
+          args: . --config selene.toml
           version: 0.26.1
