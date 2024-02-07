@@ -223,7 +223,7 @@ nvim_format <- function(l1, l2, wco, sw, txt) {
     }
 
     .C("nvimcom_msg_to_nvim",
-       paste0("lua require('r.run').finish_code_formatting(", l1, ", ", l2, ", '", txt, "')"),
+       paste0("lua require('r.edit').finish_code_formatting(", l1, ", ", l2, ", '", txt, "')"),
        PACKAGE = "nvimcom")
     return(invisible(NULL))
 }

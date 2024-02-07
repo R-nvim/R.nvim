@@ -32,7 +32,7 @@ M.write_chunk = function()
         if vim.fn.match(vim.fn.getline(vim.fn.line(".")), "^\\s*$") ~= -1 then
             local curline = vim.fn.line(".")
             vim.fn.setline(curline, "```{r}")
-            if vim.bo.filetype == "quarto" then
+            if vim.o.filetype == "quarto" then
                 vim.fn.append(curline, { "", "```", "" })
                 vim.fn.cursor(curline + 1, 1)
             else

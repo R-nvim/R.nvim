@@ -34,7 +34,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
     else
         evince_loop = 0
     end
-    vim.fn.RRaiseWindow(vim.fn.substitute(ppath, ".*/", "", ""))
+    require("r.pdf").raise_window(string.gsub(ppath, ".*/", ""))
 end
 
 M.run_EvinceBackward = function()

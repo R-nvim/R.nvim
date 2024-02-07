@@ -92,7 +92,7 @@ M.open = function(fullpath)
     end
 end
 
-function RRaiseWindow(wttl)
+M.raise_window = function(wttl)
     if config.has_wmctrl then
         vim.fn.system("wmctrl -a '" .. wttl .. "'")
         if vim.v.shell_error == 0 then

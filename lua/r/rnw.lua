@@ -410,7 +410,7 @@ M.SyncTeX_backward = function(fname, ln)
                 vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID)
             end
         elseif config.has_awbt and config.term_title then
-            vim.cmd("RRaiseWindow('" .. config.term_title .. "')")
+            require("r.pdf").raise_window(config.term_title)
         end
     end
 end

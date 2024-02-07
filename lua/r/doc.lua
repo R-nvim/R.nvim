@@ -1,6 +1,7 @@
 local config = require("r.config").get_config()
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 local warn = require("r").warn
+local cursor = require("r.cursor")
 local has_new_width = true
 local rdoctitle = "R_doc"
 local htw
@@ -75,10 +76,14 @@ M.ask_R_help = function(topic)
     if config.nvimpager == "no" then
         require("r.send").cmd("help(" .. topic .. ")")
     else
-        M.ask_R_doc(topic, "", 0)
+        M.ask_R_doc(topic, "", false)
     end
 end
 
+--- Request R documentation on an object
+---@param rkeyword string The topic of the requested help
+---@param package string Library of the object
+---@param getclass boolean If the object is a function, whether R should check the class of the first argument passed to it to retrieve documentation on the appropriate method.
 M.ask_R_doc = function(rkeyword, package, getclass)
     local firstobj = ""
     local R_bufnr = require("r.term").get_buf_nr()
@@ -88,7 +93,7 @@ M.ask_R_doc = function(rkeyword, package, getclass)
         vim.cmd.sb(require("r.edit").get_rscript_name())
         vim.cmd("set switchbuf=" .. savesb)
     else
-        if getclass then firstobj = require("r.run").get_first_obj(rkeyword)[1] end
+        if getclass then firstobj = cursor.get_first_obj(rkeyword)[1] end
     end
 
     set_text_width(rkeyword)
@@ -120,7 +125,7 @@ end
 M.show = function(rkeyword, txt)
     if rkeyword:match("^MULTILIB") then
         local topic = vim.fn.split(rkeyword, " ")[2]
-        local libs = vim.fn.split(txt, "\x14")
+        local libs = vim.fn.split(txt, "\024")
         local msg = "The topic '" .. topic .. "' was found in more than one library:\n"
         for idx, lib in ipairs(libs) do
             msg = msg .. idx .. " : " .. lib .. "\n"
@@ -203,18 +208,18 @@ M.show = function(rkeyword, txt)
     local save_unnamed_reg = vim.fn.getreg("@@")
     vim.o.modifiable = true
     vim.cmd("silent normal! ggdG")
-    txt = txt:gsub("\x13", "'")
+    txt = txt:gsub("\019", "'")
     local lines
-    if txt:find("\x08") then
+    if txt:find("\008") then
         lines = require("r.rdoc").fix_rdoc(txt)
     else
-        lines = vim.split(txt, "\x14")
+        lines = vim.split(txt, "\020")
     end
     vim.fn.setline(1, lines)
     if rkeyword:match("R History") then
         vim.o.filetype = "r"
         vim.fn.cursor(1, 1)
-    elseif rkeyword:match("(help)") or vim.fn.search("\x08", "nw") > 0 then
+    elseif rkeyword:match("(help)") or vim.fn.search("\008", "nw") > 0 then
         require("r.rdoc").set_buf_options()
         vim.fn.cursor(1, 1)
     elseif rkeyword:find("%.Rd$") then
