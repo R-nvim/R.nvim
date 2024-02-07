@@ -1,1 +1,4 @@
 std="vim"
+
+[config]
+multiple_statements = { one_line_if = "allow" }
