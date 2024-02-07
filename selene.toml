@@ -1,4 +1,4 @@
 std="vim"
 
 [config]
-multiple_statements = { one_line_if = "break-return-only" }
+multiple_statements = { one_line_if = "allow" }
