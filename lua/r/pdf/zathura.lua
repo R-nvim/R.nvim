@@ -1,5 +1,6 @@
 local warn = require("r").warn
 local config = require("r.config").get_config()
+local pdf = require("r.pdf")
 
 local zathura_pid = {}
 
@@ -11,7 +12,7 @@ local ZathuraJobStdout = function(_, data, _)
     end
 end
 
-local StartZathuraNeovim = function(fullpath)
+local start2 = function(fullpath)
     local job_id = vim.fn.jobstart({
         "zathura",
         "--synctex-editor-command",
@@ -32,7 +33,7 @@ local StartZathuraNeovim = function(fullpath)
     end
 end
 
-local RStart_Zathura = function(fullpath)
+local start_zathura = function(fullpath)
     local fname = vim.fn.substitute(fullpath, ".*/", "", "")
 
     if zathura_pid[fullpath] and zathura_pid[fullpath] ~= 0 then
@@ -65,14 +66,14 @@ local RStart_Zathura = function(fullpath)
         end
     end
 
-    StartZathuraNeovim(fullpath)
+    start2(fullpath)
 end
 
 local M = {}
 
 M.open = function(fullpath)
     if config.openpdf == 1 then
-        RStart_Zathura(fullpath)
+        start_zathura(fullpath)
         return
     end
 
@@ -85,15 +86,15 @@ M.open = function(fullpath)
     if zathura_pid[fullpath] and zathura_pid[fullpath] ~= 0 then
         local zrun = vim.fn.system("ps -p " .. zathura_pid[fullpath])
         if zrun:find(zathura_pid[fullpath]) then
-            if RRaiseWindow(fname) then
+            if pdf.raise_window(fname) then
                 return
             else
-                RStart_Zathura(fullpath)
+                start_zathura(fullpath)
                 return
             end
         else
             zathura_pid[fullpath] = 0
-            RStart_Zathura(fullpath)
+            start_zathura(fullpath)
             return
         end
     else
@@ -101,8 +102,8 @@ M.open = function(fullpath)
     end
 
     -- Check if Zathura was already running
-    if RRaiseWindow(fname) == 0 then
-        RStart_Zathura(fullpath)
+    if fname == 0 then
+        start_zathura(fullpath)
         return
     end
 end
@@ -113,7 +114,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, tryagain)
     local shortp = vim.fn.substitute(ppath, ".*/", "", "g")
 
     if not zathura_pid[ppath] or (zathura_pid[ppath] and zathura_pid[ppath] == 0) then
-        RStart_Zathura(ppath)
+        start_zathura(ppath)
         vim.wait(900)
     end
 
@@ -130,7 +131,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, tryagain)
     if vim.v.shell_error ~= 0 then
         zathura_pid[ppath] = 0
         if tryagain then
-            RStart_Zathura(ppath)
+            start_zathura(ppath)
             vim.wait(900)
             M.SyncTeX_forward(tpath, ppath, texln, false)
         else
@@ -139,7 +140,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, tryagain)
         end
     end
 
-    RRaiseWindow(shortp)
+    pdf.raise_window(shortp)
 end
 
 return M

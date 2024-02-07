@@ -223,9 +223,9 @@ M.send_cmd_to_external_term = function(command, nl)
 
     if config.clear_line then
         if config.editing_mode == "emacs" then
-            cmd = "\001\013" .. cmd
+            cmd = "\001\011" .. cmd
         else
-            cmd = "\x1b0Da" .. cmd
+            cmd = "\0270Da" .. cmd
         end
     end
 
