@@ -109,7 +109,7 @@ class EvinceWindowProxy:
     def on_sync_source(self, input_file, source_link, timestamp):
         input_file = input_file.replace("file://", "")
         input_file = input_file.replace("%20", " ")
-        nvimr_cmd("call SyncTeX_backward('" + input_file + "', " + str(source_link[0]) + ")\n")
+        nvimr_cmd("lua require('r.pdf.evince').SyncTeX_backward('" + input_file + "', " + str(source_link[0]) + ")\n")
 
 def sigint_handler(sig, frame):
     if sig == signal.SIGTERM:

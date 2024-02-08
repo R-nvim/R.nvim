@@ -172,7 +172,7 @@ local knit_child = function(line, godown)
         M.cmd("require(knitr); knit('" .. cfile .. "', output=NULL)")
         if godown:find("down") then
             vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
-            vim.cmd("call cursor.move_next_line()")
+            cursor.move_next_line()
         end
     else
         warn("File not found: '" .. cfile .. "'")

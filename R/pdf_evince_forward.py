@@ -107,7 +107,7 @@ class EvinceWindowProxy:
                 self._tmp_syncview = [input_file, data, 0]
                 self._handler = self._syncview_handler
                 self._get_dbus_name(True)
-                nvimr_cmd("call Evince_Again()")
+                nvimr_cmd("lua require('r.pdf.evince').again()")
         else:
             self.window.SyncView(input_file, data, 0,  dbus_interface = "org.gnome.evince.Window")
             nvimr_cmd("let g:rplugin.evince_loop = 0") # FIXME: don't use global variable

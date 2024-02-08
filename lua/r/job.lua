@@ -53,12 +53,7 @@ M.on_stdout = function(job_id, data, _)
                 end
             end
 
-            if
-                cmd:match("^lua ")
-                or cmd:match("^call ")
-                or cmd:match("^let ")
-                or cmd:match("^unlet ")
-            then
+            if cmd:match("^lua ") or cmd:match("^call ") or cmd:match("^let ") then
                 vim.fn.execute(cmd)
             else
                 if cmd:len() > 128 then cmd = cmd:sub(1, 128) .. " [...]" end
