@@ -6,7 +6,7 @@ local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 local all_marks = "abcdefghijklmnopqrstuvwxyz"
 -- FIXME: convert to Lua pattern
--- local op_pattern = [[\(&\||\|+\|-\|\*\|/\|=\|\~\|%\|->\||>\)\s*$']]
+local op_pattern = [[\(&\||\|+\|-\|\*\|/\|=\|\~\|%\|->\||>\)\s*$']]
 
 local paren_diff = function(str)
     local clnln = str
