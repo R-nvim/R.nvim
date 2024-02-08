@@ -123,7 +123,7 @@ local edit = function()
     -- Replace <M--> with ' <- '
     if config.assign then
         vim.api.nvim_buf_set_keymap(0, "i", config.assign_map,
-            '<Cmd>lua require("r.edit").assign()<CR>a', { silent = true })
+            '<Cmd>lua require("r.edit").assign()<CR>', { silent = true })
     end
     create_maps("nvi", "RSetwd", "rd", "<Cmd>lua require('r.run').setwd()")
 end
