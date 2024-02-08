@@ -1438,23 +1438,23 @@ config:
 
 ------------------------------------------------------------------------------
 6.16. Control how paragraphs and lines are sent
-                                                           *paragraph_begin*
                                                            *parenblock*
+                                                           *paragraph_begin*
                                                            *bracketed_paste*
                                                            *clear_console*
 
+If a line has an opening parenthesis, all lines up to the closing parenthesis
+are sent to R when you send a line of code to R. If you prefer to send the
+lines one by one, put in your config:
+>lua
+   parenblock = false
+<
 By default, when you press <LocalLeader>pp R-Nvim sends all contiguous lines to
 R, that is all lines above and below the current one that are not separated by
 an empty line. If you prefer that only lines from the cursor position to the
 end of the paragraph are sent, put in your config:
 >lua
    paragraph_begin = false
-<
-If a line has an opening parenthesis, all lines up to the closing parenthesis
-are sent to R when you send a line of code to R. If you prefer to send the
-lines one by one, put in your config:
->lua
-   parenblock = false
 <
 Bracketed paste mode will bracket R code in special escape sequences when it
 is being sent to R so that R can tell the differences between stuff that you
