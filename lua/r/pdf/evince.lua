@@ -2,6 +2,7 @@ local evince_list = {}
 local py = nil
 local evince_loop = 0
 local config = require("r.config").get_config()
+local rnw = require("r.rnw")
 
 -- Check if python3 is executable, otherwise use python
 if vim.fn.executable("python3") > 0 then
@@ -37,8 +38,8 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
     require("r.pdf").raise_window(string.gsub(ppath, ".*/", ""))
 end
 
-M.run_EvinceBackward = function()
-    local basenm = vim.fn.SyncTeX_GetMaster() .. ".pdf"
+M.SyncTeX_backward = function()
+    local basenm = rnw.SyncTeX_get_master() .. ".pdf"
     local pdfpath = vim.b.rplugin_pdfdir
         .. "/"
         .. vim.fn.substitute(basenm, ".*/", "", "")
@@ -62,9 +63,9 @@ M.run_EvinceBackward = function()
 end
 
 -- Avoid possible infinite loop
-M.Evince_Again = function()
+M.again = function()
     evince_loop = evince_loop + 1
-    vim.fn.SyncTeX_forward()
+    rnw.SyncTeX_forward()
 end
 
 return M

@@ -1,4 +1,5 @@
 local M = {}
+
 --- Get the directory of the current buffer in Neovim.
 -- This function retrieves the path of the current buffer and extracts the directory part.
 -- @return string The directory path of the current buffer or an empty string if not applicable.
@@ -45,6 +46,16 @@ function M.ensure_directory_exists(dir_path)
 
     -- Return true to indicate success
     return true
+end
+
+--- Check if a table has a specific string value
+---@param value string
+---@param tbl table
+function M.value_in_table(value, tbl)
+    for _, v in pairs(tbl) do
+        if v == value then return true end
+    end
+    return false
 end
 
 return M

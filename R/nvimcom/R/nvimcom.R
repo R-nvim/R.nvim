@@ -1,4 +1,3 @@
-
 NvimcomEnv <- new.env()
 NvimcomEnv$pkgdescr <- list()
 
@@ -42,25 +41,17 @@ NvimcomEnv$pkgdescr <- list()
         termenv <- Sys.getenv("TERM")
     }
 
+    set_running_info()
+
     if (interactive() && termenv != "" && termenv != "dumb" && Sys.getenv("NVIMR_COMPLDIR") != "") {
         dir.create(Sys.getenv("NVIMR_COMPLDIR"), showWarnings = FALSE)
-        pd <- utils::packageDescription("nvimcom")
-        hascolor <- FALSE
-        if (length(find.package("colorout", quiet = TRUE, verbose = FALSE)) > 0 ||
-            Sys.getenv("RADIAN_VERSION") != "")
-            hascolor <- TRUE
         .C("nvimcom_Start",
            as.integer(getOption("nvimcom.verbose")),
            as.integer(getOption("nvimcom.allnames")),
            as.integer(getOption("nvimcom.setwidth")),
            as.integer(getOption("nvimcom.autoglbenv")),
-           pd$Version,
-           paste(sub("R ([^;]*).*", "\\1", pd$Built),
-                 getOption("OutDec"),
-                 gsub("\n", "#N#", getOption("prompt")),
-                 getOption("continue"),
-                 as.integer(hascolor),
-                 sep = "\x12"),
+           NvimcomEnv$info[1],
+           NvimcomEnv$info[2],
            PACKAGE = "nvimcom")
     }
     if (!is.na(utils::localeToCharset()[1]) &&
@@ -85,4 +76,30 @@ NvimcomEnv$pkgdescr <- list()
         Sys.sleep(0.2)
         library.dynam.unload("nvimcom", libpath)
     }
+}
+
+set_running_info <- function() {
+    pd <- utils::packageDescription("nvimcom")
+    hascolor <- FALSE
+    if (length(find.package("colorout", quiet = TRUE, verbose = FALSE)) > 0 || Sys.getenv("RADIAN_VERSION") != "")
+        hascolor <- TRUE
+    info <- paste(sub("R ([^;]*).*", "\\1", pd$Built),
+                  getOption("OutDec"),
+                  gsub("\n", "#N#", getOption("prompt")),
+                  getOption("continue"),
+                  as.integer(hascolor),
+                  sep = "\x12")
+    NvimcomEnv$info <- c(pd$Version, info)
+    return(invisible(NULL))
+}
+
+# On Unix, this function is called when R is ready to execute top-level
+# commands. This feature is not implementable on Windows.
+send_nvimcom_info <- function(Rpid) {
+    winID <- Sys.getenv("WINDOWID")
+    if (winID == "")
+        winID = "0"
+    msg <- paste0("lua require('r.run').set_nvimcom_info('", NvimcomEnv$info[1],
+                  "', ", Rpid, ", '", winID, "', '", NvimcomEnv$info[2], "')")
+    .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
 }

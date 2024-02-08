@@ -5,7 +5,7 @@ local config = require("r.config").get_config()
 
 local on_okular_stdout = function(_, data, _)
     for _, cmd in ipairs(data) do
-        if vim.startswith(cmd, "call ") then vim.cmd(cmd) end
+        if vim.startswith(cmd, "lua ") then vim.cmd(cmd) end
     end
 end
 
@@ -14,7 +14,7 @@ M.open = function(fullpath)
         "okular",
         "--unique",
         "--editor-cmd",
-        'echo \'call SyncTeX_backward("%f", "%l")\'',
+        'echo \'lua require("r.rnw").SyncTeX_backward("%f", "%l")\'',
         fullpath,
     }, {
         detach = true,
@@ -30,7 +30,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
         "okular",
         "--unique",
         "--editor-cmd",
-        'echo \'call SyncTeX_backward("%f", "%l")\'',
+        'echo \'lua require("r.rnw").SyncTeX_backward("%f", "%l")\'',
         pdfname .. "#src:" .. texln .. texname,
     }, {
         detach = true,

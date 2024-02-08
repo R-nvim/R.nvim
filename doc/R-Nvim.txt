@@ -414,6 +414,11 @@ In Normal mode, go to line 1 and press `ma`; go to line 6 and press `mb`; go
 to line 4 and press `<LocalLeader>bb` to send lines 1 to 5 to R. Normally, Vim
 marks are not visible, but there are plugins that highlight them.
 
+Sending a selection of lines is actually a special case of sending a marked
+block with the marks being `'<` and `'>`. That is the reason why the command
+to send selection also works in Normal mode: it will send the lines that
+were selected for the last time.
+
 You can also use the command `:RSend` to type and, then, send a line of code
 to R.
 
@@ -840,7 +845,6 @@ the `init.vim`. The workaround is do not include the superfluous command
 |pdfviewer|           PDF application used to open PDF documents
 |openpdf|             Open PDF after processing rnoweb file
 |openhtml|            Open HTML after processing Rmd or Quarto
-|strict_rst|          Code style for generated rst files
 |insert_mode_cmds|    Allow R commands in insert mode
 |rmhidden|            Remove hidden objects from R workspace
 |wait|                Time to wait for nvimcom loading
@@ -2138,30 +2142,29 @@ object gender. To make it even easier to use this and other functions, you
 could write custom key bindings in your |init.lua|, as in the examples below:
 >lua
    -- FIXME: test
-   vim.keymap.set('n', '<LocalLeader>l', '<Cmd>lua require("r.FIXME").action("levels")<CR>')
-   vim.keymap.set('n', '<LocalLeader>t', '<Cmd>lua require("r.FIXME").action("tail")<CR>')
+   vim.keymap.set('n', '<LocalLeader>L', '<Cmd>lua require("r.run").action("levels")<CR>')
+   vim.keymap.set('n', '<LocalLeader>t', '<Cmd>lua require("r.run").action("tail")<CR>')
 <
 If you want an action over an selection, then the second argument must be the
 string `"v"`:
->vim
-   FIXME: convert to Lua
-   vmap <silent> <LocalLeader>h :call RAction("head", "v")<CR>
+>lua
+   -- FIXME: test
+   vim.keymap.set('v', '<LocalLeader>h', '<Cmd>lua require("r.run").action("head")<CR>')
 <
 In this case, the beginning and the end of the selection must be in the same
 line.
 
 If either a second or a third optional argument starts with a comma, it will
-be inserted as argument(s) to the RAction function. Examples:
->vim
-   FIXME: convert to Lua
-   nmap <silent> <LocalLeader>h :call RAction('head', ', n = 10')<CR>
-   nmap <silent> <LocalLeader>t :call RAction('tail', ', n = 10, addrownums = FALSE')<CR>
+be inserted as argument(s) to the RAction function. Example:
+>lua
+   -- FIXME: test
+   vim.keymap.set('n', '<LocalLeader>H', '<Cmd>lua require("r.run").action("head", ", n = 10")<CR>')
 <
 If the command that you want to send does not require an R object as argument,
-you can create a shortcut to it by following the example:
->vim
-   FIXME: convert to Lua
-   map <silent> <LocalLeader>s :call g:SendCmdToR("search()")<CR>
+you can send it directly to R Console, as in the example:
+>lua
+   -- FIXME: test
+   vim.keymap.set('n', '<LocalLeader>s', '<Cmd>lua require("r.send").cmd("search()")<CR>')
 <
 See also: |source|.
 

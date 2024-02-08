@@ -1,5 +1,6 @@
 local config = require("r.config").get_config()
 local warn = require("r").warn
+local vit = require("r.utils").value_in_table
 
 local term_name = nil
 local term_cmd = nil
@@ -43,7 +44,6 @@ local external_term_config = function()
         for _, term in pairs(terminals) do
             if vim.fn.executable(term) == 1 then
                 term_name = term
-                vim.notify("Found known terminal: " .. term) -- FIXME: delete this
                 break
             end
         end
@@ -55,11 +55,9 @@ local external_term_config = function()
         )
     end
 
-    if
-        string.match(term_name, "^%(foot%|gnome%-terminal%|xfce4%-terminal%|alacritty%)$")
-    then
+    if vit(term_name, { "foot", "gnome-terminal", "xfce4-terminal", "alacritty" }) then
         term_cmd = term_name .. " --title R"
-    elseif string.match(term_name, "^%(xterm%|uxterm%|lxterm%)$") then
+    elseif vit(term_name, { "xterm", "uxterm", "lxterm" }) then
         term_cmd = term_name .. " -title R"
     else
         term_cmd = term_name
@@ -69,7 +67,7 @@ local external_term_config = function()
 
     if not config.nvim_wd then
         if
-            string.match(term_name, "^%(gnome%-terminal%|xfce4%-terminal%|lxterminal%)$")
+            vit(term_name, { "gnome-terminal", "xfce4-terminal", "lxterminal", "foot" })
         then
             term_cmd = term_cmd
                 .. " --working-directory='"
@@ -87,7 +85,7 @@ local external_term_config = function()
 
     if term_name == "gnome-terminal" then
         term_cmd = term_cmd .. " --"
-    elseif string.match(term_name, "^%(terminator%|xfce4%-terminal%)$") then
+    elseif vit(term_name, { "terminator", "xfce4-terminal" }) then
         term_cmd = term_cmd .. " -x"
     else
         term_cmd = term_cmd .. " -e"

@@ -220,8 +220,8 @@ local RInitExit = function(_, data, _)
 
     edit.add_to_debug_info("before_nrs.R stderr", table.concat(RBerr, "\n"))
     edit.add_to_debug_info("before_nrs.R stdout", table.concat(RBout, "\n"))
-    RBerr = nil
-    RBout = nil
+    RBerr = {}
+    RBout = {}
     edit.add_for_deletion(config.tmpdir .. "/bo_code.R")
     edit.add_for_deletion(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.NVIMR_ID)
     edit.add_for_deletion(config.tmpdir .. "/libnames_" .. vim.env.NVIMR_ID)

@@ -74,7 +74,6 @@ local config = {
     skim_app_path       = "",
     source_args         = "",
     specialplot         = false,
-    strict_rst          = true,
     synctex             = true,
     texerr              = true,
     tmpdir              = nil,
@@ -86,8 +85,20 @@ local config = {
 
 -- stylua: ignore end
 
+local config_keys
+
 local user_opts = {}
 local did_global_setup = false
+
+local show_config = function(tbl)
+    local opt = tbl.args
+    if opt and opt:len() > 0 then
+        opt = opt:gsub(" .*", "")
+        print(vim.inspect(config[opt]))
+    else
+        print(vim.inspect(config))
+    end
+end
 
 local set_editing_mode = function()
     local em = "emacs"
@@ -130,35 +141,44 @@ local set_pdf_viewer = function()
     end
 end
 
+local compare_types = function(k)
+    if
+        k == "external_term"
+        and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean")
+    then
+        warn("Option `external_term` should be either boolean or string.")
+    elseif
+        k == "rmdchunk"
+        and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number")
+    then
+        warn("Option `rmdchunk` should be either number or string.")
+    elseif type(config[k]) ~= "nil" and (type(user_opts[k]) ~= type(config[k])) then
+        warn(
+            "Option `"
+                .. k
+                .. "` should be "
+                .. type(config[k])
+                .. ", not "
+                .. type(user_opts[k])
+                .. "."
+        )
+    end
+end
+
 local validate_user_opts = function()
     -- We don't use vim.validate() because its error message has traceback details not useful for users.
+    local has_key = false
     for k, _ in pairs(user_opts) do
-        if config[k] == nil then
-            warn("R-Nvim: unrecognized option `" .. k .. "`.")
-        else
-            if
-                k == "external_term"
-                and not (
-                    type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean"
-                )
-            then
-                warn("Option `external_term` should be either boolean or string.")
-            elseif
-                k == "rmdchunk"
-                and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number")
-            then
-                warn("Option `rmdchunk` should be either number or string.")
-            elseif not (type(user_opts[k]) == type(config[k])) then
-                warn(
-                    "Option `"
-                        .. k
-                        .. "` should be "
-                        .. type(config[k])
-                        .. ", not "
-                        .. type(user_opts[k])
-                        .. "."
-                )
+        for _, v in pairs(config_keys) do
+            if v == k then
+                has_key = true
+                break
             end
+        end
+        if not has_key then
+            warn("Unrecognized option `" .. k .. "`.")
+        else
+            compare_types(k)
         end
     end
 end
@@ -378,7 +398,7 @@ local do_common_global = function()
 
     -- Make the file name of files to be sourced
     if config.remote_compldir then
-        config.source_read = config.compl_tmpdir .. "/tmp/Rsource-" .. vim.fn.getpid()
+        config.source_read = config.remote_compldir .. "/tmp/Rsource-" .. vim.fn.getpid()
     else
         config.source_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
     end
@@ -755,6 +775,11 @@ local global_setup = function()
         }
     )
 
+    vim.api.nvim_create_user_command("RConfigShow", show_config, {
+        nargs = "?",
+        complete = function() return config_keys end,
+    })
+
     vim.fn.timer_start(1, require("r.nrs").check_nvimcom_version)
 end
 
@@ -784,6 +809,11 @@ M.real_setup = function()
     local gtime = vim.fn.reltime()
 
     vim.g.R_Nvim_status = 1
+
+    config_keys = {}
+    for k, _ in pairs(config) do
+        table.insert(config_keys, tostring(k))
+    end
 
     -- Check if b:pdf_is_open already exists to avoid errors at other places
     if vim.fn.exists("b:pdf_is_open") == 0 then

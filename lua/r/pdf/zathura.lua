@@ -8,7 +8,7 @@ local has_dbus_send = vim.fn.executable("dbus-send") > 0 and 1 or 0
 
 local ZathuraJobStdout = function(_, data, _)
     for _, cmd in ipairs(data) do
-        if vim.startswith(cmd, "call ") then vim.cmd(cmd) end
+        if vim.startswith(cmd, "lua ") then vim.cmd(cmd) end
     end
 end
 
@@ -16,7 +16,7 @@ local start2 = function(fullpath)
     local job_id = vim.fn.jobstart({
         "zathura",
         "--synctex-editor-command",
-        'echo \'call SyncTeX_backward("%{input}", "%{line}")\'',
+        'echo \'lua require("r.rnw").SyncTeX_backward("%{input}", "%{line}")\'',
         fullpath,
     }, {
         detach = true,

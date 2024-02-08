@@ -8,7 +8,22 @@ local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 local all_marks = "abcdefghijklmnopqrstuvwxyz"
 -- FIXME: convert to Lua pattern
-local op_pattern = [[\(&\||\|+\|-\|\*\|/\|=\|\~\|%\|->\||>\)\s*$']]
+
+--- Check if line ends with operator symbol
+---@param line string
+---@return boolean
+local ends_with_operator = function(line)
+    local op_pattern = { "&", "|", "+", "-", "%*", "%/", "%=", "~", "%-", "%<", "%>" }
+    local clnline = line:gsub("#.*", "")
+    local has_op = false
+    for _, v in pairs(op_pattern) do
+        if clnline:find(v .. "%s*$") then
+            has_op = true
+            break
+        end
+    end
+    return has_op
+end
 
 local paren_diff = function(str)
     local clnln = str
@@ -172,7 +187,7 @@ local knit_child = function(line, godown)
         M.cmd("require(knitr); knit('" .. cfile .. "', output=NULL)")
         if godown:find("down") then
             vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
-            vim.cmd("call cursor.move_next_line()")
+            cursor.move_next_line()
         end
     else
         warn("File not found: '" .. cfile .. "'")
@@ -239,7 +254,7 @@ M.motion = function(type)
         M.line("stay", lstart)
     else
         local lines = vim.fn.getline(lstart, lend)
-        vim.fn.M.source_lines(lines, "", "block")
+        M.source_lines(lines, "", "block")
     end
 end
 
@@ -277,25 +292,25 @@ M.marked_block = function(e, m)
     if lineB < vim.fn.line("$") then lineB = lineB - 1 end
 
     local lines = vim.fn.getline(lineA, lineB)
-    local ok = vim.fn.M.source_lines(lines, e, "block")
+    local ok = M.source_lines(lines, e, "block")
 
     if ok == 0 then return end
 
     if m == "down" and lineB ~= vim.fn.line("$") then
         vim.fn.cursor(lineB, 1)
-        vim.fn.cursor.move_next_line()
+        cursor.move_next_line()
     end
 end
 
-M.selection = function()
-    local ispy = 0
+M.selection = function(e, m)
+    local ispy = false
 
     if vim.o.filetype ~= "r" then
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
             and require("r.rmd").is_in_Py_code(0)
         then
-            ispy = 1
+            ispy = true
         elseif vim.b.IsInRCode(0) ~= 1 then
             if
                 (
@@ -323,13 +338,13 @@ M.selection = function()
         local line = string.sub(l, i, i + j)
         if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
         local ok = M.cmd(line)
-        if ok and vim.fn.a[2] == "down" then cursor.move_next_line() end
+        if ok and m == "down" then cursor.move_next_line() end
         return
     end
 
-    local lines =
-        vim.api.nvim_buf_get_lines(0, vim.fn.line("'<"), vim.fn.line("'>"), true)
-    if vim.visualmode() == "\\<C-V>" then
+    local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, true)
+    vim.g.TheVM = vim.fn.visualmode()
+    if vim.fn.visualmode() == "\\<C-V>" then
         local cj = vim.fn.col("'<")
         local ck = vim.fn.col("'>")
         if cj > ck then
@@ -360,23 +375,15 @@ M.selection = function()
     vim.fn.setpos(".", curpos)
 
     local ok
-    if vim.fn.a[0] == 3 and vim.fn.a[3] == "NewtabInsert" then
-        ok = M.source_lines(lines, vim.fn.a[1], "NewtabInsert")
-    elseif ispy then
-        ok = M.source_lines(lines, vim.fn.a[1], "PythonCode")
+    if ispy then
+        ok = M.source_lines(lines, e, "PythonCode")
     else
-        ok = M.source_lines(lines, vim.fn.a[1], "selection")
+        ok = M.source_lines(lines, e, "selection")
     end
 
     if ok == 0 then return end
 
-    if vim.fn.a[2] == "down" then
-        cursor.move_next_line()
-    else
-        if vim.fn.a[0] < 3 or (vim.fn.a[0] == 3 and vim.fn.a[3] ~= "normal") then
-            vim.cmd("normal! gv")
-        end
-    end
+    if e == "down" then cursor.move_next_line() end
 end
 
 --- Send current line to R Console
@@ -443,7 +450,6 @@ M.line = function(move, lnum)
     if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
 
     -- FIXME: Send the whole block within curly braces
-    local has_block = false
     local has_op = false
     if config.parenblock then
         local chunkend = nil
@@ -452,29 +458,27 @@ M.line = function(move, lnum)
         elseif vim.o.filetype == "rnoweb" then
             chunkend = "@"
         end
+        local lines = {}
+        has_op = ends_with_operator(line)
         local rpd = paren_diff(line)
-        has_op = line:gsub("#.*", ""):find(op_pattern) and true or false
-        if rpd < 0 then
-            local line1 = lnum
-            local cline = line1 + 1
+        if rpd < 0 or has_op then
+            lnum = lnum + 1
             local last_buf_line = vim.fn.line("$")
-            local lines = { line }
-            while cline <= last_buf_line do
-                local txt = vim.fn.getline(cline)
+            lines = { line }
+            while lnum <= last_buf_line do
+                local txt = vim.fn.getline(lnum)
                 if chunkend and txt == chunkend then break end
                 table.insert(lines, txt)
                 rpd = rpd + paren_diff(txt)
-                if rpd == 0 then
-                    has_op = vim.fn.getline(cline):gsub("#.*", ""):find(op_pattern)
-                            and true
-                        or false
-                    vim.fn.cursor(cline, 1)
-                    has_block = true
+                has_op = ends_with_operator(txt)
+                if rpd < 0 or has_op then
+                    lnum = lnum + 1
+                else
+                    vim.fn.cursor(lnum, 1)
                     break
                 end
-                cline = cline + 1
             end
-            if has_block then line = table.concat(lines, "\n") end
+            line = table.concat(lines, "\n")
         end
     end
 
@@ -486,8 +490,6 @@ M.line = function(move, lnum)
 
     if move == "down" then
         cursor.move_next_line()
-        -- Send the whole chain of piped lines
-        if has_op then M.line(move, lnum) end
     elseif move == "newline" then
         vim.cmd("normal! o")
     end
