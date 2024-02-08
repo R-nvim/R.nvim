@@ -24,6 +24,9 @@ local L = {}
 --- Escape with backticks invalid R names
 ---@param word string
 local add_backticks = function(word)
+    -- Unamed list element
+    if word:find("^%[%[") then return word end
+
     local punct = {
         "!",
         "'",
@@ -299,7 +302,6 @@ M.get_name = function(lnum, line)
 
     if idx == 5 then
         -- top level object
-        word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
         if curview == "libraries" then
             return word .. ":"
         else
@@ -309,18 +311,18 @@ M.get_name = function(lnum, line)
         if curview == "libraries" then
             if isutf8 then
                 if idx == 12 then
-                    word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
+                    word = word:gsub("%$%[%[", "[[")
                     return word
                 end
             elseif idx == 8 then
-                word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
+                word = word:gsub("%$%[%[", "[[")
                 return word
             end
         end
         if idx > 5 then
             -- Find the parent data.frame or list
             word = find_parent(word, lnum, idx - 1)
-            word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
+            word = word:gsub("%$%[%[", "[[")
             return word
         else
             -- Wrong object name delimiter: should never happen.
