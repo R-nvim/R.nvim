@@ -277,25 +277,25 @@ M.marked_block = function(e, m)
     if lineB < vim.fn.line("$") then lineB = lineB - 1 end
 
     local lines = vim.fn.getline(lineA, lineB)
-    local ok = vim.fn.M.source_lines(lines, e, "block")
+    local ok = M.source_lines(lines, e, "block")
 
     if ok == 0 then return end
 
     if m == "down" and lineB ~= vim.fn.line("$") then
         vim.fn.cursor(lineB, 1)
-        vim.fn.cursor.move_next_line()
+        cursor.move_next_line()
     end
 end
 
-M.selection = function()
-    local ispy = 0
+M.selection = function(e, m)
+    local ispy = false
 
     if vim.o.filetype ~= "r" then
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
             and require("r.rmd").is_in_Py_code(0)
         then
-            ispy = 1
+            ispy = true
         elseif vim.b.IsInRCode(0) ~= 1 then
             if
                 (
@@ -323,13 +323,13 @@ M.selection = function()
         local line = string.sub(l, i, i + j)
         if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
         local ok = M.cmd(line)
-        if ok and vim.fn.a[2] == "down" then cursor.move_next_line() end
+        if ok and m == "down" then cursor.move_next_line() end
         return
     end
 
-    local lines =
-        vim.api.nvim_buf_get_lines(0, vim.fn.line("'<"), vim.fn.line("'>"), true)
-    if vim.visualmode() == "\\<C-V>" then
+    local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, true)
+    vim.g.TheVM = vim.fn.visualmode()
+    if vim.fn.visualmode() == "\\<C-V>" then
         local cj = vim.fn.col("'<")
         local ck = vim.fn.col("'>")
         if cj > ck then
@@ -360,23 +360,15 @@ M.selection = function()
     vim.fn.setpos(".", curpos)
 
     local ok
-    if vim.fn.a[0] == 3 and vim.fn.a[3] == "NewtabInsert" then
-        ok = M.source_lines(lines, vim.fn.a[1], "NewtabInsert")
-    elseif ispy then
-        ok = M.source_lines(lines, vim.fn.a[1], "PythonCode")
+    if ispy then
+        ok = M.source_lines(lines, e, "PythonCode")
     else
-        ok = M.source_lines(lines, vim.fn.a[1], "selection")
+        ok = M.source_lines(lines, e, "selection")
     end
 
     if ok == 0 then return end
 
-    if vim.fn.a[2] == "down" then
-        cursor.move_next_line()
-    else
-        if vim.fn.a[0] < 3 or (vim.fn.a[0] == 3 and vim.fn.a[3] ~= "normal") then
-            vim.cmd("normal! gv")
-        end
-    end
+    if e == "down" then cursor.move_next_line() end
 end
 
 --- Send current line to R Console

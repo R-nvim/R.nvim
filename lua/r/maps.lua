@@ -142,16 +142,10 @@ local send = function(file_type)
     create_maps("nvi", "RDSendFunction",   "fa", "<Cmd>lua require('r.send').fun('echo',   'down')")
 
     -- Selection
-    create_maps("n",   "RSendSelection",   "ss", "<Cmd>lua require('r.send').selection('silent', 'stay', 'normal')")
-    create_maps("n",   "RESendSelection",  "se", "<Cmd>lua require('r.send').selection('echo',   'stay', 'normal')")
-    create_maps("n",   "RDSendSelection",  "sd", "<Cmd>lua require('r.send').selection('silent', 'down', 'normal')")
-    create_maps("n",   "REDSendSelection", "sa", "<Cmd>lua require('r.send').selection('echo',   'down', 'normal')")
-
-    create_maps("v",   "RSendSelection",   "ss", "<Cmd>lua require('r.send').selection('silent', 'stay')")
-    create_maps("v",   "RESendSelection",  "se", "<Cmd>lua require('r.send').selection('echo',   'stay')")
-    create_maps("v",   "RDSendSelection",  "sd", "<Cmd>lua require('r.send').selection('silent', 'down')")
-    create_maps("v",   "REDSendSelection", "sa", "<Cmd>lua require('r.send').selection('echo',   'down')")
-    create_maps("v", "RSendSelAndInsertOutput", "so", "<Cmd>lua require('r.send').selection('echo', 'stay', 'NewtabInsert')")
+    create_maps("nv",   "RSendSelection",   "ss", "<Cmd>lua require('r.send').selection('silent', 'stay')")
+    create_maps("nv",   "RESendSelection",  "se", "<Cmd>lua require('r.send').selection('echo',   'stay')")
+    create_maps("nv",   "RDSendSelection",  "sd", "<Cmd>lua require('r.send').selection('silent', 'down')")
+    create_maps("nv",   "REDSendSelection", "sa", "<Cmd>lua require('r.send').selection('echo',   'down')")
 
     -- Paragraph
     create_maps("ni", "RSendParagraph",   "pp", "<Cmd>lua require('r.send').paragraph('silent', 'stay')")
