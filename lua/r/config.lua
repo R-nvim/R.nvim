@@ -1,5 +1,6 @@
 local warn = require("r").warn
 local utils = require("r.utils")
+local uv = vim.loop
 
 -- stylua: ignore start
 
@@ -630,13 +631,24 @@ local tmux_config = function()
 end
 
 local unix_config = function()
-    local utime = vim.fn.reltime()
+    local utime = uv.hrtime()
     if config.R_path then
-        local rpath = vim.fn.split(config.R_path, ":")
-        vim.fn.map(rpath, "expand(v:val)")
+        local rpath = vim.split(config.R_path, ":")
+
+        -- Resolve symlinks
+        for i, val in ipairs(rpath) do
+            rpath[i] = uv.fs_realpath(val)
+        end
+
+        -- Add the current directory to the beginning of the path
         table.insert(rpath, 1, "")
-        for _, dir in ipairs(vim.fn.reverse(rpath)) do
-            if vim.fn.isdirectory(dir) == 1 then
+
+        -- loop over rpath in reverse.
+        for i = #rpath, 1, -1 do
+            local dir = rpath[i]
+            local is_dir = uv.fs_stat(dir)
+        -- Each element in rpath must exist and be a directory
+            if is_dir and is_dir.type == "directory" then
                 vim.env.PATH = dir .. ":" .. vim.env.PATH
             else
                 warn(
@@ -648,7 +660,8 @@ local unix_config = function()
         end
     end
 
-    if vim.fn.executable(config.R_app) == 0 then
+    local is_executable = uv.fs_access(config.R_app, "X")
+    if not is_executable then
         warn(
             '"'
                 .. config.R_app
@@ -660,13 +673,9 @@ local unix_config = function()
         (type(config.external_term) == "boolean" and config.external_term)
         or type(config.external_term) == "string"
     then
-        tmux_config()
+        tmux_config() -- Consider removing this line if it's not necessary
     end
-    require("r.edit").add_to_debug_info(
-        "unix setup",
-        vim.fn.reltimefloat(vim.fn.reltime(utime, vim.fn.reltime())),
-        "Time"
-    )
+    require("r.edit").add_to_debug_info("unix setup", uv.hrtime - utime, "Time")
 end
 
 local global_setup = function()
