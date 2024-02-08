@@ -129,35 +129,49 @@ local set_pdf_viewer = function()
     end
 end
 
+local compare_types = function(k)
+    if
+        k == "external_term"
+        and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean")
+    then
+        warn("Option `external_term` should be either boolean or string.")
+    elseif
+        k == "rmdchunk"
+        and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number")
+    then
+        warn("Option `rmdchunk` should be either number or string.")
+    elseif type(config[k]) ~= "nil" and (type(user_opts[k]) ~= type(config[k])) then
+        warn(
+            "Option `"
+                .. k
+                .. "` should be "
+                .. type(config[k])
+                .. ", not "
+                .. type(user_opts[k])
+                .. "."
+        )
+    end
+end
+
 local validate_user_opts = function()
     -- We don't use vim.validate() because its error message has traceback details not useful for users.
+    local ckeys = {}
+    for k, _ in pairs(config) do
+        table.insert(ckeys, tostring(k))
+    end
+    local has_key = false
+
     for k, _ in pairs(user_opts) do
-        if config[k] == nil then
-            warn("R-Nvim: unrecognized option `" .. k .. "`.")
-        else
-            if
-                k == "external_term"
-                and not (
-                    type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean"
-                )
-            then
-                warn("Option `external_term` should be either boolean or string.")
-            elseif
-                k == "rmdchunk"
-                and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number")
-            then
-                warn("Option `rmdchunk` should be either number or string.")
-            elseif not (type(user_opts[k]) == type(config[k])) then
-                warn(
-                    "Option `"
-                        .. k
-                        .. "` should be "
-                        .. type(config[k])
-                        .. ", not "
-                        .. type(user_opts[k])
-                        .. "."
-                )
+        for _, v in pairs(ckeys) do
+            if v == k then
+                has_key = true
+                break
             end
+        end
+        if not has_key then
+            warn("Unrecognized option `" .. k .. "`.")
+        else
+            compare_types(k)
         end
     end
 end
@@ -377,7 +391,7 @@ local do_common_global = function()
 
     -- Make the file name of files to be sourced
     if config.remote_compldir then
-        config.source_read = config.compl_tmpdir .. "/tmp/Rsource-" .. vim.fn.getpid()
+        config.source_read = config.remote_compldir .. "/tmp/Rsource-" .. vim.fn.getpid()
     else
         config.source_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
     end
@@ -752,6 +766,12 @@ local global_setup = function()
             nargs = 1,
             complete = require("r.nrs").list_objs,
         }
+    )
+
+    vim.api.nvim_create_user_command(
+        "RGetConfig",
+        function() print(vim.inspect(require("r.config").get_config())) end,
+        {}
     )
 
     vim.fn.timer_start(1, require("r.nrs").check_nvimcom_version)
