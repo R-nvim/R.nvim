@@ -1,7 +1,6 @@
 local warn = require("r").warn
 local config = require("r.config").get_config()
 local pdf = require("r.pdf")
-local rnw = require("r.rnw")
 
 local zathura_pid = {}
 
