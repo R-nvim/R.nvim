@@ -462,10 +462,12 @@ end
 M.action = function(rcmd, mode, args)
     local rkeyword
 
-    if vim.o.filetype == "rdoc" then
+    if vim.o.syntax == "rdoc" then
         rkeyword = vim.fn.expand("<cword>")
-    elseif vim.o.filetype == "rbrowser" then
-        rkeyword = require("r.browser").get_name()
+    elseif vim.o.syntax == "rbrowser" then
+        local lnum = vim.fn.line(".")
+        local line = vim.fn.getline(lnum)
+        rkeyword = require("r.browser").get_name(lnum, line)
     elseif mode and mode == "v" and vim.fn.line("'<") == vim.fn.line("'>") then
         rkeyword = vim.fn.strpart(
             vim.fn.getline(vim.fn.line("'>")),
