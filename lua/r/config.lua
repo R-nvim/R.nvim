@@ -1,6 +1,7 @@
 local warn = require("r").warn
 local utils = require("r.utils")
 local uv = vim.loop
+local edit = require("r.edit")
 
 -- stylua: ignore start
 
@@ -569,7 +570,7 @@ local windows_config = function()
             warn(
                 "Could not find R path in Windows Registry. If you have already installed R, please, set the value of 'R_path'."
             )
-            require("r.edit").add_to_debug_info(
+            edit.add_to_debug_info(
                 "windows setup",
                 vim.fn.reltimefloat(vim.fn.reltime(wtime, vim.fn.reltime())),
                 "Time"
@@ -596,7 +597,7 @@ local windows_config = function()
             config.R_args = { "--sdi", "--no-save" }
         end
     end
-    require("r.edit").add_to_debug_info(
+    edit.add_to_debug_info(
         "windows setup",
         vim.fn.reltimefloat(vim.fn.reltime(wtime, vim.fn.reltime())),
         "Time"
@@ -623,7 +624,7 @@ local tmux_config = function()
         if vim.fn.strlen(tmuxversion) ~= 3 then tmuxversion = "1.0" end
         if tmuxversion < "3.0" then warn("R-Nvim requires Tmux >= 3.0") end
     end
-    require("r.edit").add_to_debug_info(
+    edit.add_to_debug_info(
         "tmux setup",
         vim.fn.reltimefloat(vim.fn.reltime(ttime, vim.fn.reltime())),
         "Time"
@@ -675,7 +676,7 @@ local unix_config = function()
     then
         tmux_config() -- Consider removing this line if it's not necessary
     end
-    require("r.edit").add_to_debug_info("unix setup", uv.hrtime - utime, "Time")
+    edit.add_to_debug_info("unix setup", uv.hrtime - utime, "Time")
 end
 
 local global_setup = function()
