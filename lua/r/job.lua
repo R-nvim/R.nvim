@@ -1,8 +1,12 @@
 local M = {}
 local jobs = {}
+local warn = require("r").warn
+
 local incomplete_input = { size = 0, received = 0, str = "" }
 local waiting_more_input = false
-local warn = require("r").warn
+local cmdsplt
+local in_size
+local received
 
 local stop_waiting_nsr = function(_)
     if waiting_more_input then
@@ -18,49 +22,60 @@ local stop_waiting_nsr = function(_)
     incomplete_input = { size = 0, received = 0, str = "" }
 end
 
+local begin_waiting_more_input = function ()
+    -- Log("begin_waiting_more_input")
+    waiting_more_input = true
+    incomplete_input.size = in_size
+    incomplete_input.received = received
+    incomplete_input.str = cmdsplt[2]
+    vim.fn.timer_start(100, stop_waiting_nsr)
+end
+
+local exec_stdout_cmd = function (cmd, job_id)
+    if cmd:match("^lua ") or cmd:match("^call ") or cmd:match("^let ") then
+        vim.fn.execute(cmd)
+    else
+        if cmd:len() > 128 then cmd = cmd:sub(1, 128) .. " [...]" end
+        warn("[" .. M.get_title(job_id) .. "] Unknown command: " .. cmd)
+    end
+end
+
 M.on_stdout = function(job_id, data, _)
     local cmd
     for _, v in pairs(data) do
         cmd = v:gsub("\r", "")
         if #cmd > 0 then
             if cmd:sub(1, 1) == "\017" then
-                local cmdsplt = vim.fn.split(cmd, "\017")
-                local size = vim.fn.str2nr(cmdsplt[1])
-                local received = vim.fn.strlen(cmdsplt[2])
-                if size == received then
+                cmdsplt = vim.fn.split(cmd, "\017")
+                in_size = vim.fn.str2nr(cmdsplt[1])
+                received = vim.fn.strlen(cmdsplt[2])
+                if in_size == received then
                     cmd = cmdsplt[2]
+                    -- Log("split but complete: " .. cmd:len())
+                    exec_stdout_cmd(cmd, job_id)
                 else
-                    waiting_more_input = true
-                    incomplete_input.size = size
-                    incomplete_input.received = received
-                    incomplete_input.str = cmdsplt[2]
-                    vim.fn.timer_start(100, stop_waiting_nsr)
-                    goto continue
+                    begin_waiting_more_input()
                 end
-            end
-
-            if waiting_more_input then
-                incomplete_input.received = incomplete_input.received + cmd:len()
-                if incomplete_input.received == incomplete_input.size then
-                    waiting_more_input = true
-                    cmd = incomplete_input.str .. cmd
-                else
-                    incomplete_input.str = incomplete_input.str .. cmd
-                    if incomplete_input.received > incomplete_input.size then
-                        warn("Received larger than expected message.")
-                    end
-                    goto continue
-                end
-            end
-
-            if cmd:match("^lua ") or cmd:match("^call ") or cmd:match("^let ") then
-                vim.fn.execute(cmd)
             else
-                if cmd:len() > 128 then cmd = cmd:sub(1, 128) .. " [...]" end
-                warn("[" .. M.get_title(job_id) .. "] Unknown command: " .. cmd)
+                if waiting_more_input then
+                    incomplete_input.received = incomplete_input.received + cmd:len()
+                    if incomplete_input.received == incomplete_input.size then
+                        -- Log("input completed")
+                        waiting_more_input = true
+                        cmd = incomplete_input.str .. cmd
+                        exec_stdout_cmd(cmd, job_id)
+                    else
+                        incomplete_input.str = incomplete_input.str .. cmd
+                        if incomplete_input.received > incomplete_input.size then
+                            warn("Received larger than expected message.")
+                        end
+                    end
+                else
+                    -- Log("no need to wait: " .. cmd:len())
+                    exec_stdout_cmd(cmd, job_id)
+                end
             end
         end
-        ::continue::
     end
 end
 
