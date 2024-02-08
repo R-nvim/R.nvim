@@ -6,18 +6,18 @@ local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 local all_marks = "abcdefghijklmnopqrstuvwxyz"
 -- FIXME: convert to Lua pattern
-local op_pattern = [[\(&\||\|+\|-\|\*\|/\|=\|\~\|%\|->\||>\)\s*$']]
+-- local op_pattern = [[\(&\||\|+\|-\|\*\|/\|=\|\~\|%\|->\||>\)\s*$']]
 
-local paren_diff = function(str)
-    local clnln = string.gsub(str, '\\"', "")
-    clnln = string.gsub(clnln, "\\\\'", "")
-    clnln = string.gsub(clnln, '".-"', "")
-    clnln = string.gsub(clnln, "'.-'", "")
-    clnln = string.gsub(clnln, "#.*", "")
-    local llen1 = string.len(string.gsub(clnln, "[{(\\[]", ""))
-    local llen2 = string.len(string.gsub(clnln, "[})\\]]", ""))
-    return llen1 - llen2
-end
+-- local paren_diff = function(str)
+--     local clnln = string.gsub(str, '\\"', "")
+--     clnln = string.gsub(clnln, "\\\\'", "")
+--     clnln = string.gsub(clnln, '".-"', "")
+--     clnln = string.gsub(clnln, "'.-'", "")
+--     clnln = string.gsub(clnln, "#.*", "")
+--     local llen1 = string.len(string.gsub(clnln, "[{(\\[]", ""))
+--     local llen2 = string.len(string.gsub(clnln, "[})\\]]", ""))
+--     return llen1 - llen2
+-- end
 
 local M = {}
 
@@ -107,7 +107,7 @@ M.above_lines = function()
     M.cmd(result)
 end
 
-M.source_file = function(e)
+M.source_file = function()
     local bufnr = 0
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     M.cmd(lines)
@@ -115,7 +115,7 @@ end
 
 -- Send the current paragraph to R. If m == 'down', move the cursor to the
 -- first line of the next paragraph.
-M.paragraph = function(e, m)
+M.paragraph = function(m)
     local start_line, end_line = paragraph.get_current()
 
     local lines = vim.api.nvim_buf_get_lines(0, start_line, end_line, false)
@@ -149,8 +149,7 @@ local knit_child = function(line, godown)
     local cfile = vim.fn.substitute(nline, nline:sub(1, 1), "", "")
     cfile = vim.fn.substitute(cfile, nline:sub(1, 1) .. ".*", "", "")
     if vim.fn.filereadable(cfile) == 1 then
-        local ok =
-            vim.fn["g:M.cmd"]("require(knitr); knit('" .. cfile .. "', output=NULL)")
+        vim.fn["g:M.cmd"]("require(knitr); knit('" .. cfile .. "', output=NULL)")
         if godown:find("down") then
             vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
             vim.cmd("call cursor.move_next_line()")
@@ -311,20 +310,13 @@ M.selection = function()
     local lines =
         vim.api.nvim_buf_get_lines(0, vim.fn.line("'<"), vim.fn.line("'>"), true)
     if vim.visualmode() == "\\<C-V>" then
-        local lj = vim.fn.line("'<")
+        -- All these variables are not used
+        -- local lj = vim.fn.line("'<")
+        -- local lk = vim.fn.line("'>")
         local cj = vim.fn.col("'<")
-        local lk = vim.fn.line("'>")
         local ck = vim.fn.col("'>")
-        local bb, ee
-        if cj > ck then
-            bb = ck - 1
-            ee = cj - ck + 1
-        else
-            bb = cj - 1
-            ee = ck - cj + 1
-        end
         local cutlines = {}
-        for k, v in pairs(lines) do
+        for _, v in pairs(lines) do
             table.insert(cutlines, v:sub(cj, ck))
         end
         lines = cutlines
