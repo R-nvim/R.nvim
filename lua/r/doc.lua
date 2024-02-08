@@ -38,13 +38,13 @@ local set_text_width = function(rkeyword)
         local htwf
         if vimpager == "horizontal" then
             -- Use the window width (at most 80 columns)
-            htwf = (wwidth > 80) and 88.1 or ((wwidth - 1) / 0.9)
+            htwf = math.min(wwidth, 80)
         elseif config.nvimpager == "tab" or config.nvimpager == "tabnew" then
             wwidth = vim.o.columns
-            htwf = (wwidth > 80) and 88.1 or ((wwidth - 1) / 0.9)
+            htwf = math.min(wwidth, 80)
         else
-            local min_e = (config.editor_w > 80) and config.editor_w or 80
-            local min_h = (config.help_w > 73) and config.help_w or 73
+            local min_e = math.max(config.editor_w, 80)
+            local min_h = math.max(config.help_w, 73)
 
             if wwidth > (min_e + min_h) then
                 -- The editor window is large enough to be split
