@@ -1,23 +1,27 @@
 local M = {}
 local jobs = {}
-local incomplete_input = {size = 0, received = 0, str = ''}
+local incomplete_input = { size = 0, received = 0, str = "" }
 local waiting_more_input = false
 local warn = require("r").warn
 
-local stop_waiting_nsr = function (_)
+local stop_waiting_nsr = function(_)
     if waiting_more_input then
         waiting_more_input = false
-        warn('Incomplete string received. Expected ' ..
-            incomplete_input.size .. ' bytes; received ' ..
-            incomplete_input.received .. '.')
+        warn(
+            "Incomplete string received. Expected "
+                .. incomplete_input.size
+                .. " bytes; received "
+                .. incomplete_input.received
+                .. "."
+        )
     end
-    incomplete_input = {size = 0, received = 0, str = ''}
+    incomplete_input = { size = 0, received = 0, str = "" }
 end
 
-M.on_stdout = function (job_id, data, _)
+M.on_stdout = function(job_id, data, _)
     local cmd
     for _, v in pairs(data) do
-        cmd = v:gsub('\r', '')
+        cmd = v:gsub("\r", "")
         if #cmd > 0 then
             if cmd:sub(1, 1) == "\017" then
                 local cmdsplt = vim.fn.split(cmd, "\017")
@@ -43,18 +47,21 @@ M.on_stdout = function (job_id, data, _)
                 else
                     incomplete_input.str = incomplete_input.str .. cmd
                     if incomplete_input.received > incomplete_input.size then
-                        warn('Received larger than expected message.')
+                        warn("Received larger than expected message.")
                     end
                     goto continue
                 end
             end
 
-            if cmd:match("^lua ") or cmd:match("^call ") or cmd:match("^let ") or cmd:match("^unlet ") then
+            if
+                cmd:match("^lua ")
+                or cmd:match("^call ")
+                or cmd:match("^let ")
+                or cmd:match("^unlet ")
+            then
                 vim.fn.execute(cmd)
             else
-                if cmd:len() > 128 then
-                    cmd = cmd:sub(1, 128) .. ' [...]'
-                end
+                if cmd:len() > 128 then cmd = cmd:sub(1, 128) .. " [...]" end
                 warn("[" .. M.get_title(job_id) .. "] Unknown command: " .. cmd)
             end
         end
@@ -62,22 +69,16 @@ M.on_stdout = function (job_id, data, _)
     end
 end
 
-M.on_stderr = function (job_id, data, _)
-    local msg = table.concat(data):gsub('\r', '')
-    if not msg:match("^%s*$") then
-        warn("[" .. M.get_title(job_id) .. "] " .. msg)
-    end
+M.on_stderr = function(job_id, data, _)
+    local msg = table.concat(data):gsub("\r", "")
+    if not msg:match("^%s*$") then warn("[" .. M.get_title(job_id) .. "] " .. msg) end
 end
 
-M.on_exit = function (job_id, data, _)
+M.on_exit = function(job_id, data, _)
     local key = M.get_title(job_id)
-    if key ~= "Job" then
-        jobs[key] = 0
-    end
-    if data ~= 0 then
-        warn('"' .. key .. '"' .. ' exited with status ' .. data)
-    end
-    if key == 'R' or key == 'RStudio' then
+    if key ~= "Job" then jobs[key] = 0 end
+    if data ~= 0 then warn('"' .. key .. '"' .. " exited with status " .. data) end
+    if key == "R" or key == "RStudio" then
         if M.is_running("Server") then
             vim.g.R_Nvim_status = 3
         else
@@ -85,9 +86,7 @@ M.on_exit = function (job_id, data, _)
         end
         require("r.run").clear_R_info()
     end
-    if key == 'Server' then
-        vim.g.R_Nvim_status = 1
-    end
+    if key == "Server" then vim.g.R_Nvim_status = 1 end
 end
 
 local default_handlers = {
@@ -98,9 +97,7 @@ local default_handlers = {
 
 M.start = function(nm, cmd, opt)
     local h = default_handlers
-    if opt then
-        h = opt
-    end
+    if opt then h = opt end
     local jobid = vim.fn.jobstart(cmd, h)
     if jobid == 0 then
         warn("Invalid arguments in: " .. tostring(cmd))
@@ -122,29 +119,23 @@ M.R_term_open = function(cmd)
     end
 end
 
-M.get_title = function (job_id)
+M.get_title = function(job_id)
     for key, value in pairs(jobs) do
-        if value == job_id then
-            return key
-        end
+        if value == job_id then return key end
     end
     return "Job"
 end
 
-M.stdin = function (job, cmd)
-    vim.fn.chansend(jobs[job], cmd)
-end
+M.stdin = function(job, cmd) vim.fn.chansend(jobs[job], cmd) end
 
-M.is_running = function (key)
-    if jobs[key] and jobs[key] ~= 0 then
-        return true
-    end
+M.is_running = function(key)
+    if jobs[key] and jobs[key] ~= 0 then return true end
     return false
 end
 
-M.stop_nrs = function ()
+M.stop_nrs = function()
     for k, v in pairs(jobs) do
-        if M.is_running(k) and k == 'Server' then
+        if M.is_running(k) and k == "Server" then
             -- Avoid warning of exit status 141
             vim.fn.chansend(v, "9\n")
             vim.wait(20)
