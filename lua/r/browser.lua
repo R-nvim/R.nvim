@@ -3,9 +3,6 @@ local warn = require("r").warn
 local job = require("r.job")
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 
-local reserved =
-    "\\%(if\\|else\\|repeat\\|while\\|function\\|for\\|in\\|next\\|break\\|TRUE\\|FALSE\\|NULL\\|Inf\\|NaN\\|NA\\|NA_integer_\\|NA_real_\\|NA_complex_\\|NA_character_\\)"
-
 local envstring = vim.fn.tolower(vim.env.LC_MESSAGES .. vim.env.LC_ALL .. vim.env.LANG)
 local isutf8 = (envstring:find("utf-8") or envstring:find("utf8")) and 1 or 0
 local curview = "GlobalEnv"
@@ -19,7 +16,6 @@ local auto_starting = true
 local hasbrowsermenu = false
 
 -- Table for local functions that call themselves
-local L = {}
 
 --- Escape with backticks invalid R names
 ---@param word string

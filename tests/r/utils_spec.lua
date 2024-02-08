@@ -1,10 +1,11 @@
+--# selene: allow(incorrect_standard_library_use)
 ---@diagnostic disable: undefined-global
 local utils = require("r.utils")
 
 --- See tests/init/lua
-local function root(root)
+local function root(root_folder)
     local f = debug.getinfo(1, "S").source:sub(2)
-    return vim.fn.fnamemodify(f, ":p:h:h") .. "/" .. (root or "")
+    return vim.fn.fnamemodify(f, ":p:h:h") .. "/" .. (root_folder or "")
 end
 
 describe("normalize_windows_path", function()
