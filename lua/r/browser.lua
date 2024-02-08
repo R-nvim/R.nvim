@@ -406,7 +406,7 @@ M.on_double_click = function()
             require("r.send").cmd("str(" .. key .. ")")
         end
     else
-        if curline:find("(#.*	") then
+        if curline:find("%(#.*	") then
             key = key:gsub("`", "")
             require("r.doc").ask_R_doc(key, M.get_pkg_name(), false)
         else

@@ -162,6 +162,7 @@ local StartNServer = function()
         on_exit = require("r.job").on_exit,
         env = nrs_env,
     }
+    -- require("r.job").start("Server", { "valgrind", "--log-file=/tmp/rnvimserver_valgrind_log", nrs_path }, nrs_opts)
     require("r.job").start("Server", { nrs_path }, nrs_opts)
     vim.g.R_Nvim_status = 2
 
