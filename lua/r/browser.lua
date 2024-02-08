@@ -6,9 +6,6 @@ local send_to_nvimcom = require("r.run").send_to_nvimcom
 local reserved =
     "\\%(if\\|else\\|repeat\\|while\\|function\\|for\\|in\\|next\\|break\\|TRUE\\|FALSE\\|NULL\\|Inf\\|NaN\\|NA\\|NA_integer_\\|NA_real_\\|NA_complex_\\|NA_character_\\)"
 
-local punct =
-    "\\(!\\|''\\|\"\\|#\\|%\\|&\\|(\\|)\\|*\\|+\\|,\\|-\\|/\\|\\\\\\|:\\|;\\|<\\|=\\|>\\|?\\|@\\|[\\|/\\|]\\|\\^\\|\\$\\|{\\||\\|}\\|\\~\\)"
-
 local envstring = vim.fn.tolower(vim.env.LC_MESSAGES .. vim.env.LC_ALL .. vim.env.LANG)
 local isutf8 = (envstring:find("utf-8") or envstring:find("utf8")) and 1 or 0
 local curview = "GlobalEnv"
@@ -23,6 +20,58 @@ local hasbrowsermenu = false
 
 -- Table for local functions that call themselves
 local L = {}
+
+--- Escape with backticks invalid R names
+---@param word string
+local add_backticks = function(word)
+    local punct = {
+        "!",
+        "'",
+        '"',
+        "#",
+        "%%",
+        "&",
+        "%(",
+        "%)",
+        "%*",
+        "%+",
+        ",",
+        "-",
+        "/",
+        "\\",
+        ":",
+        ";",
+        "<",
+        "=",
+        ">",
+        "?",
+        "@",
+        "%[",
+        "/",
+        "%]",
+        "%^",
+        "%$",
+        "%{",
+        "|",
+        "%}",
+        "~",
+    }
+
+    local need_bt = false
+
+    if word:find(" ") or word:find("^[0-9_]") then
+        need_bt = true
+    else
+        for _, v in pairs(punct) do
+            if word:find(v) then
+                need_bt = true
+                break
+            end
+        end
+    end
+    if need_bt then word = "`" .. word .. "`" end
+    return word
+end
 
 local set_buf_options = function()
     vim.api.nvim_set_option_value("wrap", false, { scope = "local" })
@@ -78,55 +127,50 @@ local set_buf_options = function()
 end
 
 local find_parent
-find_parent = function(word, curline, curpos)
+find_parent = function(child, curline, curpos)
     local line
-    while curline > 1 and curpos >= curpos do
+    local idx
+    local parent
+    local suffix
+    while curline > 3 and curpos >= curpos do
         curline = curline - 1
-        line = vim.fn.substitute(vim.fn.getline(curline), "\009.*", "", "")
-        curpos = vim.fn.stridx(line, "[#")
-        if curpos == -1 then
-            curpos = vim.fn.stridx(line, "$#")
-            if curpos == -1 then
-                curpos = vim.fn.stridx(line, "<#")
-                if curpos == -1 then curpos = curpos end
+        line = vim.fn.getline(curline):gsub("	.*", "")
+        idx = line:find("#")
+        if idx < curpos then
+            parent = line:sub(idx + 1)
+            if line:find("%[#") or line:find("%$#") then
+                suffix = "$"
+            elseif line:find("<#") then
+                suffix = "@"
+            else
+                local msg = "Unrecognized type of parent: `"
+                    .. parent
+                    .. "`\nKnown types are `data.frame`s, `list`s and `S4` objects."
+                vim.notify(msg, vim.log.levels.ERROR, { title = "R.nvim" })
+                return ""
             end
         end
     end
 
-    local spacelimit
-    if curview == "GlobalEnv" then
-        spacelimit = 3
-    else
-        spacelimit = isutf8 and 10 or 6
+    if not parent then
+        local msg = "Failed to find parent."
+        vim.notify(msg, vim.log.levels.ERROR, { title = "R.nvim" })
+        return ""
     end
 
-    if curline > 1 then
-        local suffix
-        if vim.fn.match(line, " <#") > -1 then
-            suffix = "@"
-        else
-            suffix = "$"
-        end
-        local thisword = vim.fn.substitute(line, "^.\\{-}#", "", "")
-        if
-            vim.fn.match(thisword, " ") > -1
-            or vim.fn.match(thisword, "^[0-9_]") > -1
-            or vim.fn.match(thisword, punct) > -1
-        then
-            thisword = "`" .. thisword .. "`"
-        end
-        word = thisword .. suffix .. word
-        if curpos ~= spacelimit then word = find_parent(word, line("."), curpos) end
-        return word
+    parent = add_backticks(parent)
+
+    local fullname = parent .. suffix .. child
+
+    local spacelimit
+    if curview == "GlobalEnv" then
+        spacelimit = 5
     else
-        -- Didn't find the parent: should never happen.
-        vim.notify(
-            "R-Nvim Error: " .. word .. ":" .. curline,
-            vim.log.levels.ERROR,
-            { title = "R-Nvim" }
-        )
+        spacelimit = isutf8 and 11 or 7
     end
-    return ""
+
+    if idx > spacelimit then child = find_parent(child, curline, idx) end
+    return fullname
 end
 
 -- Start Object Browser
@@ -234,7 +278,7 @@ M.get_pkg_name = function()
     local lnum = vim.fn.line(".")
     while lnum > 0 do
         local line = vim.fn.getline(lnum)
-        if vim.fn.match(line, ".*##[0-9a-zA-Z\\.]*\t") > -1 then
+        if line:find(".*##[0-9a-zA-Z\\.]*\t") then
             return vim.fn.substitute(line, ".*##\\(.\\{-}\\)\t.*", "\\1", "")
         end
         lnum = lnum - 1
@@ -242,23 +286,18 @@ M.get_pkg_name = function()
     return ""
 end
 
-M.get_name = function()
-    local line = vim.fn.getline(vim.fn.line("."))
-    if vim.fn.match(line, "^$") > -1 or vim.fn.line(".") < 3 then return "" end
+--- Get name of object on te current line
+---@param lnum number
+---@param line string
+M.get_name = function(lnum, line)
+    if lnum < 3 or line:find("^$") then return "" end
 
-    local curpos = vim.fn.stridx(line, "#")
-    local word = vim.fn.substitute(line, ".\\{-}\\(.#\\)\\(\\(.-\\)\\)\\t.*", "\\3", "")
+    local idx = line:find("#")
+    local word = line:sub(idx + 1):gsub("\009.*", "")
 
-    if
-        vim.fn.match(word, " ") > -1
-        or vim.fn.match(word, "^[0-9]") > -1
-        or vim.fn.match(word, punct) > -1
-        or vim.fn.match(word, "^" .. reserved .. "$") > -1
-    then
-        word = "`" .. word .. "`"
-    end
+    word = add_backticks(word)
 
-    if curpos == 4 then
+    if idx == 5 then
         -- top level object
         word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
         if curview == "libraries" then
@@ -269,24 +308,24 @@ M.get_name = function()
     else
         if curview == "libraries" then
             if isutf8 then
-                if curpos == 11 then
+                if idx == 12 then
                     word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
                     return word
                 end
-            elseif curpos == 7 then
+            elseif idx == 8 then
                 word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
                 return word
             end
         end
-        if curpos > 4 then
+        if idx > 5 then
             -- Find the parent data.frame or list
-            word = find_parent(word, vim.fn.line("."), curpos - 1)
+            word = find_parent(word, lnum, idx - 1)
             word = vim.fn.substitute(word, "\\$\\[\\[", "[[", "g")
             return word
         else
             -- Wrong object name delimiter: should never happen.
-            local msg = "R-plugin Error: (curpos = " .. curpos .. ") " .. word
-            vim.fn.echoerr(msg)
+            local msg = "(idx = " .. tostring(idx) .. ") " .. word
+            vim.notify(msg, vim.log.levels.ERROR, { title = "R.nvim" })
             return ""
         end
     end
@@ -334,10 +373,11 @@ M.update_OB = function(what)
 end
 
 M.on_double_click = function()
-    if vim.fn.line(".") == 2 then return end
+    local lnum = vim.fn.line(".")
+    if lnum == 2 then return end
 
     -- Toggle view: Objects in the workspace X List of libraries
-    if vim.fn.line(".") == 1 then
+    if lnum == 1 then
         if curview == "libraries" then
             curview = "GlobalEnv"
             job.stdin("Server", "31\n")
@@ -349,33 +389,33 @@ M.on_double_click = function()
     end
 
     -- Toggle state of list or data.frame: open X closed
-    local key = M.get_name()
     local curline = vim.fn.getline(vim.fn.line("."))
+    local key = M.get_name(lnum, curline)
     if curview == "GlobalEnv" then
-        if string.find(curline, "&#.*	") then
+        if curline:find("&#.*	") then
             send_to_nvimcom("L", key)
         elseif
-            string.find(curline, "%[#.*	")
-            or string.find(curline, "%$#.*	")
-            or string.find(curline, "<#.*	")
-            or string.find(curline, ":#.*	")
+            curline:find("%[#.*	")
+            or curline:find("%$#.*	")
+            or curline:find("<#.*	")
+            or curline:find(":#.*	")
         then
-            key = vim.fn.substitute(key, "`", "", "g")
+            key = key:gsub("`", "")
             job.stdin("Server", "33G" .. key .. "\n")
         else
             require("r.send").cmd("str(" .. key .. ")")
         end
     else
-        if string.find(curline, "(#.*	") then
-            key = vim.fn.substitute(key, "`", "", "g")
+        if curline:find("(#.*	") then
+            key = key:gsub("`", "")
             require("r.doc").ask_R_doc(key, M.get_pkg_name(), false)
         else
             if
                 string.find(key, ":%$")
-                or string.find(curline, "%[#.*	")
-                or string.find(curline, "%$#.*	")
-                or string.find(curline, "<#.*	")
-                or string.find(curline, ":#.*	")
+                or curline:find("%[#.*	")
+                or curline:find("%$#.*	")
+                or curline:find("<#.*	")
+                or curline:find(":#.*	")
             then
                 job.stdin("Server", "33L" .. key .. "\n")
             else
@@ -386,16 +426,17 @@ M.on_double_click = function()
 end
 
 M.on_right_click = function()
-    if vim.fn.line(".") == 1 then return end
-
-    local key = M.get_name()
-    if key == "" then return end
+    local lnum = vim.fn.line(".")
+    if lnum == 1 then return end
 
     local line = vim.fn.getline(vim.fn.line("."))
-    if vim.fn.match(line, "^   ##") > -1 then return end
+    local key = M.get_name(lnum, line)
+    if key == "" then return end
+
+    if line:find("^   ##") then return end
 
     local isfunction = 0
-    if vim.fn.match(line, "(#.*\t") > -1 then isfunction = 1 end
+    if line:find("(#.*\t") then isfunction = 1 end
 
     if hasbrowsermenu then vim.fn.aunmenu("]RBrowser") end
 
