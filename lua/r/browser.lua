@@ -15,9 +15,6 @@ local auto_starting = true
 -- Popup menu
 local hasbrowsermenu = false
 
--- Table for local functions that call themselves
-local L = {}
-
 --- Escape with backticks invalid R names
 ---@param word string
 ---@param esc_reserved boolean
