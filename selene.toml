@@ -1,4 +1,5 @@
-std="vim"
+std="lua52+vim"
 
-[config]
-multiple_statements = { one_line_if = "allow" }
+[rules]
+multiple_statements = "allow"
+parse_error = "allow"
