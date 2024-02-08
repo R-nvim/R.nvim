@@ -135,7 +135,7 @@ end
 
 -- Send the current paragraph to R. If m == 'down', move the cursor to the
 -- first line of the next paragraph.
-M.paragraph = function(e, m)
+M.paragraph = function(m)
     local start_line, end_line = paragraph.get_current()
 
     local lines = vim.api.nvim_buf_get_lines(0, start_line, end_line, false)

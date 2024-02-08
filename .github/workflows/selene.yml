@@ -14,4 +14,3 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           # selene arguments
           args: . --config selene.toml
-          version: 0.26.1
