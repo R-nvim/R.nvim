@@ -2,6 +2,8 @@
 
 local config = require("r.config").get_config()
 local warn = require("r").warn
+local utils = require("r.utils")
+local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 local all_marks = "abcdefghijklmnopqrstuvwxyz"
@@ -111,9 +113,24 @@ M.above_lines = function()
 end
 
 M.source_file = function(e)
-    local bufnr = 0
-    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    M.cmd(lines)
+    local fpath = vim.api.nvim_buf_get_name(0) .. ".tmp.R"
+
+    if vim.fn.filereadable(fpath) == 1 then
+        warn(
+            'Cannot create "'
+                .. fpath
+                .. '" because it already exists. Please, delete it.'
+        )
+        return
+    end
+
+    if config.is_windows then fpath = utils.normalize_windows_path(fpath) end
+
+    vim.fn.writefile(vim.fn.getline(1, "$"), fpath)
+    edit.add_for_deletion(fpath)
+    local sargs = M.get_source_args(e)
+    local ok = M.cmd('nvimcom:::source.and.clean("' .. fpath .. '"' .. sargs .. ")")
+    if not ok then vim.fn.delete(fpath) end
 end
 
 -- Send the current paragraph to R. If m == 'down', move the cursor to the
@@ -152,8 +169,7 @@ local knit_child = function(line, godown)
     local cfile = vim.fn.substitute(nline, nline:sub(1, 1), "", "")
     cfile = vim.fn.substitute(cfile, nline:sub(1, 1) .. ".*", "", "")
     if vim.fn.filereadable(cfile) == 1 then
-        local ok =
-            vim.fn["g:M.cmd"]("require(knitr); knit('" .. cfile .. "', output=NULL)")
+        M.cmd("require(knitr); knit('" .. cfile .. "', output=NULL)")
         if godown:find("down") then
             vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
             vim.cmd("call cursor.move_next_line()")
@@ -194,7 +210,7 @@ M.chunks_up_to_here = function()
             -- Child R chunk
             if curbuf[idx + 1]:match(chdchk) then
                 -- First, run everything up to the child chunk and reset buffer
-                vim.fn["M.source_lines"](codelines, "silent", "chunk")
+                M.source_lines(codelines, "silent", "chunk")
                 codelines = {}
 
                 -- Next, run the child chunk and continue
@@ -212,7 +228,7 @@ M.chunks_up_to_here = function()
         end
     end
 
-    vim.fn["M.source_lines"](codelines, "silent", "chunk")
+    M.source_lines(codelines, "silent", "chunk")
 end
 
 -- Send motion to R
@@ -222,7 +238,7 @@ M.motion = function(type)
     if lstart == lend then
         M.line("stay", lstart)
     else
-        local lines = vim.fn["getline"](lstart, lend)
+        local lines = vim.fn.getline(lstart, lend)
         vim.fn.M.source_lines(lines, "", "block")
     end
 end
@@ -230,7 +246,7 @@ end
 -- Send block to R (Adapted from marksbrowser plugin)
 -- Function to get the marks which the cursor is between
 M.marked_block = function(e, m)
-    if vim.o.filetype ~= "r" and vim.fn["IsInRCode"](1) ~= 1 then return end
+    if vim.o.filetype ~= "r" and not vim.b.IsInRCode(true) then return end
 
     local curline = vim.fn.line(".")
     local lineA = 1
@@ -260,7 +276,7 @@ M.marked_block = function(e, m)
 
     if lineB < vim.fn.line("$") then lineB = lineB - 1 end
 
-    local lines = vim.fn["getline"](lineA, lineB)
+    local lines = vim.fn.getline(lineA, lineB)
     local ok = vim.fn.M.source_lines(lines, e, "block")
 
     if ok == 0 then return end
@@ -314,20 +330,15 @@ M.selection = function()
     local lines =
         vim.api.nvim_buf_get_lines(0, vim.fn.line("'<"), vim.fn.line("'>"), true)
     if vim.visualmode() == "\\<C-V>" then
-        local lj = vim.fn.line("'<")
         local cj = vim.fn.col("'<")
-        local lk = vim.fn.line("'>")
         local ck = vim.fn.col("'>")
-        local bb, ee
         if cj > ck then
-            bb = ck - 1
-            ee = cj - ck + 1
-        else
-            bb = cj - 1
-            ee = ck - cj + 1
+            local tmp = cj
+            cj = ck
+            ck = tmp
         end
         local cutlines = {}
-        for k, v in pairs(lines) do
+        for _, v in pairs(lines) do
             table.insert(cutlines, v:sub(cj, ck))
         end
         lines = cutlines
