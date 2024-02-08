@@ -75,7 +75,7 @@ LibPath *libpaths; // Pointer to first library path
 
 InstLibs *instlibs; // Pointer to first installed library
 
-static ListStatus *listTree = NULL; // Root node of the list status tree
+static ListStatus *listTree; // Root node of the list status tree
 
 PkgData *pkgList;    // Pointer to first package data
 static int nLibObjs; // Number of library objects
@@ -1529,14 +1529,10 @@ void update_pkg_list(char *libnms) {
  * @return
  */
 int get_list_status(const char *s, int stt) {
-    if (listTree) {
-        ListStatus *p = search(s);
-        if (p)
-            return p->status;
-        insert(listTree, s, stt);
-        return stt;
-    }
-    listTree = new_ListStatus(s, stt);
+    ListStatus *p = search(listTree, s);
+    if (p)
+        return p->status;
+    insert(listTree, s, stt);
     return stt;
 }
 
@@ -1547,7 +1543,7 @@ int get_list_status(const char *s, int stt) {
  * @param s:
  */
 void toggle_list_status(const char *s) {
-    ListStatus *p = search(s);
+    ListStatus *p = search(listTree, s);
     if (p)
         p->status = !p->status;
 }

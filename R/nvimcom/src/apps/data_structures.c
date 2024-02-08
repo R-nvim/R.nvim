@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-static ListStatus *listTree = NULL; // Root node of the list status tree
-ListStatus *search(const char *s) {
-    ListStatus *node = listTree;
+
+ListStatus *search(ListStatus *root, const char *s) {
+    ListStatus *node = root;
     int cmp = strcmp(node->key, s);
     while (node && cmp != 0) {
         if (cmp > 0)
