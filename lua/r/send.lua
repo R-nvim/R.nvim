@@ -8,16 +8,19 @@ local all_marks = "abcdefghijklmnopqrstuvwxyz"
 -- FIXME: convert to Lua pattern
 -- local op_pattern = [[\(&\||\|+\|-\|\*\|/\|=\|\~\|%\|->\||>\)\s*$']]
 
--- local paren_diff = function(str)
---     local clnln = string.gsub(str, '\\"', "")
---     clnln = string.gsub(clnln, "\\\\'", "")
---     clnln = string.gsub(clnln, '".-"', "")
---     clnln = string.gsub(clnln, "'.-'", "")
---     clnln = string.gsub(clnln, "#.*", "")
---     local llen1 = string.len(string.gsub(clnln, "[{(\\[]", ""))
---     local llen2 = string.len(string.gsub(clnln, "[})\\]]", ""))
---     return llen1 - llen2
--- end
+local paren_diff = function(str)
+    local clnln = str
+    -- FIXME: delete strings before calculating the diff because the line
+    -- may have unbalanced parentheses within a string.
+    -- clnln = string.gsub(clnln, '"', "")
+    -- clnln = string.gsub(clnln, "'", "")
+    -- clnln = string.gsub(clnln, '".-"', "")
+    -- clnln = string.gsub(clnln, "'.-'", "")
+    clnln = clnln:gsub("#.*", "")
+    local llen1 = string.len(string.gsub(clnln, "[%{%(%[]", ""))
+    local llen2 = string.len(string.gsub(clnln, "[%}%)%]]", ""))
+    return llen1 - llen2
+end
 
 local M = {}
 
@@ -420,79 +423,52 @@ M.line = function(move, lnum)
 
     if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
 
-    M.cmd(line)
-
     -- FIXME: Send the whole block within curly braces
-    -- local block = 0
-    -- if config.parenblock then
-    --     local chunkend = ""
-    --     if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
-    --         chunkend = "```"
-    --     elseif vim.o.filetype == "rnoweb" then
-    --         chunkend = "@"
-    --     end
-    --     local rpd = paren_diff(line)
-    --     local has_op = line:gsub("#.*", ""):find(op_pattern) and true or false
-    --     if rpd < 0 then
-    --         local line1 = lnum
-    --         local cline = line1 + 1
-    --         while cline <= vim.fn.line("$") do
-    --             local txt = vim.fn.getline(cline)
-    --             if chunkend ~= "" and txt == chunkend then break end
-    --             rpd = rpd + paren_diff(txt)
-    --             if rpd == 0 then
-    --                 has_op = vim.fn.getline(cline):gsub("#.*", ""):find(op_pattern)
-    --                         and true
-    --                     or false
-    --                 for ln in vim.fn.range(line1, cline) do
-    --                     local ok
-    --                     if config.bracketed_paste then
-    --                         if ln == line1 and ln == cline then
-    --                             ok = M.cmd(
-    --                                 "\033[200~" .. vim.fn.getline(ln) .. "\033[201~\n",
-    --                                 0
-    --                             )
-    --                         elseif ln == line1 then
-    --                             ok = M.cmd("\033[200~" .. vim.fn.getline(ln))
-    --                         elseif ln == cline then
-    --                             ok = M.cmd(vim.fn.getline(ln) .. "\033[201~\n", 0)
-    --                         else
-    --                             ok = M.cmd(vim.fn.getline(ln))
-    --                         end
-    --                     else
-    --                         ok = M.cmd(vim.fn.getline(ln))
-    --                     end
-    --                     if not ok then
-    --                         -- always close bracketed mode upon failure
-    --                         if config.bracketed_paste then M.cmd("\033[201~\n", 0) end
-    --                         return
-    --                     end
-    --                 end
-    --                 vim.fn.cursor(cline, 1)
-    --                 block = 1
-    --                 break
-    --             end
-    --             cline = cline + 1
-    --         end
-    --     end
-    -- end
+    local has_block = false
+    local has_op = false
+    if config.parenblock then
+        local chunkend = nil
+        if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
+            chunkend = "```"
+        elseif vim.o.filetype == "rnoweb" then
+            chunkend = "@"
+        end
+        local rpd = paren_diff(line)
+        has_op = line:gsub("#.*", ""):find(op_pattern) and true or false
+        if rpd < 0 then
+            local line1 = lnum
+            local cline = line1 + 1
+            local last_buf_line = vim.fn.line("$")
+            local lines = { line }
+            while cline <= last_buf_line do
+                local txt = vim.fn.getline(cline)
+                if chunkend and txt == chunkend then break end
+                table.insert(lines, txt)
+                rpd = rpd + paren_diff(txt)
+                if rpd == 0 then
+                    has_op = vim.fn.getline(cline):gsub("#.*", ""):find(op_pattern)
+                            and true
+                        or false
+                    vim.fn.cursor(cline, 1)
+                    has_block = true
+                    break
+                end
+                cline = cline + 1
+            end
+            if has_block then line = table.concat(lines, "\n") end
+        end
+    end
 
-    -- if not block then
-    --     local ok
-    --     if config.bracketed_paste then
-    --         ok = M.cmd("\033[200~" .. line .. "\033[201~\n", 0)
-    --     else
-    --         ok = M.cmd(line)
-    --     end
-    -- end
+    if config.bracketed_paste then
+        M.cmd("\033[200~" .. line .. "\033[201~\n", 0)
+    else
+        M.cmd(line)
+    end
 
     if move == "down" then
         cursor.move_next_line()
-        -- FIXME: Send the whole chain of piped lines
-        -- local has_op = vim.fn.getline(vim.fn.line(".")):gsub("#.*", ""):find(op_pattern)
-        --         and true
-        --     or false
-        -- if has_op then M.line(move, lnum) end
+        -- Send the whole chain of piped lines
+        if has_op then M.line(move, lnum) end
     elseif move == "newline" then
         vim.cmd("normal! o")
     end
