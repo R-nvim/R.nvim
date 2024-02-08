@@ -508,14 +508,20 @@ local do_common_global = function()
     end
 end
 
+local resolve_fullpaths = function(tbl)
+    for i, v in ipairs(tbl) do
+        tbl[i] = uv.fs_realpath(v)
+    end
+end
+
 local windows_config = function()
-    local wtime = vim.fn.reltime()
+    local wtime = uv.hrtime()
     local isi386 = false
     local rinstallpath = nil
 
     if config.R_path then
-        local rpath = vim.fn.split(config.R_path, ";")
-        vim.fn.map(rpath, "expand(v:val)")
+        local rpath = vim.split(config.R_path, ";")
+        resolve_fullpaths(rpath)
         vim.fn.reverse(rpath)
         for _, dir in ipairs(rpath) do
             if vim.fn.isdirectory(dir) then
@@ -570,11 +576,7 @@ local windows_config = function()
             warn(
                 "Could not find R path in Windows Registry. If you have already installed R, please, set the value of 'R_path'."
             )
-            edit.add_to_debug_info(
-                "windows setup",
-                vim.fn.reltimefloat(vim.fn.reltime(wtime, vim.fn.reltime())),
-                "Time"
-            )
+            edit.add_to_debug_info("windows setup", uv.hrtime() - wtime, "Time")
             return
         end
         local hasR32 = vim.fn.isdirectory(rinstallpath .. "\\bin\\i386")
@@ -597,11 +599,7 @@ local windows_config = function()
             config.R_args = { "--sdi", "--no-save" }
         end
     end
-    edit.add_to_debug_info(
-        "windows setup",
-        vim.fn.reltimefloat(vim.fn.reltime(wtime, vim.fn.reltime())),
-        "Time"
-    )
+    edit.add_to_debug_info("windows setup", uv.hrtime() - wtime, "Time")
 end
 
 local tmux_config = function()
@@ -635,11 +633,7 @@ local unix_config = function()
     local utime = uv.hrtime()
     if config.R_path then
         local rpath = vim.split(config.R_path, ":")
-
-        -- Resolve symlinks
-        for i, val in ipairs(rpath) do
-            rpath[i] = uv.fs_realpath(val)
-        end
+        resolve_fullpaths(rpath)
 
         -- Add the current directory to the beginning of the path
         table.insert(rpath, 1, "")
@@ -648,7 +642,7 @@ local unix_config = function()
         for i = #rpath, 1, -1 do
             local dir = rpath[i]
             local is_dir = uv.fs_stat(dir)
-        -- Each element in rpath must exist and be a directory
+            -- Each element in rpath must exist and be a directory
             if is_dir and is_dir.type == "directory" then
                 vim.env.PATH = dir .. ":" .. vim.env.PATH
             else
