@@ -81,7 +81,7 @@ M.source_lines = function(lines, verbose, what)
     -- tested and source() have always worked flawlessly.
     -- FIXME: document it
     if config.source_args == "bracketed paste" then
-        rcmd = "\033[200~" .. table.concat(lines, "\n") .. "\033[201~"
+        rcmd = "\027[200~" .. table.concat(lines, "\n") .. "\027[201~"
     else
         vim.fn.writefile(lines, config.source_write)
         local sargs = string.gsub(M.get_source_args(verbose), "^, ", "")
@@ -460,7 +460,7 @@ M.line = function(move, lnum)
     end
 
     if config.bracketed_paste then
-        M.cmd("\033[200~" .. line .. "\033[201~\n", 0)
+        M.cmd("\027[200~" .. line .. "\027[201~\n", 0)
     else
         M.cmd(line)
     end
