@@ -129,13 +129,13 @@ local set_buf_options = function()
         "<Cmd>lua require('r.browser').on_double_click()<CR>",
         opts
     )
-    vim.api.nvim_buf_set_keymap(
-        0,
-        "n",
-        "<RightMouse>",
-        "<Cmd>lua require('r.browser').on_right_click()<CR>",
-        opts
-    )
+    -- vim.api.nvim_buf_set_keymap(
+    --     0,
+    --     "n",
+    --     "<RightMouse>",
+    --     "<Cmd>lua require('r.browser').on_right_click()<CR>",
+    --     opts
+    -- )
 
     vim.api.nvim_create_autocmd("BufEnter", {
         command = "stopinsert",
@@ -285,7 +285,6 @@ M.start = function(_)
 
     running_objbr = true
 
-    -- call RealUpdateRGlbEnv(1)
     job.stdin("Server", "31\n")
     send_to_nvimcom("A", "RObjBrowser")
 
@@ -451,6 +450,7 @@ M.on_double_click = function()
 end
 
 M.on_right_click = function()
+    -- The function vim.fn.popup_menu() doesn't work when called from Lua.
     local lnum = vim.fn.line(".")
     if lnum == 1 then return end
 
@@ -460,24 +460,50 @@ M.on_right_click = function()
 
     if line:find("^   ##") then return end
 
-    local isfunction = 0
-    if line:find("(#.*\t") then isfunction = 1 end
+    local isfunction = false
+    if line:find("%(#") then isfunction = true end
 
     if hasbrowsermenu then vim.fn.aunmenu("]RBrowser") end
 
-    key = vim.fn.substitute(key, "\\.", "\\\\.", "g")
-    key = vim.fn.substitute(key, " ", "\\ ", "g")
+    key = key:gsub("%.", "\\.")
+    key = key:gsub(" ", "\\ ")
 
-    vim.fn.execute("amenu ]RBrowser.summary(" .. key .. ') :call RAction("summary")<CR>')
-    vim.fn.execute("amenu ]RBrowser.str(" .. key .. ') :call RAction("str")<CR>')
-    vim.fn.execute("amenu ]RBrowser.names(" .. key .. ') :call RAction("names")<CR>')
-    vim.fn.execute("amenu ]RBrowser.plot(" .. key .. ') :call RAction("plot")<CR>')
-    vim.fn.execute("amenu ]RBrowser.print(" .. key .. ') :call RAction("print")<CR>')
+    vim.fn.execute(
+        "amenu ]RBrowser.summary("
+            .. key
+            .. ") <Cmd>lua require('r.run').action('summary')<CR>"
+    )
+    vim.fn.execute(
+        "amenu ]RBrowser.str(" .. key .. ") <Cmd>lua require('r.run').action('str')<CR>"
+    )
+    vim.fn.execute(
+        "amenu ]RBrowser.names("
+            .. key
+            .. ") <Cmd>lua require('r.run').action('nvim.names')<CR>"
+    )
+    vim.fn.execute(
+        "amenu ]RBrowser.plot(" .. key .. ") <Cmd>lua require('r.run').action('plot')<CR>"
+    )
+    vim.fn.execute(
+        "amenu ]RBrowser.print("
+            .. key
+            .. ") <Cmd>lua require('r.run').action('args')<CR>"
+    )
     vim.fn.execute("amenu ]RBrowser.-sep01- <nul>")
-    vim.fn.execute("amenu ]RBrowser.example(" .. key .. ') :call RAction("example")<CR>')
-    vim.fn.execute("amenu ]RBrowser.help(" .. key .. ') :call RAction("help")<CR>')
+    vim.fn.execute(
+        "amenu ]RBrowser.example("
+            .. key
+            .. ") <Cmd>lua require('r.run').action('example')<CR>"
+    )
+    vim.fn.execute(
+        "amenu ]RBrowser.help(" .. key .. ") <Cmd>lua require('r.run').action('help')<CR>"
+    )
     if isfunction then
-        vim.fn.execute("amenu ]RBrowser.args(" .. key .. ') :call RAction("args")<CR>')
+        vim.fn.execute(
+            "amenu ]RBrowser.args("
+                .. key
+                .. ") <Cmd>lua require('r.run').action('args')<CR>"
+        )
     end
     vim.fn.popup_menu("]RBrowser")
     hasbrowsermenu = true
