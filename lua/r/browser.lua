@@ -19,7 +19,8 @@ local hasbrowsermenu = false
 
 --- Escape with backticks invalid R names
 ---@param word string
-local add_backticks = function(word)
+---@param esc_reserved boolean
+local add_backticks = function(word, esc_reserved)
     -- Unamed list element
     if word:find("^%[%[") then return word end
 
@@ -56,12 +57,40 @@ local add_backticks = function(word)
         "~",
     }
 
+    local reserved = {
+        "if",
+        "else",
+        "repeat",
+        "while",
+        "function",
+        "for",
+        "in",
+        "next",
+        "break",
+        "TRUE",
+        "FALSE",
+        "NULL",
+        "Inf",
+        "NaN",
+        "NA",
+        "NA_integer_",
+        "NA_real_",
+        "NA_complex_",
+        "NA_character",
+    }
+
     local need_bt = false
 
     if word:find(" ") or word:find("^[0-9_]") then
         need_bt = true
     else
-        for _, v in pairs(punct) do
+        local esc_list = punct
+        if esc_reserved then
+            for _, v in pairs(reserved) do
+                table.insert(esc_list, "^" .. v .. "$")
+            end
+        end
+        for _, v in pairs(esc_list) do
             if word:find(v) then
                 need_bt = true
                 break
@@ -157,7 +186,7 @@ find_parent = function(child, curline, curpos)
         return ""
     end
 
-    parent = add_backticks(parent)
+    parent = add_backticks(parent, false)
 
     local fullname = parent .. suffix .. child
 
@@ -294,7 +323,7 @@ M.get_name = function(lnum, line)
     local idx = line:find("#")
     local word = line:sub(idx + 1):gsub("\009.*", "")
 
-    word = add_backticks(word)
+    word = add_backticks(word, true)
 
     if idx == 5 then
         -- top level object
@@ -404,7 +433,7 @@ M.on_double_click = function()
             require("r.send").cmd("str(" .. key .. ")")
         end
     else
-        if curline:find("%(#.*	") then
+        if curline:find("%(#.*	") or curline:find(";#.*	") then
             key = key:gsub("`", "")
             require("r.doc").ask_R_doc(key, M.get_pkg_name(), false)
         else
