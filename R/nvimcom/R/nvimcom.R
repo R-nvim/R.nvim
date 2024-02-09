@@ -1,4 +1,3 @@
-
 NvimcomEnv <- new.env()
 NvimcomEnv$pkgdescr <- list()
 
@@ -42,13 +41,7 @@ NvimcomEnv$pkgdescr <- list()
         termenv <- Sys.getenv("TERM")
     }
 
-    if (.Platform$OS.type == "windows") {
-        info <- get_running_info()
-    } else {
-        # FIXME: On Unix, we calling utils::packageDescription("nvimcom")
-        # twice, here and in send_nvimcom_info().
-        info <- get_running_info()
-    }
+    set_running_info()
 
     if (interactive() && termenv != "" && termenv != "dumb" && Sys.getenv("NVIMR_COMPLDIR") != "") {
         dir.create(Sys.getenv("NVIMR_COMPLDIR"), showWarnings = FALSE)
@@ -57,8 +50,8 @@ NvimcomEnv$pkgdescr <- list()
            as.integer(getOption("nvimcom.allnames")),
            as.integer(getOption("nvimcom.setwidth")),
            as.integer(getOption("nvimcom.autoglbenv")),
-           info[1],
-           info[2],
+           NvimcomEnv$info[1],
+           NvimcomEnv$info[2],
            PACKAGE = "nvimcom")
     }
     if (!is.na(utils::localeToCharset()[1]) &&
@@ -85,7 +78,7 @@ NvimcomEnv$pkgdescr <- list()
     }
 }
 
-get_running_info <- function() {
+set_running_info <- function() {
     pd <- utils::packageDescription("nvimcom")
     hascolor <- FALSE
     if (length(find.package("colorout", quiet = TRUE, verbose = FALSE)) > 0 || Sys.getenv("RADIAN_VERSION") != "")
@@ -96,16 +89,17 @@ get_running_info <- function() {
                   getOption("continue"),
                   as.integer(hascolor),
                   sep = "\x12")
-    return(c(pd$Version, info))
+    NvimcomEnv$info <- c(pd$Version, info)
+    return(invisible(NULL))
 }
 
 # On Unix, this function is called when R is ready to execute top-level
 # commands. This feature is not implementable on Windows.
 send_nvimcom_info <- function(Rpid) {
-    info <- get_running_info()
     winID <- Sys.getenv("WINDOWID")
     if (winID == "")
         winID = "0"
-    msg <- paste0("lua require('r.run').set_nvimcom_info('", info[1], "', ", Rpid, ", '", winID, "', '", info[2], "')")
+    msg <- paste0("lua require('r.run').set_nvimcom_info('", NvimcomEnv$info[1],
+                  "', ", Rpid, ", '", winID, "', '", NvimcomEnv$info[2], "')")
     .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
 }
