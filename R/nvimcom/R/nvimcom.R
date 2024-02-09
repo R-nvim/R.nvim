@@ -45,6 +45,8 @@ NvimcomEnv$pkgdescr <- list()
     if (.Platform$OS.type == "windows") {
         info <- get_running_info()
     } else {
+        # FIXME: On Unix, we calling utils::packageDescription("nvimcom")
+        # twice, here and in send_nvimcom_info().
         info <- get_running_info()
     }
 
@@ -97,6 +99,8 @@ get_running_info <- function() {
     return(c(pd$Version, info))
 }
 
+# On Unix, this function is called when R is ready to execute top-level
+# commands. This feature is not implementable on Windows.
 send_nvimcom_info <- function(Rpid) {
     info <- get_running_info()
     winID <- Sys.getenv("WINDOWID")
