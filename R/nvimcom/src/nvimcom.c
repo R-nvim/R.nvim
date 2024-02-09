@@ -1235,10 +1235,13 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
 #ifdef WIN32
                 DWORD ti;
                 tid = CreateThread(NULL, 0, client_loop_thread, NULL, 0, &ti);
+                nvimcom_send_running_info(*rinfo, *nvv);
 #else
                 pthread_create(&tid, NULL, client_loop_thread, NULL);
-#endif
                 nvimcom_send_running_info(*rinfo, *nvv);
+                snprintf(flag_eval, 510, "nvimcom:::send_nvimcom_info('%d')", getpid());
+                nvimcom_fire();
+#endif
             } else {
                 REprintf("nvimcom: connection with the server failed (%s)\n",
                          nrs_port);
