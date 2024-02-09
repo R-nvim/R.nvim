@@ -1,5 +1,4 @@
-std="lua52+vim"
+std="lua51+vim"
 
 [rules]
 multiple_statements = "allow"
-parse_error = "allow"
