@@ -1,3 +1,5 @@
+![Selene linter check](https://github.com/jalvesaq//tmp-R-Nvim/actions/workflows/selene.yml/badge.svg)
+
 # R-Nvim
 
 This is the development code of R-Nvim which improves Neovim's support to edit
