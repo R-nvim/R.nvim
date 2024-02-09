@@ -207,9 +207,11 @@ the packages to be loaded. You might want to include "nvimcom" only if R was
 started by R-Nvim, as in the example below:
 >r
    if(Sys.getenv("NVIMR_TMPDIR") == ""){
-       options(defaultPackages = c("utils", "grDevices", "graphics", "stats", "methods"))
+       options(defaultPackages = c("utils", "grDevices", "graphics",
+                                   "stats", "methods"))
    } else {
-       options(defaultPackages = c("utils", "grDevices", "graphics", "stats", "methods", "nvimcom"))
+       options(defaultPackages = c("utils", "grDevices", "graphics",
+                                   "stats", "methods", "nvimcom"))
    }
 <
 Finally, run the command `:RDebugInfo` after <LocalLeader>rf and check the
@@ -577,11 +579,11 @@ R-Nvim does not complete the names of all functions of all installed packages
 For both `library()` and `require()`, when completing the first argument, the
 popup list shows the names of installed packages.
 
-Neovim uses one file to store the names of .GlobalEnv objects and a list of files
-for all other objects. The .GlobalEnv list is stored in the `$NVIMR_TMPDIR`
-directory and is deleted when you quit Neovim. The other files are stored in the
-`$NVIMR_COMPLDIR` directory, are automatically updated and remain available
-unless you manually delete them.
+Neovim uses one file to store the names of .GlobalEnv objects and a list of
+files for all other objects. The .GlobalEnv list is stored in the
+`$NVIMR_TMPDIR` directory and is deleted when you quit Neovim. The other files
+are stored in the `$NVIMR_COMPLDIR` directory, are automatically updated and
+remain available unless you manually delete them.
 
 
 ------------------------------------------------------------------------------
@@ -658,11 +660,11 @@ Notes:
 ------------------------------------------------------------------------------
 4.5. Build a tags file to jump to function definitions            *RBuildTags*
 
-Neovim can jump to functions defined in other files if you press CTRL-] over the
-name of a function, but it needs a tags file to be able to find the function
-definition (see |tags-and-searches|). The command `:RBuildTags` calls the R
-functions `rtags()` and `etags2ctags` to build the tags file for the R scripts
-in the current directory.
+Neovim can jump to functions defined in other files if you press CTRL-] over
+the name of a function, but it needs a tags file to be able to find the
+function definition (see |tags-and-searches|). The command `:RBuildTags` calls
+the R functions `rtags()` and `etags2ctags` to build the tags file for the R
+scripts in the current directory.
 
 
 ------------------------------------------------------------------------------
@@ -710,12 +712,12 @@ others would be very time consuming to fix without breaking anything.
 5.1. R must be started by Neovim
 
 The communication between Neovim and R will work only if R was started by the
-running Neovim instance through the <LocalLeader>rf command. If you use R-Nvim to
-start R in an external terminal and, then close Neovim and open it again, there
-will be no communication between R and the new Neovim instance.
+running Neovim instance through the <LocalLeader>rf command. If you use R-Nvim
+to start R in an external terminal and, then close Neovim and open it again,
+there will be no communication between R and the new Neovim instance.
 
-Please see the explanation on the communication between Neovim and R at the end
-of
+Please see the explanation on the communication between Neovim and R at the
+end of
 
    https://github.com/jalvesaq/R-Nvim/blob/master/README.md
 
@@ -1417,8 +1419,8 @@ If you want to run RStudio instead of R set in your config the value of
    RStudio_cmd = 'C:\\Program Files\\RStudio\\bin\\rstudio'
 <
 Note: You must manually run a successful comand in RStudio Console before
-sending code from Neovim to RStudio. The command might be something as simple as
-the number `1`.
+sending code from Neovim to RStudio. The command might be something as simple
+as the number `1`.
 
 
 ------------------------------------------------------------------------------
@@ -1433,8 +1435,8 @@ arguments of its methods. If you want that the plugin calls the function
    listmethods = true
 <
 By default, R makes a scatter plot of numeric vectors. The function
-`nvim.plot()` do both a histogram and a box plot. The function can be called by
-the plugin after <LocalLeader>rg if you put the following line in your
+`nvim.plot()` do both a histogram and a box plot. The function can be called
+by the plugin after <LocalLeader>rg if you put the following line in your
 config:
 >lua
    specialplot = true
@@ -1453,10 +1455,10 @@ lines one by one, put in your config:
 >lua
    parenblock = false
 <
-By default, when you press <LocalLeader>pp R-Nvim sends all contiguous lines to
-R, that is all lines above and below the current one that are not separated by
-an empty line. If you prefer that only lines from the cursor position to the
-end of the paragraph are sent, put in your config:
+By default, when you press <LocalLeader>pp R-Nvim sends all contiguous lines
+to R, that is all lines above and below the current one that are not separated
+by an empty line. If you prefer that only lines from the cursor position to
+the end of the paragraph are sent, put in your config:
 >lua
    paragraph_begin = false
 <
@@ -1615,11 +1617,11 @@ and to not run in Rgui.
 
 The plugin can automatically open the pdf file generated by pdflatex, after
 either `Sweave()` or `knit()`. This behavior is controlled by the variable
-|openpdf| whose value may be `0` (do not open the pdf), `1` (open only
-the first time that pdflatex is called) or a number higher than `1` (always
-open the pdf). For example, if you want that the pdf application is started
-automatically but do not want the terminal (or GNeovim) losing focus every time
-that you generate the pdf, you should put in put in your config:
+|openpdf| whose value may be `0` (do not open the pdf), `1` (open only the
+first time that pdflatex is called) or a number higher than `1` (always open
+the pdf). For example, if you want that the pdf application is started
+automatically but do not want the terminal (or GNeovim) losing focus every
+time that you generate the pdf, you should put in put in your config:
 >lua
    openpdf = 1
 <
@@ -1740,7 +1742,7 @@ in your config.  Example:
 <
 
 ------------------------------------------------------------------------------
-6.31. Start R in working directory of Neovim                          *nvim_wd*
+6.31. Start R in working directory of Neovim                         *nvim_wd*
 
 When you are editing an R file (.R, .Rnw, .Rd, .Rmd, or .qmd) and start
 R, the R package nvimcom runs the command `setwd()` with the directory of the
@@ -2015,10 +2017,10 @@ To customize a key binding you could put something like this in your |init.lua|:
 >lua
    vim.keymap.set('n', '<LocalLeader>sr', '<Plug>RStart')
 <
-The above example shows how to add a key binding to start R for <Leader>sr
-for just r buffers. The default <LocalLeader>rf still exists. After changing
-the maps in your |init.lua|, you have to restart Neovim. If you want to remove the
-default mappings, you can set |user_maps_only| .
+The above example shows how to add a key binding to start R for <Leader>sr for
+just r buffers. The default <LocalLeader>rf still exists. After changing the
+maps in your |init.lua|, you have to restart Neovim. If you want to remove the
+default mappings, you can set |user_maps_only|.
 
 Only the custom key bindings for Normal mode are shown in Neovim's menu, but
 you can type |:map| to see the complete list of current mappings, and below is
@@ -2141,15 +2143,16 @@ pass the command `levels(gender)` to R, which will show you the levels of the
 object gender. To make it even easier to use this and other functions, you
 could write custom key bindings in your |init.lua|, as in the examples below:
 >lua
-   -- FIXME: test
-   vim.keymap.set('n', '<LocalLeader>L', '<Cmd>lua require("r.run").action("levels")<CR>')
-   vim.keymap.set('n', '<LocalLeader>t', '<Cmd>lua require("r.run").action("tail")<CR>')
+   vim.keymap.set('n', '<LocalLeader>L',
+       '<Cmd>lua require("r.run").action("levels")<CR>')
+   vim.keymap.set('n', '<LocalLeader>t',
+       '<Cmd>lua require("r.run").action("tail")<CR>')
 <
 If you want an action over an selection, then the second argument must be the
 string `"v"`:
 >lua
-   -- FIXME: test
-   vim.keymap.set('v', '<LocalLeader>h', '<Cmd>lua require("r.run").action("head")<CR>')
+   vim.keymap.set('v', '<LocalLeader>h',
+       '<Cmd>lua require("r.run").action("head")<CR>')
 <
 In this case, the beginning and the end of the selection must be in the same
 line.
@@ -2157,14 +2160,14 @@ line.
 If either a second or a third optional argument starts with a comma, it will
 be inserted as argument(s) to the RAction function. Example:
 >lua
-   -- FIXME: test
-   vim.keymap.set('n', '<LocalLeader>H', '<Cmd>lua require("r.run").action("head", ", n = 10")<CR>')
+   vim.keymap.set('n', '<LocalLeader>H',
+       '<Cmd>lua require("r.run").action("head", "n", ", n = 10")<CR>')
 <
 If the command that you want to send does not require an R object as argument,
 you can send it directly to R Console, as in the example:
 >lua
-   -- FIXME: test
-   vim.keymap.set('n', '<LocalLeader>s', '<Cmd>lua require("r.send").cmd("search()")<CR>')
+   vim.keymap.set('n', '<LocalLeader>s',
+       '<Cmd>lua require("r.send").cmd("search()")<CR>')
 <
 See also: |source|.
 
