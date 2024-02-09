@@ -8,7 +8,22 @@ local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 local all_marks = "abcdefghijklmnopqrstuvwxyz"
 -- FIXME: convert to Lua pattern
-local op_pattern = [[\(&\||\|+\|-\|\*\|/\|=\|\~\|%\|->\||>\)\s*$']]
+
+--- Check if line ends with operator symbol
+---@param line string
+---@return boolean
+local ends_with_operator = function(line)
+    local op_pattern = { "&", "|", "+", "-", "%*", "%/", "%=", "~", "%-", "%<", "%>" }
+    local clnline = line:gsub("#.*", "")
+    local has_op = false
+    for _, v in pairs(op_pattern) do
+        if clnline:find(v .. "%s*$") then
+            has_op = true
+            break
+        end
+    end
+    return has_op
+end
 
 local paren_diff = function(str)
     local clnln = str
@@ -435,7 +450,6 @@ M.line = function(move, lnum)
     if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
 
     -- FIXME: Send the whole block within curly braces
-    local has_block = false
     local has_op = false
     if config.parenblock then
         local chunkend = nil
@@ -444,29 +458,27 @@ M.line = function(move, lnum)
         elseif vim.o.filetype == "rnoweb" then
             chunkend = "@"
         end
+        local lines = {}
+        has_op = ends_with_operator(line)
         local rpd = paren_diff(line)
-        has_op = line:gsub("#.*", ""):find(op_pattern) and true or false
-        if rpd < 0 then
-            local line1 = lnum
-            local cline = line1 + 1
+        if rpd < 0 or has_op then
+            lnum = lnum + 1
             local last_buf_line = vim.fn.line("$")
-            local lines = { line }
-            while cline <= last_buf_line do
-                local txt = vim.fn.getline(cline)
+            lines = { line }
+            while lnum <= last_buf_line do
+                local txt = vim.fn.getline(lnum)
                 if chunkend and txt == chunkend then break end
                 table.insert(lines, txt)
                 rpd = rpd + paren_diff(txt)
-                if rpd == 0 then
-                    has_op = vim.fn.getline(cline):gsub("#.*", ""):find(op_pattern)
-                            and true
-                        or false
-                    vim.fn.cursor(cline, 1)
-                    has_block = true
+                has_op = ends_with_operator(txt)
+                if rpd < 0 or has_op then
+                    lnum = lnum + 1
+                else
+                    vim.fn.cursor(lnum, 1)
                     break
                 end
-                cline = cline + 1
             end
-            if has_block then line = table.concat(lines, "\n") end
+            line = table.concat(lines, "\n")
         end
     end
 
@@ -478,8 +490,6 @@ M.line = function(move, lnum)
 
     if move == "down" then
         cursor.move_next_line()
-        -- Send the whole chain of piped lines
-        if has_op then M.line(move, lnum) end
     elseif move == "newline" then
         vim.cmd("normal! o")
     end
