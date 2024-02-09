@@ -39,7 +39,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
 end
 
 M.SyncTeX_backward = function()
-    local basenm = rnw.SyncTeX_GetMaster() .. ".pdf"
+    local basenm = rnw.SyncTeX_get_master() .. ".pdf"
     local pdfpath = vim.b.rplugin_pdfdir
         .. "/"
         .. vim.fn.substitute(basenm, ".*/", "", "")

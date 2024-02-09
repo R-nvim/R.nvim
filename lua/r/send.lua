@@ -254,7 +254,7 @@ M.motion = function(type)
         M.line("stay", lstart)
     else
         local lines = vim.fn.getline(lstart, lend)
-        vim.fn.M.source_lines(lines, "", "block")
+        M.source_lines(lines, "", "block")
     end
 end
 

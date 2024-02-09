@@ -14,34 +14,32 @@ local check_latex_cmd = function()
                     '-pdflatex="pdflatex %O -file-line-error -interaction=nonstopmode -synctex=1 %S"',
                 }
             else
-                vim.fn.RWarningMsg(
-                    "You should install 'xelatex' to be able to compile pdf documents."
-                )
+                warn("You should install 'xelatex' to be able to compile pdf documents.")
             end
         end
-        if
-            (config.latexcmd[1] == "default" or config.latexcmd[1] == "latexmk")
-            and vim.fn.executable("latexmk") == 0
-        then
-            if vim.fn.executable("xelatex") == 1 then
-                config.latexcmd = {
-                    "xelatex",
-                    "-file-line-error",
-                    "-interaction=nonstopmode",
-                    "-synctex=1",
-                }
-            elseif vim.fn.executable("pdflatex") == 1 then
-                config.latexcmd = {
-                    "pdflatex",
-                    "-file-line-error",
-                    "-interaction=nonstopmode",
-                    "-synctex=1",
-                }
-            else
-                vim.fn.RWarningMsg(
-                    "You should install both 'xelatex' and 'latexmk' to be able to compile pdf documents."
-                )
-            end
+    end
+    if
+        (config.latexcmd[1] == "default" or config.latexcmd[1] == "latexmk")
+        and vim.fn.executable("latexmk") == 0
+    then
+        if vim.fn.executable("xelatex") == 1 then
+            config.latexcmd = {
+                "xelatex",
+                "-file-line-error",
+                "-interaction=nonstopmode",
+                "-synctex=1",
+            }
+        elseif vim.fn.executable("pdflatex") == 1 then
+            config.latexcmd = {
+                "pdflatex",
+                "-file-line-error",
+                "-interaction=nonstopmode",
+                "-synctex=1",
+            }
+        else
+            warn(
+                "You should install both 'xelatex' and 'latexmk' to be able to compile pdf documents."
+            )
         end
     end
 end
@@ -308,7 +306,7 @@ M.send_chunk = function(e, m)
     if m == "down" then M.next_chunk() end
 end
 
-M.SyncTeX_GetMaster = function()
+M.SyncTeX_get_master = function()
     if vim.fn.filereadable(vim.fn.expand("%:p:r") .. "-concordance.tex") == 1 then
         if vim.fn.has("win32") == 1 then
             return vim.fn.substitute(vim.fn.expand("%:p:r"), "\\", "/", "g")
@@ -526,7 +524,7 @@ M.SyncTeX_forward = function(gotobuf)
     end
 
     require("r.pdf").SyncTeX_forward(
-        M.SyncTeX_GetMaster() .. ".tex",
+        M.SyncTeX_get_master() .. ".tex",
         vim.b.rplugin_pdfdir .. "/" .. basenm .. ".pdf",
         texln,
         1
@@ -534,7 +532,7 @@ M.SyncTeX_forward = function(gotobuf)
 end
 
 M.set_pdf_dir = function()
-    local master = M.SyncTeX_GetMaster()
+    local master = M.SyncTeX_get_master()
     local mdir = master:match("(.*/).*")
     vim.b.rplugin_pdfdir = "."
 

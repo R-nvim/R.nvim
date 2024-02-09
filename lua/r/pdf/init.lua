@@ -80,7 +80,7 @@ M.open = function(fullpath)
     if config.openpdf == 0 then return end
 
     if fullpath == "Get Master" then
-        local fpath = vim.fn.SyncTeX_GetMaster() .. ".pdf"
+        local fpath = require("r.rnw").SyncTeX_get_master() .. ".pdf"
         fpath = vim.b.rplugin_pdfdir .. "/" .. fpath:gsub(".*/", "")
         M.open(fpath)
         return

@@ -1,5 +1,6 @@
 local warn = require("r").warn
 local config = require("r.config").get_config()
+local send = require("r.send")
 
 local M = {}
 
@@ -55,7 +56,7 @@ local send_py_chunk = function(e, m)
     local chunkline = vim.fn.search("^[ \t]*```[ ]*{python", "bncW") + 1
     local docline = vim.fn.search("^[ \t]*```", "ncW") - 1
     local lines = vim.fn.getline(chunkline, docline)
-    local ok = vim.fn.RSourceLines(lines, e, "PythonCode")
+    local ok = send.source_lines(lines, e, "PythonCode")
     if ok == 0 then return end
     if m == "down" then M.RmdNextChunk() end
 end
@@ -74,9 +75,9 @@ M.send_R_chunk = function(e, m)
     local chunkline = vim.fn.search("^[ \t]*```[ ]*{r", "bncW") + 1
     local docline = vim.fn.search("^[ \t]*```", "ncW") - 1
     local lines = vim.fn.getline(chunkline, docline)
-    local ok = vim.fn.RSourceLines(lines, e, "chunk")
+    local ok = send.source_lines(lines, e, "chunk")
     if ok == 0 then return end
-    if m == "down" then vim.fn.RmdNextChunk() end
+    if m == "down" then M.next_chunk() end
 end
 
 M.previous_chunk = function()
