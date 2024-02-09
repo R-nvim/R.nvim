@@ -845,7 +845,6 @@ the `init.vim`. The workaround is do not include the superfluous command
 |pdfviewer|           PDF application used to open PDF documents
 |openpdf|             Open PDF after processing rnoweb file
 |openhtml|            Open HTML after processing Rmd or Quarto
-|strict_rst|          Code style for generated rst files
 |insert_mode_cmds|    Allow R commands in insert mode
 |rmhidden|            Remove hidden objects from R workspace
 |wait|                Time to wait for nvimcom loading
