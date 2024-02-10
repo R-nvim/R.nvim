@@ -1023,7 +1023,7 @@ static int run_R_code(const char *s, int senderror) {
 
     if (exit_code != 0) {
         if (senderror) {
-            printf("lua require('r.nrs').show_bol_error('%ld')\n", exit_code);
+            printf("lua require('r.server').show_bol_error('%ld')\n", exit_code);
             fflush(stdout);
         }
         return 0;
@@ -1043,7 +1043,7 @@ static int run_R_code(const char *s, int senderror) {
     int stt = system(b);
     if (stt != 0 && stt != 512) { // ssh success status seems to be 512
         if (senderror) {
-            printf("lua require('r.nrs').show_bol_error('%d')\n", stt);
+            printf("lua require('r.server').show_bol_error('%d')\n", stt);
             fflush(stdout);
         }
         return 0;
@@ -1384,7 +1384,7 @@ static void finish_bol(void) {
     }
 
     // Message to Neovim: Update both syntax and Rhelp_list
-    printf("lua require('r.nrs').update_Rhelp_list()\n");
+    printf("lua require('r.server').update_Rhelp_list()\n");
     fflush(stdout);
 }
 
@@ -1910,7 +1910,7 @@ static void fill_inst_libs(void) {
 }
 
 static void send_nrs_info(void) {
-    printf("lua require('r.nrs').echo_nrs_info('Loaded packages:");
+    printf("lua require('r.server').echo_nrs_info('Loaded packages:");
     PkgData *pkg = pkgList;
     while (pkg) {
         printf(" %s", pkg->name);
@@ -1929,7 +1929,7 @@ static void init(void) {
 #ifdef Debug_NRS
     time_t t;
     time(&t);
-    FILE *f = fopen("/dev/shm/nvimrserver_log", "w");
+    FILE *f = fopen("/dev/shm/rnvimserver_log", "w");
     fprintf(f, "NSERVER LOG | %s\n\n", ctime(&t));
     fclose(f);
 #endif

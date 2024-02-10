@@ -433,7 +433,7 @@ local do_common_global = function()
     end
 
     -- The environment variables RNVIM_COMPLCB and RNVIM_COMPLInfo must be defined
-    -- before starting the nvimrserver because it needs them at startup.
+    -- before starting the rnvimserver because it needs them at startup.
     config.update_glbenv = false
     if type(package.loaded["cmp_r"]) == "table" then config.update_glbenv = true end
     vim.env.RNVIM_COMPLCB = "v:lua.require'cmp_r'.asynccb"
@@ -773,7 +773,7 @@ local global_setup = function()
         function(tbl) require("r.doc").ask_R_help(tbl.fargs) end,
         {
             nargs = 1,
-            complete = require("r.nrs").list_objs,
+            complete = require("r.server").list_objs,
         }
     )
 
@@ -782,7 +782,7 @@ local global_setup = function()
         complete = function() return config_keys end,
     })
 
-    vim.fn.timer_start(1, require("r.nrs").check_nvimcom_version)
+    vim.fn.timer_start(1, require("r.server").check_nvimcom_version)
 end
 
 local M = {}

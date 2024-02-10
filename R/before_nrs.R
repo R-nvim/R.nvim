@@ -24,7 +24,7 @@ if (is.na(isdir)) {
 
 setwd(Sys.getenv("RNVIM_TMPDIR"))
 
-# Save libPaths for nvimrserver
+# Save libPaths for rnvimserver
 libp <- unique(c(unlist(strsplit(Sys.getenv("R_LIBS_USER"),
                                  .Platform$path.sep)), .libPaths()))
 cat(libp, sep = "\n", colapse = "\n", file = "libPaths")

@@ -513,7 +513,7 @@ M.on_BufUnload = function() send_to_nvimcom("N", "OnOBBufUnload") end
 
 M.print_list_tree = function()
     -- FIXME: document this function as a debugging tool or delete it and the
-    -- correspoding nvimrserver function.
+    -- correspoding rnvimserver function.
     job.stdin("Server", "37\n")
 end
 

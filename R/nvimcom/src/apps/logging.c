@@ -6,7 +6,7 @@
  * @brief Logs a formatted message to a specified log file.
  *
  * This function writes a formatted message to a log file located at
- * "/dev/shm/nvimrserver_log". It behaves similarly to printf, formatting the
+ * "/dev/shm/rnvimserver_log". It behaves similarly to printf, formatting the
  * provided message and appending it to the log file. This function is active
  * only when Debug_NRS is defined.
  *
@@ -21,7 +21,7 @@
 __attribute__((format(printf, 1, 2))) void Log(const char *fmt, ...) {
 #ifdef Debug_NRS
     va_list argptr;
-    FILE *f = fopen("/dev/shm/nvimrserver_log", "a");
+    FILE *f = fopen("/dev/shm/rnvimserver_log", "a");
     va_start(argptr, fmt);
     vfprintf(f, fmt, argptr);
     fprintf(f, "\n");

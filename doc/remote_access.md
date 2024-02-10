@@ -121,7 +121,7 @@ goal.
 
 Running R on a remote machine will make a lot of data to be transferred
 through a TCP connection between the R package `nvimcom` and the application
-`nvimrserver` run by R.nvim. If your connection is not fast enough or its
+`rnvimserver` run by R.nvim. If your connection is not fast enough or its
 latency is too high, you could consider using
 [vimcmdline](https://github.com/jalvesaq/vimcmdline) or a similar plugin. Of
 course, none of R.nvim's features that depend on information on R's workspace

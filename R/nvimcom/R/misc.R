@@ -175,7 +175,7 @@ source.and.clean <- function(f, ...) {
 }
 
 #' Format R code.
-#' Sent to nvimcom through nvimrserver by R.nvim when the user runs the
+#' Sent to nvimcom through rnvimserver by R.nvim when the user runs the
 #' `Rformat` command.
 #' @param l1 First line of selection. R.nvim needs the information to know
 #' what lines to replace.
@@ -249,7 +249,7 @@ nvim_insert <- function(cmd, howto = "tabnew") {
 
 #' Output the arguments of a function as extra information to be shown during
 #' omni or auto-completion.
-#' Called by nvimrserver when the user selects a function created in the
+#' Called by rnvimserver when the user selects a function created in the
 #' .GlobalEnv environment in the completion menu.
 #' menu.
 #' @param funcname Name of function selected in the completion menu.

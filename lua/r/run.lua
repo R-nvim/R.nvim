@@ -195,12 +195,12 @@ M.start_R = function(whatr)
         return
     end
     if vim.g.R_Nvim_status == 2 then
-        warn("Cannot start R: nvimrserver not ready yet.")
+        warn("Cannot start R: rnvimserver not ready yet.")
         return
     end
 
     if vim.g.R_Nvim_status == 1 then
-        warn("Cannot start R: nvimrserver not started yet.")
+        warn("Cannot start R: rnvimserver not started yet.")
         return
     end
 
@@ -332,7 +332,7 @@ end
 
 -- Background communication with R
 
--- Send a message to nvimrserver job which will send the message to nvimcom
+-- Send a message to rnvimserver job which will send the message to nvimcom
 -- through a TCP connection.
 M.send_to_nvimcom = function(code, attch)
     if vim.g.R_Nvim_status < 6 then

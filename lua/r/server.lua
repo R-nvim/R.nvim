@@ -84,13 +84,13 @@ local MkRdir = function()
     libd = nil
 end
 
--- Find the path to the nvimrserver executable in the specified library directory.
+-- Find the path to the rnvimserver executable in the specified library directory.
 local FindNCSpath = function(libdir)
     local nrs
     if config.is_windows then
-        nrs = "nvimrserver.exe"
+        nrs = "rnvimserver.exe"
     else
-        nrs = "nvimrserver"
+        nrs = "rnvimserver"
     end
     local paths = {
         libdir .. "/bin/" .. nrs,
@@ -104,7 +104,7 @@ local FindNCSpath = function(libdir)
     return ""
 end
 
--- Check and set some variables and, finally, start the nvimrserver
+-- Check and set some variables and, finally, start the rnvimserver
 local StartNServer = function()
     if job.is_running("Server") then return end
 
@@ -134,25 +134,25 @@ local StartNServer = function()
         end
     end
 
-    local nrs_dir = nrs_path:gsub("/nvimrserver.*", "")
+    local nrs_dir = nrs_path:gsub("/rnvimserver.*", "")
 
     local nrs_env = {}
 
-    -- Some pdf viewers run nvimrserver to send SyncTeX messages back to Vim
+    -- Some pdf viewers run rnvimserver to send SyncTeX messages back to Vim
     if config.is_windows then
         nrs_env["PATH"] = nrs_dir .. ";" .. vim.env.PATH
     else
         nrs_env["PATH"] = nrs_dir .. ":" .. vim.env.PATH
     end
 
-    -- Options in the nvimrserver application are set through environment variables
+    -- Options in the rnvimserver application are set through environment variables
     if config.objbr_opendf then nrs_env["RNVIM_OPENDF"] = "TRUE" end
     if config.objbr_openlist then nrs_env["RNVIM_OPENLS"] = "TRUE" end
     if config.objbr_allnames then nrs_env["RNVIM_OBJBR_ALLNAMES"] = "TRUE" end
     nrs_env["RNVIM_RPATH"] = config.R_cmd
     nrs_env["RNVIM_LOCAL_TMPDIR"] = config.localtmpdir
 
-    -- We have to set R's home directory on Windows because nvimrserver will
+    -- We have to set R's home directory on Windows because rnvimserver will
     -- run R to build the list for omni completion.
     if config.is_windows then require("r.windows").set_R_home() end
 
@@ -171,7 +171,11 @@ local StartNServer = function()
     vim.fn.delete(config.tmpdir .. "/run_R_stdout")
     vim.fn.delete(config.tmpdir .. "/run_R_stderr")
 
-    vim.api.nvim_create_user_command("RGetNRSInfo", require("r.nrs").request_nrs_info, {})
+    vim.api.nvim_create_user_command(
+        "RGetNRSInfo",
+        require("r.server").request_nrs_info,
+        {}
+    )
 end
 
 -- Check if the exit code of the script that built nvimcom was zero
@@ -417,10 +421,10 @@ M.check_nvimcom_version = function()
     edit.add_for_deletion(config.tmpdir .. "/libPaths")
 end
 
--- Get information from nvimrserver (currently only the names of loaded libraries).
+-- Get information from rnvimserver (currently only the names of loaded libraries).
 M.request_nrs_info = function() job.stdin("Server", "42\n") end
 
--- Called by nvimrserver when it gets an error running R code
+-- Called by rnvimserver when it gets an error running R code
 M.show_bol_error = function(stt)
     if vim.fn.filereadable(config.tmpdir .. "/run_R_stderr") == 1 then
         local ferr = table.concat(vim.fn.readfile(config.tmpdir .. "/run_R_stderr"), "\n")

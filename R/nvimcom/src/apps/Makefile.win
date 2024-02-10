@@ -1,7 +1,7 @@
 CC=gcc
-TARGET=nvimrserver.exe
+TARGET=rnvimserver.exe
 CFLAGS = -mwindows -std=gnu99 -O3 -Wall -DWIN32
-SRCS=nvimrserver.c utilities.c data_structures.c logging.c
+SRCS=rnvimserver.c utilities.c data_structures.c logging.c
 LIBS=-lWs2_32
 
 ifeq "$(WIN)" "64"

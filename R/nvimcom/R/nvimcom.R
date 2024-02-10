@@ -31,7 +31,7 @@ NvimcomEnv$pkgdescr <- list()
 }
 
 #' Function called by R right after loading nvimcom to establish the TCP
-#' connection with the nvimrserver
+#' connection with the rnvimserver
 .onAttach <- function(libname, pkgname) {
     if (Sys.getenv("RNVIM_TMPDIR") == "")
         return(invisible(NULL))
@@ -63,7 +63,7 @@ NvimcomEnv$pkgdescr <- list()
 }
 
 
-#' Stop the connection with nvimrserver and unload the nvimcom library
+#' Stop the connection with rnvimserver and unload the nvimcom library
 #' This function is called by the command:
 #' detach("package:nvimcom", unload = TRUE)
 .onUnload <- function(libpath) {

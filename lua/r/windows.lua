@@ -46,7 +46,7 @@ M.start_Rgui = function()
     require("r.run").wait_nvimcom_start()
 end
 
--- Called by nvimrserver
+-- Called by rnvimserver
 M.clean_and_start_Rgui = function()
     require("r.run").clear_R_info()
     M.start_Rgui()

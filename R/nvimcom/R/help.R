@@ -10,7 +10,7 @@ nvim.hmsg <- function(files, header, title, delete.file) {
 }
 
 #' Function called by R.nvim after `\rh` or `:Rhelp`.
-#' R.nvim sends the command through the nvimrserver TCP connection to nvimcom
+#' R.nvim sends the command through the rnvimserver TCP connection to nvimcom
 #' and R evaluates the command when idle.
 #' @param topic The word under cursor when `\rh` was pressed.
 #' @param w The width that lines should have in the formatted document.
