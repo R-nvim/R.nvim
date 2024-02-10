@@ -32,7 +32,7 @@ local begin_waiting_more_input = function ()
 end
 
 local exec_stdout_cmd = function (cmd, job_id)
-    if cmd:match("^lua ") or cmd:match("^call ") or cmd:match("^let ") then
+    if cmd:match("^(lua |call |let)")then
         vim.fn.execute(cmd)
     else
         if cmd:len() > 128 then cmd = cmd:sub(1, 128) .. " [...]" end
