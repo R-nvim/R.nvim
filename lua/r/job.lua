@@ -105,7 +105,7 @@ local default_handlers = {
     on_exit = M.on_exit,
 }
 
-M.start = function(nm, cmd, opt)
+M.start = function(job_name, cmd, opt)
     local h = default_handlers
     if opt then h = opt end
     local jobid = vim.fn.jobstart(cmd, h)
@@ -114,7 +114,7 @@ M.start = function(nm, cmd, opt)
     elseif jobid == -1 then
         warn("Command not executable in: " .. tostring(cmd))
     else
-        jobs[nm] = jobid
+        jobs[job_name] = jobid
     end
 end
 
