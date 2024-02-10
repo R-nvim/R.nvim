@@ -1,5 +1,6 @@
 local warn = require("r").warn
 local utils = require("r.utils")
+local uv = vim.loop
 
 -- stylua: ignore start
 
@@ -526,14 +527,20 @@ local do_common_global = function()
     end
 end
 
+local resolve_fullpaths = function(tbl)
+    for i, v in ipairs(tbl) do
+        tbl[i] = uv.fs_realpath(v)
+    end
+end
+
 local windows_config = function()
-    local wtime = vim.fn.reltime()
+    local wtime = uv.hrtime()
     local isi386 = false
     local rinstallpath = nil
 
     if config.R_path then
-        local rpath = vim.fn.split(config.R_path, ";")
-        vim.fn.map(rpath, "expand(v:val)")
+        local rpath = vim.split(config.R_path, ";")
+        resolve_fullpaths(rpath)
         vim.fn.reverse(rpath)
         for _, dir in ipairs(rpath) do
             if vim.fn.isdirectory(dir) then
@@ -588,11 +595,7 @@ local windows_config = function()
             warn(
                 "Could not find R path in Windows Registry. If you have already installed R, please, set the value of 'R_path'."
             )
-            require("r.edit").add_to_debug_info(
-                "windows setup",
-                vim.fn.reltimefloat(vim.fn.reltime(wtime, vim.fn.reltime())),
-                "Time"
-            )
+            require("r.edit").add_to_debug_info("windows setup", uv.hrtime() - wtime, "Time")
             return
         end
         local hasR32 = vim.fn.isdirectory(rinstallpath .. "\\bin\\i386")
@@ -615,11 +618,7 @@ local windows_config = function()
             config.R_args = { "--sdi", "--no-save" }
         end
     end
-    require("r.edit").add_to_debug_info(
-        "windows setup",
-        vim.fn.reltimefloat(vim.fn.reltime(wtime, vim.fn.reltime())),
-        "Time"
-    )
+    require("r.edit").add_to_debug_info("windows setup", uv.hrtime() - wtime, "Time")
 end
 
 local tmux_config = function()
@@ -650,13 +649,20 @@ local tmux_config = function()
 end
 
 local unix_config = function()
-    local utime = vim.fn.reltime()
+    local utime = uv.hrtime()
     if config.R_path then
-        local rpath = vim.fn.split(config.R_path, ":")
-        vim.fn.map(rpath, "expand(v:val)")
+        local rpath = vim.split(config.R_path, ":")
+        resolve_fullpaths(rpath)
+
+        -- Add the current directory to the beginning of the path
         table.insert(rpath, 1, "")
-        for _, dir in ipairs(vim.fn.reverse(rpath)) do
-            if vim.fn.isdirectory(dir) == 1 then
+
+        -- loop over rpath in reverse.
+        for i = #rpath, 1, -1 do
+            local dir = rpath[i]
+            local is_dir = uv.fs_stat(dir)
+            -- Each element in rpath must exist and be a directory
+            if is_dir and is_dir.type == "directory" then
                 vim.env.PATH = dir .. ":" .. vim.env.PATH
             else
                 warn(
@@ -668,7 +674,8 @@ local unix_config = function()
         end
     end
 
-    if vim.fn.executable(config.R_app) == 0 then
+    local is_executable = uv.fs_access(config.R_app, "X")
+    if not is_executable then
         warn(
             '"'
                 .. config.R_app
@@ -680,13 +687,9 @@ local unix_config = function()
         (type(config.external_term) == "boolean" and config.external_term)
         or type(config.external_term) == "string"
     then
-        tmux_config()
+        tmux_config() -- Consider removing this line if it's not necessary
     end
-    require("r.edit").add_to_debug_info(
-        "unix setup",
-        vim.fn.reltimefloat(vim.fn.reltime(utime, vim.fn.reltime())),
-        "Time"
-    )
+    require("r.edit").add_to_debug_info("unix setup", uv.hrtime - utime, "Time")
 end
 
 local global_setup = function()
