@@ -1,13 +1,22 @@
+--- This module provides functionality for managing jobs.
+-- It includes mechanisms for starting jobs, processing their output, and managing their lifecycle.
+
 local M = {}
 local jobs = {}
 local warn = require("r").warn
 
+-- Structure to keep track of incomplete input data.
 local incomplete_input = { size = 0, received = 0, str = "" }
+
+--- Flag for whether we are waiting for more input to complete a command.
 local waiting_more_input = false
+
+-- Variables used for parsing command data.
 local cmdsplt
 local in_size
 local received
 
+--- Stops waiting for more input and logs a warning if an incomplete string was received.
 local stop_waiting_nsr = function(_)
     if waiting_more_input then
         waiting_more_input = false
@@ -22,6 +31,7 @@ local stop_waiting_nsr = function(_)
     incomplete_input = { size = 0, received = 0, str = "" }
 end
 
+--- Begins waiting for more input to complete a command.
 local begin_waiting_more_input = function ()
     -- Log("begin_waiting_more_input")
     waiting_more_input = true
@@ -31,6 +41,9 @@ local begin_waiting_more_input = function ()
     vim.fn.timer_start(100, stop_waiting_nsr)
 end
 
+--- Executes a command received through stdout, if it matches known patterns.
+-- @param cmd The command to execute.
+-- @param job_id The ID of the job that produced the command.
 local exec_stdout_cmd = function (cmd, job_id)
     if cmd:match("^(lua |call |let)")then
         vim.fn.execute(cmd)
@@ -40,6 +53,9 @@ local exec_stdout_cmd = function (cmd, job_id)
     end
 end
 
+--- Handles stdout data from a job.
+-- @param job_id The ID of the job.
+-- @param data The data received from stdout.
 M.on_stdout = function(job_id, data, _)
     local cmd
     for _, v in pairs(data) do
@@ -79,11 +95,17 @@ M.on_stdout = function(job_id, data, _)
     end
 end
 
+--- Handles stderr data from a job.
+-- @param job_id The ID of the job.
+-- @param data The data received from stderr.
 M.on_stderr = function(job_id, data, _)
     local msg = table.concat(data):gsub("\r", "")
     if not msg:match("^%s*$") then warn("[" .. M.get_title(job_id) .. "] " .. msg) end
 end
 
+--- Handles the exit of a job.
+-- @param job_id The ID of the job.
+-- @param data The exit status of the job.
 M.on_exit = function(job_id, data, _)
     local key = M.get_title(job_id)
     if key ~= "Job" then jobs[key] = 0 end
@@ -105,6 +127,10 @@ local default_handlers = {
     on_exit = M.on_exit,
 }
 
+--- Starts a new job with the specified command and options.
+-- @param job_name The name of the job.
+-- @param cmd The command to start the job with.
+-- @param opt Optional table of handlers for job events.
 M.start = function(job_name, cmd, opt)
     local h = default_handlers
     if opt then h = opt end
@@ -118,6 +144,8 @@ M.start = function(job_name, cmd, opt)
     end
 end
 
+--- Opens an R terminal with the specified command.
+-- @param cmd The command to start the R terminal with.
 M.R_term_open = function(cmd)
     local jobid = vim.fn.termopen(cmd, { on_exit = M.on_exit })
     if jobid == 0 then
@@ -129,6 +157,9 @@ M.R_term_open = function(cmd)
     end
 end
 
+--- Retrieves the title of a job by its ID.
+-- @param job_id The ID of the job.
+-- @return The title of the job or "Job" if not found.
 M.get_title = function(job_id)
     for key, value in pairs(jobs) do
         if value == job_id then return key end
@@ -136,8 +167,14 @@ M.get_title = function(job_id)
     return "Job"
 end
 
+--- Sends a command to a job's stdin.
+-- @param job The name of the job.
+-- @param cmd The command to send.
 M.stdin = function(job, cmd) vim.fn.chansend(jobs[job], cmd) end
 
+--- Checks if a job is currently running.
+-- @param key The name of the job.
+-- @return True if the job is running, false otherwise.
 M.is_running = function(key)
     if jobs[key] and jobs[key] ~= 0 then return true end
     return false
