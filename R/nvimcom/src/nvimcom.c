@@ -961,6 +961,7 @@ static void nvimcom_fire(void) {
 }
 #endif
 
+#ifdef WIN32
 /**
  * @brief This function is called after the TCP connection with the rnvimserver
  * is established. Its goal is to pass to R.nvim information on the running R
@@ -972,7 +973,6 @@ static void nvimcom_send_running_info(const char *r_info, const char *nvv) {
     char msg[2176];
     pid_t R_PID = getpid();
 
-#ifdef WIN32
 #ifdef _WIN64
     snprintf(msg, 2175,
              "lua require('r.run').set_nvimcom_info('%s', %" PRId64 ", '%" PRId64 "', '%s')", nvv,
@@ -981,16 +981,9 @@ static void nvimcom_send_running_info(const char *r_info, const char *nvv) {
     snprintf(msg, 2175, "lua require('r.run').set_nvimcom_info('%s', %d, '%ld', '%s')", nvv,
              R_PID, (long)GetForegroundWindow(), r_info);
 #endif
-#else
-    if (getenv("WINDOWID"))
-        snprintf(msg, 2175, "lua require('r.run').set_nvimcom_info('%s', %d, '%s', '%s')", nvv,
-                 R_PID, getenv("WINDOWID"), r_info);
-    else
-        snprintf(msg, 2175, "lua require('r.run').set_nvimcom_info('%s', %d, '0', '%s')", nvv,
-                 R_PID, r_info);
-#endif
     send_to_nvim(msg);
 }
+#endif
 
 /**
  * @brief Parse messages received from rnvimserver
@@ -1238,7 +1231,6 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
                 nvimcom_send_running_info(*rinfo, *nvv);
 #else
                 pthread_create(&tid, NULL, client_loop_thread, NULL);
-                nvimcom_send_running_info(*rinfo, *nvv);
                 snprintf(flag_eval, 510, "nvimcom:::send_nvimcom_info('%d')", getpid());
                 nvimcom_fire();
 #endif
