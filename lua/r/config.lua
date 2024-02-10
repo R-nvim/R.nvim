@@ -132,12 +132,10 @@ local set_pdf_viewer = function()
 
     if config.is_darwin then
         config.pdfviewer = "skim"
+    elseif config.is_windows then
+        config.pdfviewer = "sumatra"
     else
-        if config.is_windows then
-            config.pdfviewer = "sumatra"
-        else
-            config.pdfviewer = "zathura"
-        end
+        config.pdfviewer = "zathura"
     end
 end
 
@@ -348,17 +346,17 @@ local do_common_global = function()
     if not config.tmpdir then
         -- Set temporary directory based on the platform
         if config.is_windows then
-            if vim.fn.isdirectory(vim.env.TMP) ~= 0 then
+            if vim.env.TMP and vim.fn.isdirectory(vim.env.TMP) ~= 0 then
                 config.tmpdir = vim.env.TMP .. "/R.nvim-" .. config.user_login
-            elseif vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
+            elseif vim.env.TEMP and vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
                 config.tmpdir = vim.env.TEMP .. "/R.nvim-" .. config.user_login
             else
                 config.tmpdir = config.uservimfiles .. "/R/tmp"
             end
             config.tmpdir = utils.normalize_windows_path(config.tmpdir)
         else
-            if vim.fn.isdirectory(vim.env.TMPDIR) ~= 0 then
-                if vim.fn.matchstr(vim.env.TMPDIR, "/$") ~= "" then
+            if vim.env.TMPDIR and vim.fn.isdirectory(vim.env.TMPDIR) ~= 0 then
+                if string.find(vim.env.TMPDIR, "/$") then
                     config.tmpdir = vim.env.TMPDIR .. "R.nvim-" .. config.user_login
                 else
                     config.tmpdir = vim.env.TMPDIR .. "/R.nvim-" .. config.user_login
@@ -472,7 +470,7 @@ local do_common_global = function()
     vim.cmd("autocmd BufEnter * lua require('r.edit').buf_enter()")
     vim.cmd("autocmd VimLeave * lua require('r.edit').vim_leave()")
 
-    if vim.v.windowid ~= 0 and vim.env.WINDOWID == "" then
+    if vim.v.windowid ~= 0 and not vim.env.WINDOWID then
         vim.env.WINDOWID = vim.v.windowid
     end
 
@@ -552,16 +550,18 @@ local windows_config = function()
             end
         end
     else
-        local RT40home = vim.env.RTOOLS40_HOME
-        if vim.fn.isdirectory(RT40home .. "\\usr\\bin") then
-            vim.env.PATH = RT40home .. "\\usr\\bin;" .. vim.env.PATH
-        elseif vim.fn.isdirectory("C:\\rtools40\\usr\\bin") then
-            vim.env.PATH = "C:\\rtools40\\usr\\bin;" .. vim.env.PATH
-        end
-        if vim.fn.isdirectory(RT40home .. "\\mingw64\\bin\\") then
-            vim.env.PATH = RT40home .. "\\mingw64\\bin;" .. vim.env.PATH
-        elseif vim.fn.isdirectory("C:\\rtools40\\mingw64\\bin") then
-            vim.env.PATH = "C:\\rtools40\\mingw64\\bin;" .. vim.env.PATH
+        if vim.env.RTOOLS40_HOME then
+            if vim.fn.isdirectory(vim.env.RTOOLS40_HOME .. "\\mingw64\\bin\\") then
+                vim.env.PATH = vim.env.RTOOLS40_HOME .. "\\mingw64\\bin;" .. vim.env.PATH
+            elseif vim.fn.isdirectory(vim.env.RTOOLS40_HOME .. "\\usr\\bin") then
+                vim.env.PATH = vim.env.RTOOLS40_HOME .. "\\usr\\bin;" .. vim.env.PATH
+            end
+        else
+            if vim.fn.isdirectory("C:\\rtools40\\mingw64\\bin") then
+                vim.env.PATH = "C:\\rtools40\\mingw64\\bin;" .. vim.env.PATH
+            elseif vim.fn.isdirectory("C:\\rtools40\\usr\\bin") then
+                vim.env.PATH = "C:\\rtools40\\usr\\bin;" .. vim.env.PATH
+            end
         end
 
         local run_cmd_content = { 'reg.exe QUERY "HKLM\\SOFTWARE\\R-core\\R" /s' }
@@ -589,7 +589,7 @@ local windows_config = function()
             rinstallpath = vim.fn.substitute(rinstallpath, "\\n", "", "g")
             rinstallpath = vim.fn.substitute(rinstallpath, "\\s*$", "", "g")
         end
-        if not vim.fn.exists("rinstallpath") then
+        if not rinstallpath then
             warn(
                 "Could not find R path in Windows Registry. If you have already installed R, please, set the value of 'R_path'."
             )
