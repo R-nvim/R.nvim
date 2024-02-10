@@ -58,7 +58,7 @@ local send_py_chunk = function(m)
     local lines = vim.fn.getline(chunkline, docline)
     local ok = send.source_lines(lines, "PythonCode")
     if ok == 0 then return end
-    if m == "down" then M.RmdNextChunk() end
+    if m == true then M.RmdNextChunk() end
 end
 
 -- Send R chunk to R
@@ -77,7 +77,7 @@ M.send_R_chunk = function(m)
     local lines = vim.fn.getline(chunkline, docline)
     local ok = send.source_lines(lines, "chunk")
     if ok == 0 then return end
-    if m == "down" then M.next_chunk() end
+    if m == true then M.next_chunk() end
 end
 
 M.previous_chunk = function()

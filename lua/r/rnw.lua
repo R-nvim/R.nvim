@@ -303,7 +303,7 @@ M.send_chunk = function(m)
     local ok = send.source_lines(lines, "chunk")
     if ok == 0 then return end
 
-    if m == "down" then M.next_chunk() end
+    if m == true then M.next_chunk() end
 end
 
 M.SyncTeX_get_master = function()

@@ -175,7 +175,7 @@ M.paragraph = function(m)
     local lines = vim.api.nvim_buf_get_lines(0, start_line, end_line, false)
     M.cmd(table.concat(lines, "\n"))
 
-    if m == "down" then cursor.move_next_paragraph() end
+    if m == true then cursor.move_next_paragraph() end
 end
 
 M.line_part = function(direction, correctpos)
@@ -315,7 +315,7 @@ M.marked_block = function(m)
 
     if ok == 0 then return end
 
-    if m == "down" and lineB ~= vim.fn.line("$") then
+    if m == true and lineB ~= vim.fn.line("$") then
         vim.fn.cursor(lineB, 1)
         cursor.move_next_line()
     end
@@ -357,7 +357,7 @@ M.selection = function(m)
         local line = string.sub(l, i, i + j)
         if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
         local ok = M.cmd(line)
-        if ok and m == "down" then cursor.move_next_line() end
+        if ok and m == true then cursor.move_next_line() end
         return
     end
 
@@ -402,27 +402,27 @@ M.selection = function(m)
 
     if ok == 0 then return end
 
-    if m == "down" then cursor.move_next_line() end
+    if m == true then cursor.move_next_line() end
 end
 
 --- Send current line to R Console
----@param move string Movement to do after sending the line.
+---@param m string Movement to do after sending the line.
 ---@param lnum number Number of line to send (optional).
-M.line = function(move, lnum)
+M.line = function(m, lnum)
     if not lnum then lnum = vim.fn.line(".") end
     local line = vim.fn.getline(lnum)
     if #line == 0 then
-        if move == "down" then cursor.move_next_line() end
+        if m == true then cursor.move_next_line() end
         return
     end
 
     if vim.o.filetype == "rnoweb" then
         if line == "@" then
-            if move == "down" then cursor.move_next_line() end
+            if m == true then cursor.move_next_line() end
             return
         end
         if line:find("^<<.*child *= *") then
-            knit_child(lnum, move)
+            knit_child(lnum, m)
             return
         end
         if not require("r.rnw").is_in_R_code(true) then return end
@@ -430,11 +430,11 @@ M.line = function(move, lnum)
 
     if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
         if line == "```" then
-            if move == "down" then cursor.move_next_line() end
+            if m == true then cursor.move_next_line() end
             return
         end
         if vim.fn.match(line, "^```.*child *= *") > -1 then
-            knit_child(lnum, move)
+            knit_child(lnum, m)
             return
         end
         line = vim.fn.substitute(line, "^(\\`\\`)\\?", "", "")
@@ -507,9 +507,9 @@ M.line = function(move, lnum)
         M.cmd(line)
     end
 
-    if move == "down" then
+    if m == true then
         cursor.move_next_line()
-    elseif move == "newline" then
+    elseif m == "newline" then
         vim.cmd("normal! o")
     end
 end
