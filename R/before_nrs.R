@@ -1,30 +1,30 @@
 # R may break strings while sending them even if they are short
 out <- function(x) {
-    # R-Nvim will wait for more input if the string doesn't end with "\x14"
+    # R.nvim will wait for more input if the string doesn't end with "\x14"
     y <- paste0(x, "\x14\n")
     cat(y)
     flush(stdout())
 }
 
-isdir <- file.info(Sys.getenv("NVIMR_TMPDIR"))[["isdir"]]
+isdir <- file.info(Sys.getenv("RNVIM_TMPDIR"))[["isdir"]]
 if (is.na(isdir)) {
-    out(paste0("WARN: R: NVIMR_TMPDIR (`", Sys.getenv("NVIMR_TMPDIR"), "`) not found."))
+    out(paste0("WARN: R: RNVIM_TMPDIR (`", Sys.getenv("RNVIM_TMPDIR"), "`) not found."))
 } else {
     if (!isdir)
-        out(paste0("WARN: R: NVIMR_TMPDIR (`", Sys.getenv("NVIMR_TMPDIR"), "`) is not a directory."))
+        out(paste0("WARN: R: RNVIM_TMPDIR (`", Sys.getenv("RNVIM_TMPDIR"), "`) is not a directory."))
 }
 
-isdir <- file.info(Sys.getenv("NVIMR_COMPLDIR"))[["isdir"]]
+isdir <- file.info(Sys.getenv("RNVIM_COMPLDIR"))[["isdir"]]
 if (is.na(isdir)) {
-    out(paste0("WARN: R: NVIMR_COMPLDIR (`", Sys.getenv("NVIMR_COMPLDIR"), "`) not found."))
+    out(paste0("WARN: R: RNVIM_COMPLDIR (`", Sys.getenv("RNVIM_COMPLDIR"), "`) not found."))
 } else {
     if (!isdir)
-        out(paste0("WARN: R: NVIMR_COMPLDIR (`", Sys.getenv("NVIMR_COMPLDIR"), "`) is not a directory."))
+        out(paste0("WARN: R: RNVIM_COMPLDIR (`", Sys.getenv("RNVIM_COMPLDIR"), "`) is not a directory."))
 }
 
-setwd(Sys.getenv("NVIMR_TMPDIR"))
+setwd(Sys.getenv("RNVIM_TMPDIR"))
 
-# Save libPaths for nvimrserver
+# Save libPaths for rnvimserver
 libp <- unique(c(unlist(strsplit(Sys.getenv("R_LIBS_USER"),
                                  .Platform$path.sep)), .libPaths()))
 cat(libp, sep = "\n", colapse = "\n", file = "libPaths")
@@ -33,7 +33,7 @@ cat(libp, sep = "\n", colapse = "\n", file = "libPaths")
 R_version <- paste0(version[c("major", "minor")], collapse = ".")
 
 if (R_version < "4.0.0")
-    out("WARN: R-Nvim requires R >= 4.0.0")
+    out("WARN: R.nvim requires R >= 4.0.0")
 
 R_version <- sub("[0-9]$", "", R_version)
 
@@ -63,7 +63,7 @@ check_nvimcom_installation <- function() {
 }
 
 # The nvimcom directory will not exist if nvimcom was packaged separately from
-# the rest of R-Nvim. I will also not be found if running Vim in MSYS2 and R
+# the rest of R.nvim. I will also not be found if running Vim in MSYS2 and R
 # on Windows because the directory names change between the two systems.
 if (!is.null(needed_nvc_version)) {
     np <- find.package("nvimcom", quiet = TRUE, verbose = FALSE)
@@ -109,10 +109,10 @@ if (!is.null(needed_nvc_version)) {
         }
 
         if (!file.exists(paste0(nvim_r_home, "/R/nvimcom"))) {
-            if (file.exists(paste0(Sys.getenv("NVIMR_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"))) {
+            if (file.exists(paste0(Sys.getenv("RNVIM_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"))) {
                 out("ECHO: Installing nvimcom...")
-                tools:::.install_packages(paste0(Sys.getenv("NVIMR_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"), no.q = TRUE)
-                unlink(paste0(Sys.getenv("NVIMR_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"))
+                tools:::.install_packages(paste0(Sys.getenv("RNVIM_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"), no.q = TRUE)
+                unlink(paste0(Sys.getenv("RNVIM_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"))
                 check_nvimcom_installation()
             } else {
                 out(paste0("WARN: Cannot build nvimcom: directory '", nvim_r_home, "/R/nvimcom", "' not found"))
@@ -137,12 +137,12 @@ if (!is.null(needed_nvc_version)) {
 }
 
 
-# Save ~/.cache/R-Nvim/nvimcom_info
+# Save ~/.cache/R.nvim/nvimcom_info
 np <- find.package("nvimcom", quiet = TRUE, verbose = FALSE)
 if (length(np) == 1) {
     nd <- utils::packageDescription("nvimcom")
     nvimcom_info <- c(nd$Version, np, sub("R ([^;]*).*", "\\1", nd$Built))
-    writeLines(nvimcom_info, paste0(Sys.getenv("NVIMR_COMPLDIR"), "/nvimcom_info"))
+    writeLines(nvimcom_info, paste0(Sys.getenv("RNVIM_COMPLDIR"), "/nvimcom_info"))
 
     # Build omnils_, fun_ and args_ files, if necessary
     library("nvimcom", warn.conflicts = FALSE)
@@ -156,7 +156,7 @@ if (length(np) == 1) {
     libs <- libs[hasl]
     lver <- lver[hasl]
     cat(paste(libs, lver, collapse = '\n', sep = '_'),
-        '\n', sep = '', file = paste0(Sys.getenv("NVIMR_TMPDIR"), "/libnames_", Sys.getenv("NVIMR_ID")))
+        '\n', sep = '', file = paste0(Sys.getenv("RNVIM_TMPDIR"), "/libnames_", Sys.getenv("RNVIM_ID")))
     if (nvimcom:::nvim.buildomnils(libs) > 0)
         out("ECHO:  ")
     quit(save = "no")

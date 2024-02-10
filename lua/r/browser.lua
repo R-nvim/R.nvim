@@ -375,9 +375,9 @@ M.update_OB = function(what)
 
     local fcntt
     if wht == "GlobalEnv" then
-        fcntt = vim.fn.readfile(config.localtmpdir .. "/globenv_" .. vim.env.NVIMR_ID)
+        fcntt = vim.fn.readfile(config.localtmpdir .. "/globenv_" .. vim.env.RNVIM_ID)
     else
-        fcntt = vim.fn.readfile(config.localtmpdir .. "/liblist_" .. vim.env.NVIMR_ID)
+        fcntt = vim.fn.readfile(config.localtmpdir .. "/liblist_" .. vim.env.RNVIM_ID)
     end
 
     local obcur
@@ -513,7 +513,7 @@ M.on_BufUnload = function() send_to_nvimcom("N", "OnOBBufUnload") end
 
 M.print_list_tree = function()
     -- FIXME: document this function as a debugging tool or delete it and the
-    -- correspoding nvimrserver function.
+    -- correspoding rnvimserver function.
     job.stdin("Server", "37\n")
 end
 
