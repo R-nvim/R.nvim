@@ -13,7 +13,7 @@ local external_term_config = function()
     -- The Object Browser can run in a Tmux pane only if Neovim is inside a Tmux session
     config.objbr_place = string.gsub(config.objbr_place, "console", "script")
 
-    tmuxsname = "NvimR-"
+    tmuxsname = "Rnvim-"
         .. vim.fn.substitute(vim.fn.localtime(), ".*\\(...\\)", "\\1", "")
 
     if config.is_darwin then return end
@@ -98,8 +98,8 @@ local external_term_config = function()
 end
 
 local TmuxOption = function(option, isglobal)
-    local tmux_command = isglobal and "tmux -L NvimR show-options -gv "
-        or "tmux -L NvimR show-window-options -gv "
+    local tmux_command = isglobal and "tmux -L Rnvim show-options -gv "
+        or "tmux -L Rnvim show-window-options -gv "
     local result = vim.fn.system(tmux_command .. option)
     return vim.fn.substitute(result, "\n\\+$", "", "")
 end
@@ -159,7 +159,7 @@ M.start_extern_term = function(Rcmd)
 
     if config.is_darwin then
         open_cmd = string.format(
-            "tmux -L NvimR -2 %s new-session -s %s '%s'",
+            "tmux -L Rnvim -2 %s new-session -s %s '%s'",
             tmuxcnf,
             tmuxsname,
             cmd
@@ -170,7 +170,7 @@ M.start_extern_term = function(Rcmd)
         open_cmd = "open '" .. open_file .. "'"
     elseif term_name == "konsole" then
         open_cmd = string.format(
-            "%s 'tmux -L NvimR -2 %s new-session -s %s \"%s\"'",
+            "%s 'tmux -L Rnvim -2 %s new-session -s %s \"%s\"'",
             term_cmd,
             tmuxcnf,
             tmuxsname,
@@ -178,7 +178,7 @@ M.start_extern_term = function(Rcmd)
         )
     else
         open_cmd = string.format(
-            '%s tmux -L NvimR -2 %s new-session -s %s "%s"',
+            '%s tmux -L Rnvim -2 %s new-session -s %s "%s"',
             term_cmd,
             tmuxcnf,
             tmuxsname,
@@ -234,14 +234,14 @@ M.send_cmd_to_external_term = function(command, nl)
     local scmd
     if nl ~= false then
         scmd = string.format(
-            "tmux -L NvimR set-buffer '%s\n' ; tmux -L NvimR paste-buffer -t %s.%s",
+            "tmux -L Rnvim set-buffer '%s\n' ; tmux -L Rnvim paste-buffer -t %s.%s",
             str,
             tmuxsname,
             TmuxOption("pane-base-index", "window")
         )
     else
         scmd = string.format(
-            "tmux -L NvimR set-buffer '%s' ; tmux -L NvimR paste-buffer -t %s.%s",
+            "tmux -L Rnvim set-buffer '%s' ; tmux -L Rnvim paste-buffer -t %s.%s",
             str,
             tmuxsname,
             TmuxOption("pane-base-index", "window")

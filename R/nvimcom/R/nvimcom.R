@@ -2,7 +2,7 @@ NvimcomEnv <- new.env()
 NvimcomEnv$pkgdescr <- list()
 
 #' Function called by R when nvimcom is being loaded.
-#' R-Nvim creates environment variables and the start_options.R file to set
+#' R.nvim creates environment variables and the start_options.R file to set
 #' nvimcom options.
 .onLoad <- function(libname, pkgname) {
     if (Sys.getenv("RNVIM_TMPDIR") == "")

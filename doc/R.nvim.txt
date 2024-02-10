@@ -1,24 +1,24 @@
-*R-Nvim.txt*                                                  *R-Nvim*
-                                  R-Nvim
+*R.nvim.txt*                                                  *R.nvim*
+                                  R.nvim
                           Plugin to work with R
 
-Authors: R-Nvim-toolkit team
+Authors: R.nvim-toolkit team
 
 Version: 0.9.0
 For Neovim >= 0.9.0
 
- 1. Overview                                    |R-Nvim-overview|
- 2. Main features                               |R-Nvim-features|
- 3. Installation                                |R-Nvim-installation|
- 4. Use                                         |R-Nvim-use|
- 5. Known bugs and workarounds                  |R-Nvim-known-bugs|
- 6. Options                                     |R-Nvim-options|
- 7. Custom key bindings                         |R-Nvim-key-bindings|
- 8. News                                        |R-Nvim-news|
+ 1. Overview                                    |R.nvim-overview|
+ 2. Main features                               |R.nvim-features|
+ 3. Installation                                |R.nvim-installation|
+ 4. Use                                         |R.nvim-use|
+ 5. Known bugs and workarounds                  |R.nvim-known-bugs|
+ 6. Options                                     |R.nvim-options|
+ 7. Custom key bindings                         |R.nvim-key-bindings|
+ 8. News                                        |R.nvim-news|
 
 
 ==============================================================================
-1. Overview                                                  *R-Nvim-overview*
+1. Overview                                                  *R.nvim-overview*
 
 This plugin improves the support for editing R code with Neovim.
 
@@ -34,7 +34,7 @@ Git pull requests are welcome.
 
 
 ==============================================================================
-2. Main features                                             *R-Nvim-features*
+2. Main features                                             *R.nvim-features*
 
   * Integrated communication with R:
       - Start/Close R.
@@ -66,7 +66,7 @@ Git pull requests are welcome.
 
 
 ==============================================================================
-3. Installation                                          *R-Nvim-installation*
+3. Installation                                          *R.nvim-installation*
 
 The installation process is described in four sections:
 
@@ -87,7 +87,7 @@ Main dependencies:
       https://github.com/neovim/neovim/releases
       See also: https://github.com/neovim/neovim/wiki/Installing-Neovim
 
-      Also cmp-r if you want auto completion from R-Nvim:
+      Also cmp-r if you want auto completion from R.nvim:
       https://github.com/jalvesaq/cmp-r
 
 
@@ -96,11 +96,11 @@ Main dependencies:
 
    Notes about the R package `nvimcom`:
 
-     - The R package `nvimcom` is included in R-Nvim and is automatically
+     - The R package `nvimcom` is included in R.nvim and is automatically
        installed and updated whenever necessary. The package requires
        compilation by a C compiler (e.g. `gcc` or `clang`).
 
-     - You do not need to load nvimcom in your .Rprofile because the R-Nvim
+     - You do not need to load nvimcom in your .Rprofile because the R.nvim
        plugin sets the environment variable `R_DEFAULT_PACKAGES`, including
        `nvimcom` in the list of packages to be loaded on R startup. However,
        if you set the option `defaultPackages` in a .Rprofile, you should
@@ -156,7 +156,7 @@ For RMarkdown (`.Rmd`) and Quarto (`.qmd`) documents:
 ------------------------------------------------------------------------------
 3.2. Installation of the plugin
 
-It is recommended that you use a plugin manager to install R-Nvim.
+It is recommended that you use a plugin manager to install R.nvim.
 
 
 ------------------------------------------------------------------------------
@@ -197,14 +197,14 @@ If you see the following message in the R console:
 Try quitting both R and Neovim and starting them again.
 
 If you still see the message "The package nvimcom wasn't loaded yet" after
-starting R, then R-Nvim could not induce R to load nvimcom. R-Nvim sets the
+starting R, then R.nvim could not induce R to load nvimcom. R.nvim sets the
 environment variable `R_DEFAULT_PACKAGES` before starting R. If the variable
 already exists, the string ",nvimcom" is appended to it. However, if you set
 the option `defaultPackages` in your .Rprofile or in a .Rprofile in the
 current directory, the environment variable will be overridden. Thus, if you
 have to set the option `defaultPackages`, you should include "nvimcom" among
 the packages to be loaded. You might want to include "nvimcom" only if R was
-started by R-Nvim, as in the example below:
+started by R.nvim, as in the example below:
 >r
    if(Sys.getenv("RNVIM_TMPDIR") == ""){
        options(defaultPackages = c("utils", "grDevices", "graphics",
@@ -228,19 +228,19 @@ ones found in your systems' `PATH` (see |R_path| and |Rtools-path|).
 
 The plugin should work without the need of any configuration right after
 installed, but if you do not like how the plugin works, you could look at the
-section |R-Nvim-options| to see if there is an option that could make you
+section |R.nvim-options| to see if there is an option that could make you
 happier.
 
 You can also install additional plugins to get more useful functionality to
-edit R code. Please, access R-Nvim's wiki:
+edit R code. Please, access R.nvim's wiki:
 
-   https://github.com/jalvesaq/R-Nvim/wiki
+   https://github.com/jalvesaq/R.nvim/wiki
 
 
 ==============================================================================
-4. Use                                                            *R-Nvim-use*
+4. Use                                                            *R.nvim-use*
 
-By default, R-Nvim will run R in a built-in terminal emulator, but you can
+By default, R.nvim will run R in a built-in terminal emulator, but you can
 change this behavior (see |external_term|).
 
 
@@ -380,7 +380,7 @@ Help (plugin)
 Help (R)                                            :Rhelp
 -----------------------------------------------------------
 
-Please see |R-Nvim-key-bindings| to learn how to customize the key bindings
+Please see |R.nvim-key-bindings| to learn how to customize the key bindings
 without editing the plugin directly.
 
 The plugin commands that send code to R Console are the most commonly used. If
@@ -463,7 +463,7 @@ in each case:
    summary(x)
    summary(m)
 <
-R-Nvim will not check the class of the first object if the `=` operator is
+R.nvim will not check the class of the first object if the `=` operator is
 present. For example, in the two cases below you would get the generic help
 for `summary`:
 >r
@@ -491,9 +491,9 @@ the cursor is a data.frame or a matrix, instead of displaying the output of
 values separated by tab characters and display this file. The command
 <LocalLeader>vh will show the `head()` of the data.frame or matrix in a
 horizontal split that opens above the current window. This behavior can be
-customized, and you can configure R-Nvim to call an external application to
-display the data.frame or matrix (see |R-Nvim-df-view|). All files involved in
-these operations are created in R-Nvim's temporary directory and deleted when
+customized, and you can configure R.nvim to call an external application to
+display the data.frame or matrix (see |R.nvim-df-view|). All files involved in
+these operations are created in R.nvim's temporary directory and deleted when
 R quits.
 
 You can source all .R files in a directory with the Normal mode command
@@ -563,8 +563,8 @@ viewer:
    Skim:    <S-Cmd-Click>
    Sumatra: <Double-click>
 
-In any case, the pdf viewer must be started by the R-Nvim plugin. See
-|R-Nvim-SyncTeX| for details.
+In any case, the pdf viewer must be started by the R.nvim plugin. See
+|R.nvim-SyncTeX| for details.
 
 
 ------------------------------------------------------------------------------
@@ -573,7 +573,7 @@ In any case, the pdf viewer must be started by the R-Nvim plugin. See
 If `cmp-r` (a source for `nvim-cmp`) is installed, Neovim can
 automatically complete the names of R objects as you type them.
 
-R-Nvim does not complete the names of all functions of all installed packages
+R.nvim does not complete the names of all functions of all installed packages
 (see |R_start_libs|).
 
 For both `library()` and `require()`, when completing the first argument, the
@@ -701,7 +701,7 @@ put in your `init.lua`:
 <
 
 ==============================================================================
-5. Known bugs and workarounds                              *R-Nvim-known-bugs*
+5. Known bugs and workarounds                              *R.nvim-known-bugs*
 
 Known bugs that will not be fixed are listed in this section. Some of them can
 not be fixed because they depend on missing features in either R or Neovim;
@@ -712,14 +712,14 @@ others would be very time consuming to fix without breaking anything.
 5.1. R must be started by Neovim
 
 The communication between Neovim and R will work only if R was started by the
-running Neovim instance through the <LocalLeader>rf command. If you use R-Nvim
+running Neovim instance through the <LocalLeader>rf command. If you use R.nvim
 to start R in an external terminal and, then close Neovim and open it again,
 there will be no communication between R and the new Neovim instance.
 
 Please see the explanation on the communication between Neovim and R at the
 end of
 
-   https://github.com/jalvesaq/R-Nvim/blob/master/README.md
+   https://github.com/jalvesaq/R.nvim/blob/master/README.md
 
 
 ------------------------------------------------------------------------------
@@ -739,7 +739,7 @@ difficult to find errors in the code sent to R. Details:
 The plugin is only capable of recognizing functions defined using the `<-`
 operator. Also, only the current function scope is sent to R. See:
 
-   https://github.com/jalvesaq/R-Nvim/issues/34
+   https://github.com/jalvesaq/R.nvim/issues/34
 
 
 ------------------------------------------------------------------------------
@@ -761,12 +761,12 @@ as expected again after any valid code is executed in the R Console.
 5.5. Error if there is no package installed (Neovim on Windows only)
 
 On Windows, Neovim fails to recognize that a directory is not writable, and
-this is required by R-Nvim to detect if it is necessary to create the
-directory defined by `$R_LIBS_USER` environment variable. Consequently, R-Nvim
+this is required by R.nvim to detect if it is necessary to create the
+directory defined by `$R_LIBS_USER` environment variable. Consequently, R.nvim
 does no try to create the directory and nvimcom installation fails. This
 problem will happen if you have just installed or upgraded R. The workaround
 is to manually open R and install any package with the `install.packages()`
-command before using R-Nvim.
+command before using R.nvim.
 
 
 ------------------------------------------------------------------------------
@@ -782,17 +782,17 @@ The compilation of `nvimcom` during R startup will fail on Windows if your
 5.7 You can't put `syntax enable` in your `init.vim` (OS X only)
 
 It seems that if you put the command `syntax enable` in your `init.vim` on OS
-X, file type plugins are immediately sourced. Consequently, some R-Nvim
+X, file type plugins are immediately sourced. Consequently, some R.nvim
 variables (`disable_cmds`, and `user_maps_only`) will
 be used at their default values even if their values have been set in
 the `init.vim`. The workaround is do not include the superfluous command
 `syntax enable` in the `init.vim`. For details, please, access:
 
-   https://github.com/jalvesaq/R-Nvim/issues/668
+   https://github.com/jalvesaq/R.nvim/issues/668
 
 
 ==============================================================================
-6. Options                                                    *R-Nvim-options*
+6. Options                                                    *R.nvim-options*
 
 |auto_start|          Start R automatically
 |objbr_auto_start|    Start the Object Browser automatically
@@ -861,8 +861,8 @@ the `init.vim`. The workaround is do not include the superfluous command
 |fun_data_2|          Where the data.frame to complete function arguments is
 |quarto_intel|        Where the Quarto completion data is
 |remote_compldir|     Mount point of remote cache directory
-|R-Nvim-df-view|        Options for visualizing a data.frame or matrix
-|R-Nvim-SyncTeX|        Options for SyncTeX
+|R.nvim-df-view|        Options for visualizing a data.frame or matrix
+|R.nvim-SyncTeX|        Options for SyncTeX
 
 
 ------------------------------------------------------------------------------
@@ -907,12 +907,12 @@ If you need the <Esc> key in R, for example if you want to use `vi`, `vim` or
 Then, you will have to press the default <C-\><C-N> to go from Terminal to
 Normal mode.
 
-R-Nvim sets the option "editor" to a function that makes the object to be
+R.nvim sets the option "editor" to a function that makes the object to be
 edited in a new tab when `esc_term` = `true` (the default value).
 
                                                                *close_term*
 Neovim does not close its built-in terminal emulator when the application
-running in it quits, but R-Nvim does close it for you. If you rather prefer
+running in it quits, but R.nvim does close it for you. If you rather prefer
 that the terminal remains open after R quits, put in your config:
 >lua
    close_term = false
@@ -921,11 +921,11 @@ Neovim stops automatically scrolling the R Console if you move the cursor to
 any line that is not the last one. This emulates the behavior of other
 terminal emulator, but considering that (1) R only outputs something after we
 send a command to it, and (2) when we send a command to R, we want to see its
-output, R-Nvim will move the cursor to the last line of R Console before
+output, R.nvim will move the cursor to the last line of R Console before
 sending a command to it, forcing the auto scrolling of the terminal.
 
                                                                    *hl_term*
-If you are using Neovim, R-Nvim will move the cursor to the end of R Console's
+If you are using Neovim, R.nvim will move the cursor to the end of R Console's
 buffer before sending a command to force the scrolling R output, but you can
 put the line below in your |init.vim| to disable the auto scrolling of the
 terminal:
@@ -943,7 +943,7 @@ of colorout, you should set the value of `hl_term` in your config. Example:
 >lua
    hl_term = false
 <                                                                    *OutDec*
-Right after starting R, R-Nvim will try to detect if either the value of R's
+Right after starting R, R.nvim will try to detect if either the value of R's
 `OutDec` option is `","` or the current R script sets the `OutDec` option. If
 you are using Neovim to syntax highlight R's output and it is not correctly
 detecting R's `OutDec` option, then, to get numbers correctly recognized, you
@@ -961,7 +961,7 @@ avoid the width being set. Example:
 On Windows, the command is sent to R Console because it would crash R if sent
 through nvimcom.
 
-If you have the option 'number' set in your config, R-Nvim will calculate the
+If you have the option 'number' set in your config, R.nvim will calculate the
 number of columns available for R as the window width - 6. If you want a
 different adjustment, you should set `setwidth` as a negative value between
 -1 and -16. Example:
@@ -977,7 +977,7 @@ is, the width will be outdated for the first command executed after a change
 in the number of columns of the R Console window.
 
                                                                *buffer_opts*
-R-Nvim sets the options 'winfixwidth' and 'winfixheight' in the window where R
+R.nvim sets the options 'winfixwidth' and 'winfixheight' in the window where R
 runs. This prevents the window of being automatically resized in some
 circumstances. It also sets the option 'nobuflisted'. You can set the value of
 `buffer_opts` to define what options should be set in the R Console buffer.
@@ -1007,7 +1007,7 @@ Note: The options of this section are ignored on Mac OS X, where the command
 R will run in Neovim's built-in terminal emulator, unless you set the value of
 `external_term`, which can be a boolean value, the name of the terminal
 emulator or the complete command to run the terminal emulator. On Windows, the
-only boolean values are valid; if `true` R-Nvim will run `Rgui.exe`, and not
+only boolean values are valid; if `true` R.nvim will run `Rgui.exe`, and not
 really a terminal emulator.
 
 On Linux, the complete command for running the terminal is predefined for the
@@ -1062,7 +1062,7 @@ variable in your |init.lua|:
 >lua
    vim.env.PATH = "C:\\rtools40\\mingw64\\bin;C:\\rtools40\\usr\\bin;" .. $PATH
 <
-By default, R-Nvim will save the positions of R Console and Neovim windows
+By default, R.nvim will save the positions of R Console and Neovim windows
 when you quit R with the <LocalLeader>rq command, and it will restore the
 positions of the windows when you start R. If you do not like this behavior,
 you can put in your config:
@@ -1270,7 +1270,7 @@ in your system, you should set the value of `R_cmd` in your config.
 
 By default the value of `R_app` is `"R"` on Unix systems (such as Linux and
 Mac OS X). On Windows, it is `Rterm.exe` if R is going to run in a Neovim
-buffer and `"Rgui.exe"` otherwise. R-Nvim cannot send messages to `Rterm.exe`
+buffer and `"Rgui.exe"` otherwise. R.nvim cannot send messages to `Rterm.exe`
 in an external `cmd` window. If your R binary has a different name (for
 example, if it is called by a custom script), you should set the value of
 `R_app` in your config (and, perhaps, `R_cmd` too). Example:
@@ -1319,9 +1319,9 @@ scripts, put the following in your config:
 >lua
    Rout_more_colors = true
 <
-When syntax highlighting .Rout files, R-Nvim considers "> " as the prompt
+When syntax highlighting .Rout files, R.nvim considers "> " as the prompt
 string and "+ " as the continuation string. If you have defined different
-prompt and continuation strings in your `~/.Rprofile`, R-Nvim will try to get
+prompt and continuation strings in your `~/.Rprofile`, R.nvim will try to get
 them from R, but if they include special characters, you may have to define
 them in your |init.lua| too to avoid errors and get them properly highlighted.
 For example, if you have in your `~/.Rprofile`
@@ -1455,7 +1455,7 @@ lines one by one, put in your config:
 >lua
    parenblock = false
 <
-By default, when you press <LocalLeader>pp R-Nvim sends all contiguous lines
+By default, when you press <LocalLeader>pp R.nvim sends all contiguous lines
 to R, that is all lines above and below the current one that are not separated
 by an empty line. If you prefer that only lines from the cursor position to
 the end of the paragraph are sent, put in your config:
@@ -1484,7 +1484,7 @@ while others have no command to clear the console. You should set the value of
                                                            *commented_lines*
 
 When you send multiple lines of code to R (a selection of lines, a paragraph,
-code between two marks or an R chunk of code), R-Nvim saves the lines in a
+code between two marks or an R chunk of code), R.nvim saves the lines in a
 temporary file and, then, sends to R a command which calls `base::source()` to
 run the commands from the temporary file.
 
@@ -1499,7 +1499,7 @@ change the arguments passed to it. Examples:
 The option `commented_lines` was dropped because it unduly removed lines from
 multi-line raw strings if they included a hashtag. See:
 
-   https://github.com/jalvesaq/R-Nvim/issues/743
+   https://github.com/jalvesaq/R.nvim/issues/743
 
 
 ------------------------------------------------------------------------------
@@ -1509,12 +1509,12 @@ multi-line raw strings if they included a hashtag. See:
                                                               *texerr*
 
 To produce a pdf document from the .tex file generated by either `Sweave()` or
-`knit()` command, R-Nvim calls:
+`knit()` command, R.nvim calls:
 >
    latexmk -pdf -pdflatex="xelatex %O -file-line-error -interaction=nonstopmode -synctex=1 %S"
 <
 If `xelatex` is not installed, it will be replaced with `pdflatex` in the
-above command. If `latexmk` is not installed, R-Nvim will call either
+above command. If `latexmk` is not installed, R.nvim will call either
 `xelatex` or `pdflatex` directly.
 
 You can set the value `latexcmd` to change this behavior. `latexcmd` is a
@@ -1526,7 +1526,7 @@ elements are arguments to be passed to the command. Examples:
    latexcmd = {'latexmk', '-pdf', '-pdflatex="xelatex %O -synctex=1 %S"'}
 <
 The elements of `latexcmd` may contain double quotes (as in the last example
-above), but not single quotes, because R-Nvim will use single quotes to
+above), but not single quotes, because R.nvim will use single quotes to
 separate them in an R's `c()` command.
 
 If you want to pass arguments to the `Sweave()` function, set the value of the
@@ -1535,7 +1535,7 @@ If you want to pass arguments to the `Sweave()` function, set the value of the
 If the value of `texerr` is `true`, nvmimcom will output to R Console LaTeX
 errors and warnings produced by the compilation of the .tex document into
 .pdf. So, you do not have to scroll the R Console seeking for these messages.
-However, if R-Nvim cannot not find the LaTeX log file because it is not saved
+However, if R.nvim cannot not find the LaTeX log file because it is not saved
 in the same directory as the Rnoweb, you should set the value of
 `latex_build_dir`. Example:
 >lua
@@ -1583,14 +1583,14 @@ config, as in the examples:
 When one types <C-a> in the R Console the cursor goes to the beginning of the
 line and when one types <C-k> the characters to the right of the cursor are
 deleted. This is useful to avoid characters left on the R Console being mixed
-with commands sent by Neovim. But R-Nvim does not do this by default because
+with commands sent by Neovim. But R.nvim does not do this by default because
 control characters may cause problems in some circumstances. Hence, if you
-that R-Nvim adds <C-a><C-k> to every command put in your config:
+that R.nvim adds <C-a><C-k> to every command put in your config:
 >lua
    clear_line = true
 <
-R-Nvim reads your `~/.inputrc` and, if it finds the string "set editing-mode
-vi" it will send to R <Esc>0Da instead of <C-a><C-k>. If R-Nvim fails to
+R.nvim reads your `~/.inputrc` and, if it finds the string "set editing-mode
+vi" it will send to R <Esc>0Da instead of <C-a><C-k>. If R.nvim fails to
 detect that R is running in vi editing mode, you have to put this line in your
 config:
 >lua
@@ -1629,10 +1629,10 @@ The default value of `openpdf` is `1` on Mac OS X and `2` on Windows. On Linux,
 it is 2 on the X Server and on Sway Window Manager and 1 on other Wayland
 compositors.
 
-On Windows, R-Nvim will call Sumatra to open the PDF, and, on Mac OS X, it
+On Windows, R.nvim will call Sumatra to open the PDF, and, on Mac OS X, it
 will call Skim. On Linux, you can change the value of `pdfviewer` in your
 config to define what PDF viewer will be called. Valid values are "zathura"
-(default, and the one best integrated with R-Nvim), "evince" and "okular".
+(default, and the one best integrated with R.nvim), "evince" and "okular".
 
 On Linux, if running on the X server (not on Wayland), the application
 `wmctrl` is required to raise both the PDF viewer and Neovim windows. If using
@@ -1650,13 +1650,13 @@ The meanings of different values of `openhtml` are:
    0: Never open the html.
    1: Always open the html.
 
-The browser application called by R-Nvim is whatever is returned by the R
-command `getOption("browser")`, unless it is NULL. In this case, R-Nvim will
+The browser application called by R.nvim is whatever is returned by the R
+command `getOption("browser")`, unless it is NULL. In this case, R.nvim will
 call `open` on both Windows and Mac OS X, and `xdg-open` on Linux.
 
 Most browser will open a new tab each time they are called instead of
 refreshing a document that is already open. So, if you rather prefer that
-R-Nvim never tries to open the web browser, put in your config:
+R.nvim never tries to open the web browser, put in your config:
 >lua
    openhtml = false
 <
@@ -1671,7 +1671,7 @@ options (see |quarto_render_args|).
 ------------------------------------------------------------------------------
 6.25. Allow R commands in insert mode                     *insert_mode_cmds*
 
-R-Nvim commands are enabled for Normal mode, but most of them can also be
+R.nvim commands are enabled for Normal mode, but most of them can also be
 enabled in Insert mode. However, depending on your <LocalLeader>, this can
 make it very difficult to write R packages or Sweave files.  For example, if
 <LocalLeader> is set to the `\` character, typing `\dQuote` in a .Rd file
@@ -1691,7 +1691,7 @@ you prefer to remove only visible objects, put in your config:
 >lua
    rmhidden = false
 <
-After removing the objects, R-Nvim will also send CTRL-L to the R Console to
+After removing the objects, R.nvim will also send CTRL-L to the R Console to
 clear the screen. If you have set vi mode in your `~/.inputrc` you might also
 want to set CTRL-L to clear the screen, as explained at
 
@@ -1724,7 +1724,7 @@ Lines of Python code are sent to R Console as arguments to
 ------------------------------------------------------------------------------
 6.29. Time to wait for nvimcom loading                                *wait*
 
-R-Nvim asynchronously waits 60 seconds for the nvimcom package to be loaded
+R.nvim asynchronously waits 60 seconds for the nvimcom package to be loaded
 during R startup. If 60 seconds are not enough to your R startup, then set a
 higher value for the variable in your config. Example:
 >lua
@@ -1734,8 +1734,8 @@ higher value for the variable in your config. Example:
 ------------------------------------------------------------------------------
 6.30. Time to wait for R reply                                  *wait_reply*
 
-By default R-Nvim waits 2 seconds for R to reply after a request for omni
-completion is issued. You can set the amount of time R-Nvim waits (in seconds)
+By default R.nvim waits 2 seconds for R to reply after a request for omni
+completion is issued. You can set the amount of time R.nvim waits (in seconds)
 in your config.  Example:
 >lua
    wait_reply = 5
@@ -1754,7 +1754,7 @@ as Neovim's working directory, put in your config:
 <
 This option is useful only for those who did not enable 'autochdir'.
 
-If you prefer that R-Nvim does not set the working directory in any way, put
+If you prefer that R.nvim does not set the working directory in any way, put
 in config:
 >lua
    nvim_wd = -1
@@ -1774,26 +1774,26 @@ Object Browser opening, set the `hook` config option, as in the example below:
 <
 
 ------------------------------------------------------------------------------
-6.34. Disable R-Nvim commands
+6.34. Disable R.nvim commands
                                                             *user_maps_only*
                                                             *disable_cmds*
                                                             *filetypes*
 
-The R-Nvim sets many default key bindings.  The user can set custom
-key bindings (|R-Nvim-key-bindings|).  If you wish R-Nvim to only
+The R.nvim sets many default key bindings.  The user can set custom
+key bindings (|R.nvim-key-bindings|).  If you wish R.nvim to only
 use those key-bindings specified by the user, put in your config:
 >lua
     user_maps_only = true
 <
-If you want to disable only some of R-Nvim commands, create a Vim list with
+If you want to disable only some of R.nvim commands, create a Vim list with
 their key bindings names in your config. The complete list of key bindings
-names is shown at the Custom key bindings section (R-Nvim-key-bindings).
+names is shown at the Custom key bindings section (R.nvim-key-bindings).
 Below is an example on how to disable the commands that sends `setwd()` and
 `dput()` to R Console:
 >lua
    disable_cmds = {'RSetwd', 'RDputObj'}
 <
-If you want to disable R-Nvim for a specific file type, create the variable
+If you want to disable R.nvim for a specific file type, create the variable
 `R_filetypes` with a list of file types that should be supported. Example:
 >lua
    vim.g.R_filetypes = {'r', 'rmd', 'rnoweb', 'quarto', 'rhelp'}
@@ -1812,7 +1812,7 @@ stored by setting in your config the values of `tmpdir` and
 `compldir`, as in the example below:
 >lua
    tmpdir = '/dev/shm/R_tmp_dir'
-   compldir = '~/.cache/R-Nvim'
+   compldir = '~/.cache/R.nvim'
 <
 The default paths of these directories depend on the operating system. If you
 want to know what they are, while editing an R file, do in Normal mode:
@@ -1828,13 +1828,13 @@ want to know what they are, while editing an R file, do in Normal mode:
                                                               *quarto_intel*
 
 There are two ways of getting automatic completion of R objects names while
-you type: using R-Nvim's built-in completion system (as a source for
+you type: using R.nvim's built-in completion system (as a source for
 `nvim-cmp`) and using a language server. See:
 
    https://github.com/jalvesaq/cmp-r
    https://github.com/REditorSupport/languageserver
 
-The advantage of R-Nvim's built-in system is the ability to complete objects
+The advantage of R.nvim's built-in system is the ability to complete objects
 of the R's workspace (`.GlobalEnv`), including column names of data.frames.
 
 Note: If you are using the `languageserver` package, you should disable its
@@ -1848,14 +1848,14 @@ auto completion feature in your `~/.Rprofile` to get completions from
 If you prefer to get completions from the language server, `cmp-r` should
 not be installed.
 
-While completing function arguments, R-Nvim may include column names from the
+While completing function arguments, R.nvim may include column names from the
 data.frame passed as the first argument, and you may set in your config the
 list of functions that might benefit from this kind of completion. The example
 below sets `fun_data_1` to its default value:
 >lua
    fun_data_1 = {'select', 'rename', 'mutate', 'filter'}
 
-R-Nvim can also include column names from a data.frame passed as the first
+R.nvim can also include column names from a data.frame passed as the first
 argument of the parent function. For example, if you were typing
 >r
    with(my_data_frame, lm(
@@ -1878,14 +1878,14 @@ very simple and would wrongly recognize `data` as the name of the
 >r
    ggplot(data = my_data_frame, mapping = aes(
 <
-R-Nvim receives the list of objects for auto completion from the nvimrserver
+R.nvim receives the list of objects for auto completion from the nvimrserver
 job running in the background. If the list is too big to be transmitted
 through nvimrserver's `stdout`, the completion might be aborted.
 
-If editing Quarto documents, R-Nvim will try to find the file
+If editing Quarto documents, R.nvim will try to find the file
 `yaml-intelligence-resources.json` which is part of `quarto` application and
 has all necessary information for completion of valid YAML options in an
-Quarto document. If R-Nvim fails to find the file, you can set the value of
+Quarto document. If R.nvim fails to find the file, you can set the value of
 `quarto_intel` in your config. Example:
 >lua
    quarto_intel = '~/Downloads/quarto-1.1.251/share/editor/tools/yaml/yaml-intelligence-resources.json'
@@ -1894,22 +1894,22 @@ Quarto document. If R-Nvim fails to find the file, you can set the value of
 ------------------------------------------------------------------------------
 6.37. Options for accessing Remote R from local Neovim        *remote_compldir*
 
-See https://github.com/jalvesaq/R-Nvim/wiki/Remote-access
+See https://github.com/jalvesaq/R.nvim/wiki/Remote-access
 
 
 ------------------------------------------------------------------------------
 6.38. View a data.frame or matrix
-                                                              *R-Nvim-df-view*
+                                                              *R.nvim-df-view*
                                                               *csv_app*
                                                               *csv_delim*
 
 
 You can see data.frames and matrices in external applications with
-<LocalLeader>rv. By default, R-Nvim will generate a `tsv` file from the
+<LocalLeader>rv. By default, R.nvim will generate a `tsv` file from the
 `data.frame` or `matrix` and display it in a new tab. But you can change this
 by setting the value of `csv_app` which must be a string.
 
-If `csv_app` begins with "terminal:", R-Nvim will open a new tab with the
+If `csv_app` begins with "terminal:", R.nvim will open a new tab with the
 application running in a terminal emulator. For example, if you want to use
 Visidata to see tabular data, put in your config:
 >lua
@@ -1919,7 +1919,7 @@ If you are running Neovim within Tmux, you may prefer:
 >lua
    csv_app = 'tmux new-window vd'
 <
-If `csv_app` begins with ":", R-Nvim will append the name of the tsv file
+If `csv_app` begins with ":", R.nvim will append the name of the tsv file
 and |:execute| the command. Example:
 >lua
    csv_app = ':vsplit'
@@ -1943,7 +1943,7 @@ in your config. Valid values are `"\t"`, `";"` and `","`. Example:
 >lua
    csv_delim = ','
 <
-There is also the option of configuring R-Nvim to run an R command to
+There is also the option of configuring R.nvim to run an R command to
 display the data. Examples:
 >lua
    df_viewer = "relimp::showData(%s, font = 'Courier 14')"
@@ -1953,11 +1953,11 @@ name of the object under the cursor.
 
 
 ------------------------------------------------------------------------------
-6.39. SyncTeX support                                         *R-Nvim-SyncTeX*
+6.39. SyncTeX support                                         *R.nvim-SyncTeX*
 
 SyncTeX is a communication system used by some PDF viewers and by some text
 editors which allow users to jump from a specific line in the text editor to
-the corresponding line in the PDF viewer and vice-versa. R-Nvim has support
+the corresponding line in the PDF viewer and vice-versa. R.nvim has support
 for SyncTeX in five applications:
 
    Linux:   Zathura, Evince and Okular
@@ -2006,9 +2006,9 @@ Example:
 <
 
 ==============================================================================
-7. Custom key bindings                                   *R-Nvim-key-bindings*
+7. Custom key bindings                                   *R.nvim-key-bindings*
 
-When creating custom key bindings for R-Nvim, it is necessary to create three
+When creating custom key bindings for R.nvim, it is necessary to create three
 maps for most functions because the way the function is called is different in
 each Vim mode. Thus, key bindings must be made for Normal mode, Insert mode,
 and Visual mode.
@@ -2173,8 +2173,8 @@ See also: |source|.
 
 
 ==============================================================================
-8. News                                                          *R-Nvim-news*
+8. News                                                          *R.nvim-news*
 
-For old news, see https://github.com/jalvesaq/Nvim-R
+For old news, see: https://github.com/jalvesaq/Nvim-R
 
 vim:tw=78:ts=8:ft=help:norl

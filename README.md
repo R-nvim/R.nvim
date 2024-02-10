@@ -1,20 +1,20 @@
-![Selene linter check](https://github.com/jalvesaq//tmp-R-Nvim/actions/workflows/selene.yml/badge.svg)
+![Selene linter check](https://github.com/jalvesaq/tmp-R-Nvim/actions/workflows/selene.yml/badge.svg)
 
-# R-Nvim
+# R.nvim
 
-This is the development code of R-Nvim which improves Neovim's support to edit
+This is the development code of R.nvim which improves Neovim's support to edit
 R scripts.
 
 ## Installation
 
 If you use a plugin manager, follow its instructions on how to install plugins
 from GitHub. Users of [lazy.nvim](https://github.com/folke/lazy.nvim) who
-opted for `defaults.lazy=true` have to configure R-Nvim with `lazy=false`.
+opted for `defaults.lazy=true` have to configure R.nvim with `lazy=false`.
 Example of configuration for `lazy.nvim`:
 
 ```lua
     {
-        'jalvesaq/tmp-R-Nvim',
+        'R.nvim/R.nvim',
         init = function ()
             vim.keymap.set('n', '<LocalLeader>rf', '<Plug>RStart')
             vim.keymap.set('n', '<LocalLeader>rq', '<Plug>RClose')

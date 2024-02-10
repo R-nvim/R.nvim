@@ -8,7 +8,7 @@ M.open = function(fullpath)
 end
 
 M.SyncTeX_forward = function(_, _, _, _)
-    warn("R-Nvim has no support for SyncTeX with '" .. cfg.pdfviewer .. "'")
+    warn("R.nvim has no support for SyncTeX with '" .. cfg.pdfviewer .. "'")
 end
 
 return M

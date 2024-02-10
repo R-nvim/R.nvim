@@ -188,7 +188,7 @@ local RInitExit = function(_, data, _)
         RWarn = {}
         MkRdir()
     elseif data == 72 and not config.is_windows and not pkgbuild_attempt then
-        -- R-Nvim/R/nvimcom directory not found. Perhaps R running in remote machine...
+        -- R.nvim/R/nvimcom directory not found. Perhaps R running in remote machine...
         -- Try to use local R to build the nvimcom package.
         pkgbuild_attempt = true
         if vim.fn.executable("R") == 1 then

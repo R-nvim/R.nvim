@@ -111,9 +111,9 @@ M.source_lines = function(lines, verbose, what)
         vim.fn.writefile(lines, config.source_write)
         local sargs = string.gsub(M.get_source_args(verbose), "^, ", "")
         if what then
-            rcmd = "NvimR." .. what .. "(" .. sargs .. ")"
+            rcmd = "Rnvim." .. what .. "(" .. sargs .. ")"
         else
-            rcmd = "NvimR.source(" .. sargs .. ")"
+            rcmd = "Rnvim.source(" .. sargs .. ")"
         end
     end
 
