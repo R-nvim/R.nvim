@@ -45,7 +45,7 @@ end
 -- @param cmd The command to execute.
 -- @param job_id The ID of the job that produced the command.
 local exec_stdout_cmd = function (cmd, job_id)
-    if cmd:match("^(lua |call |let)")then
+    if cmd:find("^lua ") or cmd:find("^let ") or cmd:find("^call ") then
         vim.fn.execute(cmd)
     else
         if cmd:len() > 128 then cmd = cmd:sub(1, 128) .. " [...]" end
@@ -111,11 +111,6 @@ M.on_exit = function(job_id, data, _)
     if key ~= "Job" then jobs[key] = 0 end
     if data ~= 0 then warn('"' .. key .. '"' .. " exited with status " .. data) end
     if key == "R" or key == "RStudio" then
-        if M.is_running("Server") then
-            vim.g.R_Nvim_status = 3
-        else
-            vim.g.R_Nvim_status = 1
-        end
         require("r.run").clear_R_info()
     end
     if key == "Server" then vim.g.R_Nvim_status = 1 end
@@ -188,6 +183,15 @@ M.stop_nrs = function()
             vim.wait(20)
         end
     end
+end
+
+-- Only called by R when finishing a session in a external terminal emulator.
+-- We do know when the terminal exits, but when the terminal is closed Tmux is
+-- only detached and R keeps running.
+M.end_of_R_session = function ()
+    vim.notify("end of R session")
+    jobs["R"] = 0
+    require("r.run").clear_R_info()
 end
 
 return M

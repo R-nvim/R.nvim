@@ -103,3 +103,12 @@ send_nvimcom_info <- function(Rpid) {
                   "', ", Rpid, ", '", winID, "', '", NvimcomEnv$info[2], "')")
     .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
 }
+
+# registered by reg.finalizer() to be called when R is quitting. Only
+# necessary if running in a external terminal emulator.
+final_msg <- function(e) {
+    .C("nvimcom_msg_to_nvim",
+       "lua require('r.job').end_of_R_session()",
+       PACKAGE = "nvimcom")
+    return(invisible(NULL))
+}

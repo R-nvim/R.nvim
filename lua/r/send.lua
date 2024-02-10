@@ -41,7 +41,13 @@ end
 
 local M = {}
 
-M.set_send_cmd_fun = function()
+--- Change the pointer to the function used to send commands to R.
+---@param running boolean True if R is running
+M.set_send_cmd_fun = function(running)
+    if not running then
+        M.cmd = M.not_running
+        return
+    end
     if config.RStudio_cmd then
         M.cmd = require("r.rstudio").send_cmd_to_RStudio
     elseif type(config.external_term) == "boolean" and config.external_term == false then
@@ -99,6 +105,8 @@ M.source_lines = function(lines, verbose, what)
     -- FIXME: document it
     if config.source_args == "bracketed paste" then
         rcmd = "\027[200~" .. table.concat(lines, "\n") .. "\027[201~"
+    elseif config.source_args == "unbracketed paste" then
+        rcmd = table.concat(lines, "\n")
     else
         vim.fn.writefile(lines, config.source_write)
         local sargs = string.gsub(M.get_source_args(verbose), "^, ", "")
@@ -141,11 +149,22 @@ M.source_file = function(e)
 
     if config.is_windows then fpath = utils.normalize_windows_path(fpath) end
 
-    vim.fn.writefile(vim.fn.getline(1, "$"), fpath)
-    edit.add_for_deletion(fpath)
-    local sargs = M.get_source_args(e)
-    local ok = M.cmd('nvimcom:::source.and.clean("' .. fpath .. '"' .. sargs .. ")")
-    if not ok then vim.fn.delete(fpath) end
+    if config.source_args:find("bracketed") then
+        -- Send the whole set of lines to RConsole as a single string
+        M.source_lines(vim.fn.getline(1, "$"), e, "file")
+    else
+        -- Source the file.
+        -- Create a temporary copy of the buffer because the file might have
+        -- unsaved changes.
+        -- Create the temporary file at the same directory because the code might
+        -- have commands depending on the current directory not changing and
+        -- `vim.o.autochdir` might be `true`.
+        vim.fn.writefile(vim.fn.getline(1, "$"), fpath)
+        edit.add_for_deletion(fpath)
+        local sargs = M.get_source_args(e)
+        local ok = M.cmd('nvimcom:::source.and.clean("' .. fpath .. '"' .. sargs .. ")")
+        if not ok then vim.fn.delete(fpath) end
+    end
 end
 
 -- Send the current paragraph to R. If m == 'down', move the cursor to the
