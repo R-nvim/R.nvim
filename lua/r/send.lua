@@ -311,7 +311,7 @@ M.marked_block = function(m)
     if lineB < vim.fn.line("$") then lineB = lineB - 1 end
 
     local lines = vim.fn.getline(lineA, lineB)
-    local ok = M.source_lines(lines, e, "block")
+    local ok = M.source_lines(lines, "block")
 
     if ok == 0 then return end
 
@@ -395,14 +395,14 @@ M.selection = function(m)
 
     local ok
     if ispy then
-        ok = M.source_lines(lines, e, "PythonCode")
+        ok = M.source_lines(lines, "PythonCode")
     else
-        ok = M.source_lines(lines, e, "selection")
+        ok = M.source_lines(lines, "selection")
     end
 
     if ok == 0 then return end
 
-    if e == "down" then cursor.move_next_line() end
+    if m == "down" then cursor.move_next_line() end
 end
 
 --- Send current line to R Console

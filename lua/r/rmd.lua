@@ -52,11 +52,11 @@ M.write_chunk = function()
 end
 
 -- Send Python chunk to R
-local send_py_chunk = function(e, m)
+local send_py_chunk = function(m)
     local chunkline = vim.fn.search("^[ \t]*```[ ]*{python", "bncW") + 1
     local docline = vim.fn.search("^[ \t]*```", "ncW") - 1
     local lines = vim.fn.getline(chunkline, docline)
-    local ok = send.source_lines(lines, e, "PythonCode")
+    local ok = send.source_lines(lines, "PythonCode")
     if ok == 0 then return end
     if m == "down" then M.RmdNextChunk() end
 end
@@ -68,14 +68,14 @@ M.send_R_chunk = function(m)
         if M.is_in_Py_code(0) == 0 then
             warn("Not inside an R code chunk.")
         else
-            send_py_chunk(e, m)
+            send_py_chunk(m)
         end
         return
     end
     local chunkline = vim.fn.search("^[ \t]*```[ ]*{r", "bncW") + 1
     local docline = vim.fn.search("^[ \t]*```", "ncW") - 1
     local lines = vim.fn.getline(chunkline, docline)
-    local ok = send.source_lines(lines, e, "chunk")
+    local ok = send.source_lines(lines, "chunk")
     if ok == 0 then return end
     if m == "down" then M.next_chunk() end
 end
