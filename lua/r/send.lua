@@ -279,7 +279,7 @@ end
 
 -- Send block to R (Adapted from marksbrowser plugin)
 -- Function to get the marks which the cursor is between
-M.marked_block = function(e, m)
+M.marked_block = function(m)
     if vim.o.filetype ~= "r" and not vim.b.IsInRCode(true) then return end
 
     local curline = vim.fn.line(".")
@@ -321,7 +321,7 @@ M.marked_block = function(e, m)
     end
 end
 
-M.selection = function(e, m)
+M.selection = function(m)
     local ispy = false
 
     if vim.o.filetype ~= "r" then

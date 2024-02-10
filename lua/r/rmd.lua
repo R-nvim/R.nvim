@@ -62,7 +62,7 @@ local send_py_chunk = function(e, m)
 end
 
 -- Send R chunk to R
-M.send_R_chunk = function(e, m)
+M.send_R_chunk = function(m)
     if M.is_in_R_code(0) == 2 then vim.fn.cursor(vim.fn.line(".") + 1, 1) end
     if M.is_in_R_code(0) ~= 1 then
         if M.is_in_Py_code(0) == 0 then

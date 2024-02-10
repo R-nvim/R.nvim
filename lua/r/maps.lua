@@ -130,28 +130,21 @@ end
 
 local send = function(file_type)
     -- Block
-    create_maps("ni",  "RSendMBlock",      "bb", "<Cmd>lua require('r.send').marked_block('silent', 'stay')")
-    create_maps("ni",  "RESendMBlock",     "be", "<Cmd>lua require('r.send').marked_block('echo',   'stay')")
-    create_maps("ni",  "RDSendMBlock",     "bd", "<Cmd>lua require('r.send').marked_block('silent', 'down')")
-    create_maps("ni",  "REDSendMBlock",    "ba", "<Cmd>lua require('r.send').marked_block('echo',   'down')")
+    create_maps("ni",  "RSendMBlock",      "bb", "<Cmd>lua require('r.send').marked_block('stay')")
+    create_maps("ni",  "RDSendMBlock",     "bd", "<Cmd>lua require('r.send').marked_block('down')")
 
     -- Function
-    create_maps("nvi", "RSendFunction",    "ff", "<Cmd>lua require('r.send').fun('silent', 'stay')")
-    create_maps("nvi", "RDSendFunction",   "fe", "<Cmd>lua require('r.send').fun('echo',   'stay')")
-    create_maps("nvi", "RDSendFunction",   "fd", "<Cmd>lua require('r.send').fun('silent', 'down')")
-    create_maps("nvi", "RDSendFunction",   "fa", "<Cmd>lua require('r.send').fun('echo',   'down')")
+    -- Not currently implemented
+    -- create_maps("nvi", "RSendFunction",    "ff", "<Cmd>lua require('r.send').fun('stay')")
+    -- create_maps("nvi", "RDSendFunction",   "fd", "<Cmd>lua require('r.send').fun('down')")
 
     -- Selection
-    create_maps("nv",   "RSendSelection",   "ss", "<Cmd>lua require('r.send').selection('silent', 'stay')")
-    create_maps("nv",   "RESendSelection",  "se", "<Cmd>lua require('r.send').selection('echo',   'stay')")
-    create_maps("nv",   "RDSendSelection",  "sd", "<Cmd>lua require('r.send').selection('silent', 'down')")
-    create_maps("nv",   "REDSendSelection", "sa", "<Cmd>lua require('r.send').selection('echo',   'down')")
+    create_maps("nv",   "RSendSelection",   "ss", "<Cmd>lua require('r.send').selection('stay')")
+    create_maps("nv",   "RDSendSelection",  "sd", "<Cmd>lua require('r.send').selection('down')")
 
     -- Paragraph
-    create_maps("ni", "RSendParagraph",   "pp", "<Cmd>lua require('r.send').paragraph('silent', 'stay')")
-    create_maps("ni", "RESendParagraph",  "pe", "<Cmd>lua require('r.send').paragraph('echo',   'stay')")
-    create_maps("ni", "RDSendParagraph",  "pd", "<Cmd>lua require('r.send').paragraph('silent', 'down')")
-    create_maps("ni", "REDSendParagraph", "pa", "<Cmd>lua require('r.send').paragraph('echo',   'down')")
+    create_maps("ni", "RSendParagraph",   "pp", "<Cmd>lua require('r.send').paragraph('stay')")
+    create_maps("ni", "RDSendParagraph",  "pd", "<Cmd>lua require('r.send').paragraph('down')")
 
     if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
         create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
@@ -176,10 +169,8 @@ local send = function(file_type)
     end
     if file_type == "rmd" or file_type == "quarto" then
         create_maps("nvi", "RKnit",           "kn", "<Cmd>lua require('r.run').knit()")
-        create_maps("ni",  "RSendChunk",      "cc", "<Cmd>lua require('r.rmd').send_R_chunk('silent', 'stay')")
-        create_maps("ni",  "RESendChunk",     "ce", "<Cmd>lua require('r.rmd').send_R_chunk('echo',   'stay')")
-        create_maps("ni",  "RDSendChunk",     "cd", "<Cmd>lua require('r.rmd').send_R_chunk('silent', 'down')")
-        create_maps("ni",  "REDSendChunk",    "ca", "<Cmd>lua require('r.rmd').send_R_chunk('echo',   'down')")
+        create_maps("ni",  "RSendChunk",      "cc", "<Cmd>lua require('r.rmd').send_R_chunk('stay')")
+        create_maps("ni",  "RDSendChunk",     "cd", "<Cmd>lua require('r.rmd').send_R_chunk('down')")
         create_maps("n",   "RNextRChunk",     "gn", "<Cmd>lua require('r.rmd').next_chunk()")
         create_maps("n",   "RPreviousRChunk", "gN", "<Cmd>lua require('r.rmd').previous_chunk()")
     end
@@ -198,10 +189,8 @@ local send = function(file_type)
         create_maps("nvi", "RKnit",        "kn", "<Cmd>lua require('r.rnw').weave('nobib',  true, false)")
         create_maps("nvi", "RMakePDFK",    "kp", "<Cmd>lua require('r.rnw').weave('nobib',  true, true)")
         create_maps("nvi", "RBibTeXK",     "kb", "<Cmd>lua require('r.rnw').weave('bibtex', true, true)")
-        create_maps("ni",  "RSendChunk",   "cc", "<Cmd>lua require('r.rnw').send_chunk('silent', 'stay')")
-        create_maps("ni",  "RESendChunk",  "ce", "<Cmd>lua require('r.rnw').send_chunk('echo',   'stay')")
-        create_maps("ni",  "RDSendChunk",  "cd", "<Cmd>lua require('r.rnw').send_chunk('silent', 'down')")
-        create_maps("ni",  "REDSendChunk", "ca", "<Cmd>lua require('r.rnw').send_chunk('echo',   'down')")
+        create_maps("ni",  "RSendChunk",   "cc", "<Cmd>lua require('r.rnw').send_chunk('stay')")
+        create_maps("ni",  "RDSendChunk",  "cd", "<Cmd>lua require('r.rnw').send_chunk('down')")
         create_maps("nvi", "ROpenPDF",     "op", "<Cmd>lua require('r.pdf').open('Get Master')")
         if config.synctex then
             create_maps("ni", "RSyncFor", "gp", "<Cmd>lua require('r.rnw').SyncTeX_forward(false)")

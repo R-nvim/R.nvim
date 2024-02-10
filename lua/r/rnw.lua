@@ -289,7 +289,7 @@ M.weave = function(bibtex, knit, pdf)
 end
 
 -- Send Sweave chunk to R
-M.send_chunk = function(e, m)
+M.send_chunk = function(m)
     local chunk_type = M.is_in_R_code(true)
     if chunk_type == 2 then
         vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
