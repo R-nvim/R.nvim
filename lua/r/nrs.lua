@@ -146,11 +146,11 @@ local StartNServer = function()
     end
 
     -- Options in the nvimrserver application are set through environment variables
-    if config.objbr_opendf then nrs_env["NVIMR_OPENDF"] = "TRUE" end
-    if config.objbr_openlist then nrs_env["NVIMR_OPENLS"] = "TRUE" end
-    if config.objbr_allnames then nrs_env["NVIMR_OBJBR_ALLNAMES"] = "TRUE" end
-    nrs_env["NVIMR_RPATH"] = config.R_cmd
-    nrs_env["NVIMR_LOCAL_TMPDIR"] = config.localtmpdir
+    if config.objbr_opendf then nrs_env["RNVIM_OPENDF"] = "TRUE" end
+    if config.objbr_openlist then nrs_env["RNVIM_OPENLS"] = "TRUE" end
+    if config.objbr_allnames then nrs_env["RNVIM_OBJBR_ALLNAMES"] = "TRUE" end
+    nrs_env["RNVIM_RPATH"] = config.R_cmd
+    nrs_env["RNVIM_LOCAL_TMPDIR"] = config.localtmpdir
 
     -- We have to set R's home directory on Windows because nvimrserver will
     -- run R to build the list for omni completion.
@@ -223,8 +223,8 @@ local RInitExit = function(_, data, _)
     RBerr = {}
     RBout = {}
     edit.add_for_deletion(config.tmpdir .. "/bo_code.R")
-    edit.add_for_deletion(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.NVIMR_ID)
-    edit.add_for_deletion(config.tmpdir .. "/libnames_" .. vim.env.NVIMR_ID)
+    edit.add_for_deletion(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.RNVIM_ID)
+    edit.add_for_deletion(config.tmpdir .. "/libnames_" .. vim.env.RNVIM_ID)
     if #RWarn > 0 then
         local wrn = table.concat(RWarn, "\n")
         edit.add_to_debug_info("RInit Warning", wrn)
@@ -359,14 +359,14 @@ end
 -- support syntax highlighting and omni completion of default libraries' objects.
 M.update_Rhelp_list = function()
     if
-        vim.fn.filereadable(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.NVIMR_ID)
+        vim.fn.filereadable(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.RNVIM_ID)
         == 0
     then
         return
     end
 
     local libs_in_nrs =
-        vim.fn.readfile(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.NVIMR_ID)
+        vim.fn.readfile(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.RNVIM_ID)
     for _, lib in ipairs(libs_in_nrs) do
         AddToRhelpList(lib)
     end

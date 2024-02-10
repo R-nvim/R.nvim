@@ -375,9 +375,9 @@ M.update_OB = function(what)
 
     local fcntt
     if wht == "GlobalEnv" then
-        fcntt = vim.fn.readfile(config.localtmpdir .. "/globenv_" .. vim.env.NVIMR_ID)
+        fcntt = vim.fn.readfile(config.localtmpdir .. "/globenv_" .. vim.env.RNVIM_ID)
     else
-        fcntt = vim.fn.readfile(config.localtmpdir .. "/liblist_" .. vim.env.NVIMR_ID)
+        fcntt = vim.fn.readfile(config.localtmpdir .. "/liblist_" .. vim.env.RNVIM_ID)
     end
 
     local obcur

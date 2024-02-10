@@ -206,7 +206,7 @@ have to set the option `defaultPackages`, you should include "nvimcom" among
 the packages to be loaded. You might want to include "nvimcom" only if R was
 started by R-Nvim, as in the example below:
 >r
-   if(Sys.getenv("NVIMR_TMPDIR") == ""){
+   if(Sys.getenv("RNVIM_TMPDIR") == ""){
        options(defaultPackages = c("utils", "grDevices", "graphics",
                                    "stats", "methods"))
    } else {
@@ -581,8 +581,8 @@ popup list shows the names of installed packages.
 
 Neovim uses one file to store the names of .GlobalEnv objects and a list of
 files for all other objects. The .GlobalEnv list is stored in the
-`$NVIMR_TMPDIR` directory and is deleted when you quit Neovim. The other files
-are stored in the `$NVIMR_COMPLDIR` directory, are automatically updated and
+`$RNVIM_TMPDIR` directory and is deleted when you quit Neovim. The other files
+are stored in the `$RNVIM_COMPLDIR` directory, are automatically updated and
 remain available unless you manually delete them.
 
 

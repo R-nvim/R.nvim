@@ -652,7 +652,7 @@ nvim.buildomnils <- function(p) {
     options(nvimcom.verbose = 0)
 
     pvi <- utils::packageDescription(p)$Version
-    bdir <- paste0(Sys.getenv("NVIMR_COMPLDIR"), "/")
+    bdir <- paste0(Sys.getenv("RNVIM_COMPLDIR"), "/")
     odir <- dir(bdir)
     pbuilt <- odir[grep(paste0("omnils_", p, "_"), odir)]
     fbuilt <- odir[grep(paste0("fun_", p, "_"), odir)]

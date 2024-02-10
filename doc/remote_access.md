@@ -53,8 +53,8 @@ goal.
        ```sh
        #!/bin/sh
 
-       LOCAL_MOUNT_POINT=$NVIMR_COMPLDIR
-       REMOTE_CACHE_DIR=$NVIMR_REMOTE_COMPLDIR
+       LOCAL_MOUNT_POINT=$RNVIM_COMPLDIR
+       REMOTE_CACHE_DIR=$RNVIM_REMOTE_COMPLDIR
        REMOTE_LOGIN_HOST=remotelogin@remotehost
 
        NVIM_IP_ADDRESS=$(hostname -I)
@@ -68,7 +68,7 @@ goal.
            exit 153
        fi
 
-       if [ "x$NVIMR_PORT" = "x" ]
+       if [ "x$RNVIM_PORT" = "x" ]
        then
            PSEUDOTERM='-T'
        else
@@ -76,13 +76,13 @@ goal.
        fi
 
        ssh $PSEUDOTERM $REMOTE_LOGIN_HOST \
-         "NVIMR_TMPDIR=$REMOTE_CACHE_DIR/tmp \
-         NVIMR_COMPLDIR=$REMOTE_CACHE_DIR \
-         NVIMR_ID=$NVIMR_ID \
-         NVIMR_SECRET=$NVIMR_SECRET \
+         "RNVIM_TMPDIR=$REMOTE_CACHE_DIR/tmp \
+         RNVIM_COMPLDIR=$REMOTE_CACHE_DIR \
+         RNVIM_ID=$RNVIM_ID \
+         RNVIM_SECRET=$RNVIM_SECRET \
          R_DEFAULT_PACKAGES=$R_DEFAULT_PACKAGES \
          NVIM_IP_ADDRESS=$NVIM_IP_ADDRESS \
-         NVIMR_PORT=$NVIMR_PORT R $*"
+         RNVIM_PORT=$RNVIM_PORT R $*"
        ```
 
      - Add this to your R-Nvim config:

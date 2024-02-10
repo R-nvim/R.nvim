@@ -142,16 +142,16 @@ M.start_extern_term = function(Rcmd)
 
     local open_cmd
 
-    local cmd = "NVIMR_TMPDIR="
+    local cmd = "RNVIM_TMPDIR="
         .. vim.fn.substitute(config.tmpdir, " ", "\\ ", "g")
-        .. " NVIMR_COMPLDIR="
+        .. " RNVIM_COMPLDIR="
         .. vim.fn.substitute(config.compldir, " ", "\\ ", "g")
-        .. " NVIMR_ID="
-        .. vim.env.NVIMR_ID
-        .. " NVIMR_SECRET="
-        .. vim.env.NVIMR_SECRET
-        .. " NVIMR_PORT="
-        .. vim.env.NVIMR_PORT
+        .. " RNVIM_ID="
+        .. vim.env.RNVIM_ID
+        .. " RNVIM_SECRET="
+        .. vim.env.RNVIM_SECRET
+        .. " RNVIM_PORT="
+        .. vim.env.RNVIM_PORT
         .. " R_DEFAULT_PACKAGES="
         .. vim.env.R_DEFAULT_PACKAGES
         .. " "

@@ -379,20 +379,20 @@ local do_common_global = function()
     config.localtmpdir = config.tmpdir
 
     -- Check if the 'config' table has the key 'remote_compldir'
-    -- FIXME: replace all NVIMR_ with RNVIM_
+    -- FIXME: replace all RNVIM_ with RNVIM_
     if config.remote_compldir then
-        vim.env.NVIMR_REMOTE_COMPLDIR = config.remote_compldir
-        vim.env.NVIMR_REMOTE_TMPDIR = config.remote_compldir .. "/tmp"
+        vim.env.RNVIM_REMOTE_COMPLDIR = config.remote_compldir
+        vim.env.RNVIM_REMOTE_TMPDIR = config.remote_compldir .. "/tmp"
         config.tmpdir = config.compldir .. "/tmp"
     else
-        vim.env.NVIMR_REMOTE_COMPLDIR = config.compldir
-        vim.env.NVIMR_REMOTE_TMPDIR = config.tmpdir
+        vim.env.RNVIM_REMOTE_COMPLDIR = config.compldir
+        vim.env.RNVIM_REMOTE_TMPDIR = config.tmpdir
     end
 
     utils.ensure_directory_exists(config.localtmpdir)
 
-    vim.env.NVIMR_TMPDIR = config.tmpdir
-    vim.env.NVIMR_COMPLDIR = config.compldir
+    vim.env.RNVIM_TMPDIR = config.tmpdir
+    vim.env.RNVIM_COMPLDIR = config.compldir
 
     -- Make the file name of files to be sourced
     if config.remote_compldir then
@@ -432,12 +432,12 @@ local do_common_global = function()
         config.arrange_windows = false
     end
 
-    -- The environment variables NVIMR_COMPLCB and NVIMR_COMPLInfo must be defined
+    -- The environment variables RNVIM_COMPLCB and RNVIM_COMPLInfo must be defined
     -- before starting the nvimrserver because it needs them at startup.
     config.update_glbenv = false
     if type(package.loaded["cmp_r"]) == "table" then config.update_glbenv = true end
-    vim.env.NVIMR_COMPLCB = "v:lua.require'cmp_r'.asynccb"
-    vim.env.NVIMR_COMPLInfo = "v:lua.require'cmp_r'.complinfo"
+    vim.env.RNVIM_COMPLCB = "v:lua.require'cmp_r'.asynccb"
+    vim.env.RNVIM_COMPLInfo = "v:lua.require'cmp_r'.complinfo"
 
     -- Look for invalid options
     local objbrplace = vim.split(config.objbr_place, ",")
@@ -498,21 +498,21 @@ local do_common_global = function()
 
     -- Set security variables
     if not vim.fn.has("nvim-0.7.0") then
-        vim.env.NVIMR_ID = vim.fn.substitute(
+        vim.env.RNVIM_ID = vim.fn.substitute(
             tostring(vim.fn.reltimefloat(vim.fn.reltime())),
             ".*\\.",
             "",
             ""
         )
-        vim.env.NVIMR_SECRET = vim.fn.substitute(
+        vim.env.RNVIM_SECRET = vim.fn.substitute(
             tostring(vim.fn.reltimefloat(vim.fn.reltime())),
             ".*\\.",
             "",
             ""
         )
     else
-        vim.env.NVIMR_ID = vim.fn.rand(vim.fn.srand())
-        vim.env.NVIMR_SECRET = vim.fn.rand()
+        vim.env.RNVIM_ID = vim.fn.rand(vim.fn.srand())
+        vim.env.RNVIM_SECRET = vim.fn.rand()
     end
 
     -- Avoid problems if either R_rconsole_width or R_rconsole_height is a float number

@@ -20,7 +20,7 @@
 
   \preformatted{
     if(interactive()){
-        if(Sys.getenv("NVIMR_TMPDIR") != ""){
+        if(Sys.getenv("RNVIM_TMPDIR") != ""){
             options(nvimcom.verbose = 1)
             library(nvimcom)
         }

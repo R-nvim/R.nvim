@@ -123,7 +123,7 @@ nvim.example <- function(topic) {
     } else {
         if (is.character(ret)) {
             if (length(ret) > 0) {
-                writeLines(ret, paste0(Sys.getenv("NVIMR_TMPDIR"), "/example.R"))
+                writeLines(ret, paste0(Sys.getenv("RNVIM_TMPDIR"), "/example.R"))
                 .C("nvimcom_msg_to_nvim", "lua require('r.edit').open_example()", PACKAGE = "nvimcom")
             } else {
                 .C("nvimcom_msg_to_nvim",

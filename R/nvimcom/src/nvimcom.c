@@ -69,7 +69,7 @@ static int autoglbenv = 0; // Should the list of objects in .GlobalEnv be
 // always be 1 if cmp-r is installed or the Object Browser is open.
 static clock_t tm; // Time when the listing of objects from .GlobalEnv started.
 
-static char tmpdir[512]; // The environment variable NVIMR_TMPDIR.
+static char tmpdir[512]; // The environment variable RNVIM_TMPDIR.
 static int setwidth = 0; // Set the option width after each command is executed
 static int oldcolwd = 0; // Last set width.
 
@@ -187,7 +187,7 @@ static void send_to_nvim(char *msg) {
 
     /*
        TCP message format:
-         NVIMR_SECRET : Prefix NVIMR_SECRET to msg to increase security
+         RNVIM_SECRET : Prefix RNVIM_SECRET to msg to increase security
          000000000    : Size of message in 9 digits
          msg          : The message
          \x11         : Final byte
@@ -1003,7 +1003,7 @@ static void nvimcom_parse_received_msg(char *buf) {
     if (verbose > 3) {
         REprintf("nvimcom received: %s\n", buf);
     } else if (verbose > 2) {
-        p = buf + strlen(getenv("NVIMR_ID")) + 1;
+        p = buf + strlen(getenv("RNVIM_ID")) + 1;
         REprintf("nvimcom Received: [%c] %s\n", buf[0], p);
     }
 
@@ -1027,8 +1027,8 @@ static void nvimcom_parse_received_msg(char *buf) {
     case 'C': // Send command to Rgui Console
         p = buf;
         p++;
-        if (strstr(p, getenv("NVIMR_ID")) == p) {
-            p += strlen(getenv("NVIMR_ID"));
+        if (strstr(p, getenv("RNVIM_ID")) == p) {
+            p += strlen(getenv("RNVIM_ID"));
             r_is_busy = 1;
             Rconsolecmd(p);
         }
@@ -1041,8 +1041,8 @@ static void nvimcom_parse_received_msg(char *buf) {
 #endif
         p = buf;
         p++;
-        if (strstr(p, getenv("NVIMR_ID")) == p) {
-            p += strlen(getenv("NVIMR_ID"));
+        if (strstr(p, getenv("RNVIM_ID")) == p) {
+            p += strlen(getenv("RNVIM_ID"));
 #ifdef WIN32
             char flag_eval[512];
             snprintf(flag_eval, 510, "%s <- %s", p, p);
@@ -1059,8 +1059,8 @@ static void nvimcom_parse_received_msg(char *buf) {
     case 'E': // eval expression
         p = buf;
         p++;
-        if (strstr(p, getenv("NVIMR_ID")) == p) {
-            p += strlen(getenv("NVIMR_ID"));
+        if (strstr(p, getenv("RNVIM_ID")) == p) {
+            p += strlen(getenv("RNVIM_ID"));
 #ifdef WIN32
             if (!r_is_busy)
                 nvimcom_eval_expr(p);
@@ -1069,7 +1069,7 @@ static void nvimcom_parse_received_msg(char *buf) {
             nvimcom_fire();
 #endif
         } else {
-            REprintf("\nvimcom: received invalid NVIMR_ID.\n");
+            REprintf("\nvimcom: received invalid RNVIM_ID.\n");
         }
         break;
     default: // do nothing
@@ -1154,13 +1154,13 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
     setwidth = *swd;
     autoglbenv = *age;
 
-    if (getenv("NVIMR_TMPDIR")) {
-        strncpy(tmpdir, getenv("NVIMR_TMPDIR"), 500);
-        if (getenv("NVIMR_SECRET"))
-            strncpy(nvimsecr, getenv("NVIMR_SECRET"), 31);
+    if (getenv("RNVIM_TMPDIR")) {
+        strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 500);
+        if (getenv("RNVIM_SECRET"))
+            strncpy(nvimsecr, getenv("RNVIM_SECRET"), 31);
         else
             REprintf(
-                "nvimcom: Environment variable NVIMR_SECRET is missing.\n");
+                "nvimcom: Environment variable RNVIM_SECRET is missing.\n");
     } else {
         if (verbose)
             REprintf("nvimcom: It seems that R was not started by Neovim. The "
@@ -1169,8 +1169,8 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
         return;
     }
 
-    if (getenv("NVIMR_PORT"))
-        strncpy(nrs_port, getenv("NVIMR_PORT"), 15);
+    if (getenv("RNVIM_PORT"))
+        strncpy(nrs_port, getenv("RNVIM_PORT"), 15);
 
     if (verbose > 0)
         REprintf("nvimcom %s loaded\n", *nvv);
@@ -1178,10 +1178,10 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
         if (getenv("NVIM_IP_ADDRESS")) {
             REprintf("  NVIM_IP_ADDRESS: %s\n", getenv("NVIM_IP_ADDRESS"));
         }
-        REprintf("  NVIMR_PORT: %s\n", nrs_port);
-        REprintf("  NVIMR_ID: %s\n", getenv("NVIMR_ID"));
-        REprintf("  NVIMR_TMPDIR: %s\n", tmpdir);
-        REprintf("  NVIMR_COMPLDIR: %s\n", getenv("NVIMR_COMPLDIR"));
+        REprintf("  RNVIM_PORT: %s\n", nrs_port);
+        REprintf("  RNVIM_ID: %s\n", getenv("RNVIM_ID"));
+        REprintf("  RNVIM_TMPDIR: %s\n", tmpdir);
+        REprintf("  RNVIM_COMPLDIR: %s\n", getenv("RNVIM_COMPLDIR"));
         REprintf("  R info: %s\n\n", *rinfo);
     }
 

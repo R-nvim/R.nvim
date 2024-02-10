@@ -6,12 +6,12 @@ nvim.edit <- function(name, file, title) {
     if (is.null(name))
         stop("Feature not implemented. Use nvim to create R objects from scratch.")
 
-    waitf <- paste0(Sys.getenv("NVIMR_TMPDIR"), "/edit_", Sys.getenv("NVIMR_ID"), "_wait")
-    editf <- paste0(Sys.getenv("NVIMR_TMPDIR"), "/edit_", Sys.getenv("NVIMR_ID"))
+    waitf <- paste0(Sys.getenv("RNVIM_TMPDIR"), "/edit_", Sys.getenv("RNVIM_ID"), "_wait")
+    editf <- paste0(Sys.getenv("RNVIM_TMPDIR"), "/edit_", Sys.getenv("RNVIM_ID"))
     unlink(editf)
     writeLines(text = "Waiting...", con = waitf)
 
-    initial <- paste0(Sys.getenv("NVIMR_TMPDIR"), "/nvimcom_edit_",
+    initial <- paste0(Sys.getenv("RNVIM_TMPDIR"), "/nvimcom_edit_",
                       round(runif(1, min = 100, max = 999)))
     sink(initial)
     dput(name)
