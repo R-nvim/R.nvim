@@ -3,7 +3,9 @@ local warn = require("r").warn
 local job = require("r.job")
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 
-local envstring = vim.fn.tolower(vim.env.LC_MESSAGES .. vim.env.LC_ALL .. vim.env.LANG)
+local envstring = vim.fn.tolower(
+    tostring(vim.env.LC_MESSAGES) .. tostring(vim.env.LC_ALL) .. tostring(vim.env.LANG)
+)
 local isutf8 = (envstring:find("utf-8") or envstring:find("utf8")) and 1 or 0
 local curview = "GlobalEnv"
 local ob_winnr

@@ -168,8 +168,8 @@ local StartNServer = function()
 
     if config.is_windows then require("r.windows").unset_R_home() end
 
-    vim.fn.delete(config.tmpdir .. "/run_R_stdout")
-    vim.fn.delete(config.tmpdir .. "/run_R_stderr")
+    edit.add_for_deletion(config.tmpdir .. "/run_R_stdout")
+    edit.add_for_deletion(config.tmpdir .. "/run_R_stderr")
 
     vim.api.nvim_create_user_command("RGetNRSInfo", require("r.nrs").request_nrs_info, {})
 end

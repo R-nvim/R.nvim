@@ -298,7 +298,12 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     end
 
     if config.objbr_auto_start then
-        vim.fn.timer_start(1010, require("r.browser").start)
+        if config.is_windows then
+            -- Give R some time to be ready
+            vim.fn.timer_start(1010, require("r.browser").start)
+        else
+            vim.schedule(require("r.browser").start)
+        end
     end
 
     if config.hook.after_R_start then config.hook.after_R_start() end
