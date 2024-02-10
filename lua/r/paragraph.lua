@@ -21,7 +21,7 @@ M.get_current = function()
         end_line = end_line + 1
     end
 
-    return start_line, end_line
+    return start_line - 1, end_line
 end
 
 return M

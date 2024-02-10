@@ -289,7 +289,7 @@ M.weave = function(bibtex, knit, pdf)
 end
 
 -- Send Sweave chunk to R
-M.send_chunk = function(e, m)
+M.send_chunk = function(m)
     local chunk_type = M.is_in_R_code(true)
     if chunk_type == 2 then
         vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
@@ -300,10 +300,10 @@ M.send_chunk = function(e, m)
     local chunkline = vim.fn.search("^<<", "bncW") + 1
     local docline = vim.fn.search("^@", "ncW") - 1
     local lines = vim.fn.getline(chunkline, docline)
-    local ok = send.source_lines(lines, e, "chunk")
+    local ok = send.source_lines(lines, "chunk")
     if ok == 0 then return end
 
-    if m == "down" then M.next_chunk() end
+    if m == true then M.next_chunk() end
 end
 
 M.SyncTeX_get_master = function()
