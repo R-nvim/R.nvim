@@ -142,16 +142,14 @@ local set_pdf_viewer = function()
 end
 
 local compare_types = function(k)
-    if
-        k == "external_term"
-        and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean")
-    then
-        warn("Option `external_term` should be either boolean or string.")
-    elseif
-        k == "rmdchunk"
-        and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number")
-    then
-        warn("Option `rmdchunk` should be either number or string.")
+    if k == "external_term" then
+        if not (type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean") then
+            warn("Option `external_term` should be either boolean or string.")
+        end
+    elseif k == "rmdchunk" then
+        if not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number") then
+            warn("Option `rmdchunk` should be either number or string.")
+        end
     elseif type(config[k]) ~= "nil" and (type(user_opts[k]) ~= type(config[k])) then
         warn(
             "Option `"
@@ -595,7 +593,8 @@ local windows_config = function()
             warn(
                 "Could not find R path in Windows Registry. If you have already installed R, please, set the value of 'R_path'."
             )
-            require("r.edit").add_to_debug_info("windows setup", uv.hrtime() - wtime, "Time")
+            wtime = (uv.hrtime() - wtime) / 1000000000
+            require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
             return
         end
         local hasR32 = vim.fn.isdirectory(rinstallpath .. "\\bin\\i386")
@@ -618,7 +617,8 @@ local windows_config = function()
             config.R_args = { "--sdi", "--no-save" }
         end
     end
-    require("r.edit").add_to_debug_info("windows setup", uv.hrtime() - wtime, "Time")
+    wtime = (uv.hrtime() - wtime) / 1000000000
+    require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
 end
 
 local tmux_config = function()
@@ -674,8 +674,7 @@ local unix_config = function()
         end
     end
 
-    local is_executable = uv.fs_access(config.R_app, "X")
-    if not is_executable then
+    if vim.fn.executable(config.R_app) ~= 1 then
         warn(
             '"'
                 .. config.R_app
@@ -689,7 +688,8 @@ local unix_config = function()
     then
         tmux_config() -- Consider removing this line if it's not necessary
     end
-    require("r.edit").add_to_debug_info("unix setup", uv.hrtime - utime, "Time")
+    utime = (uv.hrtime() - utime) / 1000000000
+    require("r.edit").add_to_debug_info("unix setup", utime, "Time")
 end
 
 local global_setup = function()
