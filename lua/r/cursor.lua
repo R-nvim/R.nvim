@@ -69,133 +69,19 @@ M.move_next_line = function()
     vim.api.nvim_win_set_cursor(0, { lnum, 0 })
 end
 
-M.get_first_obj = function(rkeyword)
+M.get_first_obj = function()
     local firstobj = ""
     local line = vim.fn.substitute(vim.fn.getline(vim.fn.line(".")), "#.*", "", "")
     local begin = vim.fn.col(".")
 
     if vim.fn.strlen(line) > begin then
-        local piece = vim.fn.substitute(vim.fn.strpart(line, begin), "\\s*$", "", "")
-        while not piece:find("^" .. rkeyword) and begin >= 0 do
-            begin = begin - 1
-            piece = vim.fn.strpart(line, begin)
-        end
-
-        -- check if the first argument is being passed through a pipe operator
-        if begin > 2 then
-            local part1 = vim.fn.strpart(line, 0, begin)
-            if part1:find("%k+\\s*\\(|>\\|%>%\\)\\s*") then
-                local pipeobj = vim.fn.substitute(
-                    part1,
-                    ".\\{-}\\(\\k\\+\\)\\s*\\(|>\\|%>%\\)\\s*",
-                    "\\1",
-                    ""
-                )
-                return { pipeobj, true }
-            end
-        end
-
-        local pline =
-            vim.fn.substitute(vim.fn.getline(vim.fn.line(".") - 1), "#.*$", "", "")
-        if pline:find("\\k+\\s*\\(|>\\|%>%\\)\\s*$") then
-            local pipeobj = vim.fn.substitute(
-                pline,
-                ".\\{-}\\(\\k\\+\\)\\s*\\(|>\\|%>%\\)\\s*$",
-                "\\1",
-                ""
-            )
-            return { pipeobj, true }
-        end
-
-        line = piece
-        if not line:find("^\\k*\\s*(") then return { firstobj, false } end
-        begin = 1
-        local linelen = vim.fn.strlen(line)
-        while line:sub(begin, begin) ~= "(" and begin < linelen do
-            begin = begin + 1
-        end
-        begin = begin + 1
-        line = vim.fn.strpart(line, begin)
-        line = vim.fn.substitute(line, "^\\s*", "", "")
-        if
-            (line:find("^\\k*\\s*\\(") or line:find("^\\k*\\s*=\\s*\\k*\\s*\\("))
-            and not line:find("[.*(")
-        then
-            local idx = 0
-            while line:sub(idx, idx) ~= "(" do
-                idx = idx + 1
-            end
-            idx = idx + 1
-            local nparen = 1
-            local len = vim.fn.strlen(line)
-            local lnum = vim.fn.line(".")
-            while nparen ~= 0 do
-                if idx == len then
-                    lnum = lnum + 1
-                    while
-                        lnum <= vim.fn.line("$")
-                        and vim.fn.strlen(
-                                vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
-                            )
-                            == 0
-                    do
-                        lnum = lnum + 1
-                    end
-                    if lnum > vim.fn.line("$") then return { "", false } end
-                    line = line .. vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
-                    len = vim.fn.strlen(line)
-                end
-                if line:sub(idx, idx) == "(" then
-                    nparen = nparen + 1
-                else
-                    if line:sub(idx, idx) == ")" then nparen = nparen - 1 end
-                end
-                idx = idx + 1
-            end
-            firstobj = vim.fn.strpart(line, 0, idx)
-        elseif
-            line:find("^\\(\\k\\|\\$\\)*\\s*\\[")
-            or line:find("^\\(k\\|\\$\\)*\\s*=\\s*\\(\\k\\|\\$\\)*\\s*[.*(")
-        then
-            local idx = 0
-            while line:sub(idx, idx) ~= "[" do
-                idx = idx + 1
-            end
-            idx = idx + 1
-            local nparen = 1
-            local len = vim.fn.strlen(line)
-            local lnum = vim.fn.line(".")
-            while nparen ~= 0 do
-                if idx == len then
-                    lnum = lnum + 1
-                    while
-                        lnum <= vim.fn.line("$")
-                        and vim.fn.strlen(
-                                vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
-                            )
-                            == 0
-                    do
-                        lnum = lnum + 1
-                    end
-                    if lnum > vim.fn.line("$") then return { "", false } end
-                    line = line .. vim.fn.substitute(vim.fn.getline(lnum), "#.*", "", "")
-                    len = vim.fn.strlen(line)
-                end
-                if line:sub(idx, idx) == "[" then
-                    nparen = nparen + 1
-                else
-                    if line:sub(idx, idx) == "]" then nparen = nparen - 1 end
-                end
-                idx = idx + 1
-            end
-            firstobj = vim.fn.strpart(line, 0, idx)
-        else
-            firstobj = vim.fn.substitute(line, ").*", "", "")
-            firstobj = vim.fn.substitute(firstobj, ",.*", "", "")
-            firstobj = vim.fn.substitute(firstobj, " .*", "", "")
-        end
+        local piece = line:sub(begin)
+        piece = piece:gsub(".-%(", "")
+        firstobj = piece:gsub("[,%s%)].*", "")
+        -- TODO: The algorithm is too simple to correctly get the first object
+        -- in complex cases.
+        -- TODO: Check if the first argument is being passed through a pipe operator
     end
-
     if firstobj:find("=" .. vim.fn.char2nr('"')) then firstobj = "" end
 
     if firstobj:sub(1, 1) == '"' or firstobj:sub(1, 1) == "'" then
@@ -204,9 +90,9 @@ M.get_first_obj = function(rkeyword)
         firstobj = "#n#"
     end
 
-    if firstobj:find('"') then firstobj = vim.fn.substitute(firstobj, '"', '\\"', "g") end
+    if firstobj:find('"') then firstobj = firstobj:gsub('"', '\\"') end
 
-    return { firstobj, false }
+    return firstobj
 end
 
 return M

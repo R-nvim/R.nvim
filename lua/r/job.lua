@@ -189,7 +189,6 @@ end
 -- We do know when the terminal exits, but when the terminal is closed Tmux is
 -- only detached and R keeps running.
 M.end_of_R_session = function ()
-    vim.notify("end of R session")
     jobs["R"] = 0
     require("r.run").clear_R_info()
 end

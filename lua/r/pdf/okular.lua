@@ -1,7 +1,6 @@
 local M = {}
 local job = require("r.job")
 local warn = require("r").warn
-local config = require("r.config").get_config()
 
 local on_okular_stdout = function(_, data, _)
     for _, cmd in ipairs(data) do

@@ -596,7 +596,7 @@ M.print_object = function(rkeyword)
     if vim.fn.bufname("%") == "Object_Browser" then
         firstobj = ""
     else
-        firstobj = cursor.get_first_obj(rkeyword)[1]
+        firstobj = cursor.get_first_obj()
     end
 
     if firstobj == "" then
