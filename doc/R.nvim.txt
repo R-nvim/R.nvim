@@ -800,8 +800,8 @@ the `init.vim`. The workaround is do not include the superfluous command
 |external_term|       Command to run R in an external terminal emulator
 |silent_term|         Do not show terminal errors
 |set_home_env|        Set the value of $HOME for R (Windows only)
-|save_win_pos|        Save positions of R and GVim windows (Windows only)
-|arrange_windows|     Restore positions of R and GVim windows (Windows only)
+|save_win_pos|        Save position of Rgui window (Windows only)
+|arrange_windows|     Restore position of R window (Windows only)
 |assign_map|          Choose what to convert into ' <- '
 |rnowebchunk|         Convert '<' into '<<>>=\n@' in Rnoweb files
 |rmdchunk|            Convert grave accent chunk into delimiters
@@ -1070,8 +1070,8 @@ you can put in your config:
    save_win_pos = false
    arrange_windows = false
 <
-If you want R and GVim windows always in a specific arrangement, regardless of
-their state when you have quit R for the last time, you should arrange them
+If you want Rgui window always in a specific arrangement, regardless of
+its state when you have quit R for the last time, you should arrange it
 in the way you want, quit R, change in your config only the value of
 `save_win_pos` and, finally, quit Neovim.
 
@@ -1112,8 +1112,7 @@ cursor is not at the beginning of the line.
 
 While editing R code, <M--> is replaced with `<-`. If you want to bind other
 keys to be replaced by `<-`, set the value of |assign_map| in your config,
-as in the example below which emulates RStudio behavior (may only work on GVim
-or Neovim):
+as in the example below which emulates RStudio behavior:
 >lua
    assign_map = '<M-=>'
 <
@@ -1785,11 +1784,11 @@ use those key-bindings specified by the user, put in your config:
 >lua
     user_maps_only = true
 <
-If you want to disable only some of R.nvim commands, create a Vim list with
+If you want to disable only some of R.nvim commands, create a Lua table with
 their key bindings names in your config. The complete list of key bindings
-names is shown at the Custom key bindings section (R.nvim-key-bindings).
-Below is an example on how to disable the commands that sends `setwd()` and
-`dput()` to R Console:
+names is shown at the Custom key bindings section (R.nvim-key-bindings). Below
+is an example on how to disable the commands that sends `setwd()` and `dput()`
+to R Console:
 >lua
    disable_cmds = {'RSetwd', 'RDputObj'}
 <

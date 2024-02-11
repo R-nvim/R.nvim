@@ -138,7 +138,7 @@ local StartNServer = function()
 
     local nrs_env = {}
 
-    -- Some pdf viewers run rnvimserver to send SyncTeX messages back to Vim
+    -- Some pdf viewers run rnvimserver to send SyncTeX messages back to Neovim
     if config.is_windows then
         nrs_env["PATH"] = nrs_dir .. ";" .. vim.env.PATH
     else

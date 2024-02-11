@@ -100,9 +100,9 @@ note:
 
 ![Nvim-R screenshots](https://raw.githubusercontent.com/jalvesaq/Nvim-R/master/Nvim-R.gif "Nvim-R screenshots")
 
-## The communication between R and either Vim or Neovim
+## The communication between Neovim and R
 
-The diagram below shows how the communication between Vim/Neovim and R works.
+The diagram below shows how the communication between Neovim and R works.
 ![Neovim-R communication](https://raw.githubusercontent.com/jalvesaq/tmp-R-Nvim/master/nvimrcom.svg "Neovim-R communication")
 
 The black arrow represents all commands that you trigger in the editor and
@@ -119,8 +119,8 @@ There are three different ways of sending the commands to R Console:
   which forwards the command to R Console.
 
 The R package _nvimcom_ includes the application _rnvimserver_ which is never
-used by R itself, but is run as a Vim/Neovim's job. That is, the communication
-between the _rnvimserver_ and Vim/Neovim is through the _rnvimserver_ standard
+used by R itself, but is run as a Neovim's job. That is, the communication
+between the _rnvimserver_ and Neovim is through the _rnvimserver_ standard
 input and output (green arrows). The _rnvimserver_ application runs a TCP
 server. When _nvimcom_ is loaded, it immediately starts a TCP client that
 connects to _rnvimserver_ (red arrows).
@@ -147,7 +147,6 @@ but temporary files are used in a few cases.
 
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's output.
 
-- [R-Vim-runtime](https://github.com/jalvesaq/R-Vim-runtime): development version of some Vim runtime files for R.
 
 [Neovim]: https://github.com/neovim/neovim
 [southernlights]: https://github.com/jalvesaq/southernlights
