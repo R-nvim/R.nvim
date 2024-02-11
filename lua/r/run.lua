@@ -666,14 +666,14 @@ M.get_buf_dir = function()
     local rwd = vim.api.nvim_buf_get_name(0)
     if config.is_windows then
         rwd = vim.fn.substitute(rwd, "\\", "/", "g")
-        rwd = utils.nomralize_windows_path(rwd)
+        rwd = utils.normalize_windows_path(rwd)
     end
     rwd = vim.fn.substitute(rwd, "\\(.*\\)/.*", "\\1", "")
     return rwd
 end
 
 M.source_dir = function(dir)
-    if config.is_windows then dir = utils.nomralize_windows_path(dir) end
+    if config.is_windows then dir = utils.normalize_windows_path(dir) end
     if dir == "" then
         send.cmd("nvim.srcdir()")
     else
