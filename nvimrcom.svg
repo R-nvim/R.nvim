@@ -1,5 +1,7 @@
 <svg height="300" width="800" xmlns="http://www.w3.org/2000/svg">
 
+<rect width="300" height="800" x="0" y="0" rx="0" ry="0" fill="#ffffff"/>
+
 <!-- Neovim box -->
 <rect width="200" height="280" x="50" y="10" rx="10" ry="10" fill="#e6ffe6"
 stroke-width="2" stroke="black"/>
