@@ -12,11 +12,12 @@ local ZathuraJobStdout = function(_, data, _)
     end
 end
 
+---@param fullpath string
 local start2 = function(fullpath)
     local job_id = vim.fn.jobstart({
         "zathura",
         "--synctex-editor-command",
-        'echo \'lua require("r.rnw").SyncTeX_backward("%{input}", "%{line}")\'',
+        'echo \'lua require("r.rnw").SyncTeX_backward("%{input}", %{line})\'',
         fullpath,
     }, {
         detach = true,
@@ -33,6 +34,7 @@ local start2 = function(fullpath)
     end
 end
 
+---@param fullpath string
 local start_zathura = function(fullpath)
     local fname = vim.fn.substitute(fullpath, ".*/", "", "")
 
@@ -71,6 +73,8 @@ end
 
 local M = {}
 
+--- Use Zathura to open PDF document
+---@param fullpath string
 M.open = function(fullpath)
     if config.openpdf == 1 then
         start_zathura(fullpath)
@@ -80,7 +84,7 @@ M.open = function(fullpath)
     -- Time for Zathura to reload the PDF
     vim.wait(200)
 
-    local fname = vim.fn.substitute(fullpath, ".*/", "", "")
+    local fname = fullpath:gsub(".*/", "")
 
     -- Check if Zathura was already opened and is still running
     if zathura_pid[fullpath] and zathura_pid[fullpath] ~= 0 then
@@ -102,12 +106,17 @@ M.open = function(fullpath)
     end
 
     -- Check if Zathura was already running
-    if fname == 0 then
+    if zathura_pid[fullpath] == 0 then
         start_zathura(fullpath)
         return
     end
 end
 
+--- Start Zathura with SyncTeX forward arguments.
+---@param tpath string LaTeX document path.
+---@param ppath string PDF document path.
+---@param texln number Line number in the LaTeX document.
+---@param tryagain boolean True if should try twice to open the PDF.
 M.SyncTeX_forward = function(tpath, ppath, texln, tryagain)
     local texname = vim.fn.substitute(tpath, " ", "\\ ", "g")
     local pdfname = vim.fn.substitute(ppath, " ", "\\ ", "g")

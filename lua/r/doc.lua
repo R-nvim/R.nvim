@@ -2,69 +2,8 @@ local config = require("r.config").get_config()
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 local warn = require("r").warn
 local cursor = require("r.cursor")
-local has_new_width = true
-local rdoctitle = "R_doc"
-local htw
-
-local set_text_width = function(rkeyword)
-    if config.nvimpager == "tabnew" then
-        rdoctitle = rkeyword
-    else
-        local tnr = vim.fn.tabpagenr()
-        if config.nvimpager ~= "tab" and tnr > 1 then
-            rdoctitle = "R_doc" .. tnr
-        else
-            rdoctitle = "R_doc"
-        end
-    end
-
-    if vim.fn.bufloaded(rdoctitle) == 0 or has_new_width == 1 then
-        has_new_width = false
-
-        -- s:vimpager is used to calculate the width of the R help documentation
-        -- and to decide whether to obey R_nvimpager = 'vertical'
-        local vimpager = config.nvimpager
-
-        local wwidth = vim.fn.winwidth(0)
-
-        -- Not enough room to split vertically
-        if
-            config.nvimpager == "vertical"
-            and wwidth <= (config.help_w + config.editor_w)
-        then
-            vimpager = "horizontal"
-        end
-
-        local htwf
-        if vimpager == "horizontal" then
-            -- Use the window width (at most 80 columns)
-            htwf = (wwidth > 80) and 88.1 or ((wwidth - 1) / 0.9)
-        elseif config.nvimpager == "tab" or config.nvimpager == "tabnew" then
-            wwidth = vim.o.columns
-            htwf = (wwidth > 80) and 88.1 or ((wwidth - 1) / 0.9)
-        else
-            local min_e = (config.editor_w > 80) and config.editor_w or 80
-            local min_h = (config.help_w > 73) and config.help_w or 73
-
-            if wwidth > (min_e + min_h) then
-                -- The editor window is large enough to be split
-                htwf = min_h
-            elseif wwidth > (min_e + config.help_w) then
-                -- The help window must have less than min_h columns
-                htwf = wwidth - min_e
-            else
-                -- The help window must have the minimum value
-                htwf = config.help_w
-            end
-            htwf = (htwf - 1) / 0.9
-        end
-
-        htw = vim.fn.float2nr(htwf)
-        if vim.wo.number == 1 or vim.wo.relativenumber == 1 then
-            htw = htw - vim.o.numberwidth
-        end
-    end
-end
+local doc_buf_id = nil
+local doc_buf_nr = -1
 
 local M = {}
 
@@ -93,11 +32,10 @@ M.ask_R_doc = function(rkeyword, package, getclass)
         vim.cmd.sb(require("r.edit").get_rscript_name())
         vim.cmd("set switchbuf=" .. savesb)
     else
-        if getclass then firstobj = cursor.get_first_obj(rkeyword)[1] end
+        if getclass then firstobj = cursor.get_first_obj() end
     end
 
-    set_text_width(rkeyword)
-
+    local htw = vim.o.columns > 80 and 80 or vim.o.columns - 1
     local rcmd
     if firstobj == "" and package == "" then
         rcmd = 'nvimcom:::nvim.help("' .. rkeyword .. '", ' .. htw .. "L)"
@@ -123,6 +61,34 @@ M.ask_R_doc = function(rkeyword, package, getclass)
 end
 
 M.show = function(rkeyword, txt)
+    if
+        not config.nvimpager:find("tab")
+        and not config.nvimpager:find("split")
+        and not config.nvimpager:find("float")
+        and not config.nvimpager:find("no")
+    then
+        warn(
+            'Invalid `nvimpager` value: "'
+                .. config.nvimpager
+                .. '". Valid values are: "tab", "split", "float", and "no".'
+        )
+        return
+    end
+
+    -- Check if `nvimpager` is "no" because the user might have set the pager
+    -- in the .Rprofile.
+    local vpager
+    if config.nvimpager == "no" then
+        if type(config.external_term) == "boolean" and not config.external_term then
+            vpager = "split"
+        else
+            vpager = "tab"
+        end
+    else
+        vpager = config.nvimpager
+    end
+
+    local htw = vim.o.columns > 80 and 80 or vim.o.columns - 1
     if rkeyword:match("^MULTILIB") then
         local topic = vim.fn.split(rkeyword, " ")[2]
         local libs = vim.fn.split(txt, "\024")
@@ -131,6 +97,7 @@ M.show = function(rkeyword, txt)
             msg = msg .. idx .. " : " .. lib .. "\n"
         end
         vim.cmd("redraw")
+        -- FIXME: not working:
         local chn = vim.fn.input(msg .. "Please, select one of them: ")
         if tonumber(chn) and tonumber(chn) > 0 and tonumber(chn) <= #libs then
             send_to_nvimcom(
@@ -159,49 +126,28 @@ M.show = function(rkeyword, txt)
         vim.cmd.sb(require("r.edit").get_rscript_name())
         vim.cmd("set switchbuf=" .. savesb)
     end
-    set_text_width(rkeyword)
 
-    local rdoccaption = rkeyword:gsub("\\", "")
-    if rkeyword:match("R History") then
-        rdoccaption = "R_History"
-        rdoctitle = "R_History"
-    end
-
-    if vim.fn.bufloaded(rdoccaption) == 1 then
-        local curtabnr = vim.fn.tabpagenr()
+    if doc_buf_id and vim.api.nvim_buf_is_loaded(doc_buf_id) then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
-        vim.cmd.sb(rdoctitle)
+        vim.cmd.sb(doc_buf_nr)
         vim.cmd("set switchbuf=" .. savesb)
-        if config.nvimpager == "tabnew" then vim.cmd("tabmove " .. curtabnr) end
     else
-        if config.nvimpager == "tab" or config.nvimpager == "tabnew" then
-            vim.cmd("tabnew " .. rdoctitle)
-        elseif config.nvimpager == "vertical" then
-            local splr = vim.o.splitright
-            vim.o.splitright = true
-            vim.cmd(htw .. "vsplit " .. rdoctitle)
-            vim.o.splitright = splr
-        elseif config.nvimpager == "horizontal" then
-            vim.cmd("split " .. rdoctitle)
-            if vim.fn.winheight(0) < 20 then vim.cmd("resize 20") end
-        elseif config.nvimpager == "no" then
-            if type(config.external_term) == "boolean" and not config.external_term then
-                config.nvimpager = "vertical"
-            else
-                config.nvimpager = "tab"
-            end
-            M.show(rkeyword)
-            return
+        if vpager == "tab" or vpager == "float" then
+            vim.cmd("tabnew R_doc")
         else
-            warn(
-                'Invalid `nvimpager` value: "'
-                    .. config.nvimpager
-                    .. '". Valid values are: "tab", "vertical", "horizontal", "tabnew" and "no".'
-            )
-            return
+            if vim.fn.winwidth(0) < 80 then
+                vim.cmd("topleft split R_doc")
+            else
+                vim.cmd("split R_doc")
+            end
+            if vim.fn.winheight(0) < 20 then vim.cmd("resize 20") end
         end
     end
+
+    doc_buf_id = vim.api.nvim_win_get_buf(0)
+    doc_buf_nr = vim.fn.bufnr()
+    vim.api.nvim_buf_set_name(doc_buf_id, rkeyword)
 
     vim.cmd("setlocal modifiable")
 
@@ -217,7 +163,7 @@ M.show = function(rkeyword, txt)
     end
     vim.fn.setline(1, lines)
     if rkeyword:match("R History") then
-        vim.o.filetype = "r"
+        vim.api.nvim_set_option_value("filetype", "r", { scope = "local" })
         vim.fn.cursor(1, 1)
     elseif rkeyword:match("(help)") or vim.fn.search("\008", "nw") > 0 then
         require("r.rdoc").set_buf_options()
@@ -225,10 +171,10 @@ M.show = function(rkeyword, txt)
     elseif rkeyword:find("%.Rd$") then
         -- Called by devtools::load_all().
         -- See https://github.com/jalvesaq/Nvim-R/issues/482
-        vim.o.filetype = "rhelp"
+        vim.api.nvim_set_option_value("filetype", "rhelp", { scope = "local" })
         vim.fn.cursor(1, 1)
     else
-        vim.o.filetype = "rout"
+        vim.o.syntax = "rout"
         vim.cmd("setlocal bufhidden=wipe")
         vim.cmd("setlocal nonumber")
         vim.cmd("setlocal noswapfile")
@@ -248,6 +194,9 @@ M.show = function(rkeyword, txt)
     vim.cmd("redraw")
 end
 
+--- Load HTML document
+---@param fullpath string
+---@param browser string
 M.load_html = function(fullpath, browser)
     if not config.openhtml then return end
 
@@ -259,11 +208,11 @@ M.load_html = function(fullpath, browser)
             cmd = { "xdg-open", fullpath }
         end
     else
-        cmd = table.insert(vim.split(browser, " "), fullpath)
+        cmd = vim.split(browser, " ")
+        table.insert(cmd, fullpath)
     end
 
-    require("r.job").start()
-    vim.fn.jobstart(cmd, { detach = 1 })
+    require("r.job").start("HTML browser", cmd, { detach = 1 })
 end
 
 M.open = function(fullpath, browser)

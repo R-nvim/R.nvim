@@ -42,6 +42,35 @@ Please read the plugin's
 [documentation](https://github.com/jamespeapen/Nvim-R/wiki) for instructions on
 [usage](https://github.com/jamespeapen/Nvim-R/wiki/Use).
 
+## Transitioning from Nvim-R
+
+
+During conversion of VimScript to Lua, we decide to end support for features
+that were useful in the past but no longer sufficiently valuable to be worth
+the effort of conversion. We removed support for `Rrst` (it seems that not
+many people use it anymore), debugging code (a debug adapter would be better),
+legacy omni-completion (auto completion with
+[nvim-cmp](https://github.com/hrsh7th/nvim-cmp) is better), and highlighting
+functions from .GlobalEnv (difficult to make compatible with tree-sitter + LSP
+highlighting).
+
+We changed the key binding to insert the assignment operator (` <- `) from an
+underscore (which was familiar to Emacs-ESS users) to `Alt+-` which is more
+convenient (but does not work on Vim).
+
+We replaced the options `R_source` and `after_R_start` with `hook` and we can
+insert other hooks for Lua functions at other parts of the code under user
+request.
+
+We removed the `"echo"` parameters from the functions that send code to R
+Console. Users can still define the arguments that will be passed to
+`base::source()` with `source_args`, which includes the ability to pass the
+argument `echo=TRUE`. Now, there is a new option to define how many lines can
+be sent directly to R Console without saving the code in a temporary file to
+be sourced (`max_lines_to_paste`).
+
+
+
 ## Screenshots
 
 The animated GIF below shows R running in a [Neovim] terminal buffer. We can
@@ -71,10 +100,10 @@ note:
 
 ![Nvim-R screenshots](https://raw.githubusercontent.com/jalvesaq/Nvim-R/master/Nvim-R.gif "Nvim-R screenshots")
 
-## The communication between R and either Vim or Neovim
+## The communication between Neovim and R
 
-The diagram below shows how the communication between Vim/Neovim and R works.
-![Neovim-R communication](https://raw.githubusercontent.com/jalvesaq/Nvim-R/master/nvimrcom.png "Neovim-R communication")
+The diagram below shows how the communication between Neovim and R works.
+![Neovim-R communication](https://raw.githubusercontent.com/jalvesaq/tmp-R-Nvim/master/nvimrcom.svg "Neovim-R communication")
 
 The black arrow represents all commands that you trigger in the editor and
 that you can see being pasted into R Console.
@@ -89,10 +118,10 @@ There are three different ways of sending the commands to R Console:
 - On the Windows operating system, Nvim-R can send a message to R (nvimcom)
   which forwards the command to R Console.
 
-The R package _nvimcom_ includes the application _nvimrserver_ which is never
-used by R itself, but is run as a Vim/Neovim's job. That is, the communication
-between the _nvimrserver_ and Vim/Neovim is through the _nvimrserver_ standard
-input and output (green arrows). The _nvimrserver_ application runs a TCP
+The R package _nvimcom_ includes the application _rnvimserver_ which is never
+used by R itself, but is run as a Neovim's job. That is, the communication
+between the _rnvimserver_ and Neovim is through the _rnvimserver_ standard
+input and output (green arrows). The _rnvimserver_ application runs a TCP
 server. When _nvimcom_ is loaded, it immediately starts a TCP client that
 connects to _nvimrserver_ (red arrows).
 
@@ -118,7 +147,6 @@ but temporary files are used in a few cases.
 
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's output.
 
-- [R-Vim-runtime](https://github.com/jalvesaq/R-Vim-runtime): development version of some Vim runtime files for R.
 
 [Neovim]: https://github.com/neovim/neovim
 [southernlights]: https://github.com/jalvesaq/southernlights

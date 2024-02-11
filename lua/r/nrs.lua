@@ -138,7 +138,7 @@ local StartNServer = function()
 
     local nrs_env = {}
 
-    -- Some pdf viewers run nvimrserver to send SyncTeX messages back to Vim
+    -- Some pdf viewers run rnvimserver to send SyncTeX messages back to Neovim
     if config.is_windows then
         nrs_env["PATH"] = nrs_dir .. ";" .. vim.env.PATH
     else
@@ -188,13 +188,13 @@ local RInitExit = function(_, data, _)
         RWarn = {}
         MkRdir()
     elseif data == 72 and not config.is_windows and not pkgbuild_attempt then
-        -- R-Nvim/R/nvimcom directory not found. Perhaps R running in remote machine...
+        -- R.nvim/nvimcom directory not found. Perhaps R running in remote machine...
         -- Try to use local R to build the nvimcom package.
         pkgbuild_attempt = true
         if vim.fn.executable("R") == 1 then
             local shf = {
                 "cd " .. config.tmpdir,
-                "R CMD build " .. config.rnvim_home .. "/R/nvimcom",
+                "R CMD build " .. config.rnvim_home .. "/nvimcom",
             }
             vim.fn.writefile(shf, config.tmpdir .. "/buildpkg.sh")
             vim.fn.system("sh " .. config.tmpdir .. "/buildpkg.sh")
@@ -242,19 +242,20 @@ end
 -- List R libraries from buffer
 local ListRLibsFromBuffer = function()
     local start_libs = config.start_libs or "base,stats,graphics,grDevices,utils,methods"
-    local lines = vim.fn.getline(1, "$")
-    local filter_lines = vim.fn.filter(lines, "v:val =~ '^\\s*library\\|require\\s*('")
+    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("$"), true)
     local lib
     local flibs = {}
-    for _, v in pairs(filter_lines) do
-        lib = string.gsub(v, "%s*", "")
-        lib = string.gsub(lib, "%s*,.*", "")
-        lib = string.gsub(lib, "%s*library%s*%(%s*", "")
-        lib = string.gsub(lib, "%s*require%s*%(%s*", "")
-        lib = string.gsub(lib, '"', "")
-        lib = string.gsub(lib, "'", "")
-        lib = string.gsub(lib, "%s*%).*", "")
-        table.insert(flibs, lib)
+    for _, v in pairs(lines) do
+        if v:find("^%s*library%s*%(") or v:find("^%s*library%s*%(") then
+            lib = string.gsub(v, "%s*", "")
+            lib = string.gsub(lib, "%s*,.*", "")
+            lib = string.gsub(lib, "%s*library%s*%(%s*", "")
+            lib = string.gsub(lib, "%s*require%s*%(%s*", "")
+            lib = string.gsub(lib, '"', "")
+            lib = string.gsub(lib, "'", "")
+            lib = string.gsub(lib, "%s*%).*", "")
+            table.insert(flibs, lib)
+        end
     end
     local libs = ""
     if #start_libs > 4 then
@@ -376,7 +377,7 @@ end
 
 M.check_nvimcom_version = function()
     local flines
-    local nvimcom_desc_path = config.rnvim_home .. "/R/nvimcom/DESCRIPTION"
+    local nvimcom_desc_path = config.rnvim_home .. "/nvimcom/DESCRIPTION"
 
     if vim.fn.filereadable(nvimcom_desc_path) == 1 then
         local ndesc = vim.fn.readfile(nvimcom_desc_path)
@@ -389,7 +390,7 @@ M.check_nvimcom_version = function()
     local libs = ListRLibsFromBuffer()
     table.insert(flines, 'nvim_r_home <- "' .. config.rnvim_home .. '"')
     table.insert(flines, "libs <- c(" .. libs .. ")")
-    vim.list_extend(flines, vim.fn.readfile(config.rnvim_home .. "/R/before_nrs.R"))
+    vim.list_extend(flines, vim.fn.readfile(config.rnvim_home .. "/scripts/before_nrs.R"))
 
     local scrptnm = config.tmpdir .. "/before_nrs.R"
     vim.fn.writefile(flines, scrptnm)

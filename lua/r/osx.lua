@@ -26,7 +26,7 @@ M.start_Rapp = function()
     require("r.run").wait_nvimcom_start()
 end
 
-M.send_cmd_to_Rapp = function(command, _)
+M.send_cmd_to_Rapp = function(command)
     local cmd = config.clear_line and "\001\013" .. command or command
 
     local rcmd = R64app and "R64" or "R"
@@ -36,7 +36,7 @@ M.send_cmd_to_Rapp = function(command, _)
     vim.fn.system(
         "osascript -e 'tell application \"" .. rcmd .. '" to cmd "' .. cmd .. "\"'"
     )
-    return 1
+    return true
 end
 
 return M

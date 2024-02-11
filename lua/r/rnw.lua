@@ -1,5 +1,6 @@
 local warn = require("r").warn
 local send = require("r.send")
+local utils = require("r.utils")
 local config = require("r.config").get_config()
 local check_latexcmd = true
 
@@ -48,11 +49,17 @@ local SyncTeX_readconc = function(basenm)
     local texidx = 0
     local ntexln = #vim.fn.readfile(basenm .. ".tex")
     local lstexln = vim.fn.range(1, ntexln)
-    local lsrnwf = vim.fn.range(1, ntexln)
     local lsrnwl = vim.fn.range(1, ntexln)
+    local lsrnwf = {}
     local conc = vim.fn.readfile(basenm .. "-concordance.tex")
     local idx = 0
     local maxidx = #conc
+
+    local rnwnm = basenm:gsub(".*/", "") .. ".Rnw"
+    for _, _ in pairs(lstexln) do
+        table.insert(lsrnwf, rnwnm)
+    end
+
     while
         idx < maxidx
         and texidx < ntexln
@@ -129,7 +136,7 @@ local GoToBuf = function(rnwbn, rnwf, basedir, rnwln)
             end
         end
     end
-    vim.cmd(rnwln)
+    vim.cmd(tostring(rnwln))
     vim.cmd("redraw")
     return 1
 end
@@ -147,22 +154,23 @@ M.write_chunk = function()
     end
 end
 
+--- Check if cursor is within a R block of code
+---@param vrb boolean
+---@return boolean
 M.is_in_R_code = function(vrb)
     local chunkline = vim.fn.search("^<<", "bncW")
     local docline = vim.fn.search("^@", "bncW")
-    if chunkline == vim.fn.line(".") then
-        return 2
-    elseif chunkline > docline then
-        return 1
+    if chunkline ~= vim.fn.line(".") and chunkline > docline then
+        return true
     else
         if vrb then warn("Not inside an R code chunk.") end
-        return 0
+        return false
     end
 end
 
 M.previous_chunk = function()
     local curline = vim.fn.line(".")
-    if M.is_in_R_code(false) == 1 then
+    if M.is_in_R_code(false) then
         local i = vim.fn.search("^<<.*$", "bnW")
         if i ~= 0 then vim.fn.cursor(i - 1, 1) end
     end
@@ -240,9 +248,7 @@ M.weave = function(bibtex, knit, pdf)
     vim.cmd("update")
 
     local rnwdir = vim.fn.expand("%:p:h")
-    if vim.fn.has("win32") == 1 then
-        rnwdir = vim.fn.substitute(rnwdir, "\\", "/", "g")
-    end
+    if config.is_windows then rnwdir = utils.normalize_windows_path(rnwdir) end
 
     local pdfcmd = 'nvim.interlace.rnoweb("'
         .. vim.fn.expand("%:t")
@@ -290,16 +296,15 @@ end
 
 -- Send Sweave chunk to R
 M.send_chunk = function(m)
-    local chunk_type = M.is_in_R_code(true)
-    if chunk_type == 2 then
+    if vim.fn.getline(vim.fn.line(".")):find("^<<") then
         vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
-    elseif chunk_type == 0 then
+    elseif not M.is_in_R_code(false) then
         return
     end
 
     local chunkline = vim.fn.search("^<<", "bncW") + 1
     local docline = vim.fn.search("^@", "ncW") - 1
-    local lines = vim.fn.getline(chunkline, docline)
+    local lines = vim.api.nvim_buf_get_lines(0, chunkline - 1, docline, true)
     local ok = send.source_lines(lines, "chunk")
     if ok == 0 then return end
 
@@ -308,8 +313,8 @@ end
 
 M.SyncTeX_get_master = function()
     if vim.fn.filereadable(vim.fn.expand("%:p:r") .. "-concordance.tex") == 1 then
-        if vim.fn.has("win32") == 1 then
-            return vim.fn.substitute(vim.fn.expand("%:p:r"), "\\", "/", "g")
+        if config.is_windows then
+            return utils.normalize_windows_path(vim.fn.expand("%:p:r"))
         else
             return vim.fn.expand("%:p:r")
         end
@@ -334,15 +339,15 @@ M.SyncTeX_get_master = function()
             basenm = vim.fn.substitute(mfile, ".*/", "", "")
         end
 
-        if vim.fn.has("win32") == 1 then
-            return vim.fn.substitute(mdir, "\\", "/", "g") .. "/" .. basenm
+        if config.is_windows then
+            return utils.normalize_windows_path(mdir) .. "/" .. basenm
         else
             return mdir .. "/" .. basenm
         end
     end
 
-    if vim.fn.has("win32") == 1 then
-        return vim.fn.substitute(vim.fn.expand("%:p:r"), "\\", "/", "g")
+    if config.is_windows then
+        return utils.normalize_windows_path(vim.fn.expand("%:p:r"))
     else
         return vim.fn.expand("%:p:r")
     end
@@ -407,7 +412,7 @@ M.SyncTeX_backward = function(fname, ln)
             elseif vim.env.WINDOWID then
                 vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID)
             end
-        elseif config.has_awbt and config.term_title then
+        else
             require("r.pdf").raise_window(config.term_title)
         end
     end
@@ -471,8 +476,8 @@ M.SyncTeX_forward = function(gotobuf)
     local rnwfile = concdata.rnwfile
     local rnwline = concdata.rnwline
     local texln = 0
-    for ii, v in ipairs(texlnum) do
-        if rnwfile[ii] == rnwf and rnwline[ii] >= lnum then
+    for k, v in pairs(texlnum) do
+        if rnwfile[k] == rnwf and rnwline[k] >= lnum then
             texln = v
             break
         end

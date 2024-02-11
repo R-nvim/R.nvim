@@ -140,11 +140,6 @@ Suggestions for Unix (Linux, OS X, Cygwin, etc.):
                  See |external_term|). You should put in your Rprofile:
                  `library(colorout)`
 
-If running Gnome Shell on Wayland, you may also want to install the extension
-"Activate Window By Title" which will be used to raise Zathura window
-displaying the PDF file generated from Rnoweb, Rmd or Quarto documents.
-
-
 Suggestions for bibliographic completion from Zotero:
 
 For RMarkdown (`.Rmd`) and Quarto (`.qmd`) documents:
@@ -798,8 +793,8 @@ the `init.vim`. The workaround is do not include the superfluous command
 |external_term|       Command to run R in an external terminal emulator
 |silent_term|         Do not show terminal errors
 |set_home_env|        Set the value of $HOME for R (Windows only)
-|save_win_pos|        Save positions of R and GVim windows (Windows only)
-|arrange_windows|     Restore positions of R and GVim windows (Windows only)
+|save_win_pos|        Save position of Rgui window (Windows only)
+|arrange_windows|     Restore position of R window (Windows only)
 |assign_map|          Choose what to convert into ' <- '
 |rnowebchunk|         Convert '<' into '<<>>=\n@' in Rnoweb files
 |rmdchunk|            Convert grave accent chunk into delimiters
@@ -811,8 +806,6 @@ the `init.vim`. The workaround is do not include the superfluous command
 |objbr_allnames|      Display hidden objects in the Object Browser
 |nvimpager|           Use Neovim to see R documentation
 |open_example|        Use Neovim to display R examples
-|editor_w|            Minimum width of R script buffer
-|help_w|              Desired width of R documentation buffer
 |R_path|                Directory where R is
 |R_app|, |R_cmd|          Names of R applications
 |R_args|                Arguments to pass to R
@@ -824,7 +817,7 @@ the `init.vim`. The workaround is do not include the superfluous command
 |rconsole_width|      Number of columns of R Console
 |min_editor_width|    Minimum number of columns of editor after R start
 |applescript|         Use osascript in Mac OS X to run R.app
-|tudio_cmd|           Run RStudio instead of R.
+|Rstudio_cmd|           Run RStudio instead of R.
 |listmethods|         Do `nvim.list.args()` instead of `args()`
 |specialplot|         Do `nvim.plot()` instead of `plot()`
 |paragraph_begin|     Send paragraph from its beginning
@@ -832,7 +825,7 @@ the `init.vim`. The workaround is do not include the superfluous command
 |bracketed_paste|     Bracket R code in special escape sequences
 |clear_console|       Send <C-L> to clear R's console
 |source_args|         Arguments to R `source()` function
-|commented_lines|     Include commented lines in code sent to `source()`
+|max_paste_lines|     Maximum number of lines to be pasted into R Console
 |latexcmd|            Command to run on .tex files
 |texerr|              Show a summary of LaTeX errors after compilation
 |sweaveargs|          Arguments do `Sweave()`
@@ -1068,8 +1061,8 @@ you can put in your config:
    save_win_pos = false
    arrange_windows = false
 <
-If you want R and GVim windows always in a specific arrangement, regardless of
-their state when you have quit R for the last time, you should arrange them
+If you want Rgui window always in a specific arrangement, regardless of
+its state when you have quit R for the last time, you should arrange it
 in the way you want, quit R, change in your config only the value of
 `save_win_pos` and, finally, quit Neovim.
 
@@ -1110,8 +1103,7 @@ cursor is not at the beginning of the line.
 
 While editing R code, <M--> is replaced with `<-`. If you want to bind other
 keys to be replaced by `<-`, set the value of |assign_map| in your config,
-as in the example below which emulates RStudio behavior (may only work on GVim
-or Neovim):
+as in the example below which emulates RStudio behavior:
 >lua
    assign_map = '<M-=>'
 <
@@ -1177,11 +1169,6 @@ respectively, `data.frames` and `lists`. The options are ignored for
 6.7. Neovim as pager for R
                                                               *open_example*
                                                               *nvimpager*
-                                                              *editor_w*
-                                                              *help_w*
-
-------------------------------------------------------------------------------
-6.7.1. Quick setup
 
 If you do not want to see R examples in a Neovim buffer, put in your config:
 >lua
@@ -1198,10 +1185,6 @@ changed to a suitable value if it is set to "no" after Neovim startup.
 If you want to see R documentation in Neovim, but are not satisfied with the
 way it works, please, read the subsection 6.7.2 below.
 
-
-------------------------------------------------------------------------------
-6.7.2. Details and other options:
-
 The plugin key bindings will remain active in the documentation buffer, and,
 thus, you will be able to send commands to R as you do while editing an R
 script. You can, for example, use <LocalLeader>rh to jump to another R help
@@ -1209,30 +1192,14 @@ document.
 
 The valid values of `nvimpager` are:
 
-   "vertical"  : Split the window vertically if the editor width is large
-                 enough; otherwise, split the window horizontally and attempt
-                 to set the window height to at least 20 lines.
-                 This is the default.
    "tab"       : Show the help document in a new tab. If there is already a
                  tab with an R help document tab, use it.
                  This is the default if `external_term` = `true`.
-   "horizontal": Split the window horizontally.
-   "tabnew"    : Show the help document in a new tab.
+   "split"     : Split the window horizontally, as `:help` does. That is,
+		 display R documentation above the editor window or at the
+		 very top of the screen.
+   "float"     : Not implemented yet.
    "no"        : Do not show R documentation in Neovim.
-
-The window will be considered large enough if it has more columns than
-`editor_w` + `help_w`. These variables control the minimum
-width of the editor window and the help window, and their default values are,
-respectively, 66 and 46. Thus, if you want to have more control over Neovim's
-behavior while opening R's documentations, you will want to set different
-values to some variables in your config, as in the example:
->lua
-   editor_w = 80
-   editor_h = 60
-<
-Unless the value of `nvimpager` is "tabnew", the buffer name will always be
-"doc" to force the reuse of the window when users jump from one help page to
-another.
 
 
 ------------------------------------------------------------------------------
@@ -1478,13 +1445,14 @@ while others have no command to clear the console. You should set the value of
 
 ------------------------------------------------------------------------------
 6.17. Arguments to R source() function
-                                                           *source_args*
-                                                           *commented_lines*
+							     *source_args*
+							     *max_paste_lines*
 
 When you send multiple lines of code to R (a selection of lines, a paragraph,
-code between two marks or an R chunk of code), R-Nvim saves the lines in a
-temporary file and, then, sends to R a command which calls `base::source()` to
-run the commands from the temporary file.
+code between two marks or an R chunk of code), and the number of lines is
+higher than `max_paste_lines`, R.nvim saves the lines in a temporary file and,
+then, sends to R a command which calls `base::source()` to run the commands
+from the temporary file.
 
 By default, R's `source()` is called with the arguments `print.eval=TRUE` and
 `spaced=FALSE`. The argument `local=parent.frame()` is passed to `source()`
@@ -1494,10 +1462,8 @@ change the arguments passed to it. Examples:
    source_args = 'echo = TRUE'
    source_args = 'print.eval = FALSE, echo = TRUE, spaced = TRUE'
 <
-The option `commented_lines` was dropped because it unduly removed lines from
-multi-line raw strings if they included a hashtag. See:
-
-   https://github.com/jalvesaq/R-Nvim/issues/743
+You can set the maximum number of lines to be directly pasted into the R
+Console with the option `max_paste_lines` (default value = 20).
 
 
 ------------------------------------------------------------------------------
@@ -1633,9 +1599,8 @@ config to define what PDF viewer will be called. Valid values are "zathura"
 (default, and the one best integrated with R-Nvim), "evince" and "okular".
 
 On Linux, if running on the X server (not on Wayland), the application
-`wmctrl` is required to raise both the PDF viewer and Neovim windows. If using
-Gnome Shell on Wayland, the extension "Activate Window By Title" is required
-(https://extensions.gnome.org/extension/5021/activate-window-by-title/).
+`wmctrl` is required to raise both the PDF viewer and Neovim windows. This
+feature is not implemented for Wayland windows managers.
 
 If editing an Rmd file, you can produce the html result with <LocalLeader>kr
 or <LocalLeader>kh (it may also work with other file types). The html file
@@ -1760,14 +1725,15 @@ in config:
 
 ------------------------------------------------------------------------------
 6.32. Commands to be executed after either R startup or Object Browser opening
-                                                             *hook*
+									*hook*
 
 If you want the execution of a Lua function just after R startup or after the
 Object Browser opening, set the `hook` config option, as in the example below:
 >lua
    hook = {
+       after_config = function() vim.notify("R.nvim is configured") end,
        after_R_start = function() vim.notify("R was launched") end,
-       after_ob_open = function() vim.notify("Object Browser") end,
+       after_ob_open = nil,
    },
 <
 
@@ -1783,11 +1749,11 @@ use those key-bindings specified by the user, put in your config:
 >lua
     user_maps_only = true
 <
-If you want to disable only some of R-Nvim commands, create a Vim list with
+If you want to disable only some of R.nvim commands, create a Lua table with
 their key bindings names in your config. The complete list of key bindings
-names is shown at the Custom key bindings section (R-Nvim-key-bindings).
-Below is an example on how to disable the commands that sends `setwd()` and
-`dput()` to R Console:
+names is shown at the Custom key bindings section (R.nvim-key-bindings). Below
+is an example on how to disable the commands that sends `setwd()` and `dput()`
+to R Console:
 >lua
    disable_cmds = {'RSetwd', 'RDputObj'}
 <
@@ -1845,49 +1811,6 @@ auto completion feature in your `~/.Rprofile` to get completions from
 <
 If you prefer to get completions from the language server, `cmp-r` should
 not be installed.
-
-While completing function arguments, R-Nvim may include column names from the
-data.frame passed as the first argument, and you may set in your config the
-list of functions that might benefit from this kind of completion. The example
-below sets `fun_data_1` to its default value:
->lua
-   fun_data_1 = {'select', 'rename', 'mutate', 'filter'}
-
-R-Nvim can also include column names from a data.frame passed as the first
-argument of the parent function. For example, if you were typing
->r
-   with(my_data_frame, lm(
-<
-and, then, trigger auto completion, the column names of `my_data_frame` would
-be included in the completion menu. By default, only the function `aes` (if
-passed as argument for `ggplot`) and the functions `lm`, `glm` or `lmer` (if
-passed as argument for `with`) will have column names of the first argument of
-the parent function included in the completion menu. You have to set the value
-of `fun_data_2` in your config to include more functions. `fun_data_2` is a
-dictionary with parent functions as keys. The value of each key is a list of
-functions that are expected to be nested in the parent function. If the name
-of the nested function is `*`, it will match name. Example:
->lua
-   fun_data_2 = {ggplot = {'aes'}, with = {'*'}}
-<
-Note: The algorithm for finding the first argument of the parent function is
-very simple and would wrongly recognize `data` as the name of the
-`data.frame` in the following code:
->r
-   ggplot(data = my_data_frame, mapping = aes(
-<
-R-Nvim receives the list of objects for auto completion from the nvimrserver
-job running in the background. If the list is too big to be transmitted
-through nvimrserver's `stdout`, the completion might be aborted.
-
-If editing Quarto documents, R-Nvim will try to find the file
-`yaml-intelligence-resources.json` which is part of `quarto` application and
-has all necessary information for completion of valid YAML options in an
-Quarto document. If R-Nvim fails to find the file, you can set the value of
-`quarto_intel` in your config. Example:
->lua
-   quarto_intel = '~/Downloads/quarto-1.1.251/share/editor/tools/yaml/yaml-intelligence-resources.json'
-<
 
 ------------------------------------------------------------------------------
 6.37. Options for accessing Remote R from local Neovim        *remote_compldir*
@@ -1995,10 +1918,9 @@ Note: The knitr package (as of version 1.7) had at least two limitations:
      `\begin{document}` command.
 
                                                                 *term_title*
-If running Gnome Shell on Wayland, you have to install the extension "Activate
-Window by Title" and set the title of your terminal emulator in your config
-in order to have the terminal window raised on SyncTeX backward events.
-Example:
+You have to set the title of your terminal emulator in your config in order to
+have the correct terminal window raised on SyncTeX backward events (works on
+Xorg; on Wayland, only Sway is supported). Example:
 >lua
    term_title = 'Terminal'
 <

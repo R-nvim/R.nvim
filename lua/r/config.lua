@@ -26,22 +26,26 @@ local config = {
     compldir            = nil,
     config_tmux         = true,
     disable_cmds        = { "" },
-    editor_w            = 66,
     esc_term            = true,
     external_term       = false, -- might be a string
     fun_data_1          = { "select", "rename", "mutate", "filter" },
     fun_data_2          = { ggplot = { "aes" }, with = "*" },
     help_w              = 46,
     hi_fun_paren        = false,
-    hook                = { after_R_start = nil, after_ob_open = nil },
+    hook                = {
+                              after_config = nil,
+                              after_R_start = nil,
+                              after_ob_open = nil
+                          },
     insert_mode_cmds    = false,
     latexcmd            = { "default" },
     listmethods         = false,
     local_R_library_dir = nil,
+    max_paste_lines     = 20,
     min_editor_width    = 80,
     non_r_compl         = true,
     nvim_wd             = 0,
-    nvimpager           = "vertical",
+    nvimpager           = "split",
     objbr_allnames      = false,
     objbr_auto_start    = false,
     objbr_h             = 10,
@@ -76,6 +80,7 @@ local config = {
     source_args         = "",
     specialplot         = false,
     synctex             = true,
+    term_title          = "term",
     texerr              = true,
     tmpdir              = nil,
     user_login          = nil,
@@ -244,7 +249,7 @@ local do_common_global = function()
     elseif vim.fn.isdirectory(vim.fn.expand("~/Library/Caches")) ~= 0 then
         config.compldir = vim.fn.expand("~/Library/Caches/R-Nvim")
     else
-        config.compldir = config.uservimfiles .. "/R/objlist/"
+        config.compldir = config.uservimfiles .. "/R_cache/"
     end
 
     utils.ensure_directory_exists(config.compldir)
@@ -271,7 +276,6 @@ local do_common_global = function()
         or vim.fn.readfile(config.compldir .. "/README")[1] ~= first_line
     then
         need_readme = true
-        vim.notify("Need README") -- FIXME: delete this line
     end
 
     if need_readme then
@@ -317,7 +321,7 @@ local do_common_global = function()
             "  1. Name.",
             "",
             "  2. Single character representing the Type (look at the function",
-            "     nvimcom_glbnv_line at R/nvimcom/src/nvimcom.c to know the meaning of the",
+            "     nvimcom_glbnv_line at nvimcom/src/nvimcom.c to know the meaning of the",
             "     characters).",
             "",
             "  3. Class.",
@@ -354,7 +358,7 @@ local do_common_global = function()
             elseif vim.env.TEMP and vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
                 config.tmpdir = vim.env.TEMP .. "/R.nvim-" .. config.user_login
             else
-                config.tmpdir = config.uservimfiles .. "/R/tmp"
+                config.tmpdir = config.uservimfiles .. "/R_tmp"
             end
             config.tmpdir = utils.normalize_windows_path(config.tmpdir)
         else
@@ -369,7 +373,7 @@ local do_common_global = function()
             elseif vim.fn.isdirectory("/tmp") ~= 0 then
                 config.tmpdir = "/tmp/R-Nvim-" .. config.user_login
             else
-                config.tmpdir = config.uservimfiles .. "/R/tmp"
+                config.tmpdir = config.uservimfiles .. "/R_tmp"
             end
         end
     end
@@ -380,7 +384,6 @@ local do_common_global = function()
     config.localtmpdir = config.tmpdir
 
     -- Check if the 'config' table has the key 'remote_compldir'
-    -- FIXME: replace all NVIMR_ with RNVIM_
     if config.remote_compldir then
         vim.env.NVIMR_REMOTE_COMPLDIR = config.remote_compldir
         vim.env.NVIMR_REMOTE_TMPDIR = config.remote_compldir .. "/tmp"
@@ -417,7 +420,7 @@ local do_common_global = function()
     end
 
     if type(config.external_term) == "boolean" and config.external_term == false then
-        config.nvimpager = "vertical"
+        config.nvimpager = "split"
         config.save_win_pos = false
         config.arrange_windows = false
     else
@@ -482,7 +485,6 @@ local do_common_global = function()
 
     -- SyncTeX options
     config.has_wmctrl = false
-    config.has_awbt = false
 
     -- Set the name of R executable
     if config.is_windows then
@@ -801,7 +803,6 @@ M.store_user_opts = function(opts)
     -- 6: R started, but nvimcom was not loaded yet.
     -- 7: nvimcom is loaded.
     vim.g.R_Nvim_status = 0
-
     user_opts = opts
 end
 
@@ -811,7 +812,7 @@ end
 M.real_setup = function()
     local gtime = vim.fn.reltime()
 
-    vim.g.R_Nvim_status = 1
+    if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
 
     config_keys = {}
     for k, _ in pairs(config) do
@@ -837,6 +838,7 @@ M.real_setup = function()
         vim.fn.reltimefloat(vim.fn.reltime(gtime, vim.fn.reltime())),
         "Time"
     )
+    if config.hook.after_config then config.hook.after_config() end
 end
 
 --- Return the table with the final configure variables: the default values
@@ -845,15 +847,11 @@ end
 M.get_config = function() return config end
 
 M.check_health = function()
-    -- Check if Vim-R-plugin is installed
+    -- Check if either Vim-R-plugin or Nvim-R is installed
     if vim.fn.exists("*WaitVimComStart") ~= 0 then
-        warn("Please, uninstall Vim-R-plugin before using R-Nvim.")
-    end
-
-    -- Check if Nvim-R is installed
-    -- FIXME: choose a function that exists in Nvim-R, but not in R-Nvim
-    if vim.fn.exists("*WaitVimComStart") ~= 0 then
-        warn("Please, uninstall Nvim-R before using R-Nvim.")
+        warn("Please, uninstall Vim-R-plugin before using R.nvim.")
+    elseif vim.fn.exists("*RWarningMsg") ~= 0 then
+        warn("Please, uninstall Nvim-R before using R.nvim.")
     end
 
     if vim.fn.executable(config.R_app) == 0 then

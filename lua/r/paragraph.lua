@@ -1,4 +1,5 @@
 local M = {}
+
 -- Get the starting and ending line numbers of the current paragraph.
 -- Returns a table with two keys: 'start' and 'end'.
 -- The 'start' key contains the line number of the first line of the paragraph.

@@ -35,13 +35,10 @@ vim.schedule(function()
     require("r.rnw").set_pdf_dir()
 end)
 
--- FIXME: not working:
-if vim.fn.exists("b:undo_ftplugin") == 1 then
-    vim.api.nvim_buf_set_var(
-        0,
-        "undo_ftplugin",
-        vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
-    )
-else
-    vim.api.nvim_buf_set_var(0, "undo_ftplugin", "unlet! b:IsInRCode")
-end
+vim.schedule(function()
+    if vim.b.undo_ftplugin then
+        vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
+    else
+        vim.b.undo_ftplugin = "unlet! b:IsInRCode"
+    end
+end)

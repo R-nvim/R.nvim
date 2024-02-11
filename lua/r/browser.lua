@@ -151,6 +151,7 @@ local set_buf_options = function()
 
     vim.fn.setline(1, ".GlobalEnv | Libraries")
 
+    require("r.config").real_setup()
     require("r.maps").create("rbrowser")
 end
 
@@ -160,7 +161,7 @@ find_parent = function(child, curline, curpos)
     local idx
     local parent
     local suffix
-    while curline > 3 and curpos >= curpos do
+    while curline > 3 do
         curline = curline - 1
         line = vim.fn.getline(curline):gsub("	.*", "")
         idx = line:find("#")
@@ -168,8 +169,10 @@ find_parent = function(child, curline, curpos)
             parent = line:sub(idx + 1)
             if line:find("%[#") or line:find("%$#") then
                 suffix = "$"
+                break
             elseif line:find("<#") then
                 suffix = "@"
+                break
             else
                 local msg = "Unrecognized type of parent: `"
                     .. parent
@@ -192,12 +195,11 @@ find_parent = function(child, curline, curpos)
 
     local spacelimit
     if curview == "GlobalEnv" then
-        spacelimit = 5
+        spacelimit = 6
     else
-        spacelimit = isutf8 and 11 or 7
+        spacelimit = isutf8 and 12 or 8
     end
-
-    if idx > spacelimit then child = find_parent(child, curline, idx) end
+    if idx > spacelimit then return find_parent(fullname, curline, idx) end
     return fullname
 end
 

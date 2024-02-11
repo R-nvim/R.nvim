@@ -167,9 +167,6 @@ M.start_R = function(whatr)
     if vim.g.R_Nvim_status == 7 then
         if type(config.external_term) == "boolean" and config.external_term == false then
             require("r.term").reopen_win()
-        elseif not config.applescript and not config.is_windows then
-            -- FIXME: restart Tmux
-            vim.notify("FIXME: keep R running, but restart tmux.")
         end
         return
     end
@@ -197,8 +194,8 @@ M.start_R = function(whatr)
 
     if vim.g.R_Nvim_status == 3 then
         vim.g.R_Nvim_status = 4
+        require("r.send").set_send_cmd_fun()
         job.stdin("Server", "1\n") -- Start the TCP server
-        require("r.send").cmd = require("r.send").not_ready
         what_R = whatr
         vim.fn.timer_start(30, start_R2)
         return
@@ -235,7 +232,7 @@ end
 
 M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     local r_home_description =
-        vim.fn.readfile(config.rnvim_home .. "/R/nvimcom/DESCRIPTION")
+        vim.fn.readfile(config.rnvim_home .. "/nvimcom/DESCRIPTION")
     local current
     for _, v in pairs(r_home_description) do
         if v:find("Version: ") then current = v:sub(10) end
@@ -306,18 +303,25 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         end
     end
 
+    vim.g.R_Nvim_status = 7
     if config.hook.after_R_start then config.hook.after_R_start() end
-    vim.fn.timer_start(100, require("r.send").set_send_cmd_fun)
+    send.set_send_cmd_fun()
 end
 
 M.clear_R_info = function()
-    vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.NVIMR_ID))
-    vim.fn.delete(config.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.NVIMR_ID))
+    vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.RNVIM_ID))
+    vim.fn.delete(config.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.RNVIM_ID))
     R_pid = 0
     if type(config.external_term) == "boolean" and config.external_term == false then
         require("r.term").close_term()
     end
-    job.stdin("Server", "43\n")
+    if job.is_running("Server") then
+        vim.g.R_Nvim_status = 3
+        job.stdin("Server", "43\n")
+    else
+        vim.g.R_Nvim_status = 1
+    end
+    send.set_send_cmd_fun()
 end
 
 -- Background communication with R
@@ -596,7 +600,7 @@ M.print_object = function(rkeyword)
     if vim.fn.bufname("%") == "Object_Browser" then
         firstobj = ""
     else
-        firstobj = cursor.get_first_obj(rkeyword)[1]
+        firstobj = cursor.get_first_obj()
     end
 
     if firstobj == "" then
@@ -622,7 +626,6 @@ end
 M.setwd = function() send.cmd('setwd("' .. M.get_buf_dir() .. '")') end
 
 M.show_obj = function(howto, bname, ftype, txt)
-    vim.notify("show_obj")
     local bfnm = vim.fn.substitute(bname, "[[:punct:]]", "_", "g")
     edit.add_for_deletion(config.tmpdir .. "/" .. bfnm)
     vim.cmd({ cmd = howto, args = { config.tmpdir .. "/" .. bfnm } })
@@ -645,15 +648,15 @@ M.clear_console = function()
         vim.wait(50)
         job.stdin("Server", "87\n")
     else
-        send.cmd("\014", 0)
+        send.cmd("\014")
     end
 end
 
 M.clear_all = function()
     if config.rmhidden then
-        M.send.cmd("rm(list=ls(all.names = TRUE))", true)
+        M.send.cmd("rm(list=ls(all.names = TRUE))")
     else
-        send.cmd("rm(list = ls())", true)
+        send.cmd("rm(list = ls())")
     end
     vim.wait(30)
     M.clear_console()
@@ -663,14 +666,14 @@ M.get_buf_dir = function()
     local rwd = vim.api.nvim_buf_get_name(0)
     if config.is_windows then
         rwd = vim.fn.substitute(rwd, "\\", "/", "g")
-        rwd = utils.nomralize_windows_path(rwd)
+        rwd = utils.normalize_windows_path(rwd)
     end
     rwd = vim.fn.substitute(rwd, "\\(.*\\)/.*", "\\1", "")
     return rwd
 end
 
 M.source_dir = function(dir)
-    if config.is_windows then dir = utils.nomralize_windows_path(dir) end
+    if config.is_windows then dir = utils.normalize_windows_path(dir) end
     if dir == "" then
         send.cmd("nvim.srcdir()")
     else

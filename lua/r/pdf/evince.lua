@@ -27,7 +27,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
     if evince_loop < 2 then
         require("r.job").start("Python (Evince forward)", {
             py,
-            config.rnvim_home .. "/R/pdf_evince_forward.py",
+            config.rnvim_home .. "/scripts/pdf_evince_forward.py",
             texname,
             pdfname,
             tostring(texln),
@@ -56,7 +56,7 @@ M.SyncTeX_backward = function()
         table.insert(evince_list, pdfpath)
         require("r.job").start(
             "Python (Evince backward)",
-            { py, config.rnvim_home .. "/R/pdf_evince_back.py", pdfpath },
+            { py, config.rnvim_home .. "/scripts/pdf_evince_back.py", pdfpath },
             nil
         )
     end

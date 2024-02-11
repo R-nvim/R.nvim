@@ -57,9 +57,9 @@ local control = function(file_type)
     create_maps("ni",  "RObjectNames",      "rn", "<Cmd>lua require('r.run').action('nvim.names')")
     create_maps("ni",  "RObjectStr",        "rt", "<Cmd>lua require('r.run').action('str')")
     create_maps("ni",  "RViewDF",           "rv", "<Cmd>lua require('r.run').action('viewobj')")
-    create_maps("ni",  "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', ', howto=\"split\"')")
-    create_maps("ni",  "RViewDFv",          "vv", "<Cmd>lua require('r.run').action('viewobj', ', howto=\"vsplit\"')")
-    create_maps("ni",  "RViewDFa",          "vh", "<Cmd>lua require('r.run').action('viewobj', ', howto=\"above 7split\", nrows=6')")
+    create_maps("ni",  "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"split\"')")
+    create_maps("ni",  "RViewDFv",          "vv", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"vsplit\"')")
+    create_maps("ni",  "RViewDFa",          "vh", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"head\", nrows=6')")
     create_maps("ni",  "RDputObj",          "td", "<Cmd>lua require('r.run').action('dputtab')")
 
     create_maps("v",   "RObjectPr",         "rp", "<Cmd>lua require('r.run').action('print', 'v')")
@@ -68,7 +68,7 @@ local control = function(file_type)
     create_maps("v",   "RViewDF",           "rv", "<Cmd>lua require('r.run').action('viewobj', 'v')")
     create_maps("v",   "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', 'v', ', howto=\"split\"')")
     create_maps("v",   "RViewDFv",          "vv", "<Cmd>lua require('r.run').action('viewobj', 'v', ', howto=\"vsplit\"')")
-    create_maps("v",   "RViewDFa",          "vh", "<Cmd>lua require('r.run').action('viewobj', 'v', ', howto=\"above 7split\", nrows=6')")
+    create_maps("v",   "RViewDFa",          "vh", "<Cmd>lua require('r.run').action('viewobj', 'v', ', howto=\"head\", nrows=6')")
     create_maps("v",   "RDputObj",          "td", "<Cmd>lua require('r.run').action('dputtab', 'v')")
 
     -- Arguments,      example,             help
@@ -163,8 +163,7 @@ local send = function(file_type)
     create_maps("i",   "RIRightPart",         "r<right>", "<Cmd>lua require('r.send').line_part('right', true)")
     if file_type == "r" then
         create_maps("n",   "RSendAboveLines", "su", "<Cmd>lua require('r.send').above_lines()")
-        create_maps("ni",  "RSendFile",       "aa", "<Cmd>lua require('r.send').source_file('silent')")
-        create_maps("ni",  "RESendFile",      "ae", "<Cmd>lua require('r.send').source_file('echo')")
+        create_maps("ni",  "RSendFile",       "aa", "<Cmd>lua require('r.send').source_file()")
         create_maps("ni",  "RShowRout",       "ao", "<Cmd>lua require('r').show_R_out()")
     end
     if file_type == "rmd" or file_type == "quarto" then

@@ -42,8 +42,8 @@ local begin_waiting_more_input = function ()
 end
 
 --- Executes a command received through stdout, if it matches known patterns.
--- @param cmd The command to execute.
--- @param job_id The ID of the job that produced the command.
+---@param cmd string The command to execute.
+---@param job_id number The ID of the job that produced the command.
 local exec_stdout_cmd = function (cmd, job_id)
     if cmd:match("^(lua |call |let)")then
         vim.fn.execute(cmd)
@@ -54,8 +54,8 @@ local exec_stdout_cmd = function (cmd, job_id)
 end
 
 --- Handles stdout data from a job.
--- @param job_id The ID of the job.
--- @param data The data received from stdout.
+---@param job_id number The ID of the job.
+---@param data table The data received from stdout.
 M.on_stdout = function(job_id, data, _)
     local cmd
     for _, v in pairs(data) do
@@ -96,16 +96,16 @@ M.on_stdout = function(job_id, data, _)
 end
 
 --- Handles stderr data from a job.
--- @param job_id The ID of the job.
--- @param data The data received from stderr.
+---@param job_id number The ID of the job.
+---@param data table The data received from stderr.
 M.on_stderr = function(job_id, data, _)
     local msg = table.concat(data):gsub("\r", "")
     if not msg:match("^%s*$") then warn("[" .. M.get_title(job_id) .. "] " .. msg) end
 end
 
 --- Handles the exit of a job.
--- @param job_id The ID of the job.
--- @param data The exit status of the job.
+---@param job_id number The ID of the job.
+---@param data table The exit status of the job.
 M.on_exit = function(job_id, data, _)
     local key = M.get_title(job_id)
     if key ~= "Job" then jobs[key] = 0 end
@@ -128,9 +128,9 @@ local default_handlers = {
 }
 
 --- Starts a new job with the specified command and options.
--- @param job_name The name of the job.
--- @param cmd The command to start the job with.
--- @param opt Optional table of handlers for job events.
+---@param job_name string The name of the job.
+---@param cmd table The command to start the job with.
+---@param opt table|nil Optional table of handlers for job events.
 M.start = function(job_name, cmd, opt)
     local h = default_handlers
     if opt then h = opt end
@@ -145,7 +145,7 @@ M.start = function(job_name, cmd, opt)
 end
 
 --- Opens an R terminal with the specified command.
--- @param cmd The command to start the R terminal with.
+---@param cmd string The command to start the R terminal with.
 M.R_term_open = function(cmd)
     local jobid = vim.fn.termopen(cmd, { on_exit = M.on_exit })
     if jobid == 0 then
@@ -158,8 +158,8 @@ M.R_term_open = function(cmd)
 end
 
 --- Retrieves the title of a job by its ID.
--- @param job_id The ID of the job.
--- @return The title of the job or "Job" if not found.
+---@param job_id number The ID of the job.
+---@return string The title of the job or "Job" if not found.
 M.get_title = function(job_id)
     for key, value in pairs(jobs) do
         if value == job_id then return key end
@@ -168,15 +168,15 @@ M.get_title = function(job_id)
 end
 
 --- Sends a command to a job's stdin.
--- @param job The name of the job.
--- @param cmd The command to send.
-M.stdin = function(job, cmd) vim.fn.chansend(jobs[job], cmd) end
+---@param job_name string The name of the job.
+---@param cmd string The command to send.
+M.stdin = function(job_name, cmd) vim.fn.chansend(jobs[job_name], cmd) end
 
 --- Checks if a job is currently running.
--- @param key The name of the job.
--- @return True if the job is running, false otherwise.
-M.is_running = function(key)
-    if jobs[key] and jobs[key] ~= 0 then return true end
+---@param job_name string The name of the job.
+---@return boolean True if the job is running, false otherwise.
+M.is_running = function(job_name)
+    if jobs[job_name] and jobs[job_name] ~= 0 then return true end
     return false
 end
 
@@ -188,6 +188,14 @@ M.stop_nrs = function()
             vim.wait(20)
         end
     end
+end
+
+-- Only called by R when finishing a session in a external terminal emulator.
+-- We do know when the terminal exits, but when the terminal is closed Tmux is
+-- only detached and R keeps running.
+M.end_of_R_session = function ()
+    jobs["R"] = 0
+    require("r.run").clear_R_info()
 end
 
 return M

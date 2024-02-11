@@ -52,7 +52,7 @@ M.clean_and_start_Rgui = function()
     M.start_Rgui()
 end
 
-M.send_cmd_to_Rgui = function(command, _)
+M.send_cmd_to_Rgui = function(command)
     local cmd
     if config.clear_line then
         cmd = "\001" .. "\013" .. command .. "\n"
@@ -60,7 +60,7 @@ M.send_cmd_to_Rgui = function(command, _)
         cmd = command .. "\n"
     end
     require("r.job").stdin("Server", "83" .. cmd)
-    return 1
+    return true
 end
 
 return M

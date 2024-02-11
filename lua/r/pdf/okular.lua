@@ -1,7 +1,6 @@
 local M = {}
 local job = require("r.job")
 local warn = require("r").warn
-local config = require("r.config").get_config()
 
 local on_okular_stdout = function(_, data, _)
     for _, cmd in ipairs(data) do
@@ -38,8 +37,9 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
     })
     if job.is_running("OkularSyncTeX") < 1 then
         warn("Failed to run Okular (SyncTeX forward)...")
+        return
     end
-    if config.has_awbt then require("r.pdf").raise_window(pdfname) end
+    require("r.pdf").raise_window(pdfname)
 end
 
 return M

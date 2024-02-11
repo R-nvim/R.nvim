@@ -2,27 +2,36 @@ local config = require("r.config").get_config()
 local warn = require("r").warn
 
 -- Check if the cursor is in the Examples section of R documentation
+---@param vrb boolean
+---@return boolean
 local is_in_R_code = function(vrb)
     local exline = vim.fn.search("^Examples:$", "bncW")
     if exline > 0 and vim.fn.line(".") > exline then
-        return 1
+        return true
     else
         if vrb then warn('Not in the "Examples" section.') end
-        return 0
+        return false
     end
 end
 
 local M = {}
 
 M.set_buf_options = function()
+    if vim.o.filetype ~= "" then
+        -- The buffer was previously used to display an R object.
+        vim.api.nvim_set_option_value("filetype", "", { scope = "local" })
+    end
     vim.api.nvim_buf_set_var(0, "IsInRCode", is_in_R_code)
     vim.api.nvim_set_option_value("number", false, { scope = "local" })
     vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
-    vim.api.nvim_set_option_value("syntax", "rdoc", { scope = "local" })
     vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
     vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
     vim.api.nvim_set_option_value("iskeyword", "@,48-57,_,.", { scope = "local" })
+    if vim.bo.syntax ~= "rdoc" then
+        vim.api.nvim_set_option_value("syntax", "rdoc", { scope = "local" })
+    end
 
+    require("r.config").real_setup()
     require("r.maps").create("rdoc")
 end
 

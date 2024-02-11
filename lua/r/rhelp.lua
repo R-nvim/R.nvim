@@ -1,5 +1,8 @@
 local M = {}
 
+--- Check if cursor is within a R block of code
+---@param vrb boolean
+---@return boolean
 M.is_in_R_code = function(vrb)
     local lastsec = vim.fn.search("^\\\\[a-z][a-z]*{", "bncW")
     local secname = vim.fn.getline(lastsec)
@@ -14,10 +17,10 @@ M.is_in_R_code = function(vrb)
             or secname == "\\testonly{"
         )
     then
-        return 1
+        return true
     else
         if vrb then require("r").warn("Not inside an R section.") end
-        return 0
+        return false
     end
 end
 

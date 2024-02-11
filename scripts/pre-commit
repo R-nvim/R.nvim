@@ -25,8 +25,8 @@ function format_files {
 # Check and format .c and .h files
 if git diff --staged --name-only --diff-filter=ACMR | grep -E '\.(c|h)$' > /dev/null; then
     check_tool_installed "clang-format"
-    format_files "*.c" "clang-format" "--style={BasedOnStyle: llvm, IndentWidth: 4, SortIncludes: Never} -i"
-    format_files "*.h" "clang-format" "--style={BasedOnStyle: llvm, IndentWidth: 4, SortIncludes: Never} -i"
+    format_files "*.c" "clang-format" "--style={BasedOnStyle: llvm, IndentWidth: 4, SortIncludes: Never}" "-i"
+    format_files "*.h" "clang-format" "--style={BasedOnStyle: llvm, IndentWidth: 4, SortIncludes: Never}" "-i"
 fi
 
 # Check and format .lua files
