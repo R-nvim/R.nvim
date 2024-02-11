@@ -42,6 +42,35 @@ Please read the plugin's
 [documentation](https://github.com/jamespeapen/Nvim-R/wiki) for instructions on
 [usage](https://github.com/jamespeapen/Nvim-R/wiki/Use).
 
+## Transitioning from Nvim-R
+
+
+During conversion of VimScript to Lua, we decide to end support for features
+that were useful in the past but no longer sufficiently valuable to be worth
+the effort of conversion. We removed support for `Rrst` (it seems that not
+many people use it anymore), debugging code (a debug adapter would be better),
+legacy omni-completion (auto completion with
+[nvim-cmp](https://github.com/hrsh7th/nvim-cmp) is better), and highlighting
+functions from .GlobalEnv (difficult to make compatible with tree-sitter + LSP
+highlighting).
+
+We changed the key binding to insert the assignment operator (` <- `) from an
+underscore (which was familiar to Emacs-ESS users) to `Alt+-` which is more
+convenient (but does not work on Vim).
+
+We replaced the options `R_source` and `after_R_start` with `hook` and we can
+insert other hooks for Lua functions at other parts of the code under user
+request.
+
+We removed the `"echo"` parameters from the functions that send code to R
+Console. Users can still define the arguments that will be passed to
+`base::source()` with `source_args`, which includes the ability to pass the
+argument `echo=TRUE`. Now, there is a new option to define how many lines can
+be sent directly to R Console without saving the code in a temporary file to
+be sourced (`max_lines_to_paste`).
+
+
+
 ## Screenshots
 
 The animated GIF below shows R running in a [Neovim] terminal buffer. We can
@@ -74,7 +103,7 @@ note:
 ## The communication between R and either Vim or Neovim
 
 The diagram below shows how the communication between Vim/Neovim and R works.
-![Neovim-R communication](https://raw.githubusercontent.com/jalvesaq/Nvim-R/master/nvimrcom.png "Neovim-R communication")
+![Neovim-R communication](https://raw.githubusercontent.com/jalvesaq/tmp-R-Nvim/master/nvimrcom.svg "Neovim-R communication")
 
 The black arrow represents all commands that you trigger in the editor and
 that you can see being pasted into R Console.
