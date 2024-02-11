@@ -38,6 +38,7 @@ local config = {
     latexcmd            = { "default" },
     listmethods         = false,
     local_R_library_dir = nil,
+    max_paste_lines     = 20,
     min_editor_width    = 80,
     non_r_compl         = true,
     nvim_wd             = 0,

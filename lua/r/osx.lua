@@ -36,7 +36,7 @@ M.send_cmd_to_Rapp = function(command, _)
     vim.fn.system(
         "osascript -e 'tell application \"" .. rcmd .. '" to cmd "' .. cmd .. "\"'"
     )
-    return 1
+    return true
 end
 
 return M

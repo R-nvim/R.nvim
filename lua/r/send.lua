@@ -24,6 +24,9 @@ local ends_with_operator = function(line)
     return has_op
 end
 
+--- Check if the number of brackets are balanced
+---@param str string The line to check
+---@return number
 local paren_diff = function(str)
     local clnln = str
     clnln = clnln:gsub('\\"', "")
@@ -59,24 +62,38 @@ M.set_send_cmd_fun = function(running)
     vim.g.R_Nvim_status = 7
 end
 
-M.not_ready = function(_) warn("R is not ready yet.") end
+--- Warns that R is not ready to receive commands yet.
+---@param _ string The command that will not be send to anywhere.
+---@return boolean
+M.not_ready = function(_)
+    warn("R is not ready yet.")
+    return false
+end
 
---- Send a string to R Console.
----@param _ string The line to be sent.
-M.not_running = function(_) warn("Did you start R?") end
+--- Warns that R is not running.
+---@param _ string The command that will not be send to anywhere.
+---@return boolean
+M.not_running = function(_)
+    warn("Did you start R?")
+    return false
+end
 
 M.cmd = M.not_running
 
-M.get_source_args = function(e)
+--- Add a comma to the beginning of arguments to be passed to base::source().
+---@return string
+M.get_source_args = function()
     -- local sargs = config.source_args or ''
     local sargs = ""
     if config.source_args ~= "" then sargs = ", " .. config.source_args end
-
-    if e == "echo" then sargs = sargs .. ", echo=TRUE" end
     return sargs
 end
 
-M.source_lines = function(lines, verbose, what)
+--- Save lines in a temporary file and send to R a command to source them.
+---@param lines string[] Lines to save and source
+---@param what string|nil Additional operation to perform
+---@return boolean
+M.source_lines = function(lines, what)
     require("r.edit").add_for_deletion(config.source_write)
 
     if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
@@ -92,36 +109,32 @@ M.source_lines = function(lines, verbose, what)
                 .. config.source_read
                 .. '", "NewtabInsert")'
         )
-        return 1
+        return true
     end
 
     local rcmd
 
-    -- The "bracketed paste" option is not documented because it is not well
-    -- tested and source() have always worked flawlessly.
-    -- FIXME: document it
-    if config.source_args == "bracketed paste" then
-        rcmd = "\027[200~" .. table.concat(lines, "\n") .. "\027[201~"
-    elseif config.source_args == "unbracketed paste" then
+    if #lines < config.max_paste_lines then
         rcmd = table.concat(lines, "\n")
     else
         vim.fn.writefile(lines, config.source_write)
-        local sargs = string.gsub(M.get_source_args(verbose), "^, ", "")
+        local sargs = string.gsub(M.get_source_args(), "^, ", "")
         if what then
-            rcmd = "Rnvim." .. what .. "(" .. sargs .. ")"
+            if what == "PythonCode" then
+                rcmd = 'reticulate::py_run_file("' .. config.source_read .. '")'
+            else
+                rcmd = "Rnvim." .. what .. "(" .. sargs .. ")"
+            end
         else
             rcmd = "Rnvim.source(" .. sargs .. ")"
         end
     end
 
-    if what and what == "PythonCode" then
-        rcmd = 'reticulate::py_run_file("' .. config.source_read .. '")'
-    end
-
-    local ok = M.cmd(rcmd)
-    return ok
+    if config.bracketed_paste then rcmd = "\027[200~" .. rcmd .. "\027[201~" end
+    return M.cmd(rcmd)
 end
 
+--- Send to R all lines above the current one.
 M.above_lines = function()
     local lines = vim.api.nvim_buf_get_lines(0, 1, vim.fn.line(".") - 1, false)
 
@@ -132,7 +145,7 @@ M.above_lines = function()
     M.cmd(result)
 end
 
-M.source_file = function(e)
+M.source_file = function()
     local fpath = vim.api.nvim_buf_get_name(0) .. ".tmp.R"
 
     if vim.fn.filereadable(fpath) == 1 then
@@ -146,10 +159,9 @@ M.source_file = function(e)
 
     if config.is_windows then fpath = utils.normalize_windows_path(fpath) end
 
-    if config.source_args:find("bracketed") then
-        -- Send the whole set of lines to RConsole as a single string
-        M.source_lines(vim.fn.getline(1, "$"), e, "file")
-    else
+    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("$"), true)
+
+    if #lines > config.max_paste_lines then
         -- Source the file.
         -- Create a temporary copy of the buffer because the file might have
         -- unsaved changes.
@@ -158,23 +170,30 @@ M.source_file = function(e)
         -- `vim.o.autochdir` might be `true`.
         vim.fn.writefile(vim.fn.getline(1, "$"), fpath)
         edit.add_for_deletion(fpath)
-        local sargs = M.get_source_args(e)
+        local sargs = M.get_source_args()
         local ok = M.cmd('nvimcom:::source.and.clean("' .. fpath .. '"' .. sargs .. ")")
         if not ok then vim.fn.delete(fpath) end
+        return
     end
+
+    M.source_lines(lines, nil)
 end
 
 -- Send the current paragraph to R. If m == 'down', move the cursor to the
 -- first line of the next paragraph.
+---@param m boolean True if should move to the next line.
 M.paragraph = function(m)
     local start_line, end_line = paragraph.get_current()
 
     local lines = vim.api.nvim_buf_get_lines(0, start_line, end_line, false)
-    M.cmd(table.concat(lines, "\n"))
+    M.source_lines(lines, nil)
 
     if m == true then cursor.move_next_paragraph() end
 end
 
+--- Send part of a line
+---@param direction string
+---@param correctpos boolean
 M.line_part = function(direction, correctpos)
     local lin = vim.api.nvim_buf_get_lines(0, vim.fn.line("."), vim.fn.line("."), true)[1]
     local idx = vim.fn.col(".") - 1
@@ -191,17 +210,21 @@ end
 -- Send the current function
 M.fun = function()
     warn(
-        "Sending function not implemented. It will be either implemented using treesitter or never implemented."
+        "Sending function not implemented. "
+            .. "It will be either implemented using treesitter or never implemented."
     )
 end
 
-local knit_child = function(line, godown)
+--- Send to R Console a command to source the document child indicated in chunk header.
+---@param line string The chunck header.
+---@param m boolean True if should move to the next chunk.
+local knit_child = function(line, m)
     local nline = vim.fn.substitute(line, ".*child *= *", "", "")
     local cfile = vim.fn.substitute(nline, nline:sub(1, 1), "", "")
     cfile = vim.fn.substitute(cfile, nline:sub(1, 1) .. ".*", "", "")
     if vim.fn.filereadable(cfile) == 1 then
         M.cmd("require(knitr); knit('" .. cfile .. "', output=NULL)")
-        if godown:find("down") then
+        if m then
             vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
             cursor.move_next_line()
         end
@@ -210,6 +233,8 @@ local knit_child = function(line, godown)
     end
 end
 
+--- Send to R Console a command to source a file containing all chunks of here
+--- code up to this one.
 M.chunks_up_to_here = function()
     local filetype = vim.o.filetype
     local codelines = {}
@@ -241,11 +266,11 @@ M.chunks_up_to_here = function()
             -- Child R chunk
             if curbuf[idx + 1]:match(chdchk) then
                 -- First, run everything up to the child chunk and reset buffer
-                M.source_lines(codelines, "silent", "chunk")
+                M.source_lines(codelines, "chunk")
                 codelines = {}
 
                 -- Next, run the child chunk and continue
-                knit_child(curbuf[idx + 1], "stay")
+                knit_child(curbuf[idx + 1], false)
                 idx = idx + 1
             else
                 idx = idx + 1
@@ -259,23 +284,24 @@ M.chunks_up_to_here = function()
         end
     end
 
-    M.source_lines(codelines, "silent", "chunk")
+    M.source_lines(codelines, "chunk")
 end
 
--- Send motion to R
+-- Send to R Console the code under a Vim motion
 M.motion = function(type)
     local lstart = vim.fn.line("'[")
     local lend = vim.fn.line("']")
     if lstart == lend then
         M.line("stay", lstart)
     else
-        local lines = vim.fn.getline(lstart, lend)
-        M.source_lines(lines, "", "block")
+        local lines = vim.api.nvim_buf_get_lines(0, lstart, lend, true)
+        M.source_lines(lines, "block")
     end
 end
 
 -- Send block to R (Adapted from marksbrowser plugin)
 -- Function to get the marks which the cursor is between
+---@param m boolean True if should move to the next line.
 M.marked_block = function(m)
     if not vim.b.IsInRCode(true) then return end
 
@@ -307,7 +333,7 @@ M.marked_block = function(m)
 
     if lineB < vim.fn.line("$") then lineB = lineB - 1 end
 
-    local lines = vim.fn.getline(lineA, lineB)
+    local lines = vim.api.nvim_buf_get_lines(0, lineA, lineB, true)
     local ok = M.source_lines(lines, "block")
 
     if ok == 0 then return end
@@ -318,6 +344,8 @@ M.marked_block = function(m)
     end
 end
 
+--- Send to R Console the selected lines
+---@param m boolean True if should move to the next line.
 M.selection = function(m)
     local ispy = false
 
@@ -403,7 +431,7 @@ M.selection = function(m)
 end
 
 --- Send current line to R Console
----@param m string Movement to do after sending the line.
+---@param m boolean|string Movement to do after sending the line.
 ---@param lnum number Number of line to send (optional).
 M.line = function(m, lnum)
     if not lnum then lnum = vim.fn.line(".") end
@@ -413,13 +441,24 @@ M.line = function(m, lnum)
         return
     end
 
+    if
+        vim.o.filetype == "rnoweb"
+        or vim.o.filetype == "rmd"
+        or vim.o.filetype == "quarto"
+    then
+        if line:find("^<<.*child *= *") or line:find("^```.*child *= *") then
+            if type(m) == "boolean" and m then
+                knit_child(line, true)
+            else
+                knit_child(line, false)
+            end
+            return
+        end
+    end
+
     if vim.o.filetype == "rnoweb" then
         if line == "@" then
             if m == true then cursor.move_next_line() end
-            return
-        end
-        if line:find("^<<.*child *= *") then
-            knit_child(lnum, m)
             return
         end
         if not require("r.rnw").is_in_R_code(true) then return end
@@ -428,10 +467,6 @@ M.line = function(m, lnum)
     if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
         if line == "```" then
             if m == true then cursor.move_next_line() end
-            return
-        end
-        if vim.fn.match(line, "^```.*child *= *") > -1 then
-            knit_child(lnum, m)
             return
         end
         line = vim.fn.substitute(line, "^(\\`\\`)\\?", "", "")
@@ -465,6 +500,7 @@ M.line = function(m, lnum)
     if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
 
     local has_op = false
+    local lines = {}
     if config.parenblock then
         local chunkend = nil
         if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
@@ -472,7 +508,6 @@ M.line = function(m, lnum)
         elseif vim.o.filetype == "rnoweb" then
             chunkend = "@"
         end
-        local lines = {}
         has_op = ends_with_operator(line)
         local rpd = paren_diff(line)
         if rpd < 0 or has_op then
@@ -492,8 +527,12 @@ M.line = function(m, lnum)
                     break
                 end
             end
-            line = table.concat(lines, "\n")
         end
+    end
+
+    if #lines > 0 then
+        M.source_lines(lines, nil)
+        return
     end
 
     if config.bracketed_paste then

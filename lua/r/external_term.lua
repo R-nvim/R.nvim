@@ -216,6 +216,10 @@ M.start_extern_term = function(Rcmd)
     require("r.run").wait_nvimcom_start()
 end
 
+--- Send line of command to R Console
+---@param command string
+---@param nl boolean
+---@return boolean
 M.send_cmd_to_external_term = function(command, nl)
     local cmd = command
 
@@ -232,7 +236,7 @@ M.send_cmd_to_external_term = function(command, nl)
     if str:find("^-") then str = " " .. str end
 
     local scmd
-    if nl ~= false then
+    if nl then
         scmd = string.format(
             "tmux -L Rnvim set-buffer '%s\n' ; tmux -L Rnvim paste-buffer -t %s.%s",
             str,
@@ -253,9 +257,9 @@ M.send_cmd_to_external_term = function(command, nl)
         rlog = rlog:gsub("\n", " "):gsub("\r", " ")
         warn(rlog)
         require("r.run").clear_R_info()
-        return 0
+        return false
     end
-    return 1
+    return true
 end
 
 return M

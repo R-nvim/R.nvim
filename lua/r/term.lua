@@ -11,7 +11,7 @@ M.send_cmd_to_term = function(command, nl)
     require("r.job").is_running("R")
     if is_running == 0 then
         warn("Is R running?")
-        return 0
+        return false
     end
 
     local cmd
@@ -57,7 +57,7 @@ M.send_cmd_to_term = function(command, nl)
         end
     end
     require("r.job").stdin("R", cmd)
-    return 1
+    return true
 end
 
 M.close_term = function()

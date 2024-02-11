@@ -834,7 +834,7 @@ the `init.vim`. The workaround is do not include the superfluous command
 |bracketed_paste|     Bracket R code in special escape sequences
 |clear_console|       Send <C-L> to clear R's console
 |source_args|         Arguments to R `source()` function
-|commented_lines|     Include commented lines in code sent to `source()`
+|max_paste_lines|     Maximum number of lines to be pasted into R Console
 |latexcmd|            Command to run on .tex files
 |texerr|              Show a summary of LaTeX errors after compilation
 |sweaveargs|          Arguments do `Sweave()`
@@ -1479,13 +1479,14 @@ while others have no command to clear the console. You should set the value of
 
 ------------------------------------------------------------------------------
 6.17. Arguments to R source() function
-                                                           *source_args*
-                                                           *commented_lines*
+							     *source_args*
+							     *max_paste_lines*
 
 When you send multiple lines of code to R (a selection of lines, a paragraph,
-code between two marks or an R chunk of code), R.nvim saves the lines in a
-temporary file and, then, sends to R a command which calls `base::source()` to
-run the commands from the temporary file.
+code between two marks or an R chunk of code), and the number of lines is
+higher than `max_paste_lines`, R.nvim saves the lines in a temporary file and,
+then, sends to R a command which calls `base::source()` to run the commands
+from the temporary file.
 
 By default, R's `source()` is called with the arguments `print.eval=TRUE` and
 `spaced=FALSE`. The argument `local=parent.frame()` is passed to `source()`
@@ -1495,10 +1496,8 @@ change the arguments passed to it. Examples:
    source_args = 'echo = TRUE'
    source_args = 'print.eval = FALSE, echo = TRUE, spaced = TRUE'
 <
-The option `commented_lines` was dropped because it unduly removed lines from
-multi-line raw strings if they included a hashtag. See:
-
-   https://github.com/jalvesaq/R.nvim/issues/743
+You can set the maximum number of lines to be directly pasted into the R
+Console with the option `max_paste_lines` (default value = 20).
 
 
 ------------------------------------------------------------------------------

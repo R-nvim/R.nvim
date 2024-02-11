@@ -60,7 +60,7 @@ M.send_cmd_to_Rgui = function(command, _)
         cmd = command .. "\n"
     end
     require("r.job").stdin("Server", "83" .. cmd)
-    return 1
+    return true
 end
 
 return M
