@@ -43,7 +43,7 @@ require("r").show_R_out = function()
 
     local config = require("r.config").get_config()
     local rcmd
-    if vim.fn.has("win32") == 1 then
+    if config.is_windows then
         rcmd = config.R_cmd
             .. ' CMD BATCH --no-restore --no-save "'
             .. vim.fn.expand("%")
@@ -64,16 +64,16 @@ require("r").show_R_out = function()
     require("r.job").start("R_CMD", rcmd, { on_exit = get_R_output })
 end
 
-local is_in_R_code = function(_) return 1 end
-
 -- Default IsInRCode function when the plugin is used as a global plugin
-vim.b.IsInRCode = is_in_R_code
+vim.b.IsInRCode = function(_) return true end
 
 -- Key bindings
 require("r.maps").create("r")
 
-if vim.b.undo_ftplugin then
-    vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
-else
-    vim.b.undo_ftplugin = "unlet! b:IsInRCode"
-end
+vim.schedule(function()
+    if vim.b.undo_ftplugin then
+        vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
+    else
+        vim.b.undo_ftplugin = "unlet! b:IsInRCode"
+    end
+end)

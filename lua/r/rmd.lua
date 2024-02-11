@@ -4,16 +4,17 @@ local send = require("r.send")
 
 local M = {}
 
+--- Check if cursor is within a R block of code
+---@param vrb boolean
+---@return boolean
 M.is_in_R_code = function(vrb)
     local chunkline = vim.fn.search("^[ \t]*```[ ]*{r", "bncW")
     local docline = vim.fn.search("^[ \t]*```$", "bncW")
-    if chunkline == vim.fn.line(".") then
-        return 2
-    elseif chunkline > docline then
-        return 1
+    if chunkline > docline and chunkline ~= vim.fn.line(".") then
+        return true
     else
         if vrb then warn("Not inside an R code chunk.") end
-        return 0
+        return false
     end
 end
 
@@ -21,15 +22,15 @@ M.is_in_Py_code = function(vrb)
     local chunkline = vim.fn.search("^[ \t]*```[ ]*{python", "bncW")
     local docline = vim.fn.search("^[ \t]*```$", "bncW")
     if chunkline > docline and chunkline ~= vim.fn.line(".") then
-        return 1
+        return true
     else
         if vrb then warn("Not inside a Python code chunk.") end
-        return 0
+        return false
     end
 end
 
 M.write_chunk = function()
-    if M.is_in_R_code(0) == 0 then
+    if not M.is_in_R_code(false) then
         if vim.fn.match(vim.fn.getline(vim.fn.line(".")), "^\\s*$") ~= -1 then
             local curline = vim.fn.line(".")
             vim.fn.setline(curline, "```{r}")
@@ -63,9 +64,11 @@ end
 
 -- Send R chunk to R
 M.send_R_chunk = function(m)
-    if M.is_in_R_code(0) == 2 then vim.fn.cursor(vim.fn.line(".") + 1, 1) end
-    if M.is_in_R_code(0) ~= 1 then
-        if M.is_in_Py_code(0) == 0 then
+    if vim.fn.getline(vim.fn.line(".")):find("^%s*```%s*{r") then
+        vim.fn.cursor(vim.fn.line(".") + 1, 1)
+    end
+    if not M.is_in_R_code(false) then
+        if not M.is_in_Py_code(false) then
             warn("Not inside an R code chunk.")
         else
             send_py_chunk(m)
@@ -82,7 +85,7 @@ end
 
 M.previous_chunk = function()
     local curline = vim.fn.line(".")
-    if M.is_in_R_code(0) == 1 or M.is_in_Py_code(0) == 1 then
+    if M.is_in_R_code(false) or M.is_in_Py_code(false) then
         local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW")
         if i ~= 0 then vim.fn.cursor(i - 1, 1) end
     end
@@ -139,20 +142,14 @@ M.setup = function()
 
     vim.schedule(function() require("r.pdf").setup() end)
 
-    -- FIXME: not working:
-    if vim.fn.exists("b:undo_ftplugin") == 1 then
-        vim.api.nvim_buf_set_var(
-            0,
-            "undo_ftplugin",
-            vim.b.undo_ftplugin .. " | unlet! b:IsInRCode b:rplugin_knitr_pattern"
-        )
-    else
-        vim.api.nvim_buf_set_var(
-            0,
-            "undo_ftplugin",
-            "unlet! b:IsInRCode b:rplugin_knitr_pattern"
-        )
-    end
+    vim.schedule(function()
+        if vim.b.undo_ftplugin then
+            vim.b.undo_ftplugin = vim.b.undo_ftplugin
+                .. " | unlet! b:IsInRCode b:rplugin_knitr_pattern"
+        else
+            vim.b.undo_ftplugin = "unlet! b:IsInRCode b:rplugin_knitr_pattern"
+        end
+    end)
     require("r.edit").add_to_debug_info(
         "rmd setup",
         vim.fn.reltimefloat(vim.fn.reltime(rmdtime, vim.fn.reltime())),

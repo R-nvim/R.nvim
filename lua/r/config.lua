@@ -268,7 +268,6 @@ local do_common_global = function()
         or vim.fn.readfile(config.compldir .. "/README")[1] ~= first_line
     then
         need_readme = true
-        vim.notify("Need README") -- FIXME: delete this line
     end
 
     if need_readme then
@@ -377,7 +376,6 @@ local do_common_global = function()
     config.localtmpdir = config.tmpdir
 
     -- Check if the 'config' table has the key 'remote_compldir'
-    -- FIXME: replace all RNVIM_ with RNVIM_
     if config.remote_compldir then
         vim.env.RNVIM_REMOTE_COMPLDIR = config.remote_compldir
         vim.env.RNVIM_REMOTE_TMPDIR = config.remote_compldir .. "/tmp"
@@ -479,7 +477,6 @@ local do_common_global = function()
 
     -- SyncTeX options
     config.has_wmctrl = false
-    config.has_awbt = false
 
     -- Set the name of R executable
     if config.is_windows then
@@ -844,14 +841,10 @@ end
 M.get_config = function() return config end
 
 M.check_health = function()
-    -- Check if Vim-R-plugin is installed
+    -- Check if either Vim-R-plugin or Nvim-R is installed
     if vim.fn.exists("*WaitVimComStart") ~= 0 then
         warn("Please, uninstall Vim-R-plugin before using R.nvim.")
-    end
-
-    -- Check if Nvim-R is installed
-    -- FIXME: choose a function that exists in Nvim-R, but not in R.nvim
-    if vim.fn.exists("*WaitVimComStart") ~= 0 then
+    elseif vim.fn.exists("*RWarningMsg") ~= 0 then
         warn("Please, uninstall Nvim-R before using R.nvim.")
     end
 

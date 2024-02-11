@@ -176,9 +176,6 @@ M.start_R = function(whatr)
     if vim.g.R_Nvim_status == 7 then
         if type(config.external_term) == "boolean" and config.external_term == false then
             require("r.term").reopen_win()
-        elseif not config.applescript and not config.is_windows then
-            -- FIXME: restart Tmux
-            vim.notify("FIXME: keep R running, but restart tmux.")
         end
         return
     end

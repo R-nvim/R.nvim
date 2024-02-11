@@ -38,8 +38,9 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
     })
     if job.is_running("OkularSyncTeX") < 1 then
         warn("Failed to run Okular (SyncTeX forward)...")
+        return
     end
-    if config.has_awbt then require("r.pdf").raise_window(pdfname) end
+    require("r.pdf").raise_window(pdfname)
 end
 
 return M

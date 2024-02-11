@@ -2,13 +2,15 @@ local config = require("r.config").get_config()
 local warn = require("r").warn
 
 -- Check if the cursor is in the Examples section of R documentation
+---@param vrb boolean
+---@return boolean
 local is_in_R_code = function(vrb)
     local exline = vim.fn.search("^Examples:$", "bncW")
     if exline > 0 and vim.fn.line(".") > exline then
-        return 1
+        return true
     else
         if vrb then warn('Not in the "Examples" section.') end
-        return 0
+        return false
     end
 end
 

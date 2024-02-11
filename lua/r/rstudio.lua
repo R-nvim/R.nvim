@@ -5,7 +5,7 @@ local M = {}
 M.start_RStudio = function()
     vim.g.R_Nvim_status = 6
 
-    if vim.fn.has("win32") ~= 0 then require("r.windows").set_R_home() end
+    if config.is_windows then require("r.windows").set_R_home() end
 
     require("r.job").start("RStudio", { config.RStudio_cmd }, {
         on_stderr = require("r.job").on_stderr,
@@ -13,7 +13,7 @@ M.start_RStudio = function()
         detach = 1,
     })
 
-    if vim.fn.has("win32") ~= 0 then require("r.windows").unset_R_home() end
+    if config.is_windows then require("r.windows").unset_R_home() end
 
     require("r.run").wait_nvimcom_start()
 end

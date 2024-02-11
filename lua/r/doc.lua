@@ -228,7 +228,7 @@ M.show = function(rkeyword, txt)
         vim.o.filetype = "rhelp"
         vim.fn.cursor(1, 1)
     else
-        vim.o.filetype = "rout"
+        vim.o.syntax = "rout"
         vim.cmd("setlocal bufhidden=wipe")
         vim.cmd("setlocal nonumber")
         vim.cmd("setlocal noswapfile")

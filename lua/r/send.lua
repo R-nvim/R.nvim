@@ -7,7 +7,6 @@ local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 local all_marks = "abcdefghijklmnopqrstuvwxyz"
--- FIXME: convert to Lua pattern
 
 --- Check if line ends with operator symbol
 ---@param line string
@@ -27,15 +26,13 @@ end
 
 local paren_diff = function(str)
     local clnln = str
-    -- FIXME: delete strings before calculating the diff because the line
-    -- may have unbalanced parentheses within a string.
-    -- clnln = string.gsub(clnln, '"', "")
-    -- clnln = string.gsub(clnln, "'", "")
-    -- clnln = string.gsub(clnln, '".-"', "")
-    -- clnln = string.gsub(clnln, "'.-'", "")
+    clnln = clnln:gsub('\\"', "")
+    clnln = clnln:gsub("\\'", "")
+    clnln = clnln:gsub('".-"', "")
+    clnln = clnln:gsub("'.-'", "")
     clnln = clnln:gsub("#.*", "")
-    local llen1 = string.len(string.gsub(clnln, "[%{%(%[]", ""))
-    local llen2 = string.len(string.gsub(clnln, "[%}%)%]]", ""))
+    local llen1 = string.len(clnln:gsub("[%{%(%[]", ""))
+    local llen2 = string.len(clnln:gsub("[%}%)%]]", ""))
     return llen1 - llen2
 end
 
@@ -280,7 +277,7 @@ end
 -- Send block to R (Adapted from marksbrowser plugin)
 -- Function to get the marks which the cursor is between
 M.marked_block = function(m)
-    if vim.o.filetype ~= "r" and not vim.b.IsInRCode(true) then return end
+    if not vim.b.IsInRCode(true) then return end
 
     local curline = vim.fn.line(".")
     local lineA = 1
@@ -330,7 +327,7 @@ M.selection = function(m)
             and require("r.rmd").is_in_Py_code(0)
         then
             ispy = true
-        elseif vim.b.IsInRCode(0) ~= 1 then
+        elseif not vim.b.IsInRCode(false) then
             if
                 (
                     vim.o.filetype == "rnoweb"
@@ -450,8 +447,7 @@ M.line = function(m, lnum)
         end
     end
 
-    -- FIXME: filetype rdoc no longer exists
-    if vim.o.filetype == "rdoc" then
+    if vim.o.syntax == "rdoc" then
         local line1 = vim.fn.getline(vim.fn.line("."))
         if line1:find("^The topic") then
             local topic = vim.fn.substitute(line, ".*::", "", "")
@@ -468,7 +464,6 @@ M.line = function(m, lnum)
 
     if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
 
-    -- FIXME: Send the whole block within curly braces
     local has_op = false
     if config.parenblock then
         local chunkend = nil

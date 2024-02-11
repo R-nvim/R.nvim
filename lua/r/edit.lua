@@ -7,10 +7,10 @@ local debug_info = { Time = {} }
 local M = {}
 
 M.assign = function()
-    if vim.o.filetype ~= "r" and vim.b.IsInRCode(false) ~= 1 then
-        vim.fn.feedkeys(config.assign_map, "n")
-    else
+    if vim.b.IsInRCode(false) then
         vim.fn.feedkeys(" <- ", "n")
+    else
+        vim.fn.feedkeys(config.assign_map, "n")
     end
 end
 
@@ -43,13 +43,11 @@ M.vim_leave = function()
         vim.fn.delete(fn)
     end
 
-    -- FIXME: check if rmdir is executable during startup and asynchronously
-    -- because executable() is slow on Mac OS X.
-    if vim.fn.executable("rmdir") == 1 then
-        vim.fn.jobstart("rmdir '" .. config.tmpdir .. "'", { detach = true })
-        if config.localtmpdir ~= config.tmpdir then
-            vim.fn.jobstart("rmdir '" .. config.localtmpdir .. "'", { detach = true })
-        end
+    -- There is no need to check if `rmdir` is executable because it's
+    -- available in every system: https://en.wikipedia.org/wiki/Rmdir
+    vim.fn.jobstart("rmdir '" .. config.tmpdir .. "'", { detach = true })
+    if config.localtmpdir ~= config.tmpdir then
+        vim.fn.jobstart("rmdir '" .. config.localtmpdir .. "'", { detach = true })
     end
 end
 
