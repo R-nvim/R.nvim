@@ -246,19 +246,20 @@ end
 -- List R libraries from buffer
 local ListRLibsFromBuffer = function()
     local start_libs = config.start_libs or "base,stats,graphics,grDevices,utils,methods"
-    local lines = vim.fn.getline(1, "$")
-    local filter_lines = vim.fn.filter(lines, "v:val =~ '^\\s*library\\|require\\s*('")
+    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("$"), true)
     local lib
     local flibs = {}
-    for _, v in pairs(filter_lines) do
-        lib = string.gsub(v, "%s*", "")
-        lib = string.gsub(lib, "%s*,.*", "")
-        lib = string.gsub(lib, "%s*library%s*%(%s*", "")
-        lib = string.gsub(lib, "%s*require%s*%(%s*", "")
-        lib = string.gsub(lib, '"', "")
-        lib = string.gsub(lib, "'", "")
-        lib = string.gsub(lib, "%s*%).*", "")
-        table.insert(flibs, lib)
+    for _, v in pairs(lines) do
+        if v:find("^%s*library%s*%(") or v:find("^%s*library%s*%(") then
+            lib = string.gsub(v, "%s*", "")
+            lib = string.gsub(lib, "%s*,.*", "")
+            lib = string.gsub(lib, "%s*library%s*%(%s*", "")
+            lib = string.gsub(lib, "%s*require%s*%(%s*", "")
+            lib = string.gsub(lib, '"', "")
+            lib = string.gsub(lib, "'", "")
+            lib = string.gsub(lib, "%s*%).*", "")
+            table.insert(flibs, lib)
+        end
     end
     local libs = ""
     if #start_libs > 4 then
