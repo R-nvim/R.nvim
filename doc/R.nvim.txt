@@ -813,8 +813,6 @@ the `init.vim`. The workaround is do not include the superfluous command
 |objbr_allnames|      Display hidden objects in the Object Browser
 |nvimpager|           Use Neovim to see R documentation
 |open_example|        Use Neovim to display R examples
-|editor_w|            Minimum width of R script buffer
-|help_w|              Desired width of R documentation buffer
 |R_path|                Directory where R is
 |R_app|, |R_cmd|          Names of R applications
 |R_args|                Arguments to pass to R
@@ -1178,11 +1176,6 @@ respectively, `data.frames` and `lists`. The options are ignored for
 6.7. Neovim as pager for R
                                                               *open_example*
                                                               *nvimpager*
-                                                              *editor_w*
-                                                              *help_w*
-
-------------------------------------------------------------------------------
-6.7.1. Quick setup
 
 If you do not want to see R examples in a Neovim buffer, put in your config:
 >lua
@@ -1199,10 +1192,6 @@ changed to a suitable value if it is set to "no" after Neovim startup.
 If you want to see R documentation in Neovim, but are not satisfied with the
 way it works, please, read the subsection 6.7.2 below.
 
-
-------------------------------------------------------------------------------
-6.7.2. Details and other options:
-
 The plugin key bindings will remain active in the documentation buffer, and,
 thus, you will be able to send commands to R as you do while editing an R
 script. You can, for example, use <LocalLeader>rh to jump to another R help
@@ -1210,30 +1199,14 @@ document.
 
 The valid values of `nvimpager` are:
 
-   "vertical"  : Split the window vertically if the editor width is large
-                 enough; otherwise, split the window horizontally and attempt
-                 to set the window height to at least 20 lines.
-                 This is the default.
    "tab"       : Show the help document in a new tab. If there is already a
                  tab with an R help document tab, use it.
                  This is the default if `external_term` = `true`.
-   "horizontal": Split the window horizontally.
-   "tabnew"    : Show the help document in a new tab.
+   "split"     : Split the window horizontally, as `:help` does. That is,
+		 display R documentation above the editor window or at the
+		 very top of the screen.
+   "float"     : Not implemented yet.
    "no"        : Do not show R documentation in Neovim.
-
-The window will be considered large enough if it has more columns than
-`editor_w` + `help_w`. These variables control the minimum
-width of the editor window and the help window, and their default values are,
-respectively, 66 and 46. Thus, if you want to have more control over Neovim's
-behavior while opening R's documentations, you will want to set different
-values to some variables in your config, as in the example:
->lua
-   editor_w = 80
-   editor_h = 60
-<
-Unless the value of `nvimpager` is "tabnew", the buffer name will always be
-"doc" to force the reuse of the window when users jump from one help page to
-another.
 
 
 ------------------------------------------------------------------------------

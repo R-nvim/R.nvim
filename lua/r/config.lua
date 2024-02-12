@@ -26,7 +26,6 @@ local config = {
     compldir            = nil,
     config_tmux         = true,
     disable_cmds        = { "" },
-    editor_w            = 66,
     esc_term            = true,
     external_term       = false, -- might be a string
     fun_data_1          = { "select", "rename", "mutate", "filter" },
@@ -42,7 +41,7 @@ local config = {
     min_editor_width    = 80,
     non_r_compl         = true,
     nvim_wd             = 0,
-    nvimpager           = "vertical",
+    nvimpager           = "split",
     objbr_allnames      = false,
     objbr_auto_start    = false,
     objbr_h             = 10,
@@ -413,7 +412,7 @@ local do_common_global = function()
     end
 
     if type(config.external_term) == "boolean" and config.external_term == false then
-        config.nvimpager = "vertical"
+        config.nvimpager = "split"
         config.save_win_pos = false
         config.arrange_windows = false
     else
