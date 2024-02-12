@@ -1727,14 +1727,15 @@ in config:
 
 ------------------------------------------------------------------------------
 6.32. Commands to be executed after either R startup or Object Browser opening
-                                                             *hook*
+									*hook*
 
 If you want the execution of a Lua function just after R startup or after the
 Object Browser opening, set the `hook` config option, as in the example below:
 >lua
    hook = {
+       after_config = function() vim.notify("R.nvim is configured") end,
        after_R_start = function() vim.notify("R was launched") end,
-       after_ob_open = function() vim.notify("Object Browser") end,
+       after_ob_open = nil,
    },
 <
 

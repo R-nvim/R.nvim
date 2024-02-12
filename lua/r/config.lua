@@ -32,7 +32,11 @@ local config = {
     fun_data_2          = { ggplot = { "aes" }, with = "*" },
     help_w              = 46,
     hi_fun_paren        = false,
-    hook                = { after_R_start = nil, after_ob_open = nil },
+    hook                = {
+                              after_config = nil,
+                              after_R_start = nil,
+                              after_ob_open = nil
+                          },
     insert_mode_cmds    = false,
     latexcmd            = { "default" },
     listmethods         = false,
@@ -834,6 +838,7 @@ M.real_setup = function()
         vim.fn.reltimefloat(vim.fn.reltime(gtime, vim.fn.reltime())),
         "Time"
     )
+    if config.hook.after_config then config.hook.after_config() end
 end
 
 --- Return the table with the final configure variables: the default values
