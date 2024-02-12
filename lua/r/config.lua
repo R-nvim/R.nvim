@@ -802,7 +802,6 @@ M.store_user_opts = function(opts)
     -- 6: R started, but nvimcom was not loaded yet.
     -- 7: nvimcom is loaded.
     vim.g.R_Nvim_status = 0
-
     user_opts = opts
 end
 
@@ -812,7 +811,7 @@ end
 M.real_setup = function()
     local gtime = vim.fn.reltime()
 
-    vim.g.R_Nvim_status = 1
+    if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
 
     config_keys = {}
     for k, _ in pairs(config) do

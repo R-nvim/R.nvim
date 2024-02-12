@@ -42,12 +42,17 @@ end
 local M = {}
 
 --- Change the pointer to the function used to send commands to R.
----@param running boolean True if R is running
-M.set_send_cmd_fun = function(running)
-    if not running then
+M.set_send_cmd_fun = function()
+    if vim.g.R_Nvim_status < 4 then
         M.cmd = M.not_running
         return
     end
+
+    if vim.g.R_Nvim_status < 7 then
+        M.cmd = M.not_ready
+        return
+    end
+
     if config.RStudio_cmd then
         M.cmd = require("r.rstudio").send_cmd_to_RStudio
     elseif type(config.external_term) == "boolean" and config.external_term == false then
@@ -59,7 +64,6 @@ M.set_send_cmd_fun = function(running)
     else
         M.cmd = require("r.external_term").send_cmd_to_external_term
     end
-    vim.g.R_Nvim_status = 7
 end
 
 --- Warns that R is not ready to receive commands yet.

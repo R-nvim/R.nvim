@@ -25,6 +25,7 @@ M.set_buf_options = function()
     vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
     vim.api.nvim_set_option_value("iskeyword", "@,48-57,_,.", { scope = "local" })
 
+    require("r.config").real_setup()
     require("r.maps").create("rdoc")
 end
 

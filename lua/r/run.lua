@@ -203,8 +203,8 @@ M.start_R = function(whatr)
 
     if vim.g.R_Nvim_status == 3 then
         vim.g.R_Nvim_status = 4
+        require("r.send").set_send_cmd_fun()
         job.stdin("Server", "1\n") -- Start the TCP server
-        require("r.send").cmd = require("r.send").not_ready
         what_R = whatr
         vim.fn.timer_start(30, start_R2)
         return
@@ -312,12 +312,12 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         end
     end
 
+    vim.g.R_Nvim_status = 7
     if config.hook.after_R_start then config.hook.after_R_start() end
-    send.set_send_cmd_fun(true)
+    send.set_send_cmd_fun()
 end
 
 M.clear_R_info = function()
-    send.set_send_cmd_fun(false)
     vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.RNVIM_ID))
     vim.fn.delete(config.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.RNVIM_ID))
     R_pid = 0
@@ -330,6 +330,7 @@ M.clear_R_info = function()
     else
         vim.g.R_Nvim_status = 1
     end
+    send.set_send_cmd_fun()
 end
 
 -- Background communication with R
