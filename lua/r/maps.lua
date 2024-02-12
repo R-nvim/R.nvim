@@ -138,6 +138,9 @@ local send = function(file_type)
     -- create_maps("nvi", "RSendFunction",    "ff", "<Cmd>lua require('r.send').fun(false)")
     -- create_maps("nvi", "RDSendFunction",   "fd", "<Cmd>lua require('r.send').fun(true)")
 
+    -- Pipe chain breaker
+    create_maps("nv",   "RSendChain",   "sc", "<Cmd>lua require('r.send').chain()")
+
     -- Selection
     create_maps("nv",   "RSendSelection",   "ss", "<Cmd>lua require('r.send').selection(false)")
     create_maps("nv",   "RDSendSelection",  "sd", "<Cmd>lua require('r.send').selection(true)")
