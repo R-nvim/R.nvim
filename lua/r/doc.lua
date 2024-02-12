@@ -2,7 +2,8 @@ local config = require("r.config").get_config()
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 local warn = require("r").warn
 local cursor = require("r.cursor")
-local rdoctitle = "R_doc"
+local doc_buf_id = nil
+local doc_buf_nr = -1
 
 local M = {}
 
@@ -126,29 +127,27 @@ M.show = function(rkeyword, txt)
         vim.cmd("set switchbuf=" .. savesb)
     end
 
-    local rdoccaption = rkeyword:gsub("\\", "")
-    if rkeyword:match("R History") then
-        rdoccaption = "R_History"
-        rdoctitle = "R_History"
-    end
-
-    if vim.fn.bufloaded(rdoccaption) == 1 then
+    if doc_buf_id and vim.api.nvim_buf_is_loaded(doc_buf_id) then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
-        vim.cmd.sb(rdoctitle)
+        vim.cmd.sb(doc_buf_nr)
         vim.cmd("set switchbuf=" .. savesb)
     else
         if vpager == "tab" or vpager == "float" then
-            vim.cmd("tabnew " .. rdoctitle)
+            vim.cmd("tabnew R_doc")
         else
             if vim.fn.winwidth(0) < 80 then
-                vim.cmd("topleft split " .. rdoctitle)
+                vim.cmd("topleft split R_doc")
             else
-                vim.cmd("split " .. rdoctitle)
+                vim.cmd("split R_doc")
             end
-            if vim.fn.winheight(0) < 10 then vim.cmd("resize 20") end
+            if vim.fn.winheight(0) < 20 then vim.cmd("resize 20") end
         end
     end
+
+    doc_buf_id = vim.api.nvim_win_get_buf(0)
+    doc_buf_nr = vim.fn.bufnr()
+    vim.api.nvim_buf_set_name(doc_buf_id, rkeyword)
 
     vim.cmd("setlocal modifiable")
 
@@ -164,7 +163,7 @@ M.show = function(rkeyword, txt)
     end
     vim.fn.setline(1, lines)
     if rkeyword:match("R History") then
-        vim.o.filetype = "r"
+        vim.api.nvim_set_option_value("filetype", "r", { scope = "local" })
         vim.fn.cursor(1, 1)
     elseif rkeyword:match("(help)") or vim.fn.search("\008", "nw") > 0 then
         require("r.rdoc").set_buf_options()
@@ -172,7 +171,7 @@ M.show = function(rkeyword, txt)
     elseif rkeyword:find("%.Rd$") then
         -- Called by devtools::load_all().
         -- See https://github.com/jalvesaq/Nvim-R/issues/482
-        vim.o.filetype = "rhelp"
+        vim.api.nvim_set_option_value("filetype", "rhelp", { scope = "local" })
         vim.fn.cursor(1, 1)
     else
         vim.o.syntax = "rout"
