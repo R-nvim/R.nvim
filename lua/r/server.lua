@@ -192,13 +192,13 @@ local RInitExit = function(_, data, _)
         RWarn = {}
         MkRdir()
     elseif data == 72 and not config.is_windows and not pkgbuild_attempt then
-        -- R.nvim/R/nvimcom directory not found. Perhaps R running in remote machine...
+        -- R.nvim/nvimcom directory not found. Perhaps R running in remote machine...
         -- Try to use local R to build the nvimcom package.
         pkgbuild_attempt = true
         if vim.fn.executable("R") == 1 then
             local shf = {
                 "cd " .. config.tmpdir,
-                "R CMD build " .. config.rnvim_home .. "/R/nvimcom",
+                "R CMD build " .. config.rnvim_home .. "/nvimcom",
             }
             vim.fn.writefile(shf, config.tmpdir .. "/buildpkg.sh")
             vim.fn.system("sh " .. config.tmpdir .. "/buildpkg.sh")
@@ -381,7 +381,7 @@ end
 
 M.check_nvimcom_version = function()
     local flines
-    local nvimcom_desc_path = config.rnvim_home .. "/R/nvimcom/DESCRIPTION"
+    local nvimcom_desc_path = config.rnvim_home .. "/nvimcom/DESCRIPTION"
 
     if vim.fn.filereadable(nvimcom_desc_path) == 1 then
         local ndesc = vim.fn.readfile(nvimcom_desc_path)
@@ -394,7 +394,7 @@ M.check_nvimcom_version = function()
     local libs = ListRLibsFromBuffer()
     table.insert(flines, 'nvim_r_home <- "' .. config.rnvim_home .. '"')
     table.insert(flines, "libs <- c(" .. libs .. ")")
-    vim.list_extend(flines, vim.fn.readfile(config.rnvim_home .. "/R/before_nrs.R"))
+    vim.list_extend(flines, vim.fn.readfile(config.rnvim_home .. "/scripts/before_nrs.R"))
 
     local scrptnm = config.tmpdir .. "/before_nrs.R"
     vim.fn.writefile(flines, scrptnm)

@@ -241,7 +241,7 @@ end
 
 M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     local r_home_description =
-        vim.fn.readfile(config.rnvim_home .. "/R/nvimcom/DESCRIPTION")
+        vim.fn.readfile(config.rnvim_home .. "/nvimcom/DESCRIPTION")
     local current
     for _, v in pairs(r_home_description) do
         if v:find("Version: ") then current = v:sub(10) end

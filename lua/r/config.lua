@@ -242,7 +242,7 @@ local do_common_global = function()
     elseif vim.fn.isdirectory(vim.fn.expand("~/Library/Caches")) ~= 0 then
         config.compldir = vim.fn.expand("~/Library/Caches/R.nvim")
     else
-        config.compldir = config.uservimfiles .. "/R/objlist/"
+        config.compldir = config.uservimfiles .. "/R_cache/"
     end
 
     utils.ensure_directory_exists(config.compldir)
@@ -314,7 +314,7 @@ local do_common_global = function()
             "  1. Name.",
             "",
             "  2. Single character representing the Type (look at the function",
-            "     nvimcom_glbnv_line at R/nvimcom/src/nvimcom.c to know the meaning of the",
+            "     nvimcom_glbnv_line at nvimcom/src/nvimcom.c to know the meaning of the",
             "     characters).",
             "",
             "  3. Class.",
@@ -351,7 +351,7 @@ local do_common_global = function()
             elseif vim.env.TEMP and vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
                 config.tmpdir = vim.env.TEMP .. "/R.nvim-" .. config.user_login
             else
-                config.tmpdir = config.uservimfiles .. "/R/tmp"
+                config.tmpdir = config.uservimfiles .. "/R_tmp"
             end
             config.tmpdir = utils.normalize_windows_path(config.tmpdir)
         else
@@ -366,7 +366,7 @@ local do_common_global = function()
             elseif vim.fn.isdirectory("/tmp") ~= 0 then
                 config.tmpdir = "/tmp/R.nvim-" .. config.user_login
             else
-                config.tmpdir = config.uservimfiles .. "/R/tmp"
+                config.tmpdir = config.uservimfiles .. "/R_tmp"
             end
         end
     end

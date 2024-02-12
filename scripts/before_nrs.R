@@ -108,20 +108,20 @@ if (!is.null(needed_nvc_version)) {
             quit(save = "no", status = 65)
         }
 
-        if (!file.exists(paste0(nvim_r_home, "/R/nvimcom"))) {
+        if (!file.exists(paste0(nvim_r_home, "/nvimcom"))) {
             if (file.exists(paste0(Sys.getenv("RNVIM_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"))) {
                 out("ECHO: Installing nvimcom...")
                 tools:::.install_packages(paste0(Sys.getenv("RNVIM_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"), no.q = TRUE)
                 unlink(paste0(Sys.getenv("RNVIM_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"))
                 check_nvimcom_installation()
             } else {
-                out(paste0("WARN: Cannot build nvimcom: directory '", nvim_r_home, "/R/nvimcom", "' not found"))
+                out(paste0("WARN: Cannot build nvimcom: directory '", nvim_r_home, "/nvimcom", "' not found"))
                 quit(save = "no", status = 72)
             }
         } else {
 
             out("ECHO: Building nvimcom...")
-            tools:::.build_packages(paste0(nvim_r_home, "/R/nvimcom"), no.q = TRUE)
+            tools:::.build_packages(paste0(nvim_r_home, "/nvimcom"), no.q = TRUE)
             if (!file.exists(paste0("nvimcom_", needed_nvc_version, ".tar.gz"))) {
                 out("WARN: Failed to build nvimcom.")
                 quit(save = "no", status = 66)
