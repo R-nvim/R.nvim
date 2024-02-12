@@ -555,4 +555,57 @@ M.line = function(m, lnum)
     end
 end
 
+-- Function to check if a string ends with a specific suffix
+local function ends_with(str, suffix) return str:sub(-#suffix) == suffix end
+
+-- Remove the <-, |>/%>% or + from the text
+local function sanitize_text(array)
+    local result = {}
+    for _, line in ipairs(array) do
+        -- Remove lines starting with #
+        line = vim.fn.trim(line)
+        if not line:match("^#") then table.insert(result, line) end
+    end
+
+    local first_string = result[1]
+    -- Remove "<-" and everything before it from the first string
+    local modified_first_string = first_string:gsub(".*<%-%s*", "")
+    result[1] = modified_first_string
+
+    local last_index = #result
+    local last_string = result[last_index]
+
+    -- Check if the last string ends with either "|>" or "%>%"
+    local modified_string =
+        last_string:gsub("|>[%s]*$", ""):gsub("%%>%%[%s]*$", ""):gsub("%+[%s]*$", "")
+    result[last_index] = modified_string
+
+    return result
+end
+
+-- Function to get the current line and select previous lines based on the specified suffixes
+-- The selected lines are sent to the R terminal
+M.chain = function()
+    local end_index = vim.fn.line(".")
+    local start_index = end_index
+
+    for i = end_index - 1, 1, -1 do
+        local line_text = vim.fn.trim(vim.fn.getline(i))
+        if
+            ends_with(line_text, "|>")
+            or ends_with(line_text, "%>%")
+            or ends_with(line_text, "+")
+        then
+            start_index = i
+        else
+            break
+        end
+    end
+
+    local lines = vim.api.nvim_buf_get_lines(0, start_index - 1, end_index, false)
+
+    lines = sanitize_text(lines)
+    M.source_lines(lines, nil)
+end
+
 return M
