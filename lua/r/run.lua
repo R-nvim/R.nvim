@@ -622,7 +622,6 @@ end
 M.setwd = function() send.cmd('setwd("' .. M.get_buf_dir() .. '")') end
 
 M.show_obj = function(howto, bname, ftype, txt)
-    vim.notify("show_obj")
     local bfnm = vim.fn.substitute(bname, "[[:punct:]]", "_", "g")
     edit.add_for_deletion(config.tmpdir .. "/" .. bfnm)
     vim.cmd({ cmd = howto, args = { config.tmpdir .. "/" .. bfnm } })

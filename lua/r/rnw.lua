@@ -298,7 +298,7 @@ M.send_chunk = function(m)
 
     local chunkline = vim.fn.search("^<<", "bncW") + 1
     local docline = vim.fn.search("^@", "ncW") - 1
-    local lines = vim.fn.getline(chunkline, docline)
+    local lines = vim.api.nvim_buf_get_lines(0, chunkline - 1, docline, true)
     local ok = send.source_lines(lines, "chunk")
     if ok == 0 then return end
 

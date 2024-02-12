@@ -248,6 +248,9 @@ M.show = function(rkeyword, txt)
     vim.cmd("redraw")
 end
 
+--- Load HTML document
+---@param fullpath string
+---@param browser string
 M.load_html = function(fullpath, browser)
     if not config.openhtml then return end
 
@@ -259,11 +262,11 @@ M.load_html = function(fullpath, browser)
             cmd = { "xdg-open", fullpath }
         end
     else
-        cmd = table.insert(vim.split(browser, " "), fullpath)
+        cmd = vim.split(browser, " ")
+        table.insert(cmd, fullpath)
     end
 
-    require("r.job").start()
-    vim.fn.jobstart(cmd, { detach = 1 })
+    require("r.job").start("HTML browser", cmd, { detach = 1 })
 end
 
 M.open = function(fullpath, browser)

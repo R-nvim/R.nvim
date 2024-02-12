@@ -116,6 +116,13 @@ M.source_lines = function(lines, what)
 
     if #lines < config.max_paste_lines then
         rcmd = table.concat(lines, "\n")
+        if
+            (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
+            and require("r.rmd").is_in_Py_code(false)
+        then
+            rcmd = rcmd:gsub('"', '\\"')
+            rcmd = 'reticulate::py_run_string("' .. rcmd .. '")'
+        end
     else
         vim.fn.writefile(lines, config.source_write)
         local sargs = string.gsub(M.get_source_args(), "^, ", "")
@@ -195,7 +202,8 @@ end
 ---@param direction string
 ---@param correctpos boolean
 M.line_part = function(direction, correctpos)
-    local lin = vim.api.nvim_buf_get_lines(0, vim.fn.line("."), vim.fn.line("."), true)[1]
+    local lin =
+        vim.api.nvim_buf_get_lines(0, vim.fn.line(".") - 1, vim.fn.line("."), true)[1]
     local idx = vim.fn.col(".") - 1
     if correctpos then vim.fn.cursor(vim.fn.line("."), idx) end
     local rcmd
@@ -376,7 +384,7 @@ M.selection = function(m)
     local end_line = vim.fn.line("'>")
 
     if start_line == end_line then
-        local i = vim.fn.col("'<") - 1
+        local i = vim.fn.col("'<")
         local j = vim.fn.col("'>") - i
         local l = vim.fn.getline(vim.fn.line("'<"))
         local line = string.sub(l, i, i + j)
@@ -474,9 +482,9 @@ M.line = function(m, lnum)
             if not require("r.rmd").is_in_Py_code(false) then
                 warn("Not inside either R or Python code chunk.")
             else
-                line = 'reticulate::py_run_string("'
-                    .. vim.fn.substitute(line, '"', '\\"', "g")
-                    .. '")'
+                line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
+                M.cmd(line)
+                if m == true then cursor.move_next_line() end
             end
             return
         end
@@ -532,13 +540,12 @@ M.line = function(m, lnum)
 
     if #lines > 0 then
         M.source_lines(lines, nil)
-        return
-    end
-
-    if config.bracketed_paste then
-        M.cmd("\027[200~" .. line .. "\027[201~\n", 0)
     else
-        M.cmd(line)
+        if config.bracketed_paste then
+            M.cmd("\027[200~" .. line .. "\027[201~\n", 0)
+        else
+            M.cmd(line)
+        end
     end
 
     if m == true then

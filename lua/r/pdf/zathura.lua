@@ -80,7 +80,7 @@ M.open = function(fullpath)
     -- Time for Zathura to reload the PDF
     vim.wait(200)
 
-    local fname = vim.fn.substitute(fullpath, ".*/", "", "")
+    local fname = fullpath:gsub(".*/", "")
 
     -- Check if Zathura was already opened and is still running
     if zathura_pid[fullpath] and zathura_pid[fullpath] ~= 0 then
@@ -102,7 +102,7 @@ M.open = function(fullpath)
     end
 
     -- Check if Zathura was already running
-    if fname == 0 then
+    if zathura_pid[fullpath] == 0 then
         start_zathura(fullpath)
         return
     end

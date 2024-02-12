@@ -78,9 +78,9 @@ M.get_first_obj = function()
         local piece = line:sub(begin)
         piece = piece:gsub(".-%(", "")
         firstobj = piece:gsub("[,%s%)].*", "")
-        -- TODO: The algorithm is too simple to correctly get the first object
+        -- FIXME: The algorithm is too simple to correctly get the first object
         -- in complex cases.
-        -- TODO: Check if the first argument is being passed through a pipe operator
+        -- FIXME: Check if the first argument is being passed through a pipe operator
     end
     if firstobj:find("=" .. vim.fn.char2nr('"')) then firstobj = "" end
 

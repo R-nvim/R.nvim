@@ -197,11 +197,16 @@ M.view_df = function(oname, howto, txt)
         return
     end
 
-    local location = howto
-    vim.cmd("silent execute " .. location .. " " .. oname)
+    if howto == "head" then
+        -- head() of data.frame
+        vim.cmd("above")
+        vim.cmd("7split " .. oname)
+    else
+        vim.api.nvim_cmd({ cmd = howto, args = { oname } }, {})
+    end
+    vim.api.nvim_set_option_value("modifiable", true, { scope = "local" })
     vim.api.nvim_buf_set_lines(0, 1, 1, true, csv_lines)
     vim.fn.setline(1, csv_lines)
-
     vim.api.nvim_set_option_value("modifiable", false, { scope = "local" })
     vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
     vim.api.nvim_set_option_value("filetype", "csv", { scope = "local" })
