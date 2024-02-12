@@ -6,7 +6,7 @@ local R_width = 80
 local number_col
 local R_bufnr = nil
 
-M.send_cmd_to_term = function(command, nl)
+M.send_cmd_to_term = function(command)
     local is_running
     require("r.job").is_running("R")
     if is_running == 0 then
@@ -49,12 +49,10 @@ M.send_cmd_to_term = function(command, nl)
         )
     end
 
-    if nl ~= false then
-        if type(cmd) == "table" then
-            cmd = table.concat(cmd, "\n") .. "\n"
-        else
-            cmd = cmd .. "\n"
-        end
+    if type(cmd) == "table" then
+        cmd = table.concat(cmd, "\n") .. "\n"
+    else
+        cmd = cmd .. "\n"
     end
     require("r.job").stdin("R", cmd)
     return true

@@ -218,9 +218,8 @@ end
 
 --- Send line of command to R Console
 ---@param command string
----@param nl boolean
 ---@return boolean
-M.send_cmd_to_external_term = function(command, nl)
+M.send_cmd_to_external_term = function(command)
     local cmd = command
 
     if config.clear_line then
@@ -236,21 +235,12 @@ M.send_cmd_to_external_term = function(command, nl)
     if str:find("^-") then str = " " .. str end
 
     local scmd
-    if nl then
-        scmd = string.format(
-            "tmux -L Rnvim set-buffer '%s\n' ; tmux -L Rnvim paste-buffer -t %s.%s",
-            str,
-            tmuxsname,
-            TmuxOption("pane-base-index", "window")
-        )
-    else
-        scmd = string.format(
-            "tmux -L Rnvim set-buffer '%s' ; tmux -L Rnvim paste-buffer -t %s.%s",
-            str,
-            tmuxsname,
-            TmuxOption("pane-base-index", "window")
-        )
-    end
+    scmd = string.format(
+        "tmux -L Rnvim set-buffer '%s\n' ; tmux -L Rnvim paste-buffer -t %s.%s",
+        str,
+        tmuxsname,
+        TmuxOption("pane-base-index", "window")
+    )
 
     local rlog = vim.fn.system(scmd)
     if vim.v.shell_error ~= 0 then

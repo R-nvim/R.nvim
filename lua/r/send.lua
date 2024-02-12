@@ -63,7 +63,7 @@ M.set_send_cmd_fun = function(running)
 end
 
 --- Warns that R is not ready to receive commands yet.
----@param _ string The command that will not be send to anywhere.
+---@param _ string The command that will not be sent to anywhere.
 ---@return boolean
 M.not_ready = function(_)
     warn("R is not ready yet.")
@@ -71,7 +71,7 @@ M.not_ready = function(_)
 end
 
 --- Warns that R is not running.
----@param _ string The command that will not be send to anywhere.
+---@param _ string The command that will not be sent to anywhere.
 ---@return boolean
 M.not_running = function(_)
     warn("Did you start R?")
@@ -542,7 +542,7 @@ M.line = function(m, lnum)
         M.source_lines(lines, nil)
     else
         if config.bracketed_paste then
-            M.cmd("\027[200~" .. line .. "\027[201~\n", 0)
+            M.cmd("\027[200~" .. line .. "\027[201~")
         else
             M.cmd(line)
         end

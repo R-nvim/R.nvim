@@ -644,15 +644,15 @@ M.clear_console = function()
         vim.wait(50)
         job.stdin("Server", "87\n")
     else
-        send.cmd("\014", 0)
+        send.cmd("\014")
     end
 end
 
 M.clear_all = function()
     if config.rmhidden then
-        M.send.cmd("rm(list=ls(all.names = TRUE))", true)
+        M.send.cmd("rm(list=ls(all.names = TRUE))")
     else
-        send.cmd("rm(list = ls())", true)
+        send.cmd("rm(list = ls())")
     end
     vim.wait(30)
     M.clear_console()
