@@ -60,6 +60,8 @@ M.setup = function()
     )
 end
 
+--- Call the appropriate function to open a PDF document.
+---@param fullpath string The path to the PDF file.
 M.open = function(fullpath)
     if config.openpdf == 0 then return end
 
@@ -76,17 +78,11 @@ M.open = function(fullpath)
     end
 end
 
+--- Request the windows manager to focus a window.
+--- Currently, has support only for Xorg.
+---@param wttl string Part of the window title.
 M.raise_window = function(wttl)
-    if config.has_wmctrl then
-        vim.fn.system("wmctrl -a '" .. wttl .. "'")
-    elseif vim.env.WAYLAND_DISPLAY then
-        if os.getenv("XDG_CURRENT_DESKTOP") == "sway" then
-            local sout = vim.fn.system("swaymsg -t get_tree")
-            if vim.v.shell_error ~= 0 then
-                warn("Error running swaymsg: " .. vim.fn.substitute(sout, "\n", " ", "g"))
-            end
-        end
-    end
+    if config.has_wmctrl then vim.fn.system("wmctrl -a '" .. wttl .. "'") end
 end
 
 return M

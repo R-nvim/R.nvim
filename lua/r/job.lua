@@ -125,7 +125,7 @@ local default_handlers = {
 --- Starts a new job with the specified command and options.
 ---@param job_name string The name of the job.
 ---@param cmd table The command to start the job with.
----@param opt table Optional table of handlers for job events.
+---@param opt table|nil Optional table of handlers for job events.
 M.start = function(job_name, cmd, opt)
     local h = default_handlers
     if opt then h = opt end

@@ -12,6 +12,7 @@ local ZathuraJobStdout = function(_, data, _)
     end
 end
 
+---@param fullpath string
 local start2 = function(fullpath)
     local job_id = vim.fn.jobstart({
         "zathura",
@@ -33,6 +34,7 @@ local start2 = function(fullpath)
     end
 end
 
+---@param fullpath string
 local start_zathura = function(fullpath)
     local fname = vim.fn.substitute(fullpath, ".*/", "", "")
 
@@ -71,6 +73,8 @@ end
 
 local M = {}
 
+--- Use Zathura to open PDF document
+---@param fullpath string
 M.open = function(fullpath)
     if config.openpdf == 1 then
         start_zathura(fullpath)
@@ -108,6 +112,11 @@ M.open = function(fullpath)
     end
 end
 
+--- Start Zathura with SyncTeX forward arguments.
+---@param tpath string LaTeX document path.
+---@param ppath string PDF document path.
+---@param texln number Line number in the LaTeX document.
+---@param tryagain boolean True if should try twice to open the PDF.
 M.SyncTeX_forward = function(tpath, ppath, texln, tryagain)
     local texname = vim.fn.substitute(tpath, " ", "\\ ", "g")
     local pdfname = vim.fn.substitute(ppath, " ", "\\ ", "g")

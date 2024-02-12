@@ -193,7 +193,7 @@ M.view_df = function(oname, howto, txt)
         end
 
         local appcmd = vim.fn.split(cmd)
-        require("r.job").start(appcmd, { detach = true })
+        require("r.job").start("CSV app", appcmd, { detach = true })
         return
     end
 
