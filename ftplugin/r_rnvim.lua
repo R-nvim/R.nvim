@@ -42,25 +42,15 @@ require("r").show_R_out = function()
     vim.api.nvim_command("silent update")
 
     local config = require("r.config").get_config()
-    local rcmd
-    if config.is_windows then
-        rcmd = config.R_cmd
-            .. ' CMD BATCH --no-restore --no-save "'
-            .. vim.fn.expand("%")
-            .. '" "'
-            .. routfile
-            .. '"'
-    else
-        rcmd = {
-            config.R_cmd,
-            "CMD",
-            "BATCH",
-            "--no-restore",
-            "--no-save",
-            vim.fn.expand("%"),
-            routfile,
-        }
-    end
+    local rcmd = {
+        config.R_cmd,
+        "CMD",
+        "BATCH",
+        "--no-restore",
+        "--no-save",
+        vim.fn.expand("%"),
+        routfile,
+    }
     require("r.job").start("R_CMD", rcmd, { on_exit = get_R_output })
 end
 
