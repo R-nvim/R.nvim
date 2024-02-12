@@ -49,11 +49,17 @@ local SyncTeX_readconc = function(basenm)
     local texidx = 0
     local ntexln = #vim.fn.readfile(basenm .. ".tex")
     local lstexln = vim.fn.range(1, ntexln)
-    local lsrnwf = vim.fn.range(1, ntexln)
     local lsrnwl = vim.fn.range(1, ntexln)
+    local lsrnwf = {}
     local conc = vim.fn.readfile(basenm .. "-concordance.tex")
     local idx = 0
     local maxidx = #conc
+
+    local rnwnm = basenm:gsub(".*/", "") .. ".Rnw"
+    for _, _ in pairs(lstexln) do
+        table.insert(lsrnwf, rnwnm)
+    end
+
     while
         idx < maxidx
         and texidx < ntexln
@@ -130,7 +136,7 @@ local GoToBuf = function(rnwbn, rnwf, basedir, rnwln)
             end
         end
     end
-    vim.cmd(rnwln)
+    vim.cmd(tostring(rnwln))
     vim.cmd("redraw")
     return 1
 end
@@ -406,7 +412,7 @@ M.SyncTeX_backward = function(fname, ln)
             elseif vim.env.WINDOWID then
                 vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID)
             end
-        elseif config.term_title then
+        else
             require("r.pdf").raise_window(config.term_title)
         end
     end
@@ -470,8 +476,8 @@ M.SyncTeX_forward = function(gotobuf)
     local rnwfile = concdata.rnwfile
     local rnwline = concdata.rnwline
     local texln = 0
-    for ii, v in ipairs(texlnum) do
-        if rnwfile[ii] == rnwf and rnwline[ii] >= lnum then
+    for k, v in pairs(texlnum) do
+        if rnwfile[k] == rnwf and rnwline[k] >= lnum then
             texln = v
             break
         end

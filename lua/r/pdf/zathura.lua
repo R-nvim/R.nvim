@@ -17,7 +17,7 @@ local start2 = function(fullpath)
     local job_id = vim.fn.jobstart({
         "zathura",
         "--synctex-editor-command",
-        'echo \'lua require("r.rnw").SyncTeX_backward("%{input}", "%{line}")\'',
+        'echo \'lua require("r.rnw").SyncTeX_backward("%{input}", %{line})\'',
         fullpath,
     }, {
         detach = true,

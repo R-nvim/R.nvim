@@ -82,7 +82,13 @@ end
 --- Currently, has support only for Xorg.
 ---@param wttl string Part of the window title.
 M.raise_window = function(wttl)
-    if config.has_wmctrl then vim.fn.system("wmctrl -a '" .. wttl .. "'") end
+    if config.has_wmctrl then
+        vim.fn.system("wmctrl -a '" .. wttl .. "'")
+    elseif
+        vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
+    then
+        vim.fn.system("swaymsg '[title=\"" .. wttl .. "\"] focus'")
+    end
 end
 
 return M

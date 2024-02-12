@@ -140,11 +140,6 @@ Suggestions for Unix (Linux, OS X, Cygwin, etc.):
                  See |external_term|). You should put in your Rprofile:
                  `library(colorout)`
 
-If running Gnome Shell on Wayland, you may also want to install the extension
-"Activate Window By Title" which will be used to raise Zathura window
-displaying the PDF file generated from Rnoweb, Rmd or Quarto documents.
-
-
 Suggestions for bibliographic completion from Zotero:
 
 For RMarkdown (`.Rmd`) and Quarto (`.qmd`) documents:
@@ -1606,9 +1601,8 @@ config to define what PDF viewer will be called. Valid values are "zathura"
 (default, and the one best integrated with R.nvim), "evince" and "okular".
 
 On Linux, if running on the X server (not on Wayland), the application
-`wmctrl` is required to raise both the PDF viewer and Neovim windows. If using
-Gnome Shell on Wayland, the extension "Activate Window By Title" is required
-(https://extensions.gnome.org/extension/5021/activate-window-by-title/).
+`wmctrl` is required to raise both the PDF viewer and Neovim windows. This
+feature is not implemented for Wayland windows managers.
 
 If editing an Rmd file, you can produce the html result with <LocalLeader>kr
 or <LocalLeader>kh (it may also work with other file types). The html file
@@ -1925,10 +1919,9 @@ Note: The knitr package (as of version 1.7) had at least two limitations:
      `\begin{document}` command.
 
                                                                 *term_title*
-If running Gnome Shell on Wayland, you have to install the extension "Activate
-Window by Title" and set the title of your terminal emulator in your config
-in order to have the terminal window raised on SyncTeX backward events.
-Example:
+You have to set the title of your terminal emulator in your config in order to
+have the correct terminal window raised on SyncTeX backward events (works on
+Xorg; on Wayland, only Sway is supported). Example:
 >lua
    term_title = 'Terminal'
 <

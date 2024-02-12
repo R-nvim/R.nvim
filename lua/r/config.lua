@@ -76,6 +76,7 @@ local config = {
     source_args         = "",
     specialplot         = false,
     synctex             = true,
+    term_title          = "term",
     texerr              = true,
     tmpdir              = nil,
     user_login          = nil,
