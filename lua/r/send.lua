@@ -399,7 +399,6 @@ M.selection = function(m)
     end
 
     local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, true)
-    vim.g.TheVM = vim.fn.visualmode()
     if vim.fn.visualmode() == "\\<C-V>" then
         local cj = vim.fn.col("'<")
         local ck = vim.fn.col("'>")
