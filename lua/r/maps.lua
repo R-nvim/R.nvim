@@ -12,7 +12,7 @@ local config = require("r.config").get_config()
 ---@param combo string Key combination.
 ---@param target string The command or function to be called.
 local create_maps = function(mode, plug, combo, target)
-    if config.disable_cmds.plug then return end
+    if vim.fn.index(config.disable_cmds, plug) > -1 then return end
     local tg
     local il
     if mode:find("0") then
