@@ -100,10 +100,10 @@ end
 M.source_lines = function(lines, what)
     require("r.edit").add_for_deletion(config.source_write)
 
-    if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
-        lines =
-            vim.fn.map(vim.deepcopy(lines), 'substitute(v:val, "^\\(``\\)\\?", "", "")')
-    end
+    -- if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
+    --     lines =
+    --         vim.fn.map(vim.deepcopy(lines), 'substitute(v:val, "^\\(``\\)\\?", "", "")')
+    -- end
 
     if what and what == "NewtabInsert" then
         vim.fn.writefile(lines, config.source_write)
