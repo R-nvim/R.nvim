@@ -7,6 +7,8 @@ local doc_buf_nr = -1
 
 local M = {}
 
+local get_win_width = function() return vim.o.columns > 80 and 80 or vim.o.columns - 1 end
+
 M.ask_R_help = function(topic)
     if topic == "" then
         require("r.send").cmd("help.start()")
@@ -35,7 +37,7 @@ M.ask_R_doc = function(rkeyword, package, getclass)
         if getclass then firstobj = cursor.get_first_obj() end
     end
 
-    local htw = vim.o.columns > 80 and 80 or vim.o.columns - 1
+    local htw = get_win_width()
     local rcmd
     if firstobj == "" and package == "" then
         rcmd = 'nvimcom:::nvim.help("' .. rkeyword .. '", ' .. htw .. "L)"
@@ -86,32 +88,6 @@ M.show = function(rkeyword, txt)
         end
     else
         vpager = config.nvimpager
-    end
-
-    local htw = vim.o.columns > 80 and 80 or vim.o.columns - 1
-    if rkeyword:match("^MULTILIB") then
-        local topic = vim.fn.split(rkeyword, " ")[2]
-        local libs = vim.fn.split(txt, "\024")
-        local msg = "The topic '" .. topic .. "' was found in more than one library:\n"
-        for idx, lib in ipairs(libs) do
-            msg = msg .. idx .. " : " .. lib .. "\n"
-        end
-        vim.cmd("redraw")
-        -- FIXME: not working:
-        local chn = vim.fn.input(msg .. "Please, select one of them: ")
-        if tonumber(chn) and tonumber(chn) > 0 and tonumber(chn) <= #libs then
-            send_to_nvimcom(
-                "E",
-                'nvimcom:::nvim.help("'
-                    .. topic
-                    .. '", '
-                    .. htw
-                    .. 'L, package="'
-                    .. libs[tonumber(chn)]
-                    .. '")'
-            )
-        end
-        return
     end
 
     local R_bufnr = require("r.term").get_buf_nr()
@@ -192,6 +168,35 @@ M.show = function(rkeyword, txt)
     vim.cmd("setlocal nomodified")
     vim.cmd("stopinsert")
     vim.cmd("redraw")
+end
+
+--- Function called by nvimcom when the user requests R documentation on a
+--- object under cursor and there are two or more libraries that might be the
+--- package where the object is.
+---@param topic string The object name, usually a function name.
+---@param libs table Names of libraries.
+M.choose_lib = function(topic, libs)
+    local htw = get_win_width()
+
+    -- FIXME: Not working: `choice` is always `nil`.
+    vim.ui.select(libs, {
+        prompt = "The topic '"
+            .. topic
+            .. "' was found in more than one library. Please, select one of them:",
+    }, function(choice, _)
+        local lib = libs[1]
+        if choice then lib = choice end
+        send_to_nvimcom(
+            "E",
+            'nvimcom:::nvim.help("'
+                .. topic
+                .. '", '
+                .. htw
+                .. 'L, package="'
+                .. lib
+                .. '")'
+        )
+    end)
 end
 
 --- Load HTML document

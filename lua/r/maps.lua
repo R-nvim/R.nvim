@@ -1,5 +1,80 @@
 local config = require("r.config").get_config()
 
+local map_desc = {
+    RInsertLineOutput = "Ask R to evaluate the line and insert the output",
+    RBibTeX = "Sweave the document and run bibtex",
+    RBibTeXK = "Knit the document, run bibtex and generate the PDF",
+    RClearAll = "Send to R: rm(list = ls())",
+    RClearConsole = "Send to R: ",
+    RClose = "Send to R: quit(save = 'no')",
+    RCustomStart = "Ask user to enter parameters to start R",
+    RDSendChunk = "Send to R the current chunk of R code and move down to next chunk",
+    RDSendLine = "Send to R the current line and move down to next line",
+    RDSendMBlock = "Send to R the lines between two marks and move to next line",
+    RDSendParagraph = "Send to R the next sequence of consecutive non-empty lines",
+    RDSendSelection = "Send to R visually selected lines or part of a line",
+    RDocExSection = "Go to Examples section of R documentation",
+    RDputObj = "Run dput(<cword>) and show the output in a new tab",
+    RGoToTeX = "Go the corresponding line in the generated LaTeX document",
+    RHelp = "Ask for R documentation on the object under cursor",
+    RILeftPart = "Send to R the part of the line on the left of the cursor",
+    RIRightPart = "Send to R the part of the line on the right of the cursor",
+    RKnit = "Knit the document",
+    RKnitRmCache = "Delete files from knitr cache",
+    RListSpace = "Send to R: ls()",
+    RMakeAll = "Knit the current document and generate all formats in the header",
+    RMakeHTML = "Knit the current document and generate an HTML document",
+    RMakeODT = "Knit the current document and generate an ODT document",
+    RMakePDF = "Sweave the current document and generate a PDF document",
+    RMakePDFK = "Knit the current document and generate a PDF document",
+    RMakePDFKb = "Knit the current document and generate a beamer presentation",
+    RMakeRmd = "Knit the current document and generate the default document format",
+    RMakeWord = "Knit the current document and generate a Word document",
+    RNLeftPart = "Send to R the part of the line on the left of the cursor",
+    RNRightPart = "Send to R the part of the line on the right of the cursor",
+    RNextRChunk = "Go to the next chunk of R code",
+    ROBCloseLists = "Close S4 objects, lists and data.frames in the Object Browser",
+    ROBOpenLists = "Open S4 objects, lists and data.frames in the Object Browser",
+    ROBToggle = "Toggle the Object Browser",
+    RObjectNames = "Send to R: nvim.names(<cword>)",
+    RObjectPr = "Send to R: print(<cword>)",
+    RObjectStr = "Send to R: str(<cword>)",
+    ROpenPDF = "Open the PDF generated from the current document",
+    RPlot = "Send to R: plot(<cword>)",
+    RPreviousRChunk = "Go to the previous chunk of R code",
+    RQuartoPreview = "Send to R: quarto::quarto_preview()",
+    RQuartoRender = "Send to R: quarto::quarto_render()",
+    RQuartoStop = "Send to R: quarto::quarto_preview_stop()",
+    RSPlot = "Send to R command to run summary and plot with <cword> as argument",
+    RSaveClose = "Quit R, saving the workspace",
+    RSendAboveLines = "Send to R all lines above the current one",
+    RSendChain = "Send to R the above chain of piped commands",
+    RSendChunk = "Send the current chunk of code to R",
+    RSendChunkFH = "Send all chunks of R code from the document's begin up to here",
+    RSendFile = "Send the whole file to R",
+    RSendLAndOpenNewOne = "Send the current line and open a new one",
+    RSendLine = "Send the current line to R",
+    RSendMBlock = "Send to R the lines between two marks",
+    RSendMotion = "Send to R the lines in a Vim motion",
+    RSendParagraph = "Send to R the next consecutive non-empty lines",
+    RSendSelection = "Send visually selected lines of part of a line",
+    RSetwd = "Send to R setwd(<directory of current document>)",
+    RShowArgs = "Send to R: nvim.args(<cword>)",
+    RShowEx = "Send to R: X with current word under cursor as argument",
+    RShowRout = "R CMD BATCH the current document and show the output in a new tab",
+    RStart = "Start R with default configuration",
+    RSummary = "Send to R: summary(<cword>)",
+    RSweave = "Sweave the current document",
+    RSyncFor = "SyncTeX forward (move from Rnoweb to the corresponding line in the PDF)",
+    RViewDF = "View the data.frame or matrix under cursor in a new tab",
+    RViewDFa = "View the head of a data.frame or matrix under cursor in a split window",
+    RViewDFs = "View the data.frame or matrix under cursor in a split window",
+    RViewDFv = "View the data.frame or matrix under cursor in a vertically split window",
+}
+
+local lleader
+local map_keys = {}
+
 -- stylua: ignore start
 
 --- Create maps.
@@ -12,7 +87,7 @@ local config = require("r.config").get_config()
 ---@param combo string Key combination.
 ---@param target string The command or function to be called.
 local create_maps = function(mode, plug, combo, target)
-    if config.disable_cmds.plug then return end
+    if vim.fn.index(config.disable_cmds, plug) > -1 then return end
     local tg
     local il
     if mode:find("0") then
@@ -26,6 +101,8 @@ local create_maps = function(mode, plug, combo, target)
         il = "a"
     end
     local opts = { silent = true, noremap = true, expr = false }
+    opts.desc = map_desc[plug]
+    map_keys[plug] = lleader .. combo
     if mode:find("n") then
         vim.api.nvim_buf_set_keymap(0, "n", "<Plug>" .. plug, tg, opts)
         if not config.user_maps_only and vim.fn.hasmapto("<Plug>" .. plug, "n") == 0 then
@@ -86,9 +163,9 @@ local control = function(file_type)
     create_maps("v",   "RSPlot",            "rb", "<Cmd>lua require('r.run').action('plotsumm', 'v')")
 
     -- Object Browser
-    create_maps("nvi", "RUpdateObjBrowser", "ro", "<Cmd>lua require('r.browser').start()")
-    create_maps("nvi", "ROpenLists",        "r=", "<Cmd>lua require('r.browser').open_close_lists('O')")
-    create_maps("nvi", "RCloseLists",       "r-", "<Cmd>lua require('r.browser').open_close_lists('C')")
+    create_maps("nvi", "ROBToggle",         "ro", "<Cmd>lua require('r.browser').start()")
+    create_maps("nvi", "ROBOpenLists",      "r=", "<Cmd>lua require('r.browser').open_close_lists('O')")
+    create_maps("nvi", "ROBCloseLists",     "r-", "<Cmd>lua require('r.browser').open_close_lists('C')")
 
     -- Render script with rmarkdown
     create_maps("nvi", "RMakeRmd",          "kr", "<Cmd>lua require('r.rmd').make('default')")
@@ -123,7 +200,9 @@ local edit = function()
     -- Replace <M--> with ' <- '
     if config.assign then
         vim.api.nvim_buf_set_keymap(0, "i", config.assign_map,
-            '<Cmd>lua require("r.edit").assign()<CR>', { silent = true })
+            '<Cmd>lua require("r.edit").assign()<CR>',
+            { silent = true, noremap = true, expr = false,
+              desc = "Replace " .. config.assign_map .. " with ` <- `"})
     end
     create_maps("nvi", "RSetwd", "rd", "<Cmd>lua require('r.run').setwd()")
 end
@@ -202,9 +281,9 @@ local send = function(file_type)
         create_maps("n", "RPreviousRChunk", "gN", "<Cmd>lua require('r.rnw').previous_chunk()")
     end
     if file_type == "rdoc" then
-        local opts = { silent = true, noremap = true, expr = false }
         create_maps("n", "RDocExSection", "ge", "<Cmd>lua require('r.rdoc').go_to_ex_section()")
-        vim.api.nvim_buf_set_keymap(0, "n", "q", "<Cmd>quit<CR>", opts)
+        vim.api.nvim_buf_set_keymap(0, "n", "q", "<Cmd>quit<CR>",
+            { silent = true, noremap = true, expr = false, desc = "Close this window" })
     end
 end
 
@@ -213,12 +292,43 @@ end
 local M = {}
 
 M.create = function(file_type)
+    if vim.g.maplocalleader == " " then
+        lleader = "<Space>"
+    elseif vim.g.maplocalleader == "	" then
+        lleader = "<Tab>"
+    else
+        lleader = vim.g.maplocalleader
+    end
     control(file_type)
     if file_type == "rbrowser" then return end
     send(file_type)
     if file_type == "rdoc" then return end
     start()
     edit()
+end
+
+M.show_map_desc = function()
+    local map_key_desc = {}
+    local label_w = 1
+    local key_w = 1
+    for k, _ in pairs(map_desc) do
+        if #k >= label_w then label_w = #k + 1 end
+    end
+    for _, v in pairs(map_keys) do
+        if #v >= key_w then key_w = #v + 1 end
+    end
+    for k, v in pairs(map_desc) do
+        table.insert(
+            map_key_desc,
+            { string.format("%-0" .. tostring(label_w) .. "s", k), "Identifier" }
+        )
+        table.insert(map_key_desc, {
+            string.format("%-0" .. tostring(key_w) .. "s", map_keys[k] or " "),
+            "Special",
+        })
+        table.insert(map_key_desc, { v .. "\n" })
+    end
+    vim.api.nvim_echo(map_key_desc, false, {})
 end
 
 return M

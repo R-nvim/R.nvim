@@ -251,130 +251,7 @@ list below, the backslash represents the <LocalLeader>. Not all menu items and
 key bindings are enabled in all file types supported by the plugin (r, rnoweb,
 rhelp, rmd, and quarto).
 
-Menu entry                                Default shortcut
-Start/Close
-  . Start R (default)                                  \rf
-  . Start R (custom)                                   \rc
-  --------------------------------------------------------
-  . Close R (no save)                                  \rq
-  . Stop (interrupt) R                                 :RStop
------------------------------------------------------------
-
-Send
-  . File                                               \aa
-  . File (echo)                                        \ae
-  . File (open .Rout)                                  \ao
-  --------------------------------------------------------
-  . Block (cur)                                        \bb
-  . Block (cur, echo)                                  \be
-  . Block (cur, down)                                  \bd
-  . Block (cur, echo and down)                         \ba
-  --------------------------------------------------------
-  . Chunk (cur)                                        \cc
-  . Chunk (cur, echo)                                  \ce
-  . Chunk (cur, down)                                  \cd
-  . Chunk (cur, echo and down)                         \ca
-  . Chunk (from first to here)                         \ch
-  --------------------------------------------------------
-  . Function (cur)                                     \ff
-  . Function (cur, echo)                               \fe
-  . Function (cur and down)                            \fd
-  . Function (cur, echo and down)                      \fa
-  --------------------------------------------------------
-  . Selection                                          \ss
-  . Selection (echo)                                   \se
-  . Selection (and down)                               \sd
-  . Selection (echo and down)                          \sa
-  . Selection (evaluate and insert output in new tab)  \so
-  --------------------------------------------------------
-  . Send motion region                                 \m{motion}
-  --------------------------------------------------------
-  . Paragraph                                          \pp
-  . Paragraph (echo)                                   \pe
-  . Paragraph (and down)                               \pd
-  . Paragraph (echo and down)                          \pa
-  --------------------------------------------------------
-  . Line                                                \l
-  . Line (and down)                                     \d
-  . Line (and new one)                                  \q
-  . Left part of line (cur)                       \r<Left>
-  . Right part of line (cur)                     \r<Right>
-  . Line (evaluate and insert the output as comment)    \o
-  . All lines above the current one                    \su
------------------------------------------------------------
-
-Command
-  . List space                                         \rl
-  . Clear console                                      \rr
-  . Remove objects and clear console                   \rm
-  --------------------------------------------------------
-  . Print (cur)                                        \rp
-  . Names (cur)                                        \rn
-  . Structure (cur)                                    \rt
-  . View data.frame (cur) in new tab                   \rv
-  . View data.frame (cur) in horizontal split          \vs
-  . View data.frame (cur) in vertical split            \vv
-  . View head(data.frame) (cur) in horizontal split    \vh
-  . Run dput(cur) and show output in new tab           \td
-  --------------------------------------------------------
-  . Arguments (cur)                                    \ra
-  . Example (cur)                                      \re
-  . Help (cur)                                         \rh
-  --------------------------------------------------------
-  . Summary (cur)                                      \rs
-  . Plot (cur)                                         \rg
-  . Plot and summary (cur)                             \rb
-  --------------------------------------------------------
-  . Set working directory (cur file path)              \rd
-  --------------------------------------------------------
-  . Sweave (cur file)                                  \sw
-  . Sweave and PDF (cur file)                          \sp
-  . Sweave, BibTeX and PDF (cur file) (Linux/Unix)     \sb
-  --------------------------------------------------------
-  . Knit (cur file)                                    \kn
-  . Knit, BibTeX and PDF (cur file) (Linux/Unix)       \kb
-  . Knit and PDF (cur file)                            \kp
-  . Knit and Beamer PDF (cur file)                     \kl
-  . Knit and HTML (cur file, verbose)                  \kh
-  . Knit and ODT (cur file)                            \ko
-  . Knit and Word Document (cur file)                  \kw
-  . Markdown render (cur file)                         \kr
-  . Markdown render [all in YAML] (cur file)           \ka
-  . Spin (cur file) (only .R)                          \ks
-  --------------------------------------------------------
-  . Quarto render (cur file)                           \qr
-  . Quarto preview (cur file)                          \qp
-  . Quarto stop preview (all files)                    \qs
-  --------------------------------------------------------
-  . Open attachment of reference (Rmd, Rnoweb)         \oa
-  . Open PDF (cur file)                                \op
-  . Search forward (SyncTeX)                           \gp
-  . Go to LaTeX (SyncTeX)                              \gt
-  --------------------------------------------------------
-  . Build tags file (cur dir)                  :RBuildTags
------------------------------------------------------------
-
-Edit
-  . Insert "<-"                                          _
-  . Complete object name                     CTRL-X CTRL-O
-  --------------------------------------------------------
-  . Go (next R chunk)                                  \gn
-  . Go (previous R chunk)                              \gN
------------------------------------------------------------
-
-Object Browser
-  . Open/Close                                         \ro
-  . Expand (all lists)                                 \r=
-  . Collapse (all lists)                               \r-
-  . Toggle (cur)                                     Enter
------------------------------------------------------------
-
-Help (plugin)
-Help (R)                                            :Rhelp
------------------------------------------------------------
-
-Please see |R-Nvim-key-bindings| to learn how to customize the key bindings
-without editing the plugin directly.
+Please see |R.nvim-key-bindings| to learn how to customize the key bindings.
 
 The plugin commands that send code to R Console are the most commonly used. If
 the code to be sent to R has a single line it is sent directly to R Console.
@@ -1727,8 +1604,9 @@ in config:
 6.32. Commands to be executed after either R startup or Object Browser opening
 									*hook*
 
-If you want the execution of a Lua function just after R startup or after the
-Object Browser opening, set the `hook` config option, as in the example below:
+If you want the execution of a Lua function just after the configuration is
+finished for each buffer, R startup or the Object Browser opening, set the
+`hook` config option, as in the example below:
 >lua
    hook = {
        after_config = function() vim.notify("R.nvim is configured") end,
@@ -1736,6 +1614,9 @@ Object Browser opening, set the `hook` config option, as in the example below:
        after_ob_open = nil,
    },
 <
+See |R.nvim-key-bindings| for a real example of how to use the `after_config`
+hook.
+
 
 ------------------------------------------------------------------------------
 6.34. Disable R-Nvim commands
@@ -1750,10 +1631,13 @@ use those key-bindings specified by the user, put in your config:
     user_maps_only = true
 <
 If you want to disable only some of R.nvim commands, create a Lua table with
-their key bindings names in your config. The complete list of key bindings
-names is shown at the Custom key bindings section (R.nvim-key-bindings). Below
-is an example on how to disable the commands that sends `setwd()` and `dput()`
-to R Console:
+their key bindings <Plug> labels in your config. The complete list of key
+bindings labels is shown with the command:
+>vim
+   :RMapsDesc
+<
+Below is an example on how to disable the commands that sends `setwd()` and
+`dput()` to R Console:
 >lua
    disable_cmds = {'RSetwd', 'RDputObj'}
 <
@@ -1928,167 +1812,57 @@ Xorg; on Wayland, only Sway is supported). Example:
 ==============================================================================
 7. Custom key bindings                                   *R-Nvim-key-bindings*
 
-When creating custom key bindings for R-Nvim, it is necessary to create three
-maps for most functions because the way the function is called is different in
-each Vim mode. Thus, key bindings must be made for Normal mode, Insert mode,
-and Visual mode.
+See |user_maps_only| if you want to remove the default mappings.
+See |disable_cmds| if you only want to avoid the creation of some of them.
 
-To customize a key binding you could put something like this in your |init.lua|:
->lua
-   vim.keymap.set('n', '<LocalLeader>sr', '<Plug>RStart')
+When creating custom key bindings for R.nvim, you have to create a map to a
+<Plu> label which is mapped to the actual function to be executed.
+
+To see the description of all key bindings <Plug> labels and how they were
+mapped in the current session, do in Normal mode:
+>vim
+   :RMapsDesc
 <
-The above example shows how to add a key binding to start R for <Leader>sr
-for just r buffers. The default <LocalLeader>rf still exists. After changing
-the maps in your |init.lua|, you have to restart Neovim. If you want to remove the
-default mappings, you can set |user_maps_only| .
+The prefix RD means "cursor down".
 
-Only the custom key bindings for Normal mode are shown in Neovim's menu, but
-you can type |:map| to see the complete list of current mappings, and below is
-the list of the names for custom key bindings (the prefix RE means "echo"; RD,
-"cursor down"; RED, both "echo" and "down"):
-
-   Star/Close R:
-   RStart
-   RCustomStart
-   RClose
-   RSaveClose
-
-   Clear R console:
-   RClearAll
-   RClearConsole
-
-   Edit R code:
-   RIndent
-   RNextRChunk
-   RPreviousRChunk
-
-   Send line or part of it to R:
-   RSendLine
-   RDSendLine
-   RSendLAndOpenNewOne
-   RNLeftPart
-   RNRightPart
-   RILeftPart
-   RIRightPart
-   RDSendLineAndInsertOutput
-
-   Send code to R console:
-   RSendAboveLines
-   RSendSelection
-   RESendSelection
-   RDSendSelection
-   REDSendSelection
-   RSendMotion
-   RSendSelAndInsertOutput
-   RSendMBlock
-   RESendMBlock
-   RDSendMBlock
-   REDSendMBlock
-   RSendParagraph
-   RESendParagraph
-   RDSendParagraph
-   REDSendParagraph
-   RSendFunction
-   RESendFunction
-   RDSendFunction
-   REDSendFunction
-   RSendFile
-
-   Send command to R:
-   RHelp
-   RPlot
-   RSPlot
-   RShowArgs
-   RShowEx
-   RShowRout
-   RObjectNames
-   RObjectPr
-   RObjectStr
-   RViewDF	(view data.frame or other object)
-   RViewDFs	(view object in split window)
-   RViewDFv	(view object in vertically split window)
-   RViewDFa	(view object in split window above the current one)
-   RDputObj
-   RSetwd
-   RSummary
-   RListSpace
-
-   Support to Sweave and knitr:
-   RSendChunk
-   RDSendChunk
-   RESendChunk
-   REDSendChunk
-   RSendChunkFH	(from the first chunk to here)
-   RBibTeX	(Sweave)
-   RBibTeXK	(Knitr)
-   RSweave
-   RKnit
-   RMakeHTML
-   RMakePDF	(Sweave)
-   RMakePDFK	(Knitr)
-   RMakePDFKb	(.Rmd, beamer)
-   RMakeODT	(.Rmd, Open document)
-   RMakeWord	(.Rmd, Word document)
-   RMakeRmd	(rmarkdown default)
-   RMakeAll	(rmarkdown all in YAML)
-   ROpenPDF
-   RSyncFor	(SyncTeX search forward)
-   RGoToTeX	(Got to LaTeX output)
-   RSpinFile
-   RNextRChunk
-   RPreviousRChunk
-
-   Support for Quarto:
-   RQuartoRender
-   RQuartoPreview
-   RQuartoStop
-
-   Object browser:
-   RUpdateObjBrowser
-   ROpenLists
-   RCloseLists
-
-See also: |user_maps_only| and |disable_cmds|.
-
-The completion of function arguments only happens in Insert mode.
-
-The plugin also contains a function called RAction which allows you to build
-ad-hoc commands to R. This function takes the name of an R function such as
-"levels" or "table" and the word under the cursor, and passes them to R as a
-command.
-
-For example, if your cursor is sitting on top of the object called gender and
-you call the RAction function, with an argument such as levels, Neovim will
-pass the command `levels(gender)` to R, which will show you the levels of the
-object gender. To make it even easier to use this and other functions, you
-could write custom key bindings in your |init.lua|, as in the examples below:
+The plugin contains a function called `action` in the Lua module `r.run`
+which allows you to build ad-hoc commands to R. This function takes the name
+of an R function such as "levels" or "table" and the word under the cursor,
+and passes them to R as a command. For example, if your cursor is over the
+object called "gender" and you call the `action` function, with the argument
+"levels", Neovim will pass the command `levels(gender)` to R, which will show
+you the levels of the object gender. To make it even easier to use this and
+other functions, you could write custom key bindings insinde the function
+passed to `hook.after_config` as in the examples below (see |hook|):
 >lua
-   -- FIXME: test
-   vim.keymap.set('n', '<LocalLeader>L', '<Cmd>lua require("r.run").action("levels")<CR>')
-   vim.keymap.set('n', '<LocalLeader>t', '<Cmd>lua require("r.run").action("tail")<CR>')
-<
-If you want an action over an selection, then the second argument must be the
-string `"v"`:
->lua
-   -- FIXME: test
-   vim.keymap.set('v', '<LocalLeader>h', '<Cmd>lua require("r.run").action("head")<CR>')
-<
-In this case, the beginning and the end of the selection must be in the same
-line.
+   hook = {
+       after_config = function()
+	   -- Creating maps to "<Plug>RDSendLine" and "<Plug>RSendSelection"
+	   -- will prevent R.nvim of creating its default maps to them.
+           if vim.o.syntax ~= "rbrowser" then
+	       -- Don't map "<Enter>" in the Object Browser
+               vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
+               vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
+           end
 
-If either a second or a third optional argument starts with a comma, it will
-be inserted as argument(s) to the RAction function. Example:
->lua
-   -- FIXME: test
-   vim.keymap.set('n', '<LocalLeader>H', '<Cmd>lua require("r.run").action("head", ", n = 10")<CR>')
-<
-If the command that you want to send does not require an R object as argument,
-you can send it directly to R Console, as in the example:
->lua
-   -- FIXME: test
-   vim.keymap.set('n', '<LocalLeader>s', '<Cmd>lua require("r.send").cmd("search()")<CR>')
-<
-See also: |source|.
+           vim.api.nvim_buf_set_keymap(0, "n", '<LocalLeader>L', '<Cmd>lua require("r.run").action("levels")<CR>', {})
+
+	   -- If you want an action over an selection, then the second
+	   -- argument must be the string `"v"`:
+	   -- In this case, the beginning and the end of the selection must be
+	   -- in the same line.
+           vim.api.nvim_buf_set_keymap(0, "v", '<LocalLeader>T', '<Cmd>lua require("r.run").action("head")<CR>', {})
+
+	   -- If a third optional argument starts with a comma, it will be
+	   -- inserted as argument(s) to the `action`:
+           vim.api.nvim_buf_set_keymap(0, "n", '<LocalLeader>H', '<Cmd>lua require("r.run").action("head", "n", ", n = 10")<CR>', {})
+
+	   -- If the command that you want to send does not require an R
+	   -- object as argument, you can use `cmd()` from the `r.send` module
+	   -- to send it directly to R Console:
+           vim.api.nvim_buf_set_keymap(0, "n", '<LocalLeader>S', '<Cmd>lua require("r.send").cmd("search()")<CR>', {})
+       end,
+   }
 
 
 ==============================================================================

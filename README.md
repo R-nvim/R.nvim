@@ -63,12 +63,25 @@ insert other hooks for Lua functions at other parts of the code under user
 request.
 
 We removed the `"echo"` parameters from the functions that send code to R
-Console. Users can still define the arguments that will be passed to
-`base::source()` with `source_args`, which includes the ability to pass the
-argument `echo=TRUE`. Now, there is a new option to define how many lines can
-be sent directly to R Console without saving the code in a temporary file to
-be sourced (`max_lines_to_paste`).
+Console. Users can still set the value of `source_args` to define the
+arguments that will be passed to `base::source()` and include the argument
+`echo=TRUE`. Now, there is a new option to define how many lines can be sent
+directly to R Console without saving the code in a temporary file to be
+sourced (`max_lines_to_paste`).
 
+We reduced the options on how to display R documentation to: `"split"`,
+`"tab"`, `"float"` (not implemented yet), and `"no"`.
+
+There are two new commands:
+
+- `:RMapsDesc` display the list of key bindings followed by a short
+  descriptions.
+
+- `:RConfigShow` display the list of configuration options and their current
+  values.
+
+There is one new command to send the above piped chain of commands. It's
+default key binding is `<LocalLeader>sc`.
 
 
 ## Screenshots

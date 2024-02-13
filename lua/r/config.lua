@@ -537,7 +537,6 @@ end
 local windows_config = function()
     local wtime = uv.hrtime()
     local isi386 = false
-    local rinstallpath = nil
 
     if config.R_path then
         local rpath = vim.split(config.R_path, ";")
@@ -569,38 +568,43 @@ local windows_config = function()
             end
         end
 
-        local run_cmd_content = { 'reg.exe QUERY "HKLM\\SOFTWARE\\R-core\\R" /s' }
-        vim.fn.writefile(run_cmd_content, config.tmpdir .. "/run_cmd.bat")
-        local ripl = vim.fn.system(config.tmpdir .. "/run_cmd.bat")
-        local rip =
-            vim.fn.filter(vim.fn.split(ripl, "\n"), 'v:val =~ ".*InstallPath.*REG_SZ"')
+        local get_rip = function(run_cmd)
+            local resp = vim.system(run_cmd, { text = true }):wait()
+            local rout = vim.split(resp.stdout, "\n")
+            local rip = {}
+            for _, v in pairs(rout) do
+                if v:find("InstallPath.*REG_SZ") then table.insert(rip, v) end
+            end
+            return rip
+        end
+
+        local run_cmd = { "reg.exe", "QUERY", "HKLM\\SOFTWARE\\R-core\\R", "/s" }
+        local rip = get_rip(run_cmd)
         if #rip == 0 then
             -- Normally, 32 bit applications access only 32 bit registry and...
             -- We have to try again if the user has installed R only in the other architecture.
-            local reg_cmd = (
-                vim.fn.has("win64")
-                    and 'reg.exe QUERY "HKLM\\SOFTWARE\\R-core\\R" /s /reg:32'
-                or 'reg.exe QUERY "HKLM\\SOFTWARE\\R-core\\R" /s /reg:64'
-            )
-            vim.fn.writefile({ reg_cmd }, config.tmpdir .. "/run_cmd.bat")
-            ripl = vim.fn.system(config.tmpdir .. "/run_cmd.bat")
-            rip = vim.fn.filter(
-                vim.fn.split(ripl, "\n"),
-                'v:val =~ ".*InstallPath.*REG_SZ"'
-            )
+            if vim.fn.has("win64") then
+                table.insert(run_cmd, "/reg:64")
+            else
+                table.insert(run_cmd, "/reg:32")
+            end
+            rip = get_rip(run_cmd)
         end
-        if #rip > 0 then
-            rinstallpath = vim.fn.substitute(rip[1], ".*InstallPath.*REG_SZ\\s*", "", "")
-            rinstallpath = vim.fn.substitute(rinstallpath, "\\n", "", "g")
-            rinstallpath = vim.fn.substitute(rinstallpath, "\\s*$", "", "g")
-        end
-        if not rinstallpath then
+
+        if #rip == 0 then
             warn(
-                "Could not find R path in Windows Registry. If you have already installed R, please, set the value of 'R_path'."
+                "Could not find R path in Windows Registry. "
+                    .. "If you have already installed R, please, set the value of 'R_path'."
             )
             require("r.edit").add_to_debug_info("windows setup", uv.hrtime() - wtime, "Time")
             return
         end
+
+        local rinstallpath = nil
+        rinstallpath = rip[1]
+        rinstallpath = rinstallpath:gsub(".*InstallPath.*REG_SZ\\s*", "")
+        rinstallpath = rinstallpath:gsub("\n", "")
+        rinstallpath = rinstallpath:gsub("%s*$", "")
         local hasR32 = vim.fn.isdirectory(rinstallpath .. "\\bin\\i386")
         local hasR64 = vim.fn.isdirectory(rinstallpath .. "\\bin\\x64")
         if hasR32 == 1 and not hasR64 then isi386 = true end
@@ -746,6 +750,7 @@ local global_setup = function()
     )
     vim.api.nvim_create_user_command("RBuildTags", require("r.edit").build_tags, {})
     vim.api.nvim_create_user_command("RDebugInfo", require("r.edit").show_debug_info, {})
+    vim.api.nvim_create_user_command("RMapsDesc", require("r.maps").show_map_desc, {})
 
     vim.api.nvim_create_user_command(
         "RSend",
