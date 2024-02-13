@@ -649,7 +649,7 @@ M.clear_console = function()
         vim.wait(50)
         job.stdin("Server", "87\n")
     else
-        send.cmd("\014")
+        send.cmd("\012")
     end
 end
 
