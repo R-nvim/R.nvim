@@ -147,7 +147,7 @@ end
 
 --- Send to R all lines above the current one.
 M.above_lines = function()
-    local lines = vim.api.nvim_buf_get_lines(0, 1, vim.fn.line(".") - 1, false)
+    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("."), false)
 
     -- Remove empty lines from the end of the list
     local result =
