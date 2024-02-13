@@ -86,9 +86,9 @@ local control = function(file_type)
     create_maps("v",   "RSPlot",            "rb", "<Cmd>lua require('r.run').action('plotsumm', 'v')")
 
     -- Object Browser
-    create_maps("nvi", "RUpdateObjBrowser", "ro", "<Cmd>lua require('r.browser').start()")
-    create_maps("nvi", "ROpenLists",        "r=", "<Cmd>lua require('r.browser').open_close_lists('O')")
-    create_maps("nvi", "RCloseLists",       "r-", "<Cmd>lua require('r.browser').open_close_lists('C')")
+    create_maps("nvi", "ROBUpdate",         "ro", "<Cmd>lua require('r.browser').start()")
+    create_maps("nvi", "ROBOpenLists",      "r=", "<Cmd>lua require('r.browser').open_close_lists('O')")
+    create_maps("nvi", "ROBCloseLists",     "r-", "<Cmd>lua require('r.browser').open_close_lists('C')")
 
     -- Render script with rmarkdown
     create_maps("nvi", "RMakeRmd",          "kr", "<Cmd>lua require('r.rmd').make('default')")
