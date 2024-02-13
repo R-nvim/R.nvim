@@ -436,10 +436,10 @@ end
 
 -- Get the word either under or after the cursor.
 -- Works for word(| where | is the cursor position.
--- Completely broken
 M.get_keyword = function()
     local line = vim.fn.getline(vim.fn.line("."))
-    if #line == 0 then return "" end
+    local llen = #line
+    if llen == 0 then return "" end
 
     local i = vim.fn.col(".")
 
@@ -466,14 +466,18 @@ M.get_keyword = function()
     end
     -- Go to the end of the word
     local j = i
-    while
-        line:sub(j, j):match("[%w@:$:_%.]")
-        or (line:byte(j) > 0x80 and line:byte(j) < 0xf5)
-    do
-        j = j + 1
+    local b
+    while j <= llen do
+        b = line:byte(j + 1)
+        if
+            b and ((b > 0x80 and b < 0xf5) or line:sub(j + 1, j + 1):match("[%w@$:_%.]"))
+        then
+            j = j + 1
+        else
+            break
+        end
     end
-    local rkeyword = line:sub(i, j - 1)
-    return rkeyword
+    return line:sub(i, j)
 end
 
 -- Call R functions for the word under cursor
