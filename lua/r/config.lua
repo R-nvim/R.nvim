@@ -749,6 +749,7 @@ local global_setup = function()
     )
     vim.api.nvim_create_user_command("RBuildTags", require("r.edit").build_tags, {})
     vim.api.nvim_create_user_command("RDebugInfo", require("r.edit").show_debug_info, {})
+    vim.api.nvim_create_user_command("RMapsDesc", require("r.maps").show_map_desc, {})
 
     vim.api.nvim_create_user_command(
         "RSend",
