@@ -92,7 +92,7 @@ nvim.help <- function(topic, w, firstobj, package) {
             h <- sub("/help/.*", "", h)
             h <- sub(".*/", "", h)
             .C("nvimcom_msg_to_nvim",
-               paste0("lua require('r.doc').show('MULTILIB ", topic, "', '", paste(h, collapse = " "), "')"),
+               paste0("lua require('r.doc').choose_lib('", topic, "', {'", paste(h, collapse = "', '"), "'})"),
                PACKAGE = "nvimcom")
             return(invisible(NULL))
         } else {
