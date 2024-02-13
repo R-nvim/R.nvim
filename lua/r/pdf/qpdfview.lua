@@ -1,22 +1,31 @@
-local cfg = require("r.config").get_config()
+local config = require("r.config").get_config()
+local job = require("r.job")
 local warn = require("r").warn
 local M = {}
 
 M.open = function(fullpath)
-    vim.fn.system("qpdfview --unique '" .. fullpath .. "' 2>/dev/null >/dev/null &")
-    if cfg.synctex then
-        local s = string.find(fullpath, " ")
-        if s > 0 then
-            warn(
-                "Qpdfview does support file names with spaces: SyncTeX backward will not work."
-            )
-        end
+    if config.synctex and fullpath:find(" ") then
+        warn("Qpdfview's SyncTeX backward does not support file names with spaces.")
     end
+
+    local opts = {
+        on_stdout = require("r.job").on_stdout,
+        on_exit = require("r.job").on_exit,
+        detach = true,
+    }
+
+    local cmd = {
+        "qpdfview",
+        "--unique",
+        fullpath,
+    }
+
+    job.start(fullpath, cmd, opts)
 end
 
 M.SyncTeX_forward = function(tpath, ppath, texln, _)
-    local texname = string.gsub(tpath, " ", "\\ ")
-    local pdfname = string.gsub(ppath, " ", "\\ ")
+    local texname = tpath:gsub(" ", "\\ ")
+    local pdfname = ppath:gsub(" ", "\\ ")
     vim.fn.system(
         "qpdfview --unique "
             .. pdfname
@@ -26,7 +35,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
             .. texln
             .. ":1 2> /dev/null >/dev/null &"
     )
-    require("r.pdf").raise_window(string.gsub(string.gsub(ppath, ".*/", ""), ".pdf$", ""))
+    require("r.pdf").focus_window(ppath, job.get_pid(ppath))
 end
 
 return M

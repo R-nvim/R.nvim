@@ -147,20 +147,8 @@ M.obj = function(fname)
 end
 
 M.get_output = function(fnm, txt)
-    if fnm == "NewtabInsert" then
-        local tnum = 1
-        while vim.fn.bufexists("so" .. tnum) == 1 do
-            tnum = tnum + 1
-        end
-        vim.cmd("tabnew so" .. tnum)
-        vim.fn.setline(1, vim.split(string.gsub(txt, "\019", "'"), "\020"))
-        vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
-        vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
-        vim.api.nvim_set_option_value("syntax", "rout", { scope = "local" })
-    else
-        vim.cmd("tabnew " .. fnm)
-        vim.fn.setline(1, vim.fn.split(vim.fn.substitute(txt, "\019", "'", "g"), "\020"))
-    end
+    vim.cmd("tabnew " .. fnm)
+    vim.fn.setline(1, vim.split(txt:gsub("\019", "'"), "\020"))
     vim.cmd("normal! gT")
     vim.cmd("redraw")
 end
@@ -214,12 +202,10 @@ end
 
 M.open_example = function()
     if vim.fn.bufloaded(config.tmpdir .. "/example.R") ~= 0 then
-        vim.cmd("bunload! " .. vim.fn.substitute(config.tmpdir, " ", "\\ ", "g"))
+        vim.cmd("bunload! " .. config.tmpdir:gsub(" ", "\\ "))
     end
     if config.nvimpager == "tabnew" or config.nvimpager == "tab" then
-        vim.cmd(
-            "tabnew " .. vim.fn.substitute(config.tmpdir, " ", "\\ ", "g") .. "/example.R"
-        )
+        vim.cmd("tabnew " .. config.tmpdir:gsub(" ", "\\ ") .. "/example.R")
     else
         local nvimpager = config.nvimpager
         if config.nvimpager == "vertical" then
@@ -230,16 +216,10 @@ M.open_example = function()
         end
         if nvimpager == "vertical" then
             vim.cmd(
-                "belowright vsplit "
-                    .. vim.fn.substitute(config.tmpdir, " ", "\\ ", "g")
-                    .. "/example.R"
+                "belowright vsplit " .. config.tmpdir:gsub(" ", "\\ ") .. "/example.R"
             )
         else
-            vim.cmd(
-                "belowright split "
-                    .. vim.fn.substitute(config.tmpdir, " ", "\\ ", "g")
-                    .. "/example.R"
-            )
+            vim.cmd("belowright split " .. config.tmpdir:gsub(" ", "\\ ") .. "/example.R")
         end
     end
     vim.api.nvim_buf_set_keymap(0, "n", "q", ":q<CR>", { noremap = true, silent = true })

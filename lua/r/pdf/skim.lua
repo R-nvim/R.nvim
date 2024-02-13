@@ -10,7 +10,7 @@ M.open = function(fullpath)
     )
 end
 
-M.SyncTeX_forward = function(tpath, ppath, texln, _)
+M.SyncTeX_forward = function(tpath, ppath, texln)
     -- This command is based on macvim-skim
     vim.fn.system(
         config.macvim_skim_app_path

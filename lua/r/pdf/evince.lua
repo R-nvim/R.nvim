@@ -3,6 +3,8 @@ local py = nil
 local evince_loop = 0
 local config = require("r.config").get_config()
 local rnw = require("r.rnw")
+local job = require("r.job")
+local pdf = require("r.pdf")
 
 -- Check if python3 is executable, otherwise use python
 if vim.fn.executable("python3") > 0 then
@@ -14,15 +16,27 @@ end
 local M = {}
 
 M.open = function(fullpath)
-    local pcmd = "evince '" .. fullpath .. "' 2>/dev/null >/dev/null &"
-    vim.fn.system(pcmd)
+    if job.is_running(fullpath) then
+        local fname = fullpath:gsub(".*/", "")
+        pdf.focus_window(fname, job.get_pid(fullpath))
+        return
+    end
+
+    local eopts = {
+        on_stdout = require("r.job").on_stdout,
+        on_exit = require("r.job").on_exit,
+        detach = true,
+    }
+
+    local ecmd = { "evince", fullpath }
+    job.start(fullpath, ecmd, eopts)
 end
 
-M.SyncTeX_forward = function(tpath, ppath, texln, _)
-    local n1 = vim.fn.substitute(tpath, "\\(^/.*/\\).*", "\\1", "")
-    local n2 = vim.fn.substitute(tpath, ".*/\\(.*\\)", "\\1", "")
-    local texname = vim.fn.substitute(n1, " ", "%20", "g") .. n2
-    local pdfname = vim.fn.substitute(ppath, " ", "%20", "g")
+M.SyncTeX_forward = function(tpath, ppath, texln)
+    local n1 = tpath:gsub("(^/.*/).*", "%1")
+    local n2 = tpath:gsub(".*/(.*)", "%1")
+    local texname = n1:gsub(" ", "%20") .. n2
+    local pdfname = ppath:gsub(" ", "%20")
 
     if evince_loop < 2 then
         require("r.job").start("Python (Evince forward)", {
@@ -35,14 +49,13 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
     else
         evince_loop = 0
     end
-    require("r.pdf").raise_window(string.gsub(ppath, ".*/", ""))
+    require("r.pdf").focus_window(ppath:gsub(".*/", ""), job.get_pid(ppath))
 end
 
-M.SyncTeX_backward = function()
+M.run_evince_SyncTeX_server = function()
     local basenm = rnw.SyncTeX_get_master() .. ".pdf"
-    local pdfpath = vim.b.rplugin_pdfdir
-        .. "/"
-        .. vim.fn.substitute(basenm, ".*/", "", "")
+    if not vim.b.rplugin_pdfdir then require("r.rnw").set_pdf_dir() end
+    local pdfpath = vim.b.rplugin_pdfdir .. "/" .. basenm:gsub(".*/", "")
     local did_evince = 0
 
     for _, bb in ipairs(evince_list) do

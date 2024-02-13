@@ -163,7 +163,7 @@ find_parent = function(child, curline, curpos)
     local suffix
     while curline > 3 do
         curline = curline - 1
-        line = vim.fn.getline(curline):gsub("	.*", "")
+        line = vim.fn.getline(curline):gsub("\t.*", "")
         idx = line:find("#")
         if idx < curpos then
             parent = line:sub(idx + 1)
@@ -307,8 +307,8 @@ M.get_pkg_name = function()
     local lnum = vim.fn.line(".")
     while lnum > 0 do
         local line = vim.fn.getline(lnum)
-        if line:find(".*##[0-9a-zA-Z\\.]*\t") then
-            return vim.fn.substitute(line, ".*##\\(.\\{-}\\)\t.*", "\\1", "")
+        if line:find("^   :#[0-9a-zA-Z%.]*\t") then
+            return line:gsub("   :#(.-)\t.*", "%1")
         end
         lnum = lnum - 1
     end
@@ -420,13 +420,13 @@ M.on_double_click = function()
     local curline = vim.fn.getline(vim.fn.line("."))
     local key = M.get_name(lnum, curline)
     if curview == "GlobalEnv" then
-        if curline:find("&#.*	") then
+        if curline:find("&#.*\t") then
             send_to_nvimcom("L", key)
         elseif
-            curline:find("%[#.*	")
-            or curline:find("%$#.*	")
-            or curline:find("<#.*	")
-            or curline:find(":#.*	")
+            curline:find("%[#.*\t")
+            or curline:find("%$#.*\t")
+            or curline:find("<#.*\t")
+            or curline:find(":#.*\t")
         then
             key = key:gsub("`", "")
             job.stdin("Server", "33G" .. key .. "\n")
@@ -434,16 +434,16 @@ M.on_double_click = function()
             require("r.send").cmd("str(" .. key .. ")")
         end
     else
-        if curline:find("%(#.*	") or curline:find(";#.*	") then
+        if curline:find("%(#.*\t") or curline:find(";#.*\t") then
             key = key:gsub("`", "")
             require("r.doc").ask_R_doc(key, M.get_pkg_name(), false)
         else
             if
                 string.find(key, ":%$")
-                or curline:find("%[#.*	")
-                or curline:find("%$#.*	")
-                or curline:find("<#.*	")
-                or curline:find(":#.*	")
+                or curline:find("%[#.*\t")
+                or curline:find("%$#.*\t")
+                or curline:find("<#.*\t")
+                or curline:find(":#.*\t")
             then
                 job.stdin("Server", "33L" .. key .. "\n")
             else

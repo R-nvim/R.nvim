@@ -17,7 +17,8 @@
 # this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 # Street, Fifth Floor, Boston, MA  02110-1301, USA
 
-# Modified to R-Nvim by Jakson Aquino
+# Modified to R.nvim by Jakson Aquino
+# Perhaps an alternative: https://github.com/Vinno97/evince-synctex/blob/master/evince-synctex.sh
 
 import dbus, dbus.mainloop.glib, sys
 from nvimr import nvimr_cmd, nvimr_warn
@@ -110,7 +111,7 @@ class EvinceWindowProxy:
                 nvimr_cmd("lua require('r.pdf.evince').again()")
         else:
             self.window.SyncView(input_file, data, 0,  dbus_interface = "org.gnome.evince.Window")
-            nvimr_cmd("let g:rplugin.evince_loop = 0") # FIXME: don't use global variable
+            rnvim_cmd("lua require('r.pdf.evince').evince_loop = 0")
 
     def _syncview_handler(self, window_list):
         self.handle_get_window_list_reply(window_list)

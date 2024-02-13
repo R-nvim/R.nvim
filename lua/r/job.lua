@@ -131,17 +131,20 @@ local default_handlers = {
 ---@param job_name string The name of the job.
 ---@param cmd table The command to start the job with.
 ---@param opt table|nil Optional table of handlers for job events.
+---@return number Job PID
 M.start = function(job_name, cmd, opt)
     local h = default_handlers
     if opt then h = opt end
     local jobid = vim.fn.jobstart(cmd, h)
     if jobid == 0 then
         warn("Invalid arguments in: " .. tostring(cmd))
+        return 0
     elseif jobid == -1 then
         warn("Command not executable in: " .. tostring(cmd))
-    else
-        jobs[job_name] = jobid
+        return 0
     end
+    jobs[job_name] = jobid
+    return vim.fn.jobpid(jobid)
 end
 
 --- Opens an R terminal with the specified command.
@@ -165,6 +168,16 @@ M.get_title = function(job_id)
         if value == job_id then return key end
     end
     return "Job"
+end
+
+--- Get pid of job
+---@param job_name string The job name.
+---@return number
+M.get_pid = function(job_name)
+    if jobs[job_name] then
+        return vim.fn.jobpid(jobs[job_name])
+    end
+    return 0
 end
 
 --- Sends a command to a job's stdin.

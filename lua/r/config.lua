@@ -30,6 +30,7 @@ local config = {
     external_term       = false, -- might be a string
     fun_data_1          = { "select", "rename", "mutate", "filter" },
     fun_data_2          = { ggplot = { "aes" }, with = "*" },
+    has_X_tools         = false,
     help_w              = 46,
     hi_fun_paren        = false,
     hook                = {
@@ -54,8 +55,8 @@ local config = {
     objbr_place         = "script,right",
     objbr_w             = 40,
     open_example        = true,
-    openhtml            = true,
-    openpdf             = 2,
+    open_html           = 2,
+    open_pdf            = 2,
     paragraph_begin     = true,
     parenblock          = true,
     pdfviewer           = "undefined",
@@ -80,6 +81,7 @@ local config = {
     source_args         = "",
     specialplot         = false,
     synctex             = true,
+    term_pid            = 0,
     term_title          = "term",
     texerr              = true,
     tmpdir              = nil,
@@ -127,15 +129,6 @@ local set_editing_mode = function()
 end
 
 local set_pdf_viewer = function()
-    if
-        (config.is_darwin or vim.env.WAYLAND_DISPLAY)
-        and vim.env.XDG_CURRENT_DESKTOP ~= "sway"
-    then
-        config.openpdf = 1
-    else
-        config.openpdf = 2
-    end
-
     if config.is_darwin then
         config.pdfviewer = "skim"
     elseif config.is_windows then
@@ -204,17 +197,13 @@ local do_common_global = function()
     -- Windows logins can include domain, e.g: 'DOMAIN\Username', need to remove
     -- the backslash from this as otherwise cause file path problems.
     if vim.env.LOGNAME then
-        config.user_login =
-            vim.fn.substitute(vim.fn.escape(vim.env.LOGNAME, "\\"), "\\", "", "g")
+        config.user_login = vim.fn.escape(vim.env.LOGNAME, "\\"):gsub("\\", "")
     elseif vim.env.USER then
-        config.user_login =
-            vim.fn.substitute(vim.fn.escape(vim.env.USER, "\\"), "\\", "", "g")
+        config.user_login = vim.fn.escape(vim.env.USER, "\\"):gsub("\\", "")
     elseif vim.env.USERNAME then
-        config.user_login =
-            vim.fn.substitute(vim.fn.escape(vim.env.USERNAME, "\\"), "\\", "", "g")
+        config.user_login = vim.fn.escape(vim.env.USERNAME, "\\"):gsub("\\", "")
     elseif vim.env.HOME then
-        config.user_login =
-            vim.fn.substitute(vim.fn.escape(vim.env.HOME, "\\"), "\\", "", "g")
+        config.user_login = vim.fn.escape(vim.env.HOME, "\\"):gsub("\\", "")
     elseif vim.fn.executable("whoami") ~= 0 then
         config.user_login = vim.fn.system("whoami")
     else
@@ -222,12 +211,8 @@ local do_common_global = function()
         warn("Could not determine user name.")
     end
 
-    config.user_login = vim.fn.substitute(
-        vim.fn.substitute(config.user_login, ".*\\", "", ""),
-        "\\W",
-        "",
-        "g"
-    )
+    config.user_login = config.user_login:gsub(".*\\", "")
+    config.user_login = config.user_login:gsub("[^%w]", "")
     if config.user_login == "" then
         config.user_login = "NoLoginName"
         warn("Could not determine user name.")
@@ -483,9 +468,6 @@ local do_common_global = function()
     -- Current view of the object browser: .GlobalEnv X loaded libraries
     config.curview = "None"
 
-    -- SyncTeX options
-    config.has_wmctrl = false
-
     -- Set the name of R executable
     if config.is_windows then
         if type(config.external_term) == "boolean" and config.external_term == false then
@@ -501,18 +483,10 @@ local do_common_global = function()
 
     -- Set security variables
     if not vim.fn.has("nvim-0.7.0") then
-        vim.env.NVIMR_ID = vim.fn.substitute(
-            tostring(vim.fn.reltimefloat(vim.fn.reltime())),
-            ".*\\.",
-            "",
-            ""
-        )
-        vim.env.NVIMR_SECRET = vim.fn.substitute(
-            tostring(vim.fn.reltimefloat(vim.fn.reltime())),
-            ".*\\.",
-            "",
-            ""
-        )
+        vim.env.RNVIM_ID =
+            tostring(vim.fn.reltimefloat(vim.fn.reltime())):gsub(".*%.", "")
+        vim.env.RNVIM_SECRET =
+            tostring(vim.fn.reltimefloat(vim.fn.reltime())):gsub(".*%.", "")
     else
         vim.env.NVIMR_ID = vim.fn.rand(vim.fn.srand())
         vim.env.NVIMR_SECRET = vim.fn.rand()
@@ -643,10 +617,9 @@ local tmux_config = function()
         tmuxversion = "0.0"
     else
         tmuxversion = vim.fn.system("tmux -V")
-        tmuxversion =
-            vim.fn.substitute(tmuxversion, ".* \\([0-9]\\.[0-9]\\).*", "\\1", "")
-        if vim.fn.strlen(tmuxversion) ~= 3 then tmuxversion = "1.0" end
-        if tmuxversion < "3.0" then warn("R-Nvim requires Tmux >= 3.0") end
+        tmuxversion = tmuxversion:gsub(".* ([0-9]%.[0-9]).*", "%1")
+        if #tmuxversion ~= 3 then tmuxversion = "1.0" end
+        if tmuxversion < "3.0" then warn("R.nvim requires Tmux >= 3.0") end
     end
     require("r.edit").add_to_debug_info(
         "tmux setup",
@@ -822,11 +795,6 @@ M.real_setup = function()
     config_keys = {}
     for k, _ in pairs(config) do
         table.insert(config_keys, tostring(k))
-    end
-
-    -- Check if b:pdf_is_open already exists to avoid errors at other places
-    if vim.fn.exists("b:pdf_is_open") == 0 then
-        vim.api.nvim_buf_set_var(0, "pdf_is_open", false)
     end
 
     if not did_global_setup then global_setup() end

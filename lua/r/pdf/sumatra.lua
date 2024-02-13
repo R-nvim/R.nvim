@@ -33,13 +33,8 @@ local M = {}
 
 M.open = function(fullpath)
     if SumatraInPath() then
-        local pdir = vim.fn.substitute(fullpath, "\\(.*\\)/.*", "\\1", "")
-        local olddir = vim.fn.substitute(
-            vim.fn.substitute(vim.fn.getcwd(), "\\", "/", "g"),
-            " ",
-            "\\ ",
-            "g"
-        )
+        local pdir = fullpath:gsub("(.*)/.*", "%1")
+        local olddir = vim.fn.getcwd():gsub("\\", "/"):gsub(" ", "\\ ")
         vim.cmd("cd " .. pdir)
         vim.fn.writefile({
             'start SumatraPDF.exe -reuse-instance -inverse-search "nvimrserver.exe %%f %%l" "'
@@ -51,19 +46,14 @@ M.open = function(fullpath)
     end
 end
 
-M.SyncTeX_forward = function(tpath, ppath, texln, _)
+M.SyncTeX_forward = function(tpath, ppath, texln)
     -- Empty spaces must be removed from the rnoweb file name to get SyncTeX support with SumatraPDF.
     if SumatraInPath() then
-        local tname = vim.fn.substitute(tpath, ".*/\\(.*\\)", "\\1", "")
-        local tdir = vim.fn.substitute(tpath, "\\(.*\\)/.*", "\\1", "")
-        local pname = vim.fn.substitute(ppath, tdir .. "/", "", "")
-        local olddir = vim.fn.substitute(
-            vim.fn.substitute(vim.fn.getcwd(), "\\", "/", "g"),
-            " ",
-            "\\ ",
-            "g"
-        )
-        vim.cmd("cd " .. vim.fn.substitute(tdir, " ", "\\ ", "g"))
+        local tname = tpath:gsub(".*/(.*)", "%1")
+        local tdir = tpath:gsub("(.*)/.*", "%1")
+        local pname = ppath:gsub(tdir .. "/", "")
+        local olddir = vim.fn.getcwd():gsub("\\", "/"):gsub(" ", "\\ ")
+        vim.cmd("cd " .. tdir:gsub(" ", "\\ "))
         vim.fn.writefile({
             'start SumatraPDF.exe -reuse-instance -forward-search "'
                 .. tname

@@ -106,7 +106,7 @@ start_R2 = function()
         rwd = vim.fn.getcwd()
     end
     if rwd ~= "" and not config.remote_compldir then
-        if config.is_windows then rwd = vim.fn.substitute(rwd, "\\", "/", "g") end
+        if config.is_windows then rwd = rwd:gsub("\\", "/") end
 
         -- `rwd` will not be a real directory if editing a file on the internet
         -- with netrw plugin
@@ -254,8 +254,8 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     local Rinfo = vim.fn.split(r_info, "\018")
     -- R_version = Rinfo[1]
     config.OutDec = Rinfo[2]
-    config.R_prompt_str = vim.fn.substitute(Rinfo[3], " $", "", "")
-    config.R_continue_str = vim.fn.substitute(Rinfo[4], " $", "", "")
+    config.R_prompt_str = Rinfo[3]:gsub(" $", "")
+    config.R_continue_str = Rinfo[4]:gsub(" $", "")
 
     if Rinfo[5] == "0" and (config.hl_term == nil or config.hl_term) then
         require("r.term").highlight_term()
@@ -371,11 +371,6 @@ M.quit_R = function(how)
     end
 
     require("r.send").cmd(qcmd)
-
-    if how == "save" then vim.wait(200) end
-
-    vim.wait(50)
-    M.clear_R_info()
 end
 
 M.formart_code = function(tbl)
@@ -391,9 +386,8 @@ M.formart_code = function(tbl)
     end
 
     local lns = vim.api.nvim_buf_get_lines(0, tbl.line1 - 1, tbl.line2, true)
-    vim.fn.getline(tbl.line1, tbl.line2)
-    local txt =
-        string.gsub(string.gsub(table.concat(lns, "\020"), "\\", "\\\\"), "'", "\019")
+    local txt = table.concat(lns, "\020")
+    txt = txt:gsub("\\", "\\\\"):gsub("'", "\019")
     M.send_to_nvimcom(
         "E",
         "nvimcom:::nvim_format("
@@ -417,7 +411,7 @@ end
 
 M.insert_commented = function()
     local lin = vim.fn.getline(vim.fn.line("."))
-    local cleanl = vim.fn.substitute(lin, '".\\{-}"', "", "g")
+    local cleanl = lin:gsub('".-"', "")
     if cleanl:find(";") then
         warn("`print(line)` works only if `line` is a single command")
     end
@@ -630,7 +624,7 @@ end
 M.setwd = function() send.cmd('setwd("' .. M.get_buf_dir() .. '")') end
 
 M.show_obj = function(howto, bname, ftype, txt)
-    local bfnm = vim.fn.substitute(bname, "[[:punct:]]", "_", "g")
+    local bfnm = bname:gsub("[^%w]", "_")
     edit.add_for_deletion(config.tmpdir .. "/" .. bfnm)
     vim.cmd({ cmd = howto, args = { config.tmpdir .. "/" .. bfnm } })
     vim.o.filetype = ftype
@@ -652,7 +646,7 @@ M.clear_console = function()
         vim.wait(50)
         job.stdin("Server", "87\n")
     else
-        send.cmd("\014")
+        send.cmd("\012")
     end
 end
 
@@ -669,10 +663,10 @@ end
 M.get_buf_dir = function()
     local rwd = vim.api.nvim_buf_get_name(0)
     if config.is_windows then
-        rwd = vim.fn.substitute(rwd, "\\", "/", "g")
+        rwd = rwd:gsub("\\", "/")
         rwd = utils.normalize_windows_path(rwd)
     end
-    rwd = vim.fn.substitute(rwd, "\\(.*\\)/.*", "\\1", "")
+    rwd = rwd:gsub("(.*)/.*", "%1")
     return rwd
 end
 

@@ -7,7 +7,7 @@ M.command = function(what)
         vim.cmd("update")
         send_cmd(
             'quarto::quarto_render("'
-                .. vim.fn.substitute(vim.fn.expand("%"), "\\", "/", "g")
+                .. vim.fn.expand("%"):gsub("\\", "/")
                 .. '"'
                 .. config.quarto_render_args
                 .. ")"
@@ -16,7 +16,7 @@ M.command = function(what)
         vim.cmd("update")
         send_cmd(
             'quarto::quarto_preview("'
-                .. vim.fn.substitute(vim.fn.expand("%"), "\\", "/", "g")
+                .. vim.fn.expand("%"):gsub("\\", "/")
                 .. '"'
                 .. config.quarto_preview_args
                 .. ")"

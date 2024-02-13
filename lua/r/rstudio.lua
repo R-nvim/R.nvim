@@ -23,8 +23,7 @@ M.send_cmd_to_RStudio = function(command)
         warn("Is RStudio running?")
         return false
     end
-
-    local cmd = vim.fn.substitute(command, '"', '\\"', "g")
+    local cmd = command:gsub('"', '\\"')
     require("r.run").send_to_nvimcom("E", 'sendToConsole("' .. cmd .. '", execute=TRUE)')
     return true
 end

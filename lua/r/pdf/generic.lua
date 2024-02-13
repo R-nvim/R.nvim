@@ -1,14 +1,20 @@
 local warn = require("r").warn
-local cfg = require("r.config").get_config()
+local config = require("r.config").get_config()
+local job = require("r.job")
 
 local M = {}
 
 M.open = function(fullpath)
-    vim.fn.system(cfg.pdfviewer .. " '" .. fullpath .. "' 2>/dev/null >/dev/null &")
+    local opts = {
+        on_exit = require("r.job").on_exit,
+        detach = true,
+    }
+    local cmd = { config.pdfviewer, fullpath }
+    job.start(fullpath, cmd, opts)
 end
 
-M.SyncTeX_forward = function(_, _, _, _)
-    warn("R-Nvim has no support for SyncTeX with '" .. cfg.pdfviewer .. "'")
+M.SyncTeX_forward = function(_, _, _)
+    warn("R.nvim has no support for SyncTeX with '" .. config.pdfviewer .. "'")
 end
 
 return M

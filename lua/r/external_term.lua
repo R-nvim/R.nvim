@@ -13,8 +13,7 @@ local external_term_config = function()
     -- The Object Browser can run in a Tmux pane only if Neovim is inside a Tmux session
     config.objbr_place = string.gsub(config.objbr_place, "console", "script")
 
-    tmuxsname = "NvimR-"
-        .. vim.fn.substitute(vim.fn.localtime(), ".*\\(...\\)", "\\1", "")
+    tmuxsname = "Rnvim-" .. tostring(vim.fn.localtime()):gsub(".*(...)", "%1")
 
     if config.is_darwin then return end
 
@@ -101,7 +100,7 @@ local TmuxOption = function(option, isglobal)
     local tmux_command = isglobal and "tmux -L NvimR show-options -gv "
         or "tmux -L NvimR show-window-options -gv "
     local result = vim.fn.system(tmux_command .. option)
-    return vim.fn.substitute(result, "\n\\+$", "", "")
+    return result:gsub("\n+$", "")
 end
 
 local M = {}
@@ -142,16 +141,16 @@ M.start_extern_term = function(Rcmd)
 
     local open_cmd
 
-    local cmd = "NVIMR_TMPDIR="
-        .. vim.fn.substitute(config.tmpdir, " ", "\\ ", "g")
-        .. " NVIMR_COMPLDIR="
-        .. vim.fn.substitute(config.compldir, " ", "\\ ", "g")
-        .. " NVIMR_ID="
-        .. vim.env.NVIMR_ID
-        .. " NVIMR_SECRET="
-        .. vim.env.NVIMR_SECRET
-        .. " NVIMR_PORT="
-        .. vim.env.NVIMR_PORT
+    local cmd = "RNVIM_TMPDIR="
+        .. config.tmpdir:gsub(" ", "\\ ")
+        .. " RNVIM_COMPLDIR="
+        .. config.compldir:gsub(" ", "\\ ")
+        .. " RNVIM_ID="
+        .. vim.env.RNVIM_ID
+        .. " RNVIM_SECRET="
+        .. vim.env.RNVIM_SECRET
+        .. " RNVIM_PORT="
+        .. vim.env.RNVIM_PORT
         .. " R_DEFAULT_PACKAGES="
         .. vim.env.R_DEFAULT_PACKAGES
         .. " "
@@ -231,7 +230,7 @@ M.send_cmd_to_external_term = function(command)
     end
 
     -- Send the command to R running in an external terminal emulator
-    local str = vim.fn.substitute(cmd, "'", "'\\\\''", "g")
+    local str = cmd:gsub("'", "'\\\\''")
     if str:find("^-") then str = " " .. str end
 
     local scmd

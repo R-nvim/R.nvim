@@ -72,9 +72,12 @@ sourced (`max_lines_to_paste`).
 We reduced the options on how to display R documentation to: `"split"`,
 `"tab"`, `"float"` (not implemented yet), and `"no"`.
 
+The options `openpdf` and `openhtml` were renamed as `open_pdf` and
+`open_html`, with a minor change in their behavior.
+
 There are two new commands:
 
-- `:RMapsDesc` display the list of key bindings followed by a short
+- `:RMapsDesc` display the list of key bindings followed by short
   descriptions.
 
 - `:RConfigShow` display the list of configuration options and their current

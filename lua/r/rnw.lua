@@ -1,6 +1,7 @@
 local warn = require("r").warn
 local send = require("r.send")
 local utils = require("r.utils")
+local job = require("r.job")
 local config = require("r.config").get_config()
 local check_latexcmd = true
 
@@ -45,56 +46,47 @@ local check_latex_cmd = function()
     end
 end
 
+-- See http://www.stats.uwo.ca/faculty/murdoch/9864/Sweave.pdf page 25
 local SyncTeX_readconc = function(basenm)
-    local texidx = 0
+    local texidx = 1
     local ntexln = #vim.fn.readfile(basenm .. ".tex")
     local lstexln = vim.fn.range(1, ntexln)
     local lsrnwl = vim.fn.range(1, ntexln)
     local lsrnwf = {}
     local conc = vim.fn.readfile(basenm .. "-concordance.tex")
-    local idx = 0
-    local maxidx = #conc
+    local idx = 1
+    local maxidx = #conc + 1
 
-    local rnwnm = basenm:gsub(".*/", "") .. ".Rnw"
     for _, _ in pairs(lstexln) do
-        table.insert(lsrnwf, rnwnm)
+        table.insert(lsrnwf, "")
     end
 
-    while
-        idx < maxidx
-        and texidx < ntexln
-        and vim.fn.match(conc[idx], "Sconcordance") > -1
-    do
-        local rnwf = vim.fn.substitute(
-            conc[idx],
-            "\\Sconcordance{concordance:.*:\\(.*\\):.*",
-            "\\1",
-            "g"
-        )
+    while idx < maxidx and texidx < ntexln and conc[idx]:find("Sconcordance") do
+        local rnwf = conc[idx]:gsub(".Sconcordance.concordance:.*:(.*):.*", "%1")
         idx = idx + 1
         local concnum = ""
-        while idx < maxidx and vim.fn.match(conc[idx], "Sconcordance") == -1 do
+        while idx < maxidx and not conc[idx]:find("Sconcordance") do
             concnum = concnum .. conc[idx]
             idx = idx + 1
         end
-        concnum = vim.fn.substitute(concnum, "%%", "", "g")
-        concnum = vim.fn.substitute(concnum, "}", "", "")
-        local concl = vim.fn.split(concnum)
-        local ii = 0
-        local maxii = #concl - 2
-        local rnwl = vim.fn.str2nr(concl[1])
-        lsrnwl[texidx + 1] = rnwl
-        lsrnwf[texidx + 1] = rnwf
+        concnum = concnum:gsub("%%", "")
+        concnum = concnum:gsub("%}", "")
+        local concl = vim.split(concnum, " ")
+        local ii = 1
+        local maxii = #concl - 1
+        local rnwl = tonumber(concl[1])
+        lsrnwl[texidx] = rnwl
+        lsrnwf[texidx] = rnwf
         texidx = texidx + 1
         while ii < maxii and texidx < ntexln do
             ii = ii + 1
             local lnrange = vim.fn.range(1, concl[ii])
             ii = ii + 1
             for _, _ in ipairs(lnrange) do
-                if texidx >= ntexln then break end
+                if texidx > ntexln then break end
                 rnwl = rnwl + concl[ii]
-                lsrnwl[texidx + 1] = rnwl
-                lsrnwf[texidx + 1] = rnwf
+                lsrnwl[texidx] = rnwl
+                lsrnwf[texidx] = rnwf
                 texidx = texidx + 1
             end
         end
@@ -107,21 +99,19 @@ local GoToBuf = function(rnwbn, rnwf, basedir, rnwln)
         if vim.fn.bufloaded(basedir .. "/" .. rnwf) == 1 then
             local savesb = vim.o.switchbuf
             vim.o.switchbuf = "useopen,usetab"
-            vim.cmd.sb(vim.fn.substitute(basedir .. "/" .. rnwf, " ", "\\ ", "g"))
+            vim.cmd.sb(string.gsub(basedir .. "/" .. rnwf, " ", "\\ "))
+            vim.cmd.sb(string.gsub(basedir .. "/" .. rnwf, " ", "\\ "))
             vim.o.switchbuf = savesb
         elseif vim.fn.bufloaded(rnwf) > 0 then
             local savesb = vim.o.switchbuf
             vim.o.switchbuf = "useopen,usetab"
-            vim.cmd.sb(vim.fn.substitute(rnwf, " ", "\\ ", "g"))
+            vim.cmd.sb(rnwf:gsub(" ", "\\ "))
             vim.o.switchbuf = savesb
         else
             if vim.fn.filereadable(basedir .. "/" .. rnwf) == 1 then
-                vim.cmd(
-                    "tabnew "
-                        .. vim.fn.substitute(basedir .. "/" .. rnwf, " ", "\\ ", "g")
-                )
+                vim.cmd("tabnew " .. string.gsub(basedir .. "/" .. rnwf, " ", "\\ "))
             elseif vim.fn.filereadable(rnwf) > 0 then
-                vim.cmd("tabnew " .. vim.fn.substitute(rnwf, " ", "\\ ", "g"))
+                vim.cmd("tabnew " .. rnwf:gsub(" ", "\\ "))
             else
                 warn(
                     'Could not find either "'
@@ -145,12 +135,17 @@ local M = {}
 
 M.write_chunk = function()
     if vim.fn.getline(vim.fn.line(".")) ~= "" and not M.is_in_R_code(false) then
-        vim.fn.feedkeys("a<", "n")
+        vim.fn.feedkeys("<", "n")
     else
         local curline = vim.fn.line(".")
-        vim.fn.setline(curline, "<<>>=")
-        vim.fn.append(curline, { "@", "" })
-        vim.fn.cursor(curline, 2)
+        vim.api.nvim_buf_set_lines(
+            0,
+            curline - 1,
+            curline - 1,
+            true,
+            { "<<>>=", "@", "" }
+        )
+        vim.api.nvim_win_set_cursor(0, { curline, 2 })
     end
 end
 
@@ -209,36 +204,26 @@ end
 -- surrounded by quotes; if it's an R object, it will not be recognized.
 M.rm_knit_cache = function()
     local lnum = vim.fn.search("\\<cache\\.path\\>\\s*=", "bnwc")
-    local pathdir
+    local cpdir
     if lnum == 0 then
-        pathdir = "cache/"
+        cpdir = "cache/"
     else
-        local pathregexpr = ".*\\<cache\\.path\\>\\s*=\\s*["
-            .. "'"
-            .. '"]\\(.\\{-}\\)['
-            .. "'"
-            .. '"].*'
-        pathdir = vim.fn.substitute(vim.fn.getline(lnum), pathregexpr, "\\1", "")
-        if not pathdir:match("/$") then pathdir = pathdir .. "/" end
+        cpdir = vim.fn.getline(lnum):gsub(".*<cache%.path>%s*=%s*[\"'](.-)[\"'].*", "%1")
+        if not cpdir:find("/$") then cpdir = cpdir .. "/" end
     end
 
     local cleandir
-    if config.ask_rm_knitr_cache and config.ask_rm_knitr_cache == false then
-        cleandir = 1
+    vim.fn.inputsave()
+    local answer = vim.fn.input('Delete all files from "' .. cpdir .. '"? [y/n]: ')
+    vim.fn.inputrestore()
+    if answer == "y" then
+        cleandir = true
     else
-        vim.fn.inputsave()
-        local answer = vim.fn.input('Delete all files from "' .. pathdir .. '"? [y/n]: ')
-        vim.fn.inputrestore()
-        if answer == "y" then
-            cleandir = 1
-        else
-            cleandir = 0
-        end
+        cleandir = false
     end
 
-    vim.fn.normal(":<Esc>")
     if cleandir then
-        send.cmd('rm(list=ls(all.names=TRUE)); unlink("' .. pathdir .. '*")')
+        send.cmd('rm(list=ls(all.names=TRUE)); unlink("' .. cpdir .. '*")')
     end
 end
 
@@ -276,11 +261,7 @@ M.weave = function(bibtex, knit, pdf)
 
     if bibtex == "bibtex" then pdfcmd = pdfcmd .. ", bibtex = TRUE" end
 
-    if not pdf or config.openpdf == 0 or vim.b.pdf_is_open then
-        pdfcmd = pdfcmd .. ", view = FALSE"
-    end
-
-    if pdf and config.openpdf == 1 then vim.b.pdf_is_open = 1 end
+    if not pdf or config.open_pdf == 0 then pdfcmd = pdfcmd .. ", view = FALSE" end
 
     if config.latex_build_dir then
         pdfcmd = pdfcmd .. ', builddir="' .. config.latex_build_dir .. '"'
@@ -324,19 +305,14 @@ M.SyncTeX_get_master = function()
     if ischild > 0 then
         local basenm
         local mdir
-        local mfile = vim.fn.substitute(
-            vim.fn.getline(ischild),
-            ".*% *!Rnw *root *= *\\(.*\\) *",
-            "\\1",
-            ""
-        )
+        local mfile = vim.fn.getline(ischild):gsub(".*%% *!Rnw *root *= *(.*) *", "%1")
         if vim.fn.match(mfile, "/") > 0 then
-            mdir = vim.fn.substitute(mfile, "\\(.*\\)/.*", "\\1", "")
-            basenm = vim.fn.substitute(mfile, ".*/", "", "")
+            mdir = mfile:gsub("(.*)/.*", "%1")
+            basenm = mfile:gsub(".*/", "")
             if mdir == ".." then mdir = vim.fn.expand("%:p:h:h") end
         else
             mdir = vim.fn.expand("%:p:h")
-            basenm = vim.fn.substitute(mfile, ".*/", "", "")
+            basenm = mfile:gsub(".*/", "")
         end
 
         if config.is_windows then
@@ -354,13 +330,13 @@ M.SyncTeX_get_master = function()
 end
 
 M.SyncTeX_backward = function(fname, ln)
-    local flnm = vim.fn.substitute(fname, "/\\./", "/", "") -- Okular
-    local basenm = vim.fn.substitute(flnm, "\\....$", "", "") -- Delete extension
+    local flnm = fname:gsub("/%./", "/") -- Okular
+    local basenm = flnm:gsub("%....$", "") -- Delete extension
     local rnwf
     local rnwln
     local basedir
     if basenm:match("/") then
-        basedir = vim.fn.substitute(basenm, "\\(.*\\)/.*", "\\1", "")
+        basedir = basenm:gsub("(.*)/.*", "%1")
     else
         basedir = "."
     end
@@ -402,19 +378,11 @@ M.SyncTeX_backward = function(fname, ln)
         end
     end
 
-    local rnwbn = vim.fn.substitute(rnwf, ".*/", "", "")
-    rnwf = vim.fn.substitute(rnwf, "^\\.\\/", "", "")
+    local rnwbn = rnwf:gsub(".*/", "")
+    rnwf = rnwf:gsub("^%.\\/", "")
 
     if GoToBuf(rnwbn, rnwf, basedir, rnwln) > 0 then
-        if config.has_wmctrl then
-            if vim.fn.win_getid() ~= 0 then
-                vim.fn.system("wmctrl -ia " .. vim.fn.win_getid())
-            elseif vim.env.WINDOWID then
-                vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID)
-            end
-        else
-            require("r.pdf").raise_window(config.term_title)
-        end
+        require("r.pdf").focus_window(config.term_title, config.term_pid)
     end
 end
 
@@ -429,12 +397,8 @@ M.SyncTeX_forward = function(gotobuf)
     else
         local ischild = vim.fn.search("% *!Rnw *root *=", "bwn")
         if ischild > 0 then
-            local mfile = vim.fn.substitute(
-                vim.fn.getline(ischild),
-                ".*% *!Rnw *root *= *\\(.*\\) *",
-                "\\1",
-                ""
-            )
+            local mfile =
+                vim.fn.getline(ischild):gsub(".*%% *!Rnw *root *= *(.*) *", "%1")
             local mlines = vim.fn.readfile(vim.fn.expand("%:p:h") .. "/" .. mfile)
             for ii, v in ipairs(mlines) do
                 if v:match("SweaveInput.*" .. vim.fn.expand("%:t")) then
@@ -471,7 +435,7 @@ M.SyncTeX_forward = function(gotobuf)
         return
     end
     local concdata = SyncTeX_readconc(vim.fn.expand("%:p:h") .. "/" .. basenm)
-    rnwf = vim.fn.substitute(rnwf, ".*/", "", "")
+    rnwf = rnwf:gsub(".*/", "")
     local texlnum = concdata.texlnum
     local rnwfile = concdata.rnwfile
     local rnwline = concdata.rnwline
@@ -488,9 +452,9 @@ M.SyncTeX_forward = function(gotobuf)
         return
     end
     if basenm:match("/") then
-        basedir = vim.fn.substitute(basenm, "\\(.*\\)/.*", "\\1", "")
-        basenm = vim.fn.substitute(basenm, ".*/", "", "")
-        vim.cmd("cd " .. vim.fn.substitute(basedir, " ", "\\ ", "g"))
+        basedir = basenm:gsub("(.*)/.*", "%1")
+        basenm = basenm:gsub(".*/", "")
+        vim.cmd("cd " .. basedir:gsub(" ", "\\ "))
     else
         basedir = ""
     end
@@ -499,6 +463,8 @@ M.SyncTeX_forward = function(gotobuf)
         GoToBuf(basenm .. ".tex", basenm .. ".tex", basedir, texln)
         return
     end
+
+    if not vim.b.rplugin_pdfdir then M.set_pdf_dir() end
 
     if vim.fn.filereadable(vim.b.rplugin_pdfdir .. "/" .. basenm .. ".pdf") == 0 then
         warn(
@@ -528,12 +494,24 @@ M.SyncTeX_forward = function(gotobuf)
         return
     end
 
-    require("r.pdf").SyncTeX_forward(
-        M.SyncTeX_get_master() .. ".tex",
-        vim.b.rplugin_pdfdir .. "/" .. basenm .. ".pdf",
-        texln,
-        1
-    )
+    local ppath = vim.b.rplugin_pdfdir .. "/" .. basenm .. ".pdf"
+    -- FIXME: this should not be necessary:
+    ppath = ppath:gsub("//", "/")
+
+    if not job.is_running(ppath) then
+        require("r.pdf").open(ppath)
+        -- Wait up to five seconds
+        vim.wait(500)
+        local i = 0
+        while i < 45 do
+            if job.is_running(ppath) then break end
+            vim.wait(100)
+            i = i + 1
+        end
+        if not job.is_running(ppath) then return end
+    end
+
+    require("r.pdf").SyncTeX_forward(M.SyncTeX_get_master() .. ".tex", ppath, texln)
 end
 
 M.set_pdf_dir = function()
