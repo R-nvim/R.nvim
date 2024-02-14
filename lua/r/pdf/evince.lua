@@ -3,6 +3,8 @@ local py = nil
 local evince_loop = 0
 local config = require("r.config").get_config()
 local rnw = require("r.rnw")
+local job = require("r.job")
+local pdf = require("r.pdf")
 
 -- Check if python3 is executable, otherwise use python
 if vim.fn.executable("python3") > 0 then
@@ -14,8 +16,20 @@ end
 local M = {}
 
 M.open = function(fullpath)
-    local pcmd = "evince '" .. fullpath .. "' 2>/dev/null >/dev/null &"
-    vim.fn.system(pcmd)
+    if job.is_running(fullpath) then
+        local fname = fullpath:gsub(".*/", "")
+        pdf.raise_window(fname, job.get_pid(fullpath))
+        return
+    end
+
+    local eopts = {
+        on_stdout = require("r.job").on_stdout,
+        on_exit = require("r.job").on_exit,
+        detach = true,
+    }
+
+    local ecmd = { "evince", fullpath }
+    job.start(fullpath, ecmd, eopts)
 end
 
 M.SyncTeX_forward = function(tpath, ppath, texln)
@@ -35,7 +49,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
     else
         evince_loop = 0
     end
-    require("r.pdf").raise_window(string.gsub(ppath, ".*/", ""))
+    require("r.pdf").raise_window(ppath:gsub(".*/", ""), job.get_pid(ppath))
 end
 
 M.SyncTeX_backward = function()

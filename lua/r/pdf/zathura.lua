@@ -2,10 +2,13 @@ local warn = require("r").warn
 local pdf = require("r.pdf")
 local job = require("r.job")
 
+local M = {}
+
+--- Use Zathura to open PDF document
 ---@param fullpath string
-local start_zathura = function(fullpath)
+M.open = function(fullpath)
+    local fname = fullpath:gsub(".*/", "")
     if job.is_running(fullpath) then
-        local fname = fullpath:gsub(".*/", "")
         pdf.raise_window(fname, job.get_pid(fullpath))
         return
     end
@@ -25,19 +28,6 @@ local start_zathura = function(fullpath)
     job.start(fullpath, zcmd, zopts)
 end
 
-local M = {}
-
---- Use Zathura to open PDF document
----@param fullpath string
-M.open = function(fullpath)
-    local fname = fullpath:gsub(".*/", "")
-    if job.is_running(fullpath) then
-        pdf.raise_window(fname, job.get_pid(fullpath))
-        return
-    end
-    start_zathura(fullpath)
-end
-
 --- Start Zathura with SyncTeX forward arguments.
 ---@param tpath string LaTeX document path.
 ---@param ppath string PDF document path.
@@ -51,7 +41,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
     ppath = ppath:gsub("//", "/")
 
     if not job.is_running(ppath) then
-        start_zathura(ppath)
+        M.open(ppath)
         return
     end
 

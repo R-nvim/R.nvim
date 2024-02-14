@@ -8,7 +8,7 @@ M.open = function(fullpath)
         local s = string.find(fullpath, " ")
         if s > 0 then
             warn(
-                "Qpdfview does support file names with spaces: SyncTeX backward will not work."
+                "Qpdfview does not support file names with spaces: SyncTeX backward will not work."
             )
         end
     end
@@ -26,7 +26,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
             .. texln
             .. ":1 2> /dev/null >/dev/null &"
     )
-    require("r.pdf").raise_window(string.gsub(string.gsub(ppath, ".*/", ""), ".pdf$", ""))
+    require("r.pdf").raise_window(string.gsub(ppath:gsub(".*/", ""), ".pdf$", ""), 0)
 end
 
 return M
