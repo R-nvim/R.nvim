@@ -4,78 +4,76 @@ local warn = require("r").warn
 -- stylua: ignore start
 
 local map_desc = {
-    RCustomStart        = { k = "", c = "Start",    d = "Ask user to enter parameters to start R" },
-    RSaveClose          = { k = "", c = "Start",    d = "Quit R, saving the workspace" },
-    RClose              = { k = "", c = "Start",    d = "Send to R: quit(save = 'no')" },
-    RStart              = { k = "", c = "Start",    d = "Start R with default configuration" },
-    ROpenPDF            = { k = "", c = "Edit",     d = "Open the PDF generated from the current document" },
-    RDputObj            = { k = "", c = "Edit",     d = "Run dput(<cword>) and show the output in a new tab" },
-    RViewDF             = { k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a new tab" },
-    RViewDFs            = { k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a split window" },
-    RViewDFv            = { k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a vertically split window" },
-    RViewDFa            = { k = "", c = "Edit",     d = "View the head of a data.frame or matrix under cursor in a split window" },
-    RNextRChunk         = { k = "", c = "Navigate", d = "Go to the next chunk of R code" },
-    RGoToTeX            = { k = "", c = "Navigate", d = "Go the corresponding line in the generated LaTeX document" },
-    RDocExSection       = { k = "", c = "Navigate", d = "Go to Examples section of R documentation" },
-    RPreviousRChunk     = { k = "", c = "Navigate", d = "Go to the previous chunk of R code" },
-    RSyncFor            = { k = "", c = "Navigate", d = "SyncTeX forward (move from Rnoweb to the corresponding line in the PDF)" },
-    RInsertLineOutput   = { k = "", c = "Send",     d = "Ask R to evaluate the line and insert the output" },
-    RSendChunkFH        = { k = "", c = "Send",     d = "Send all chunks of R code from the document's begin up to here" },
-    RSendChunk          = { k = "", c = "Send",     d = "Send the current chunk of code to R" },
-    RSendLAndOpenNewOne = { k = "", c = "Send",     d = "Send the current line and open a new one" },
-    RSendLine           = { k = "", c = "Send",     d = "Send the current line to R" },
-    RSendFile           = { k = "", c = "Send",     d = "Send the whole file to R" },
-    RSendAboveLines     = { k = "", c = "Send",     d = "Send to R all lines above the current one" },
-    RSendChain          = { k = "", c = "Send",     d = "Send to R the above chain of piped commands" },
-    RDSendChunk         = { k = "", c = "Send",     d = "Send to R the current chunk of R code and move down to next chunk" },
-    RDSendLine          = { k = "", c = "Send",     d = "Send to R the current line and move down to next line" },
-    RSendMBlock         = { k = "", c = "Send",     d = "Send to R the lines between two marks" },
-    RDSendMBlock        = { k = "", c = "Send",     d = "Send to R the lines between two marks and move to next line" },
-    RSendMotion         = { k = "", c = "Send",     d = "Send to R the lines in a Vim motion" },
-    RSendParagraph      = { k = "", c = "Send",     d = "Send to R the next consecutive non-empty lines" },
-    RDSendParagraph     = { k = "", c = "Send",     d = "Send to R the next sequence of consecutive non-empty lines" },
-    RILeftPart          = { k = "", c = "Send",     d = "Send to R the part of the line on the left of the cursor" },
-    RNLeftPart          = { k = "", c = "Send",     d = "Send to R the part of the line on the left of the cursor" },
-    RIRightPart         = { k = "", c = "Send",     d = "Send to R the part of the line on the right of the cursor" },
-    RNRightPart         = { k = "", c = "Send",     d = "Send to R the part of the line on the right of the cursor" },
-    RDSendSelection     = { k = "", c = "Send",     d = "Send to R visually selected lines or part of a line" },
-    RSendSelection      = { k = "", c = "Send",     d = "Send visually selected lines of part of a line" },
-    RHelp               = { k = "", c = "Command",  d = "Ask for R documentation on the object under cursor" },
-    RShowRout           = { k = "", c = "Command",  d = "R CMD BATCH the current document and show the output in a new tab" },
-    RSPlot              = { k = "", c = "Command",  d = "Send to R command to run summary and plot with <cword> as argument" },
-    RClearConsole       = { k = "", c = "Command",  d = "Send to R: <Ctrl-L>" },
-    RListSpace          = { k = "", c = "Command",  d = "Send to R: ls()" },
-    RShowArgs           = { k = "", c = "Command",  d = "Send to R: nvim.args(<cword>)" },
-    RObjectNames        = { k = "", c = "Command",  d = "Send to R: nvim.names(<cword>)" },
-    RPlot               = { k = "", c = "Command",  d = "Send to R: plot(<cword>)" },
-    RObjectPr           = { k = "", c = "Command",  d = "Send to R: print(<cword>)" },
-    RClearAll           = { k = "", c = "Command",  d = "Send to R: rm(list   = ls())" },
-    RSetwd              = { k = "", c = "Command",  d = "Send to R setwd(<directory of current document>)" },
-    RObjectStr          = { k = "", c = "Command",  d = "Send to R: str(<cword>)" },
-    RSummary            = { k = "", c = "Command",  d = "Send to R: summary(<cword>)" },
-    RShowEx             = { k = "", c = "Command",  d = "Send to R: X with current word under cursor as argument" },
-    RKnitRmCache        = { k = "", c = "Weave",    d = "Delete files from knitr cache" },
-    RMakePDFKb          = { k = "", c = "Weave",    d = "Knit the current document and generate a beamer presentation" },
-    RMakeAll            = { k = "", c = "Weave",    d = "Knit the current document and generate all formats in the header" },
-    RMakeHTML           = { k = "", c = "Weave",    d = "Knit the current document and generate an HTML document" },
-    RMakeODT            = { k = "", c = "Weave",    d = "Knit the current document and generate an ODT document" },
-    RMakePDFK           = { k = "", c = "Weave",    d = "Knit the current document and generate a PDF document" },
-    RMakeWord           = { k = "", c = "Weave",    d = "Knit the current document and generate a Word document" },
-    RMakeRmd            = { k = "", c = "Weave",    d = "Knit the current document and generate the default document format" },
-    RKnit               = { k = "", c = "Weave",    d = "Knit the document" },
-    RBibTeXK            = { k = "", c = "Weave",    d = "Knit the document, run bibtex and generate the PDF" },
-    RQuartoPreview      = { k = "", c = "Weave",    d = "Send to R: quarto::quarto_preview()" },
-    RQuartoStop         = { k = "", c = "Weave",    d = "Send to R: quarto::quarto_preview_stop()" },
-    RQuartoRender       = { k = "", c = "Weave",    d = "Send to R: quarto::quarto_render()" },
-    RSweave             = { k = "", c = "Weave",    d = "Sweave the current document" },
-    RMakePDF            = { k = "", c = "Weave",    d = "Sweave the current document and generate a PDF document" },
-    RBibTeX             = { k = "", c = "Weave",    d = "Sweave the document and run bibtex" },
-    ROBCloseLists = { k = "", c = "Object_Browser", d = "Close S4 objects, lists and data.frames in the Object Browser" },
-    ROBOpenLists =  { k = "", c = "Object_Browser", d = "Open S4 objects, lists and data.frames in the Object Browser" },
-    ROBToggle =     { k = "", c = "Object_Browser", d = "Toggle the Object Browser" },
+    RCustomStart        = { m = "", k = "", c = "Start",    d = "Ask user to enter parameters to start R" },
+    RSaveClose          = { m = "", k = "", c = "Start",    d = "Quit R, saving the workspace" },
+    RClose              = { m = "", k = "", c = "Start",    d = "Send to R: quit(save = 'no')" },
+    RStart              = { m = "", k = "", c = "Start",    d = "Start R with default configuration" },
+    ROpenPDF            = { m = "", k = "", c = "Edit",     d = "Open the PDF generated from the current document" },
+    RDputObj            = { m = "", k = "", c = "Edit",     d = "Run dput(<cword>) and show the output in a new tab" },
+    RViewDF             = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a new tab" },
+    RViewDFs            = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a split window" },
+    RViewDFv            = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a vertically split window" },
+    RViewDFa            = { m = "", k = "", c = "Edit",     d = "View the head of a data.frame or matrix under cursor in a split window" },
+    RShowEx             = { m = "", k = "", c = "Edit",     d = "Extract the Examples section and paste it in a split window" },
+    RNextRChunk         = { m = "", k = "", c = "Navigate", d = "Go to the next chunk of R code" },
+    RGoToTeX            = { m = "", k = "", c = "Navigate", d = "Go the corresponding line in the generated LaTeX document" },
+    RDocExSection       = { m = "", k = "", c = "Navigate", d = "Go to Examples section of R documentation" },
+    RPreviousRChunk     = { m = "", k = "", c = "Navigate", d = "Go to the previous chunk of R code" },
+    RSyncFor            = { m = "", k = "", c = "Navigate", d = "SyncTeX forward (move from Rnoweb to the corresponding line in the PDF)" },
+    RInsertLineOutput   = { m = "", k = "", c = "Send",     d = "Ask R to evaluate the line and insert the output" },
+    RSendChunkFH        = { m = "", k = "", c = "Send",     d = "Send all chunks of R code from the document's begin up to here" },
+    RSendChunk          = { m = "", k = "", c = "Send",     d = "Send the current chunk of code to R" },
+    RSendLAndOpenNewOne = { m = "", k = "", c = "Send",     d = "Send the current line and open a new one" },
+    RSendLine           = { m = "", k = "", c = "Send",     d = "Send the current line to R" },
+    RSendFile           = { m = "", k = "", c = "Send",     d = "Send the whole file to R" },
+    RSendAboveLines     = { m = "", k = "", c = "Send",     d = "Send to R all lines above the current one" },
+    RSendChain          = { m = "", k = "", c = "Send",     d = "Send to R the above chain of piped commands" },
+    RDSendChunk         = { m = "", k = "", c = "Send",     d = "Send to R the current chunk of R code and move down to next chunk" },
+    RDSendLine          = { m = "", k = "", c = "Send",     d = "Send to R the current line and move down to next line" },
+    RSendMBlock         = { m = "", k = "", c = "Send",     d = "Send to R the lines between two marks" },
+    RDSendMBlock        = { m = "", k = "", c = "Send",     d = "Send to R the lines between two marks and move to next line" },
+    RSendMotion         = { m = "", k = "", c = "Send",     d = "Send to R the lines in a Vim motion" },
+    RSendParagraph      = { m = "", k = "", c = "Send",     d = "Send to R the next consecutive non-empty lines" },
+    RDSendParagraph     = { m = "", k = "", c = "Send",     d = "Send to R the next sequence of consecutive non-empty lines" },
+    RILeftPart          = { m = "", k = "", c = "Send",     d = "Send to R the part of the line on the left of the cursor" },
+    RNLeftPart          = { m = "", k = "", c = "Send",     d = "Send to R the part of the line on the left of the cursor" },
+    RIRightPart         = { m = "", k = "", c = "Send",     d = "Send to R the part of the line on the right of the cursor" },
+    RNRightPart         = { m = "", k = "", c = "Send",     d = "Send to R the part of the line on the right of the cursor" },
+    RDSendSelection     = { m = "", k = "", c = "Send",     d = "Send to R visually selected lines or part of a line" },
+    RSendSelection      = { m = "", k = "", c = "Send",     d = "Send visually selected lines of part of a line" },
+    RHelp               = { m = "", k = "", c = "Command",  d = "Ask for R documentation on the object under cursor" },
+    RShowRout           = { m = "", k = "", c = "Command",  d = "R CMD BATCH the current document and show the output in a new tab" },
+    RSPlot              = { m = "", k = "", c = "Command",  d = "Send to R command to run summary and plot with <cword> as argument" },
+    RClearConsole       = { m = "", k = "", c = "Command",  d = "Send to R: <Ctrl-L>" },
+    RListSpace          = { m = "", k = "", c = "Command",  d = "Send to R: ls()" },
+    RShowArgs           = { m = "", k = "", c = "Command",  d = "Send to R: nvim.args(<cword>)" },
+    RObjectNames        = { m = "", k = "", c = "Command",  d = "Send to R: nvim.names(<cword>)" },
+    RPlot               = { m = "", k = "", c = "Command",  d = "Send to R: plot(<cword>)" },
+    RObjectPr           = { m = "", k = "", c = "Command",  d = "Send to R: print(<cword>)" },
+    RClearAll           = { m = "", k = "", c = "Command",  d = "Send to R: rm(list   = ls())" },
+    RSetwd              = { m = "", k = "", c = "Command",  d = "Send to R setwd(<directory of current document>)" },
+    RObjectStr          = { m = "", k = "", c = "Command",  d = "Send to R: str(<cword>)" },
+    RSummary            = { m = "", k = "", c = "Command",  d = "Send to R: summary(<cword>)" },
+    RKnitRmCache        = { m = "", k = "", c = "Weave",    d = "Delete files from knitr cache" },
+    RMakePDFKb          = { m = "", k = "", c = "Weave",    d = "Knit the current document and generate a beamer presentation" },
+    RMakeAll            = { m = "", k = "", c = "Weave",    d = "Knit the current document and generate all formats in the header" },
+    RMakeHTML           = { m = "", k = "", c = "Weave",    d = "Knit the current document and generate an HTML document" },
+    RMakeODT            = { m = "", k = "", c = "Weave",    d = "Knit the current document and generate an ODT document" },
+    RMakePDFK           = { m = "", k = "", c = "Weave",    d = "Knit the current document and generate a PDF document" },
+    RMakeWord           = { m = "", k = "", c = "Weave",    d = "Knit the current document and generate a Word document" },
+    RMakeRmd            = { m = "", k = "", c = "Weave",    d = "Knit the current document and generate the default document format" },
+    RKnit               = { m = "", k = "", c = "Weave",    d = "Knit the document" },
+    RBibTeXK            = { m = "", k = "", c = "Weave",    d = "Knit the document, run bibtex and generate the PDF" },
+    RQuartoPreview      = { m = "", k = "", c = "Weave",    d = "Send to R: quarto::quarto_preview()" },
+    RQuartoStop         = { m = "", k = "", c = "Weave",    d = "Send to R: quarto::quarto_preview_stop()" },
+    RQuartoRender       = { m = "", k = "", c = "Weave",    d = "Send to R: quarto::quarto_render()" },
+    RSweave             = { m = "", k = "", c = "Weave",    d = "Sweave the current document" },
+    RMakePDF            = { m = "", k = "", c = "Weave",    d = "Sweave the current document and generate a PDF document" },
+    RBibTeX             = { m = "", k = "", c = "Weave",    d = "Sweave the document and run bibtex" },
+    ROBCloseLists = { m = "", k = "", c = "Object_Browser", d = "Close S4 objects, lists and data.frames in the Object Browser" },
+    ROBOpenLists =  { m = "", k = "", c = "Object_Browser", d = "Open S4 objects, lists and data.frames in the Object Browser" },
+    ROBToggle =     { m = "", k = "", c = "Object_Browser", d = "Toggle the Object Browser" },
 }
-
-local lleader
 
 --- Create maps.
 --- For each noremap we need a vnoremap including <Esc> before the :call,
@@ -103,7 +101,7 @@ local create_maps = function(mode, plug, combo, target)
     local opts = { silent = true, noremap = true, expr = false }
     if map_desc[plug] then
         opts.desc = map_desc[plug].d
-        map_desc[plug].k = lleader .. combo
+        -- map_desc[plug].k = lleader .. combo
     else
         warn("Missing <Plug> label in description table: '" .. plug .. "'")
     end
@@ -296,13 +294,6 @@ end
 local M = {}
 
 M.create = function(file_type)
-    if vim.g.maplocalleader == " " then
-        lleader = "<Space>"
-    elseif vim.g.maplocalleader == "	" then
-        lleader = "<Tab>"
-    else
-        lleader = vim.g.maplocalleader
-    end
     control(file_type)
     if file_type == "rbrowser" then return end
     send(file_type)
@@ -311,9 +302,33 @@ M.create = function(file_type)
     edit()
 end
 
+local fill_k2 = function(mlist, m)
+    local km
+    local lbl
+    for _, v in pairs(mlist) do
+        if v:find("@<Plug>R") then
+            lbl = v:gsub(".*@<Plug>", "")
+            km = v:gsub("^" .. m .. "%s*", "")
+            km = km:gsub(" .*", "")
+            if not map_desc[lbl].m:find(m) then map_desc[lbl].m = map_desc[lbl].m .. m end
+            if map_desc[lbl] and map_desc[lbl].k == "" then map_desc[lbl].k = km end
+        end
+    end
+end
+
+local fill_k = function()
+    local nlist = vim.split(vim.fn.execute("nmap", "silent!"), "\n")
+    local vlist = vim.split(vim.fn.execute("vmap", "silent!"), "\n")
+    local ilist = vim.split(vim.fn.execute("imap", "silent!"), "\n")
+    fill_k2(nlist, "n")
+    fill_k2(vlist, "v")
+    fill_k2(ilist, "i")
+end
+
 M.show_map_desc = function()
     local label_w = 1
     local key_w = 1
+    fill_k()
     for k, v in pairs(map_desc) do
         if #k >= label_w then label_w = #k + 1 end
         if #v.k >= key_w then key_w = #v.k + 1 end
@@ -331,7 +346,7 @@ M.show_map_desc = function()
         Object_Browser = {},
     }
     for k, v in pairs(map_desc) do
-        table.insert(bycat[v.c], { k, v.k, v.d })
+        table.insert(bycat[v.c], { k, v.m, v.k, v.d })
     end
 
     local map_key_desc = {}
@@ -342,11 +357,12 @@ M.show_map_desc = function()
                 map_key_desc,
                 { string.format("  %-0" .. lw .. "s", v[1]), "Identifier" }
             )
+            table.insert(map_key_desc, { string.format("  %-04s", v[2]), "Type" })
             table.insert(
                 map_key_desc,
-                { string.format("%-0" .. kw .. "s", v[2] or " "), "Special" }
+                { string.format("%-0" .. kw .. "s", v[3] or " "), "Special" }
             )
-            table.insert(map_key_desc, { v[3] .. "\n" })
+            table.insert(map_key_desc, { v[4] .. "\n" })
         end
     end
     vim.api.nvim_echo(map_key_desc, false, {})
