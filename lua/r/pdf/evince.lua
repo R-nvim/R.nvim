@@ -18,7 +18,7 @@ M.open = function(fullpath)
     vim.fn.system(pcmd)
 end
 
-M.SyncTeX_forward = function(tpath, ppath, texln, _)
+M.SyncTeX_forward = function(tpath, ppath, texln)
     local n1 = vim.fn.substitute(tpath, "\\(^/.*/\\).*", "\\1", "")
     local n2 = vim.fn.substitute(tpath, ".*/\\(.*\\)", "\\1", "")
     local texname = vim.fn.substitute(n1, " ", "%20", "g") .. n2

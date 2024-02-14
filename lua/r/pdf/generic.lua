@@ -7,7 +7,7 @@ M.open = function(fullpath)
     vim.fn.system(cfg.pdfviewer .. " '" .. fullpath .. "' 2>/dev/null >/dev/null &")
 end
 
-M.SyncTeX_forward = function(_, _, _, _)
+M.SyncTeX_forward = function(_, _, _)
     warn("R.nvim has no support for SyncTeX with '" .. cfg.pdfviewer .. "'")
 end
 

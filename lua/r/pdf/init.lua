@@ -44,6 +44,9 @@ M.setup = function()
     if not config.is_windows and not config.is_darwin and not vim.env.WAYLAND_DISPLAY then
         if vim.fn.executable("wmctrl") > 0 then
             config.has_wmctrl = true
+            -- FIXME: Use wmctrl to find title and pid of current window
+            -- config.term_title = ?
+            -- config.term_pid = ?
         else
             if vim.o.filetype == "rnoweb" and config.synctex then
                 warn(
@@ -51,6 +54,27 @@ M.setup = function()
                 )
             end
         end
+    elseif
+        vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
+    then
+        local sout = vim.fn.system("swaymsg -t get_tree")
+        local t = vim.json.decode(sout, { luanil = { object = true, array = true } })
+        for _, v1 in pairs(t.nodes) do
+            if #v1 and v1.type == "output" and v1.nodes then
+                for _, v2 in pairs(v1.nodes) do
+                    if #v2 and v2.type == "workspace" and v2.nodes then
+                        for _, v3 in pairs(v2.nodes) do
+                            if v3.focused == true then
+                                config.term_title = v3.name
+                                config.term_pid = v3.pid
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        -- FIXME: find title and pid of current window on other systesm
+        -- (Windows, OSX, Gnome, KDE, etc).
     end
 
     require("r.edit").add_to_debug_info(
@@ -81,13 +105,18 @@ end
 --- Request the windows manager to focus a window.
 --- Currently, has support only for Xorg.
 ---@param wttl string Part of the window title.
-M.raise_window = function(wttl)
+---@param pid number Pid of window application.
+M.raise_window = function(wttl, pid)
     if config.has_wmctrl then
         vim.fn.system("wmctrl -a '" .. wttl .. "'")
     elseif
         vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
     then
-        vim.fn.system("swaymsg '[title=\"" .. wttl .. "\"] focus'")
+        if pid and pid ~= 0 then
+            vim.fn.system("swaymsg '[pid=\"" .. tostring(pid) .. "\"] focus'")
+        else
+            vim.fn.system("swaymsg '[pid=\"" .. wttl .. "\"] focus'")
+        end
     end
 end
 

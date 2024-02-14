@@ -418,7 +418,7 @@ M.SyncTeX_backward = function(fname, ln)
                 vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID)
             end
         else
-            require("r.pdf").raise_window(config.term_title)
+            require("r.pdf").raise_window(config.term_title, config.term_pid)
         end
     end
 end
@@ -536,8 +536,7 @@ M.SyncTeX_forward = function(gotobuf)
     require("r.pdf").SyncTeX_forward(
         M.SyncTeX_get_master() .. ".tex",
         vim.b.rplugin_pdfdir .. "/" .. basenm .. ".pdf",
-        texln,
-        1
+        texln
     )
 end
 

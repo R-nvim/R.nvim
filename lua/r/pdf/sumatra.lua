@@ -51,7 +51,7 @@ M.open = function(fullpath)
     end
 end
 
-M.SyncTeX_forward = function(tpath, ppath, texln, _)
+M.SyncTeX_forward = function(tpath, ppath, texln)
     -- Empty spaces must be removed from the rnoweb file name to get SyncTeX support with SumatraPDF.
     if SumatraInPath() then
         local tname = vim.fn.substitute(tpath, ".*/\\(.*\\)", "\\1", "")

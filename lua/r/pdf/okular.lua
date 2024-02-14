@@ -22,7 +22,7 @@ M.open = function(fullpath)
     if job.is_running("Okular") < 1 then warn("Failed to run Okular...") end
 end
 
-M.SyncTeX_forward = function(tpath, ppath, texln, _)
+M.SyncTeX_forward = function(tpath, ppath, texln)
     local texname = vim.fn.substitute(tpath, " ", "\\ ", "g")
     local pdfname = vim.fn.substitute(ppath, " ", "\\ ", "g")
     job.start("OkularSyncTeX", {

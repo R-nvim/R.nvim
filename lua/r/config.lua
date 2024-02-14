@@ -80,6 +80,7 @@ local config = {
     source_args         = "",
     specialplot         = false,
     synctex             = true,
+    term_pid            = 0,
     term_title          = "term",
     texerr              = true,
     tmpdir              = nil,
