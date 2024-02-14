@@ -74,7 +74,7 @@ We reduced the options on how to display R documentation to: `"split"`,
 
 There are two new commands:
 
-- `:RMapsDesc` display the list of key bindings followed by a short
+- `:RMapsDesc` display the list of key bindings followed by short
   descriptions.
 
 - `:RConfigShow` display the list of configuration options and their current

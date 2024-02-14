@@ -248,11 +248,12 @@ To use the plugin, open a .R, .Rnw, .Rd, .Rmd or .qmd file with Neovim
 and type <LocalLeader>rf. Then, you will be able to use the plugin key
 bindings to send commands to R.
 
-This plugin has many key bindings, which correspond with menu entries. In the
-list below, the backslash represents the <LocalLeader>. Not all menu items and
-key bindings are enabled in all file types supported by the plugin (r, rnoweb,
-rhelp, rmd, and quarto).
-
+This plugin has many key bindings. Not all key bindings are enabled in all
+file types supported by the plugin (r, rnoweb, rhelp, rmd, and quarto).
+To see the list of mappings, do in Normal mode:
+>vim
+   :RMapsDesc
+<
 Please see |R.nvim-key-bindings| to learn how to customize the key bindings.
 
 The plugin commands that send code to R Console are the most commonly used. If
@@ -1638,7 +1639,7 @@ bindings labels is shown with the command:
 >vim
    :RMapsDesc
 <
-Below is an example on how to disable the commands that sends `setwd()` and
+Below is an example on how to disable the commands that send `setwd()` and
 `dput()` to R Console:
 >lua
    disable_cmds = {'RSetwd', 'RDputObj'}
@@ -1814,18 +1815,17 @@ Xorg; on Wayland, only Sway is supported). Example:
 ==============================================================================
 7. Custom key bindings                                   *R.nvim-key-bindings*
 
-See |user_maps_only| if you want to remove the default mappings.
+See |user_maps_only| if you want to inhibit the creation of default mappings.
 See |disable_cmds| if you only want to avoid the creation of some of them.
 
 When creating custom key bindings for R.nvim, you have to create a map to a
-<Plu> label which is mapped to the actual function to be executed.
-
+<Plug> label which is mapped to the actual function to be executed.
 To see the description of all key bindings <Plug> labels and how they were
 mapped in the current session, do in Normal mode:
 >vim
    :RMapsDesc
 <
-The prefix RD means "cursor down".
+The prefix "RD" in the labels means "cursor down".
 
 The plugin contains a function called `action` in the Lua module `r.run`
 which allows you to build ad-hoc commands to R. This function takes the name

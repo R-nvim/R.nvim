@@ -16,7 +16,7 @@ if config.rnowebchunk then
         0,
         "i",
         "<",
-        "<Esc>:lua require('r.rnw').write_chunk()<CR>a",
+        "<Cmd>:lua require('r.rnw').write_chunk()<CR>",
         { silent = true }
     )
 end

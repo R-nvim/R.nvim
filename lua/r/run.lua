@@ -380,11 +380,6 @@ M.quit_R = function(how)
     end
 
     require("r.send").cmd(qcmd)
-
-    if how == "save" then vim.wait(200) end
-
-    vim.wait(50)
-    M.clear_R_info()
 end
 
 M.formart_code = function(tbl)
@@ -400,9 +395,8 @@ M.formart_code = function(tbl)
     end
 
     local lns = vim.api.nvim_buf_get_lines(0, tbl.line1 - 1, tbl.line2, true)
-    vim.fn.getline(tbl.line1, tbl.line2)
-    local txt =
-        string.gsub(string.gsub(table.concat(lns, "\020"), "\\", "\\\\"), "'", "\019")
+    local txt = table.concat(lns, "\020")
+    txt = txt:gsub("\\", "\\\\"):gsub("'", "\019")
     M.send_to_nvimcom(
         "E",
         "nvimcom:::nvim_format("

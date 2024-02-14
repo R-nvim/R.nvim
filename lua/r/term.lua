@@ -59,13 +59,15 @@ M.send_cmd_to_term = function(command)
 end
 
 M.close_term = function()
-    if R_bufnr then
-        vim.cmd.sb(R_bufnr)
-        if config.close_term and R_bufnr == vim.fn.bufnr("%") then
-            vim.cmd("startinsert")
-            vim.fn.feedkeys(" ")
-        end
+    if not R_bufnr then return end
+    if not vim.api.nvim_buf_is_valid(R_bufnr) then
         R_bufnr = nil
+        return
+    end
+    vim.cmd.sb(R_bufnr)
+    if config.close_term then
+        vim.cmd("startinsert")
+        vim.fn.feedkeys(" ")
     end
     R_bufnr = nil
 end

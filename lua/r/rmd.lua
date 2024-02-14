@@ -31,25 +31,45 @@ end
 
 M.write_chunk = function()
     if not M.is_in_R_code(false) then
-        if vim.fn.match(vim.fn.getline(vim.fn.line(".")), "^\\s*$") ~= -1 then
+        if vim.fn.getline(vim.fn.line(".")):find("^%s*$") then
             local curline = vim.fn.line(".")
-            vim.fn.setline(curline, "```{r}")
             if vim.o.filetype == "quarto" then
-                vim.fn.append(curline, { "", "```", "" })
-                vim.fn.cursor(curline + 1, 1)
+                vim.api.nvim_buf_set_lines(
+                    0,
+                    curline - 1,
+                    curline - 1,
+                    true,
+                    { "```{r}", "", "```", "" }
+                )
+                vim.api.nvim_win_set_cursor(0, { curline + 1, 1 })
             else
-                vim.fn.append(curline, { "```", "" })
-                vim.fn.cursor(curline, 5)
+                vim.api.nvim_buf_set_lines(
+                    0,
+                    curline - 1,
+                    curline - 1,
+                    true,
+                    { "```{r}", "```", "" }
+                )
+                vim.api.nvim_win_set_cursor(0, { curline, 5 })
             end
             return
         else
             if config.rmdchunk == 2 then
-                vim.cmd([[normal! a`r `\<Esc>i]])
+                if vim.fn.col(".") == 1 then
+                    vim.cmd([[normal! i`r `]])
+                else
+                    vim.cmd([[normal! a`r `]])
+                end
+                vim.api.nvim_win_set_cursor(0, { vim.fn.line("."), vim.fn.col(".") - 1 })
                 return
             end
         end
     end
-    vim.cmd("normal! a`")
+    if vim.fn.col(".") == 1 then
+        vim.cmd("normal! i`")
+    else
+        vim.cmd("normal! a`")
+    end
 end
 
 -- Send Python chunk to R
@@ -118,7 +138,7 @@ M.setup = function()
             0,
             "i",
             "`",
-            "<Esc>:lua require('r.rmd').write_chunk()<CR>a",
+            "<Cmd>lua require('r.rmd').write_chunk()<CR>",
             { silent = true }
         )
     elseif type(cfg.rmdchunk) == "string" then
@@ -126,7 +146,7 @@ M.setup = function()
             0,
             "i",
             cfg.rmdchunk,
-            "<Esc>:lua require('r.rmd').write_chunk()<CR>a",
+            "<Cmd>lua require('r.rmd').write_chunk()<CR>",
             { silent = true }
         )
     end

@@ -145,12 +145,17 @@ local M = {}
 
 M.write_chunk = function()
     if vim.fn.getline(vim.fn.line(".")) ~= "" and not M.is_in_R_code(false) then
-        vim.fn.feedkeys("a<", "n")
+        vim.fn.feedkeys("<", "n")
     else
         local curline = vim.fn.line(".")
-        vim.fn.setline(curline, "<<>>=")
-        vim.fn.append(curline, { "@", "" })
-        vim.fn.cursor(curline, 2)
+        vim.api.nvim_buf_set_lines(
+            0,
+            curline - 1,
+            curline - 1,
+            true,
+            { "<<>>=", "@", "" }
+        )
+        vim.api.nvim_win_set_cursor(0, { curline, 2 })
     end
 end
 

@@ -7,7 +7,7 @@ local map_desc = {
     RCustomStart        = { m = "", k = "", c = "Start",    d = "Ask user to enter parameters to start R" },
     RSaveClose          = { m = "", k = "", c = "Start",    d = "Quit R, saving the workspace" },
     RClose              = { m = "", k = "", c = "Start",    d = "Send to R: quit(save = 'no')" },
-    RStart              = { m = "", k = "", c = "Start",    d = "Start R with default configuration" },
+    RStart              = { m = "", k = "", c = "Start",    d = "Start R with default configuration or reopen terminal window" },
     RAssign             = { m = "", k = "", c = "Edit",     d = "Replace `config.assign_map` with ` <- `" },
     ROpenPDF            = { m = "", k = "", c = "Edit",     d = "Open the PDF generated from the current document" },
     RDputObj            = { m = "", k = "", c = "Edit",     d = "Run dput(<cword>) and show the output in a new tab" },
@@ -77,9 +77,6 @@ local map_desc = {
 }
 
 --- Create maps.
---- For each noremap we need a vnoremap including <Esc> before the :call,
---- otherwise nvim will call the function as many times as the number of selected
---- lines. If we put <Esc> in the noremap, nvim will bell.
 ---@param mode string Modes to which create maps (normal, visual and insert)
 --- and whether the cursor have to go the beginning of the line
 ---@param plug string The "<Plug>" name.
@@ -87,41 +84,31 @@ local map_desc = {
 ---@param target string The command or function to be called.
 local create_maps = function(mode, plug, combo, target)
     if vim.fn.index(config.disable_cmds, plug) > -1 then return end
-    local tg
-    local il
-    if mode:find("0") then
-        tg = target .. "<CR>0"
-        il = "i"
-    elseif mode:find("%.") then
-        tg = target
-        il = "a"
-    else
-        tg = target .. "<CR>"
-        il = "a"
-    end
+    local tgt = target .. "<CR>"
+    local plg = "<Plug>" .. plug
+    local cmd = "<LocalLeader>" .. combo
     local opts = { silent = true, noremap = true, expr = false }
     if map_desc[plug] then
         opts.desc = map_desc[plug].d
-        -- map_desc[plug].k = lleader .. combo
     else
         warn("Missing <Plug> label in description table: '" .. plug .. "'")
     end
     if mode:find("n") then
-        vim.api.nvim_buf_set_keymap(0, "n", "<Plug>" .. plug, tg, opts)
-        if not config.user_maps_only and vim.fn.hasmapto("<Plug>" .. plug, "n") == 0 then
-            vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>" .. combo, "<Plug>" .. plug, opts)
+        vim.api.nvim_buf_set_keymap(0, "n", plg, tgt, opts)
+        if not config.user_maps_only and vim.fn.hasmapto(plg, "n") == 0 then
+            vim.api.nvim_buf_set_keymap(0, "n", cmd, plg, opts)
         end
     end
     if mode:find("v") then
-        vim.api.nvim_buf_set_keymap(0, "v", "<Plug>" .. plug, "<Esc>" .. tg, opts)
-        if not config.user_maps_only and vim.fn.hasmapto("<Plug>" .. plug, "v") == 0 then
-            vim.api.nvim_buf_set_keymap(0, "v", "<LocalLeader>" .. combo, "<Esc>" .. tg, opts)
+        vim.api.nvim_buf_set_keymap(0, "v", plg, tgt, opts)
+        if not config.user_maps_only and vim.fn.hasmapto(plg, "v") == 0 then
+            vim.api.nvim_buf_set_keymap(0, "v", cmd, tgt, opts)
         end
     end
     if config.insert_mode_cmds and mode:find("i") then
-        vim.api.nvim_buf_set_keymap(0, "i", "<Plug>" .. plug, "<Esc>" .. tg .. il, opts)
-        if not config.user_maps_only and vim.fn.hasmapto("<Plug>" .. plug, "i") == 0 then
-            vim.api.nvim_buf_set_keymap(0, "i", "<LocalLeader>" .. combo, "<Esc>" .. tg .. il, opts)
+        vim.api.nvim_buf_set_keymap(0, "i", plg, tgt, opts)
+        if not config.user_maps_only and vim.fn.hasmapto(plg, "i") == 0 then
+            vim.api.nvim_buf_set_keymap(0, "i", cmd, tgt, opts)
         end
     end
 end
@@ -220,15 +207,15 @@ local send = function(file_type)
     -- create_maps("nvi", "RDSendFunction",   "fd", "<Cmd>lua require('r.send').fun(true)")
 
     -- Pipe chain breaker
-    create_maps("nv",   "RSendChain",   "sc", "<Cmd>lua require('r.send').chain()")
+    create_maps("nv", "RSendChain",      "sc", "<Cmd>lua require('r.send').chain()")
 
     -- Selection
-    create_maps("nv",   "RSendSelection",   "ss", "<Cmd>lua require('r.send').selection(false)")
-    create_maps("nv",   "RDSendSelection",  "sd", "<Cmd>lua require('r.send').selection(true)")
+    create_maps("nv", "RSendSelection",  "ss", "<Cmd>lua require('r.send').selection(false)")
+    create_maps("nv", "RDSendSelection", "sd", "<Cmd>lua require('r.send').selection(true)")
 
     -- Paragraph
-    create_maps("ni", "RSendParagraph",   "pp", "<Cmd>lua require('r.send').paragraph(false)")
-    create_maps("ni", "RDSendParagraph",  "pd", "<Cmd>lua require('r.send').paragraph(true)")
+    create_maps("ni", "RSendParagraph",  "pp", "<Cmd>lua require('r.send').paragraph(false)")
+    create_maps("ni", "RDSendParagraph", "pd", "<Cmd>lua require('r.send').paragraph(true)")
 
     if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
         create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
@@ -236,8 +223,8 @@ local send = function(file_type)
 
     -- *Line*
     create_maps("ni",  "RSendLine",           "l",        "<Cmd>lua require('r.send').line(false)")
-    create_maps("ni0", "RDSendLine",          "d",        "<Cmd>lua require('r.send').line(true)")
-    create_maps("ni0", "RInsertLineOutput",   "o",        "<Cmd>lua require('r.run').insert_commented()")
+    create_maps("ni",  "RDSendLine",          "d",        "<Cmd>lua require('r.send').line(true)")
+    create_maps("ni",  "RInsertLineOutput",   "o",        "<Cmd>lua require('r.run').insert_commented()")
     create_maps("v",   "RInsertLineOutput",   "o",        "<Cmd>lua require('r').warn('This command does not work over a selection of lines.')")
     create_maps("i",   "RSendLAndOpenNewOne", "q",        "<Cmd>lua require('r.send').line('newline')")
     create_maps("ni.", "RSendMotion",         "m",        "<Cmd>set opfunc=v:lua.require('r.send').motion<CR>g@")

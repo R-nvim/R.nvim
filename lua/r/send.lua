@@ -384,6 +384,10 @@ M.selection = function(m)
         end
     end
 
+    -- Leave visual mode
+    local esc = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
+    vim.api.nvim_feedkeys(esc, "x", false)
+
     local start_line = vim.fn.line("'<")
     local end_line = vim.fn.line("'>")
 
