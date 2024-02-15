@@ -33,6 +33,7 @@ local config = {
     has_X_tools         = false,
     help_w              = 46,
     hi_fun_paren        = false,
+    hl_term             = true,
     hook                = {
                               after_config = nil,
                               after_R_start = nil,
@@ -255,7 +256,7 @@ local do_common_global = function()
     -- Create or update the README (omnils_ files will be regenerated if older than
     -- the README).
     local need_readme = false
-    local first_line = "Last change in this file: 2024-01-30"
+    local first_line = "Last change in this file: 2024-02-16"
     if
         vim.fn.filereadable(config.compldir .. "/README") == 0
         or vim.fn.readfile(config.compldir .. "/README")[1] ~= first_line
@@ -411,7 +412,10 @@ local do_common_global = function()
     else
         config.nvimpager = "tab"
         config.objbr_place = string.gsub(config.objbr_place, "console", "script")
+        config.hl_term = false
     end
+
+    if config.R_app and config.R_app:find("radian") then config.hl_term = false end
 
     if config.is_windows then
         config.save_win_pos = true
@@ -425,8 +429,8 @@ local do_common_global = function()
     -- before starting the nvimrserver because it needs them at startup.
     config.update_glbenv = false
     if type(package.loaded["cmp_r"]) == "table" then config.update_glbenv = true end
-    vim.env.NVIMR_COMPLCB = "v:lua.require'cmp_r'.asynccb"
-    vim.env.NVIMR_COMPLInfo = "v:lua.require'cmp_r'.complinfo"
+    vim.env.RNVIM_COMPLCB = "require('cmp_r').asynccb"
+    vim.env.RNVIM_COMPLInfo = "require('cmp_r').complinfo"
 
     -- Look for invalid options
     local objbrplace = vim.split(config.objbr_place, ",")
@@ -576,7 +580,7 @@ local windows_config = function()
 
         local rinstallpath = nil
         rinstallpath = rip[1]
-        rinstallpath = rinstallpath:gsub(".*InstallPath.*REG_SZ\\s*", "")
+        rinstallpath = rinstallpath:gsub(".*InstallPath.*REG_SZ%s*", "")
         rinstallpath = rinstallpath:gsub("\n", "")
         rinstallpath = rinstallpath:gsub("%s*$", "")
         local hasR32 = vim.fn.isdirectory(rinstallpath .. "\\bin\\i386")
@@ -780,7 +784,7 @@ M.store_user_opts = function(opts)
     -- 5: TCP server is ready
     -- 6: R started, but nvimcom was not loaded yet.
     -- 7: nvimcom is loaded.
-    vim.g.R_Nvim_status = 0
+    if not vim.g.R_Nvim_status then vim.g.R_Nvim_status = 0 end
     user_opts = opts
 end
 

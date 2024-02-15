@@ -258,7 +258,7 @@ nvim.GlobalEnv.fun.args <- function(funcname) {
     txt <- gsub('\\\\\\"', '\005', txt)
     txt <- gsub('"', '\\\\"', txt)
     .C("nvimcom_msg_to_nvim",
-       paste0("lua require('cmp_r').finish_ge_fun_args(\"", txt, '")'),
+       paste0("lua require('cmp_r').finish_ge_fun_args({", txt, "})"),
        PACKAGE = "nvimcom")
     return(invisible(NULL))
 }
@@ -274,14 +274,13 @@ nvim.get.summary <- function(obj, wdth) {
     if (isnull == TRUE)
         return(invisible(NULL))
 
-
     owd <- getOption("width")
     options(width = wdth)
     txt <- ""
     objlbl <- attr(obj, "label")
     if (!is.null(objlbl))
-        txt <- append(txt, capture.output(cat("\n\n", objlbl)))
-    txt <- append(txt, capture.output(cat("\n\n```rout\n")))
+        txt <- append(txt, c("", objlbl))
+    txt <- append(txt, c("```rout", ""))
     if (is.factor(obj) || is.numeric(obj) || is.logical(obj)) {
         sobj <- try(summary(obj), silent = TRUE)
         txt <- append(txt, capture.output(print(sobj)))
@@ -289,11 +288,11 @@ nvim.get.summary <- function(obj, wdth) {
         sobj <- try(capture.output(utils::str(obj)), silent = TRUE)
         txt <- append(txt, sobj)
     }
-    txt <- append(txt, capture.output(cat("```\n")))
+    txt <- append(txt, c("```", ""))
     options(width = owd)
 
-    txt <- paste0(txt, collapse = "\n")
-    txt <- gsub("'", "\x13", gsub("\n", "\x14", txt))
+    txt <- gsub("'", "\x13", txt)
+    txt <- paste0(txt, collapse = "\x14")
 
     .C("nvimcom_msg_to_nvim", paste0("lua require('cmp_r').finish_summary('", txt, "')"),
        PACKAGE = "nvimcom")
@@ -388,26 +387,26 @@ nvim.getclass <- function(x) {
 #' @param lib Name of library preceding the name of the function
 #' (example: `library::function`).
 #' @param ldf Whether the function is in `R_fun_data_1` or not.
-nvim_complete_args <- function(id, rkeyword0, argkey, firstobj = "", lib = NULL, ldf = FALSE) {
+nvim_complete_args <- function(id, rkeyword0, argkey, firstobj = "", lib = NULL, ldf = TRUE) {
     if (firstobj == "") {
-        res <- nvim.args(rkeyword0, argkey, lib, extrainfo = TRUE, edq = FALSE)
+        res <- nvim.args(rkeyword0, argkey, lib, extrainfo = TRUE, edq = TRUE)
     } else {
         objclass <- nvim.getclass(firstobj)
         if (objclass[1] == "#E#" || objclass[1] == "") {
-            res <- nvim.args(rkeyword0, argkey, lib, extrainfo = TRUE, edq = FALSE)
+            res <- nvim.args(rkeyword0, argkey, lib, extrainfo = TRUE, edq = TRUE)
         } else {
-            res <- nvim.args(rkeyword0, argkey, lib, objclass, extrainfo = TRUE, edq = FALSE)
+            res <- nvim.args(rkeyword0, argkey, lib, objclass, extrainfo = TRUE, edq = TRUE)
         }
     }
-    if (ldf && exists(firstobj)) {
+    if (firstobj != "" && ldf && exists(firstobj)) {
         dtfrm <- get(firstobj)
         if (is.data.frame(dtfrm)) {
             for (n in names(dtfrm)) {
                 nlab <- attr(dtfrm[[n]], "label")
-                res <- append(res, paste0("{'word': '", n, "', 'menu': '[", firstobj,
-                                          "]', 'user_data': {'word': '", firstobj, "$", n,
-                                          "', 'env': '", ifelse(is.null(lib), ".GlobalEnv", lib),
-                                          "', 'cls': 'v', 'descr': '",
+                res <- append(res, paste0("{word = '", n, "', menu = '[", firstobj,
+                                          "]', user_data = {word = '", firstobj, "$", n,
+                                          "', env = '", ifelse(is.null(lib), ".GlobalEnv", lib),
+                                          "', cls = 'v', descr = '",
                                           ifelse(is.null(nlab), "", nvim.fix.string(nlab)),
                                           "'}},"))
             }

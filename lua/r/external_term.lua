@@ -5,6 +5,7 @@ local vit = require("r.utils").value_in_table
 local term_name = nil
 local term_cmd = nil
 local tmuxsname = nil
+local base_pane_index = nil
 
 -- local global_option_value = TmuxOption("some_option", "global")
 -- local window_option_value = TmuxOption("some_option", "")
@@ -94,13 +95,6 @@ local external_term_config = function()
         vim.fn.reltimefloat(vim.fn.reltime(etime, vim.fn.reltime())),
         "Time"
     )
-end
-
-local TmuxOption = function(option, isglobal)
-    local tmux_command = isglobal and "tmux -L NvimR show-options -gv "
-        or "tmux -L NvimR show-window-options -gv "
-    local result = vim.fn.system(tmux_command .. option)
-    return result:gsub("\n+$", "")
 end
 
 local M = {}
@@ -233,12 +227,19 @@ M.send_cmd_to_external_term = function(command)
     local str = cmd:gsub("'", "'\\\\''")
     if str:find("^-") then str = " " .. str end
 
+    if not base_pane_index then
+        local obj = vim.system(
+            { "tmux", "-L", "Rnvim show-options", "-gv", "pane-base-index" },
+            { text = true }
+        ):wait()
+        base_pane_index = obj.stdout:gsub("\n+$", "")
+    end
     local scmd
     scmd = string.format(
         "tmux -L Rnvim set-buffer '%s\n' ; tmux -L Rnvim paste-buffer -t %s.%s",
         str,
         tmuxsname,
-        TmuxOption("pane-base-index", "window")
+        base_pane_index
     )
 
     local rlog = vim.fn.system(scmd)

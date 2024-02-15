@@ -251,15 +251,12 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     R_pid = rpid
     vim.env.RCONSOLE = wid
 
-    local Rinfo = vim.fn.split(r_info, "\018")
-    -- R_version = Rinfo[1]
-    config.OutDec = Rinfo[2]
-    config.R_prompt_str = Rinfo[3]:gsub(" $", "")
-    config.R_continue_str = Rinfo[4]:gsub(" $", "")
+    -- R_version = r_info[1]
+    config.OutDec = r_info.OutDec
+    config.R_prompt_str = r_info.prompt:gsub(" $", "")
+    config.R_continue_str = r_info.continue:gsub(" $", "")
 
-    if Rinfo[5] == "0" and (config.hl_term == nil or config.hl_term) then
-        require("r.term").highlight_term()
-    end
+    if not r_info.has_color and config.hl_term then require("r.term").highlight_term() end
 
     if job.is_running("Server") then
         if config.is_windows then

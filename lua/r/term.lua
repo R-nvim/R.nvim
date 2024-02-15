@@ -133,7 +133,6 @@ M.start_term = function()
         require("r.windows").unset_R_home()
     end
     R_bufnr = vim.fn.bufnr("%")
-    if config.hl_term then vim.cmd("silent set syntax=rout") end
     if config.esc_term then
         vim.api.nvim_buf_set_keymap(
             0,

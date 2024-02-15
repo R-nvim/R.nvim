@@ -81,14 +81,13 @@ NvimcomEnv$pkgdescr <- list()
 set_running_info <- function() {
     pd <- utils::packageDescription("nvimcom")
     hascolor <- FALSE
-    if (length(find.package("colorout", quiet = TRUE, verbose = FALSE)) > 0 || Sys.getenv("RADIAN_VERSION") != "")
-        hascolor <- TRUE
-    info <- paste(sub("R ([^;]*).*", "\\1", pd$Built),
-                  getOption("OutDec"),
-                  gsub("\n", "#N#", getOption("prompt")),
-                  getOption("continue"),
-                  as.integer(hascolor),
-                  sep = "\x12")
+    if (length(find.package("colorout", quiet = TRUE, verbose = FALSE)) > 0)
+        hascolor <- colorout::isColorOut()
+    info <- paste0("{Rversion = '", sub("R ([^;]*).*", "\\1", pd$Built),
+                  "', OutDec = '", getOption("OutDec"),
+                  "', prompt = '", gsub("\n", "#N#", getOption("prompt")),
+                  "', continue = '", getOption("continue"),
+                  "', has_color = ", ifelse(hascolor, "true", "false"), "}")
     NvimcomEnv$info <- c(pd$Version, info)
     return(invisible(NULL))
 }
@@ -100,6 +99,6 @@ send_nvimcom_info <- function(Rpid) {
     if (winID == "")
         winID = "0"
     msg <- paste0("lua require('r.run').set_nvimcom_info('", NvimcomEnv$info[1],
-                  "', ", Rpid, ", '", winID, "', '", NvimcomEnv$info[2], "')")
+                  "', ", Rpid, ", '", winID, "', ", NvimcomEnv$info[2], ")")
     .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
 }

@@ -3,7 +3,7 @@
 #' @param firstobj If `object` is a function, the the first function parameter.
 nvim.print <- function(object, firstobj) {
     if (!exists(object))
-        stop("object '", object, "' not found")
+        warning("object '", object, "' not found")
     if (!missing(firstobj)) {
         objclass <- nvim.getclass(firstobj)
         if (objclass[1] != "#E#" && objclass[1] != "") {

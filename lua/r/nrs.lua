@@ -198,8 +198,12 @@ local RInitExit = function(_, data, _)
                 "R CMD build " .. config.rnvim_home .. "/nvimcom",
             }
             vim.fn.writefile(shf, config.tmpdir .. "/buildpkg.sh")
-            vim.fn.system("sh " .. config.tmpdir .. "/buildpkg.sh")
-            if vim.v.shell_error == 0 then
+            local obj = vim.system(
+                { "sh", config.tmpdir .. "/buildpkg.sh" },
+                { text = true }
+            )
+                :wait()
+            if obj.code == 0 then
                 M.check_nvimcom_version()
                 cnv_again = 1
             end
@@ -399,9 +403,7 @@ M.check_nvimcom_version = function()
     }
 
     local remote_compldir = config.remote_compldir
-    if vim.fn.has_key(config, "remote_compldir") == 1 then
-        scrptnm = remote_compldir .. "/tmp/before_nrs.R"
-    end
+    if config.remote_compldir then scrptnm = remote_compldir .. "/tmp/before_nrs.R" end
 
     Rtime = vim.fn.reltime()
     require("r.job").start(
