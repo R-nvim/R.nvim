@@ -815,11 +815,6 @@ M.real_setup = function()
         table.insert(config_keys, tostring(k))
     end
 
-    -- Check if b:pdf_is_open already exists to avoid errors at other places
-    if vim.fn.exists("b:pdf_is_open") == 0 then
-        vim.api.nvim_buf_set_var(0, "pdf_is_open", false)
-    end
-
     if not did_global_setup then global_setup() end
 
     if

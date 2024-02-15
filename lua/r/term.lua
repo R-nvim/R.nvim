@@ -157,9 +157,6 @@ M.start_term = function()
         number_col = 0
     end
 
-    -- Set b:pdf_is_open to avoid an error when the user has to go to R Console
-    -- to deal with latex errors while compiling the pdf
-    vim.b.pdf_is_open = 1
     vim.cmd.sb(edbuf)
     vim.cmd("stopinsert")
     require("r.run").wait_nvimcom_start()

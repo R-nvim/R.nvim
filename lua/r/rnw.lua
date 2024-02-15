@@ -45,56 +45,48 @@ local check_latex_cmd = function()
     end
 end
 
+-- See http://www.stats.uwo.ca/faculty/murdoch/9864/Sweave.pdf page 25
 local SyncTeX_readconc = function(basenm)
-    local texidx = 0
+    local texidx = 1
+    local rnwidx = 1
     local ntexln = #vim.fn.readfile(basenm .. ".tex")
     local lstexln = vim.fn.range(1, ntexln)
     local lsrnwl = vim.fn.range(1, ntexln)
     local lsrnwf = {}
     local conc = vim.fn.readfile(basenm .. "-concordance.tex")
-    local idx = 0
-    local maxidx = #conc
+    local idx = 1
+    local maxidx = #conc + 1
 
-    local rnwnm = basenm:gsub(".*/", "") .. ".Rnw"
     for _, _ in pairs(lstexln) do
-        table.insert(lsrnwf, rnwnm)
+        table.insert(lsrnwf, "")
     end
 
-    while
-        idx < maxidx
-        and texidx < ntexln
-        and vim.fn.match(conc[idx], "Sconcordance") > -1
-    do
-        local rnwf = vim.fn.substitute(
-            conc[idx],
-            "\\Sconcordance{concordance:.*:\\(.*\\):.*",
-            "\\1",
-            "g"
-        )
+    while idx < maxidx and texidx < ntexln and conc[idx]:find("Sconcordance") do
+        local rnwf = conc[idx]:gsub(".Sconcordance.concordance:.*:(.*):.*", "%1")
         idx = idx + 1
         local concnum = ""
-        while idx < maxidx and vim.fn.match(conc[idx], "Sconcordance") == -1 do
+        while idx < maxidx and not conc[idx]:find("Sconcordance") do
             concnum = concnum .. conc[idx]
             idx = idx + 1
         end
-        concnum = vim.fn.substitute(concnum, "%%", "", "g")
-        concnum = vim.fn.substitute(concnum, "}", "", "")
-        local concl = vim.fn.split(concnum)
-        local ii = 0
-        local maxii = #concl - 2
-        local rnwl = vim.fn.str2nr(concl[1])
-        lsrnwl[texidx + 1] = rnwl
-        lsrnwf[texidx + 1] = rnwf
+        concnum = concnum:gsub("%%", "")
+        concnum = concnum:gsub("%}", "")
+        local concl = vim.split(concnum, " ")
+        local ii = 1
+        local maxii = #concl - 1
+        local rnwl = tonumber(concl[1])
+        lsrnwl[texidx] = rnwl
+        lsrnwf[texidx] = rnwf
         texidx = texidx + 1
         while ii < maxii and texidx < ntexln do
             ii = ii + 1
             local lnrange = vim.fn.range(1, concl[ii])
             ii = ii + 1
             for _, _ in ipairs(lnrange) do
-                if texidx >= ntexln then break end
+                if texidx > ntexln then break end
                 rnwl = rnwl + concl[ii]
-                lsrnwl[texidx + 1] = rnwl
-                lsrnwf[texidx + 1] = rnwf
+                lsrnwl[texidx] = rnwl
+                lsrnwf[texidx] = rnwf
                 texidx = texidx + 1
             end
         end
