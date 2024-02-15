@@ -217,10 +217,6 @@ local send = function(file_type)
     create_maps("ni", "RSendParagraph",  "pp", "<Cmd>lua require('r.send').paragraph(false)")
     create_maps("ni", "RDSendParagraph", "pd", "<Cmd>lua require('r.send').paragraph(true)")
 
-    if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
-        create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
-    end
-
     -- *Line*
     create_maps("ni",  "RSendLine",           "l",        "<Cmd>lua require('r.send').line(false)")
     create_maps("ni",  "RDSendLine",          "d",        "<Cmd>lua require('r.send').line(true)")
@@ -244,6 +240,12 @@ local send = function(file_type)
         create_maps("n",   "RNextRChunk",     "gn", "<Cmd>lua require('r.rmd').next_chunk()")
         create_maps("n",   "RPreviousRChunk", "gN", "<Cmd>lua require('r.rmd').previous_chunk()")
     end
+    if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
+        create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
+        if config.rm_knit_cache then
+            create_maps("nvi", "RKnitRmCache", "kc", "<Cmd>lua require('r.rnw').rm_knit_cache()")
+        end
+    end
     if file_type == "quarto" then
         create_maps("n",   "RQuartoRender",   "qr", "<Cmd>lua require('r.quarto').command('render')")
         create_maps("n",   "RQuartoPreview",  "qp", "<Cmd>lua require('r.quarto').command('preview')")
@@ -253,9 +255,7 @@ local send = function(file_type)
         create_maps("nvi", "RSweave",         "sw", "<Cmd>lua require('r.rnw').weave('nobib',  false, false)")
         create_maps("nvi", "RMakePDF",        "sp", "<Cmd>lua require('r.rnw').weave('nobib',  false, true)")
         create_maps("nvi", "RBibTeX",         "sb", "<Cmd>lua require('r.rnw').weave('bibtex', false, true)")
-        if config.rm_knit_cache then
-            create_maps("nvi", "RKnitRmCache", "kr", "<Cmd>lua require('r.rnw').rm_knit_cache()")
-        end
+        vim.notify("rm_knit_cache " .. tostring(config.rm_knit_cache))
         create_maps("nvi", "RKnit",        "kn", "<Cmd>lua require('r.rnw').weave('nobib',  true, false)")
         create_maps("nvi", "RMakePDFK",    "kp", "<Cmd>lua require('r.rnw').weave('nobib',  true, true)")
         create_maps("nvi", "RBibTeXK",     "kb", "<Cmd>lua require('r.rnw').weave('bibtex', true, true)")
