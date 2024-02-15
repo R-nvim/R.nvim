@@ -16,7 +16,7 @@ local M = {}
 
 local RInitStdout = function(_, data, _)
     if not data then return end
-    local rcmd = vim.fn.substitute(table.concat(data, ""), "\r", "", "g")
+    local rcmd = string.gsub(table.concat(data, ""), "\r", "")
     if RoutLine ~= "" then
         rcmd = RoutLine .. rcmd
         if rcmd:find("\020") == nil then
@@ -62,7 +62,8 @@ end
 local RInitStderr = function(_, data, _)
     if data then
         local s = table.concat(data, "")
-        table.insert(RBerr, vim.fn.substitute(s, "\r", "", "g"))
+        s = string.gsub(s, "\r", "")
+        table.insert(RBerr, s)
     end
 end
 
@@ -262,9 +263,7 @@ local ListRLibsFromBuffer = function()
         end
     end
     local libs = ""
-    if #start_libs > 4 then
-        libs = '"' .. vim.fn.substitute(start_libs, ",", '", "', "g") .. '"'
-    end
+    if #start_libs > 4 then libs = '"' .. start_libs:gsub(",", '", "') .. '"' end
     if #flibs > 0 then
         if libs ~= "" then libs = libs .. ", " end
         libs = libs .. '"' .. table.concat(flibs, '", "') .. '"'
@@ -286,18 +285,13 @@ M.BuildAllArgs = function(_)
 
     local flist = vim.fn.glob(config.compldir .. "/omnils_*", false, true)
     for i, afile in ipairs(flist) do
-        flist[i] = vim.fn.substitute(afile, "/omnils_", "/args_", "")
+        flist[i] = afile:gsub("/omnils_", "/args_")
     end
 
     local rscrpt = { 'library("nvimcom", warn.conflicts = FALSE)' }
     for _, afile in ipairs(flist) do
         if vim.fn.filereadable(afile) == 0 then
-            local pkg = vim.fn.substitute(
-                vim.fn.substitute(afile, ".*/args_", "", ""),
-                "_.*",
-                "",
-                ""
-            )
+            local pkg = afile:gsub(".*/args_", ""):gsub("_.*", "")
             table.insert(
                 rscrpt,
                 'nvimcom:::nvim.buildargs("' .. afile .. '", "' .. pkg .. '")'

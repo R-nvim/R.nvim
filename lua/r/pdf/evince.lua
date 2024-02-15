@@ -33,10 +33,10 @@ M.open = function(fullpath)
 end
 
 M.SyncTeX_forward = function(tpath, ppath, texln)
-    local n1 = vim.fn.substitute(tpath, "\\(^/.*/\\).*", "\\1", "")
-    local n2 = vim.fn.substitute(tpath, ".*/\\(.*\\)", "\\1", "")
-    local texname = vim.fn.substitute(n1, " ", "%20", "g") .. n2
-    local pdfname = vim.fn.substitute(ppath, " ", "%20", "g")
+    local n1 = tpath:gsub("(^/.*/).*", "%1")
+    local n2 = tpath:gsub(".*/(.*)", "%1")
+    local texname = n1:gsub(" ", "%20") .. n2
+    local pdfname = ppath:gsub(" ", "%20")
 
     if evince_loop < 2 then
         require("r.job").start("Python (Evince forward)", {
@@ -55,9 +55,7 @@ end
 M.run_evince_SyncTeX_server = function()
     local basenm = rnw.SyncTeX_get_master() .. ".pdf"
     if not vim.b.rplugin_pdfdir then require("r.rnw").set_pdf_dir() end
-    local pdfpath = vim.b.rplugin_pdfdir
-        .. "/"
-        .. vim.fn.substitute(basenm, ".*/", "", "")
+    local pdfpath = vim.b.rplugin_pdfdir .. "/" .. basenm:gsub(".*/", "")
     local did_evince = 0
 
     for _, bb in ipairs(evince_list) do

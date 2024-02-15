@@ -99,21 +99,19 @@ local GoToBuf = function(rnwbn, rnwf, basedir, rnwln)
         if vim.fn.bufloaded(basedir .. "/" .. rnwf) == 1 then
             local savesb = vim.o.switchbuf
             vim.o.switchbuf = "useopen,usetab"
-            vim.cmd.sb(vim.fn.substitute(basedir .. "/" .. rnwf, " ", "\\ ", "g"))
+            vim.cmd.sb(string.gsub(basedir .. "/" .. rnwf, " ", "\\ "))
+            vim.cmd.sb(string.gsub(basedir .. "/" .. rnwf, " ", "\\ "))
             vim.o.switchbuf = savesb
         elseif vim.fn.bufloaded(rnwf) > 0 then
             local savesb = vim.o.switchbuf
             vim.o.switchbuf = "useopen,usetab"
-            vim.cmd.sb(vim.fn.substitute(rnwf, " ", "\\ ", "g"))
+            vim.cmd.sb(rnwf:gsub(" ", "\\ "))
             vim.o.switchbuf = savesb
         else
             if vim.fn.filereadable(basedir .. "/" .. rnwf) == 1 then
-                vim.cmd(
-                    "tabnew "
-                        .. vim.fn.substitute(basedir .. "/" .. rnwf, " ", "\\ ", "g")
-                )
+                vim.cmd("tabnew " .. string.gsub(basedir .. "/" .. rnwf, " ", "\\ "))
             elseif vim.fn.filereadable(rnwf) > 0 then
-                vim.cmd("tabnew " .. vim.fn.substitute(rnwf, " ", "\\ ", "g"))
+                vim.cmd("tabnew " .. rnwf:gsub(" ", "\\ "))
             else
                 warn(
                     'Could not find either "'
@@ -206,36 +204,26 @@ end
 -- surrounded by quotes; if it's an R object, it will not be recognized.
 M.rm_knit_cache = function()
     local lnum = vim.fn.search("\\<cache\\.path\\>\\s*=", "bnwc")
-    local pathdir
+    local cpdir
     if lnum == 0 then
-        pathdir = "cache/"
+        cpdir = "cache/"
     else
-        local pathregexpr = ".*\\<cache\\.path\\>\\s*=\\s*["
-            .. "'"
-            .. '"]\\(.\\{-}\\)['
-            .. "'"
-            .. '"].*'
-        pathdir = vim.fn.substitute(vim.fn.getline(lnum), pathregexpr, "\\1", "")
-        if not pathdir:match("/$") then pathdir = pathdir .. "/" end
+        cpdir = vim.fn.getline(lnum):gsub(".*<cache%.path>%s*=%s*[\"'](.-)[\"'].*", "%1")
+        if not cpdir:find("/$") then cpdir = cpdir .. "/" end
     end
 
     local cleandir
-    if config.ask_rm_knitr_cache and config.ask_rm_knitr_cache == false then
-        cleandir = 1
+    vim.fn.inputsave()
+    local answer = vim.fn.input('Delete all files from "' .. cpdir .. '"? [y/n]: ')
+    vim.fn.inputrestore()
+    if answer == "y" then
+        cleandir = true
     else
-        vim.fn.inputsave()
-        local answer = vim.fn.input('Delete all files from "' .. pathdir .. '"? [y/n]: ')
-        vim.fn.inputrestore()
-        if answer == "y" then
-            cleandir = 1
-        else
-            cleandir = 0
-        end
+        cleandir = false
     end
 
-    vim.fn.normal(":<Esc>")
     if cleandir then
-        send.cmd('rm(list=ls(all.names=TRUE)); unlink("' .. pathdir .. '*")')
+        send.cmd('rm(list=ls(all.names=TRUE)); unlink("' .. cpdir .. '*")')
     end
 end
 
@@ -317,19 +305,14 @@ M.SyncTeX_get_master = function()
     if ischild > 0 then
         local basenm
         local mdir
-        local mfile = vim.fn.substitute(
-            vim.fn.getline(ischild),
-            ".*% *!Rnw *root *= *\\(.*\\) *",
-            "\\1",
-            ""
-        )
+        local mfile = vim.fn.getline(ischild):gsub(".*%% *!Rnw *root *= *(.*) *", "%1")
         if vim.fn.match(mfile, "/") > 0 then
-            mdir = vim.fn.substitute(mfile, "\\(.*\\)/.*", "\\1", "")
-            basenm = vim.fn.substitute(mfile, ".*/", "", "")
+            mdir = mfile:gsub("(.*)/.*", "%1")
+            basenm = mfile:gsub(".*/", "")
             if mdir == ".." then mdir = vim.fn.expand("%:p:h:h") end
         else
             mdir = vim.fn.expand("%:p:h")
-            basenm = vim.fn.substitute(mfile, ".*/", "", "")
+            basenm = mfile:gsub(".*/", "")
         end
 
         if config.is_windows then
@@ -347,13 +330,13 @@ M.SyncTeX_get_master = function()
 end
 
 M.SyncTeX_backward = function(fname, ln)
-    local flnm = vim.fn.substitute(fname, "/\\./", "/", "") -- Okular
-    local basenm = vim.fn.substitute(flnm, "\\....$", "", "") -- Delete extension
+    local flnm = fname:gsub("/%./", "/") -- Okular
+    local basenm = flnm:gsub("%....$", "") -- Delete extension
     local rnwf
     local rnwln
     local basedir
     if basenm:match("/") then
-        basedir = vim.fn.substitute(basenm, "\\(.*\\)/.*", "\\1", "")
+        basedir = basenm:gsub("(.*)/.*", "%1")
     else
         basedir = "."
     end
@@ -395,8 +378,8 @@ M.SyncTeX_backward = function(fname, ln)
         end
     end
 
-    local rnwbn = vim.fn.substitute(rnwf, ".*/", "", "")
-    rnwf = vim.fn.substitute(rnwf, "^\\.\\/", "", "")
+    local rnwbn = rnwf:gsub(".*/", "")
+    rnwf = rnwf:gsub("^%.\\/", "")
 
     if GoToBuf(rnwbn, rnwf, basedir, rnwln) > 0 then
         require("r.pdf").focus_window(config.term_title, config.term_pid)
@@ -414,12 +397,8 @@ M.SyncTeX_forward = function(gotobuf)
     else
         local ischild = vim.fn.search("% *!Rnw *root *=", "bwn")
         if ischild > 0 then
-            local mfile = vim.fn.substitute(
-                vim.fn.getline(ischild),
-                ".*% *!Rnw *root *= *\\(.*\\) *",
-                "\\1",
-                ""
-            )
+            local mfile =
+                vim.fn.getline(ischild):gsub(".*%% *!Rnw *root *= *(.*) *", "%1")
             local mlines = vim.fn.readfile(vim.fn.expand("%:p:h") .. "/" .. mfile)
             for ii, v in ipairs(mlines) do
                 if v:match("SweaveInput.*" .. vim.fn.expand("%:t")) then
@@ -456,7 +435,7 @@ M.SyncTeX_forward = function(gotobuf)
         return
     end
     local concdata = SyncTeX_readconc(vim.fn.expand("%:p:h") .. "/" .. basenm)
-    rnwf = vim.fn.substitute(rnwf, ".*/", "", "")
+    rnwf = rnwf:gsub(".*/", "")
     local texlnum = concdata.texlnum
     local rnwfile = concdata.rnwfile
     local rnwline = concdata.rnwline
@@ -473,9 +452,9 @@ M.SyncTeX_forward = function(gotobuf)
         return
     end
     if basenm:match("/") then
-        basedir = vim.fn.substitute(basenm, "\\(.*\\)/.*", "\\1", "")
-        basenm = vim.fn.substitute(basenm, ".*/", "", "")
-        vim.cmd("cd " .. vim.fn.substitute(basedir, " ", "\\ ", "g"))
+        basedir = basenm:gsub("(.*)/.*", "%1")
+        basenm = basenm:gsub(".*/", "")
+        vim.cmd("cd " .. basedir:gsub(" ", "\\ "))
     else
         basedir = ""
     end

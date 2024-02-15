@@ -27,9 +27,9 @@ end
 ---@param ppath string PDF document path.
 ---@param texln number Line number in the LaTeX document.
 M.SyncTeX_forward = function(tpath, ppath, texln)
-    local texname = vim.fn.substitute(tpath, " ", "\\ ", "g")
-    local pdfname = vim.fn.substitute(ppath, " ", "\\ ", "g")
-    local shortp = vim.fn.substitute(ppath, ".*/", "", "g")
+    local texname = tpath:gsub(" ", "\\ ")
+    local pdfname = ppath:gsub(" ", "\\ ")
+    local shortp = ppath:gsub(".*/", "")
 
     local zfcmd = {
         "zathura",

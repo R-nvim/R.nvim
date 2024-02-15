@@ -15,10 +15,10 @@ M.set_R_home = function()
         vim.fn.writefile(run_cmd_content, config.tmpdir .. "/run_cmd.bat")
         local prs = vim.fn.system(config.tmpdir .. "/run_cmd.bat")
         if #prs > 0 then
-            prs = vim.fn.substitute(prs, ".*REG_SZ\\s*", "", "")
-            prs = vim.fn.substitute(prs, "\n", "", "g")
-            prs = vim.fn.substitute(prs, "\r", "", "g")
-            prs = vim.fn.substitute(prs, "\\s*$", "", "g")
+            prs = prs:gsub(".*REG_SZ\\s*", "")
+            prs = prs:gsub("\n", "")
+            prs = prs:gsub("\r", "")
+            prs = prs:gsub("\\s*$", "")
             vim.env.HOME = prs
         end
     end

@@ -194,17 +194,13 @@ local do_common_global = function()
     -- Windows logins can include domain, e.g: 'DOMAIN\Username', need to remove
     -- the backslash from this as otherwise cause file path problems.
     if vim.env.LOGNAME then
-        config.user_login =
-            vim.fn.substitute(vim.fn.escape(vim.env.LOGNAME, "\\"), "\\", "", "g")
+        config.user_login = vim.fn.escape(vim.env.LOGNAME, "\\"):gsub("\\", "")
     elseif vim.env.USER then
-        config.user_login =
-            vim.fn.substitute(vim.fn.escape(vim.env.USER, "\\"), "\\", "", "g")
+        config.user_login = vim.fn.escape(vim.env.USER, "\\"):gsub("\\", "")
     elseif vim.env.USERNAME then
-        config.user_login =
-            vim.fn.substitute(vim.fn.escape(vim.env.USERNAME, "\\"), "\\", "", "g")
+        config.user_login = vim.fn.escape(vim.env.USERNAME, "\\"):gsub("\\", "")
     elseif vim.env.HOME then
-        config.user_login =
-            vim.fn.substitute(vim.fn.escape(vim.env.HOME, "\\"), "\\", "", "g")
+        config.user_login = vim.fn.escape(vim.env.HOME, "\\"):gsub("\\", "")
     elseif vim.fn.executable("whoami") ~= 0 then
         config.user_login = vim.fn.system("whoami")
     else
@@ -212,12 +208,8 @@ local do_common_global = function()
         warn("Could not determine user name.")
     end
 
-    config.user_login = vim.fn.substitute(
-        vim.fn.substitute(config.user_login, ".*\\", "", ""),
-        "\\W",
-        "",
-        "g"
-    )
+    config.user_login = config.user_login:gsub(".*\\", "")
+    config.user_login = config.user_login:gsub("[^%w]", "")
     if config.user_login == "" then
         config.user_login = "NoLoginName"
         warn("Could not determine user name.")
@@ -488,18 +480,10 @@ local do_common_global = function()
 
     -- Set security variables
     if not vim.fn.has("nvim-0.7.0") then
-        vim.env.RNVIM_ID = vim.fn.substitute(
-            tostring(vim.fn.reltimefloat(vim.fn.reltime())),
-            ".*\\.",
-            "",
-            ""
-        )
-        vim.env.RNVIM_SECRET = vim.fn.substitute(
-            tostring(vim.fn.reltimefloat(vim.fn.reltime())),
-            ".*\\.",
-            "",
-            ""
-        )
+        vim.env.RNVIM_ID =
+            tostring(vim.fn.reltimefloat(vim.fn.reltime())):gsub(".*%.", "")
+        vim.env.RNVIM_SECRET =
+            tostring(vim.fn.reltimefloat(vim.fn.reltime())):gsub(".*%.", "")
     else
         vim.env.RNVIM_ID = vim.fn.rand(vim.fn.srand())
         vim.env.RNVIM_SECRET = vim.fn.rand()
@@ -632,9 +616,8 @@ local tmux_config = function()
         tmuxversion = "0.0"
     else
         tmuxversion = vim.fn.system("tmux -V")
-        tmuxversion =
-            vim.fn.substitute(tmuxversion, ".* \\([0-9]\\.[0-9]\\).*", "\\1", "")
-        if vim.fn.strlen(tmuxversion) ~= 3 then tmuxversion = "1.0" end
+        tmuxversion = tmuxversion:gsub(".* ([0-9]%.[0-9]).*", "%1")
+        if #tmuxversion ~= 3 then tmuxversion = "1.0" end
         if tmuxversion < "3.0" then warn("R.nvim requires Tmux >= 3.0") end
     end
     require("r.edit").add_to_debug_info(

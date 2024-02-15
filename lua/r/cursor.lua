@@ -71,7 +71,7 @@ end
 
 M.get_first_obj = function()
     local firstobj = ""
-    local line = vim.fn.substitute(vim.fn.getline(vim.fn.line(".")), "#.*", "", "")
+    local line = vim.fn.getline(vim.fn.line(".")):gsub("#.*", "")
     local begin = vim.fn.col(".")
 
     if vim.fn.strlen(line) > begin then

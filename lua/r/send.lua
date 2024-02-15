@@ -100,22 +100,6 @@ end
 M.source_lines = function(lines, what)
     require("r.edit").add_for_deletion(config.source_write)
 
-    -- if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
-    --     lines =
-    --         vim.fn.map(vim.deepcopy(lines), 'substitute(v:val, "^\\(``\\)\\?", "", "")')
-    -- end
-
-    if what and what == "NewtabInsert" then
-        vim.fn.writefile(lines, config.source_write)
-        require("r.run").send_to_nvimcom(
-            "E",
-            'nvimcom:::nvim_capture_source_output("'
-                .. config.source_read
-                .. '", "NewtabInsert")'
-        )
-        return true
-    end
-
     local rcmd
 
     if #lines < config.max_paste_lines then
@@ -231,9 +215,9 @@ end
 ---@param line string The chunck header.
 ---@param m boolean True if should move to the next chunk.
 local knit_child = function(line, m)
-    local nline = vim.fn.substitute(line, ".*child *= *", "", "")
-    local cfile = vim.fn.substitute(nline, nline:sub(1, 1), "", "")
-    cfile = vim.fn.substitute(cfile, nline:sub(1, 1) .. ".*", "", "")
+    local nline = line:gsub(".*child *= *", "")
+    local cfile = nline:gsub(nline:sub(1, 1), "")
+    cfile = cfile:gsub(nline:sub(1, 1) .. ".*", "")
     if vim.fn.filereadable(cfile) == 1 then
         M.cmd("require(knitr); knit('" .. cfile .. "', output=NULL)")
         if m then
@@ -484,7 +468,6 @@ M.line = function(m, lnum)
             if m == true then cursor.move_next_line() end
             return
         end
-        line = vim.fn.substitute(line, "^(\\`\\`)\\?", "", "")
         if not require("r.rmd").is_in_R_code(false) then
             if not require("r.rmd").is_in_Py_code(false) then
                 warn("Not inside either R or Python code chunk.")
@@ -500,8 +483,8 @@ M.line = function(m, lnum)
     if vim.o.syntax == "rdoc" then
         local line1 = vim.fn.getline(vim.fn.line("."))
         if line1:find("^The topic") then
-            local topic = vim.fn.substitute(line, ".*::", "", "")
-            local package = vim.fn.substitute(line, "::.*", "", "")
+            local topic = line:gsub(".*::", "")
+            local package = line:gsub("::.*", "")
             require("r.rdoc").ask_R_doc(topic, package, true)
             return
         end
