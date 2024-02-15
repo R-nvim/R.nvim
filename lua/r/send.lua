@@ -133,11 +133,14 @@ end
 M.above_lines = function()
     local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("."), false)
 
-    -- Remove empty lines from the end of the list
-    local result =
-        table.concat(vim.tbl_filter(function(line) return line ~= "" end, lines), "\n")
+    -- Remove empty lines
+    local filtered_lines = {}
 
-    M.cmd(result)
+    for _, line in ipairs(lines) do
+        if string.match(line, "%S") then table.insert(filtered_lines, line) end
+    end
+
+    M.source_lines(filtered_lines, nil)
 end
 
 M.source_file = function()
