@@ -1,7 +1,6 @@
 local warn = require("r").warn
 local pdf = require("r.pdf")
 local job = require("r.job")
-local config = require("r.config")
 
 local M = {}
 
