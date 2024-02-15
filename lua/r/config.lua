@@ -54,8 +54,8 @@ local config = {
     objbr_place         = "script,right",
     objbr_w             = 40,
     open_example        = true,
-    openhtml            = true,
-    openpdf             = 2,
+    open_html           = 2,
+    open_pdf            = 2,
     paragraph_begin     = true,
     parenblock          = true,
     pdfviewer           = "undefined",
@@ -127,15 +127,6 @@ local set_editing_mode = function()
 end
 
 local set_pdf_viewer = function()
-    if
-        (config.is_darwin or vim.env.WAYLAND_DISPLAY)
-        and vim.env.XDG_CURRENT_DESKTOP ~= "sway"
-    then
-        config.openpdf = 1
-    else
-        config.openpdf = 2
-    end
-
     if config.is_darwin then
         config.pdfviewer = "skim"
     elseif config.is_windows then

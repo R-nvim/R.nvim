@@ -281,11 +281,7 @@ M.weave = function(bibtex, knit, pdf)
 
     if bibtex == "bibtex" then pdfcmd = pdfcmd .. ", bibtex = TRUE" end
 
-    if not pdf or config.openpdf == 0 or vim.b.pdf_is_open then
-        pdfcmd = pdfcmd .. ", view = FALSE"
-    end
-
-    if pdf and config.openpdf == 1 then vim.b.pdf_is_open = 1 end
+    if not pdf or config.open_pdf == 0 then pdfcmd = pdfcmd .. ", view = FALSE" end
 
     if config.latex_build_dir then
         pdfcmd = pdfcmd .. ', builddir="' .. config.latex_build_dir .. '"'
@@ -418,7 +414,7 @@ M.SyncTeX_backward = function(fname, ln)
                 vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID)
             end
         else
-            require("r.pdf").raise_window(config.term_title, config.term_pid)
+            require("r.pdf").focus_window(config.term_title, config.term_pid)
         end
     end
 end

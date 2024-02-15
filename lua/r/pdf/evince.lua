@@ -18,7 +18,7 @@ local M = {}
 M.open = function(fullpath)
     if job.is_running(fullpath) then
         local fname = fullpath:gsub(".*/", "")
-        pdf.raise_window(fname, job.get_pid(fullpath))
+        pdf.focus_window(fname, job.get_pid(fullpath))
         return
     end
 
@@ -49,7 +49,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
     else
         evince_loop = 0
     end
-    require("r.pdf").raise_window(ppath:gsub(".*/", ""), job.get_pid(ppath))
+    require("r.pdf").focus_window(ppath:gsub(".*/", ""), job.get_pid(ppath))
 end
 
 M.SyncTeX_backward = function()

@@ -1,18 +1,13 @@
 local warn = require("r").warn
 local pdf = require("r.pdf")
 local job = require("r.job")
+local config = require("r.config")
 
 local M = {}
 
 --- Use Zathura to open PDF document
 ---@param fullpath string
 M.open = function(fullpath)
-    local fname = fullpath:gsub(".*/", "")
-    if job.is_running(fullpath) then
-        pdf.raise_window(fname, job.get_pid(fullpath))
-        return
-    end
-
     local zopts = {
         on_stdout = require("r.job").on_stdout,
         on_exit = require("r.job").on_exit,
@@ -57,7 +52,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
         return
     end
 
-    pdf.raise_window(shortp, job.get_pid(ppath))
+    pdf.focus_window(shortp, job.get_pid(ppath))
 end
 
 return M

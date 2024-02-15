@@ -1,5 +1,6 @@
 local config = require("r.config").get_config()
 local warn = require("r").warn
+local job = require("r.job")
 
 local check_installed = function()
     if vim.fn.executable(config.pdfviewer) == 0 then
@@ -87,7 +88,7 @@ end
 --- Call the appropriate function to open a PDF document.
 ---@param fullpath string The path to the PDF file.
 M.open = function(fullpath)
-    if config.openpdf == 0 then return end
+    if config.open_pdf == 0 then return end
 
     if fullpath == "Get Master" then
         local fpath = require("r.rnw").SyncTeX_get_master() .. ".pdf"
@@ -96,17 +97,20 @@ M.open = function(fullpath)
         return
     end
 
-    if not vim.b.pdf_is_open then
-        if config.openpdf == 1 then vim.b.pdf_is_open = true end
-        M.open2(fullpath)
+    local fname = fullpath:gsub(".*/", "")
+    if job.is_running(fullpath) then
+        if config.open_pdf == 2 then M.focus_window(fname, job.get_pid(fullpath)) end
+        return
     end
+
+    M.open2(fullpath)
 end
 
 --- Request the windows manager to focus a window.
 --- Currently, has support only for Xorg.
 ---@param wttl string Part of the window title.
 ---@param pid number Pid of window application.
-M.raise_window = function(wttl, pid)
+M.focus_window = function(wttl, pid)
     if config.has_wmctrl then
         vim.fn.system("wmctrl -a '" .. wttl .. "'")
     elseif

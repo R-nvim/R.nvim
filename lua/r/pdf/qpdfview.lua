@@ -26,7 +26,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
             .. texln
             .. ":1 2> /dev/null >/dev/null &"
     )
-    require("r.pdf").raise_window(string.gsub(ppath:gsub(".*/", ""), ".pdf$", ""), 0)
+    require("r.pdf").focus_window(string.gsub(ppath:gsub(".*/", ""), ".pdf$", ""), 0)
 end
 
 return M

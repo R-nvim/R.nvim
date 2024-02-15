@@ -39,7 +39,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
         warn("Failed to run Okular (SyncTeX forward)...")
         return
     end
-    require("r.pdf").raise_window(pdfname, job.get_pid(ppath))
+    require("r.pdf").focus_window(pdfname, job.get_pid(ppath))
 end
 
 return M
