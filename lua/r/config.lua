@@ -30,6 +30,7 @@ local config = {
     external_term       = false, -- might be a string
     fun_data_1          = { "select", "rename", "mutate", "filter" },
     fun_data_2          = { ggplot = { "aes" }, with = "*" },
+    has_X_tools         = false,
     help_w              = 46,
     hi_fun_paren        = false,
     hook                = {
@@ -471,9 +472,6 @@ local do_common_global = function()
 
     -- Current view of the object browser: .GlobalEnv X loaded libraries
     config.curview = "None"
-
-    -- SyncTeX options
-    config.has_wmctrl = false
 
     -- Set the name of R executable
     if config.is_windows then

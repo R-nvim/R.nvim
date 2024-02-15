@@ -1,6 +1,7 @@
 local warn = require("r").warn
 local send = require("r.send")
 local utils = require("r.utils")
+local job = require("r.job")
 local config = require("r.config").get_config()
 local check_latexcmd = true
 
@@ -48,7 +49,6 @@ end
 -- See http://www.stats.uwo.ca/faculty/murdoch/9864/Sweave.pdf page 25
 local SyncTeX_readconc = function(basenm)
     local texidx = 1
-    local rnwidx = 1
     local ntexln = #vim.fn.readfile(basenm .. ".tex")
     local lstexln = vim.fn.range(1, ntexln)
     local lsrnwl = vim.fn.range(1, ntexln)
@@ -399,15 +399,7 @@ M.SyncTeX_backward = function(fname, ln)
     rnwf = vim.fn.substitute(rnwf, "^\\.\\/", "", "")
 
     if GoToBuf(rnwbn, rnwf, basedir, rnwln) > 0 then
-        if config.has_wmctrl then
-            if vim.fn.win_getid() ~= 0 then
-                vim.fn.system("wmctrl -ia " .. vim.fn.win_getid())
-            elseif vim.env.WINDOWID then
-                vim.fn.system("wmctrl -ia " .. vim.env.WINDOWID)
-            end
-        else
-            require("r.pdf").focus_window(config.term_title, config.term_pid)
-        end
+        require("r.pdf").focus_window(config.term_title, config.term_pid)
     end
 end
 
@@ -521,11 +513,24 @@ M.SyncTeX_forward = function(gotobuf)
         return
     end
 
-    require("r.pdf").SyncTeX_forward(
-        M.SyncTeX_get_master() .. ".tex",
-        vim.b.rplugin_pdfdir .. "/" .. basenm .. ".pdf",
-        texln
-    )
+    local ppath = vim.b.rplugin_pdfdir .. "/" .. basenm .. ".pdf"
+    -- FIXME: this should not be necessary:
+    ppath = ppath:gsub("//", "/")
+
+    if not job.is_running(ppath) then
+        require("r.pdf").open(ppath)
+        -- Wait up to five seconds
+        vim.wait(500)
+        local i = 0
+        while i < 45 do
+            if job.is_running(ppath) then break end
+            vim.wait(100)
+            i = i + 1
+        end
+        if not job.is_running(ppath) then return end
+    end
+
+    require("r.pdf").SyncTeX_forward(M.SyncTeX_get_master() .. ".tex", ppath, texln)
 end
 
 M.set_pdf_dir = function()

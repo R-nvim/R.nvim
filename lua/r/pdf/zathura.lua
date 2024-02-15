@@ -31,22 +31,6 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
     local pdfname = vim.fn.substitute(ppath, " ", "\\ ", "g")
     local shortp = vim.fn.substitute(ppath, ".*/", "", "g")
 
-    -- FIXME: this should not be necessary:
-    ppath = ppath:gsub("//", "/")
-
-    if not job.is_running(ppath) then
-        M.open(ppath)
-        -- Wait up to five seconds
-        vim.wait(500)
-        local i = 0
-        while i < 45 do
-            if job.is_running(ppath) then break end
-            vim.wait(100)
-            i = i + 1
-        end
-        if not job.is_running(ppath) then return end
-    end
-
     local zfcmd = {
         "zathura",
         "--synctex-forward=" .. texln .. ":1:" .. texname,

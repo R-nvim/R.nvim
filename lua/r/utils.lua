@@ -58,4 +58,97 @@ function M.value_in_table(value, tbl)
     return false
 end
 
+local get_fw_info_X = function()
+    local config = require("r.config").get_config()
+    local warn = require("r").warn
+    local obj = vim.system({ "xprop", "-root" }, { text = true }):wait()
+    if obj.code ~= 0 then
+        warn("Failed to run `xprop -root`")
+        return
+    end
+    local xroot = vim.split(obj.stdout, "\n")
+    local awin = nil
+    for _, v in pairs(xroot) do
+        if v:find("_NET_ACTIVE_WINDOW%(WINDOW%): window id # ") then
+            awin = v:gsub("_NET_ACTIVE_WINDOW%(WINDOW%): window id # ", "")
+            break
+        end
+    end
+    if not awin then
+        warn("Failed to get ID of active window")
+        return
+    end
+    obj = vim.system({ "xprop", "-id", awin }, { text = true }):wait()
+    if obj.code ~= 0 then
+        warn("xprop is required to get window PID")
+        return
+    end
+    local awinf = vim.split(obj.stdout, "\n")
+    local pid = nil
+    local nm = nil
+    for _, v in pairs(awinf) do
+        if v:find("_NET_WM_PID%(CARDINAL%) = ") then
+            pid = v:gsub("_NET_WM_PID%(CARDINAL%) = ", "")
+        end
+        if v:find("WM_NAME%(STRING%) = ") then
+            nm = v:gsub("WM_NAME%(STRING%) = ", "")
+            nm = nm:gsub('"', "")
+        end
+    end
+    if not pid or not nm then
+        warn(
+            "Failed to PID or name of active window ("
+                .. awin
+                .. "): "
+                .. tostring(pid)
+                .. " "
+                .. tostring(nm)
+        )
+        return
+    end
+    config.term_title = nm
+    config.term_pid = tonumber(pid)
+end
+
+local get_fw_info_Sway = function()
+    local config = require("r.config").get_config()
+    local sout = vim.fn.system("swaymsg -t get_tree")
+    local t = vim.json.decode(sout, { luanil = { object = true, array = true } })
+    for _, v1 in pairs(t.nodes) do
+        if #v1 and v1.type == "output" and v1.nodes then
+            for _, v2 in pairs(v1.nodes) do
+                if #v2 and v2.type == "workspace" and v2.nodes then
+                    for _, v3 in pairs(v2.nodes) do
+                        if v3.focused == true then
+                            config.term_title = v3.name
+                            config.term_pid = v3.pid
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+--- Get PID and name of active window and register them in config.term_pid and
+--- config.term_title respectively.
+--- This function call the appropriate function for each system.
+function M.get_focused_win_info()
+    local config = require("r.config").get_config()
+    local warn = require("r").warn
+    if config.has_X_tools then
+        get_fw_info_X()
+    elseif
+        vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
+    then
+        get_fw_info_Sway()
+    else
+        warn(
+            "Cannot get active window info on your system.\n"
+                .. "Please, do a pull request fixing the problem.\n"
+                .. "See: R.nvim/lua/r/utils.lua"
+        )
+    end
+end
+
 return M
