@@ -152,10 +152,10 @@ M.show = function(rkeyword, txt)
         vim.fn.cursor(1, 1)
     else
         vim.o.syntax = "rout"
-        vim.cmd("setlocal bufhidden=wipe")
-        vim.cmd("setlocal nonumber")
-        vim.cmd("setlocal noswapfile")
-        vim.o.buftype = "nofile"
+        vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
+        vim.api.nvim_set_option_value("number", false, { scope = "local" })
+        vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
+        vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
         vim.api.nvim_buf_set_keymap(
             0,
             "n",
@@ -180,13 +180,48 @@ M.choose_lib = function(topic, libs)
     local htw = get_win_width()
 
     -- FIXME: Not working: `choice` is always `nil`.
-    vim.ui.select(libs, {
-        prompt = "The topic '"
-            .. topic
-            .. "' was found in more than one library. Please, select one of them:",
-    }, function(choice, _)
-        local lib = libs[1]
-        if choice then lib = choice end
+    -- vim.ui.select(libs, {
+    --     prompt = "The topic '"
+    --         .. topic
+    --         .. "' was found in more than one library. Please, select one of them:",
+    -- }, function(choice, _)
+    --     local lib = libs[1]
+    --     if choice then lib = choice end
+    --     send_to_nvimcom(
+    --         "E",
+    --         'nvimcom:::nvim.help("'
+    --             .. topic
+    --             .. '", '
+    --             .. htw
+    --             .. 'L, package="'
+    --             .. lib
+    --             .. '")'
+    --     )
+    -- end)
+
+    -- Workaround for vim.ui.select() not working
+    local txt = {
+        "The topic '" .. topic .. "' was found in more than one library.",
+        "Please, select one of them:",
+    }
+    for k, v in pairs(libs) do
+        table.insert(txt, "  " .. tostring(k) .. ": " .. v)
+    end
+    vim.api.nvim_command("botright " .. tostring(2 + #libs) .. "split")
+    vim.cmd("edit MULTILIB_CHOICE")
+    vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
+    vim.api.nvim_set_option_value("number", false, { scope = "local" })
+    vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
+    vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
+    vim.api.nvim_buf_set_lines(0, 0, 0, true, txt)
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    vim.api.nvim_command("redraw")
+    vim.fn.inputsave()
+    local choice = vim.fn.input("Your choice: ")
+    vim.fn.inputrestore()
+    vim.api.nvim_command("close")
+    if libs[tonumber(choice)] then
+        local lib = libs[tonumber(choice)]
         send_to_nvimcom(
             "E",
             'nvimcom:::nvim.help("'
@@ -197,7 +232,7 @@ M.choose_lib = function(topic, libs)
                 .. lib
                 .. '")'
         )
-    end)
+    end
 end
 
 --- Load HTML document
