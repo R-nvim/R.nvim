@@ -18,6 +18,7 @@
 # Street, Fifth Floor, Boston, MA  02110-1301, USA
 
 # Modified to R.nvim by Jakson Aquino
+# Perhaps an alternative: https://github.com/Vinno97/evince-synctex/blob/master/evince-synctex.sh
 
 import dbus, dbus.mainloop.glib, sys
 import signal
