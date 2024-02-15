@@ -110,7 +110,7 @@ class EvinceWindowProxy:
                 rnvim_cmd("lua require('r.pdf.evince').again()")
         else:
             self.window.SyncView(input_file, data, 0,  dbus_interface = "org.gnome.evince.Window")
-            rnvim_cmd("let g:rplugin.evince_loop = 0") # FIXME: don't use global variable
+            rnvim_cmd("lua require('r.pdf.evince').evince_loop = 0")
 
     def _syncview_handler(self, window_list):
         self.handle_get_window_list_reply(window_list)

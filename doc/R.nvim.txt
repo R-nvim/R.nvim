@@ -123,7 +123,7 @@ Additional dependencies for editing Rnoweb documents:
 
    PDF viewer with SyncTeX support and capable of automatically reloading
    documents. This is required only if you edit Rnoweb files.
-      On Linux and other Unix systems: Zathura (recommended), Evince or Okular.
+      On Linux and other Unix systems: Zathura.
       On OS X: Skim.
       On Windows: SumatraPDF.
 
@@ -431,8 +431,6 @@ the corresponding line in the Rnoweb (backward search) is specific to each pdf
 viewer:
 
    Zathura: <C-LeftMouse>
-   Evince:  <C-LeftMouse>
-   Okular:  <S-LeftMouse>
    Skim:    <S-Cmd-Click>
    Sumatra: <Double-click>
 
@@ -1477,11 +1475,12 @@ viewer and Neovim windows. This feature is not implemented for Wayland windows
 managers other than Sway.
 
 R.nvim will call Sumatra to open the PDF on Windows, Skim on Mac OS X, and
-Zathura on Linux. You can change the value of `pdfviewer` in your
-config to define what PDF viewer will be called. Valid values are "zathura"
-(default, and the one best integrated with R.nvim), "evince" and "okular".
-
-
+Zathura on Linux, but you can change the values of `synctex` and `pdfviewer`
+in your config if you don't need SyncTeX support. Example:
+>lua
+   synctex = false
+   pdfviewer = "evince"
+<
 If editing an Rmd file, you can produce the html result with <LocalLeader>kr
 or <LocalLeader>kh (it may also work with other file types). The html file
 will be automatically opened and the browser window focused. You can control
@@ -1758,9 +1757,9 @@ name of the object under the cursor.
 SyncTeX is a communication system used by some PDF viewers and by some text
 editors which allow users to jump from a specific line in the text editor to
 the corresponding line in the PDF viewer and vice-versa. R.nvim has support
-for SyncTeX in five applications:
+for SyncTeX in three applications:
 
-   Linux:   Zathura, Evince and Okular
+   Linux:   Zathura
    OS X:    Skim
    Windows: SumatraPDF
 
@@ -1796,13 +1795,6 @@ Note: The knitr package (as of version 1.7) had at least two limitations:
      is recommended that you put the first chunk of R code just after the
      `\begin{document}` command.
 
-                                                                *term_title*
-You have to set the title of your terminal emulator in your config in order to
-have the correct terminal window raised on SyncTeX backward events (works on
-Xorg; on Wayland, only Sway is supported). Example:
->lua
-   term_title = 'Terminal'
-<
 
 ==============================================================================
 7. Custom key bindings                                   *R.nvim-key-bindings*

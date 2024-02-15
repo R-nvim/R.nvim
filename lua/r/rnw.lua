@@ -485,6 +485,8 @@ M.SyncTeX_forward = function(gotobuf)
         return
     end
 
+    if not vim.b.rplugin_pdfdir then M.set_pdf_dir() end
+
     if vim.fn.filereadable(vim.b.rplugin_pdfdir .. "/" .. basenm .. ".pdf") == 0 then
         warn(
             'SyncTeX forward cannot be done because the file "'

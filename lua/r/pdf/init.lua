@@ -17,24 +17,28 @@ local M = {}
 M.setup = function()
     local ptime = vim.fn.reltime()
     check_installed()
+
+    -- FIXME: Delete evince.lua, okular.lua and qpdfview.lua if nobody has
+    -- fixed them a few weeks after R.nvim inauguration.
     if config.pdfviewer == "zathura" then
         M.open2 = require("r.pdf.zathura").open
         M.SyncTeX_forward = require("r.pdf.zathura").SyncTeX_forward
-    elseif config.pdfviewer == "evince" then
-        M.open2 = require("r.pdf.evince").open
-        M.SyncTeX_forward = require("r.pdf.evince").SyncTeX_forward
-    elseif config.pdfviewer == "okular" then
-        M.open2 = require("r.pdf.okular").open
-        M.SyncTeX_forward = require("r.pdf.okular").SyncTeX_forward
+    -- elseif config.pdfviewer == "evince" then
+    --     M.open2 = require("r.pdf.evince").open
+    --     M.SyncTeX_forward = require("r.pdf.evince").SyncTeX_forward
+    --     require("r.pdf.evince").run_evince_SyncTeX_server()
+    -- elseif config.pdfviewer == "okular" then
+    --     M.open2 = require("r.pdf.okular").open
+    --     M.SyncTeX_forward = require("r.pdf.okular").SyncTeX_forward
     elseif config.is_windows and config.pdfviewer == "sumatra" then
         M.open2 = require("r.pdf.sumatra").open
         M.SyncTeX_forward = require("r.pdf.sumatra").SyncTeX_forward
     elseif config.is_darwin and config.pdfviewer == "skim" then
         M.open2 = require("r.pdf.skim").open
         M.SyncTeX_forward = require("r.pdf.skim").SyncTeX_forward
-    elseif config.pdfviewer == "qpdfview" then
-        M.open2 = require("r.pdf.qpdfview").open
-        M.SyncTeX_forward = require("r.pdf.qpdfview").SyncTeX_forward
+    -- elseif config.pdfviewer == "qpdfview" then
+    --     M.open2 = require("r.pdf.qpdfview").open
+    --     M.SyncTeX_forward = require("r.pdf.qpdfview").SyncTeX_forward
     else
         M.open2 = require("r.pdf.generic").open
         M.SyncTeX_forward = require("r.pdf.generic").SyncTeX_forward

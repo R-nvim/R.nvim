@@ -52,8 +52,9 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
     require("r.pdf").focus_window(ppath:gsub(".*/", ""), job.get_pid(ppath))
 end
 
-M.SyncTeX_backward = function()
+M.run_evince_SyncTeX_server = function()
     local basenm = rnw.SyncTeX_get_master() .. ".pdf"
+    if not vim.b.rplugin_pdfdir then require("r.rnw").set_pdf_dir() end
     local pdfpath = vim.b.rplugin_pdfdir
         .. "/"
         .. vim.fn.substitute(basenm, ".*/", "", "")
