@@ -406,12 +406,13 @@ local do_common_global = function()
         config.nvimpager = "split"
         config.save_win_pos = false
         config.arrange_windows = false
-        config.hl_term = true
     else
         config.nvimpager = "tab"
         config.objbr_place = string.gsub(config.objbr_place, "console", "script")
         config.hl_term = false
     end
+
+    if config.R_app:find("radian") then config.hl_term = false end
 
     if config.is_windows then
         config.save_win_pos = true

@@ -81,7 +81,7 @@ NvimcomEnv$pkgdescr <- list()
 set_running_info <- function() {
     pd <- utils::packageDescription("nvimcom")
     hascolor <- FALSE
-    if (length(find.package("colorout", quiet = TRUE, verbose = FALSE)) > 0 || Sys.getenv("RADIAN_VERSION") != "")
+    if (length(find.package("colorout", quiet = TRUE, verbose = FALSE)) > 0)
         hascolor <- TRUE
     info <- paste0("{Rversion = '", sub("R ([^;]*).*", "\\1", pd$Built),
                   "', OutDec = '", getOption("OutDec"),
