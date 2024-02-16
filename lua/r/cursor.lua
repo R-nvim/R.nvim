@@ -76,8 +76,10 @@ M.get_first_obj = function()
 
     if vim.fn.strlen(line) > begin then
         local piece = line:sub(begin)
-        piece = piece:gsub(".-%(", "")
-        firstobj = piece:gsub("[,%s%)].*", "")
+        if piece:find("^%w-%s-%(") then
+            piece = piece:gsub("^%w-%s-%(", "")
+            firstobj = piece:gsub("[,%s%)].*", "")
+        end
         -- FIXME: The algorithm is too simple to correctly get the first object
         -- in complex cases.
         -- FIXME: Check if the first argument is being passed through a pipe operator
