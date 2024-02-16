@@ -975,10 +975,10 @@ static void nvimcom_send_running_info(const char *r_info, const char *nvv) {
 
 #ifdef _WIN64
     snprintf(msg, 2175,
-             "lua require('r.run').set_nvimcom_info('%s', %" PRId64 ", '%" PRId64 "', '%s')", nvv,
+             "lua require('r.run').set_nvimcom_info('%s', %" PRId64 ", '%" PRId64 "', %s)", nvv,
              R_PID, (long long)GetForegroundWindow(), r_info);
 #else
-    snprintf(msg, 2175, "lua require('r.run').set_nvimcom_info('%s', %d, '%ld', '%s')", nvv,
+    snprintf(msg, 2175, "lua require('r.run').set_nvimcom_info('%s', %d, '%ld', %s)", nvv,
              R_PID, (long)GetForegroundWindow(), r_info);
 #endif
     send_to_nvim(msg);

@@ -142,7 +142,7 @@ nvim.fix.string <- function(x, edq = TRUE) {
     x <- gsub("\t", "\\\\t", x)
     x <- gsub("'", "\x13", x)
     if (edq) {
-        x <- gsub('"', '\\\\"', x)
+        x <- gsub('"', '\\\\\\\\"', x)
     } else {
         x <- sub("^\\s*", "", x)
         x <- paste(x, collapse = "")
@@ -239,42 +239,42 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass, extrainfo = FALS
     for (field in names(frm)) {
         type <- typeof(frm[[field]])
         if (extrainfo) {
-            str1 <- paste0("{\x12word\x12: \x12", field)
+            str1 <- paste0("{word = \x12", field, "\x12, ")
             if (type == "symbol") {
-                str2 <- paste0("\x12, \x12menu\x12: \x12 \x12")
+                str2 <- paste0("menu = \x12 \x12")
             } else if (type == "character") {
-                str2 <- paste0(" = \x12, \x12menu\x12: \x12\"", nvim.fix.string(frm[[field]]), "\"\x12")
+                str2 <- paste0("menu = \x12\"", nvim.fix.string(frm[[field]]), "\"\x12")
             } else if (type == "logical" || type == "double" || type == "integer") {
-                str2 <- paste0(" = \x12, \x12menu\x12: \x12", as.character(frm[[field]]), "\x12")
+                str2 <- paste0("menu = \x12", as.character(frm[[field]]), "\x12")
             } else if (type == "NULL") {
-                str2 <- paste0(" = \x12, \x12menu\x12: \x12NULL\x12")
+                str2 <- paste0("menu = \x12NULL\x12")
             } else if (type == "language") {
-                str2 <- paste0(" = \x12, \x12menu\x12: \x12",
+                str2 <- paste0("menu = \x12",
                                nvim.fix.string(deparse(frm[[field]]), FALSE), "\x12")
             } else {
-                str2 <- paste0("\x12, \x12menu\x12: \x12 \x12")
+                str2 <- paste0("menu = \x12 \x12")
             }
             if (pkgname != ".GlobalEnv" && extrainfo && length(frm) > 0) {
-                res <- append(res, paste0(str1, str2, ", \x12user_data\x12: {\x12cls\x12: \x12a\x12, \x12argument\x12: \x12",
+                res <- append(res, paste0(str1, str2, ", user_data = {cls = \x12a\x12, argument = \x12",
                                           arglist[[field]], "\x12}}, "))
             } else {
                 res <- append(res, paste0(str1, str2, "}, "))
             }
         } else {
             if (type == "symbol") {
-                res <- append(res, paste0("[\x12", field, "\x12], "))
+                res <- append(res, paste0("{\x12", field, "\x12}, "))
             } else if (type == "character") {
-                res <- append(res, paste0("[\x12", field, "\x12, \x12\"",
-                                          nvim.fix.string(frm[[field]]), "\"\x12], "))
+                res <- append(res, paste0("{\x12", field, "\x12, \x12\"",
+                                          nvim.fix.string(frm[[field]]), "\"\x12}, "))
             } else if (type == "logical" || type == "double" || type == "integer") {
-                res <- append(res, paste0("[\x12", field, "\x12, \x12", as.character(frm[[field]]), "\x12], "))
+                res <- append(res, paste0("{\x12", field, "\x12, \x12", as.character(frm[[field]]), "\x12}, "))
             } else if (type == "NULL") {
-                res <- append(res, paste0("[\x12", field, "\x12, \x12NULL\x12], "))
+                res <- append(res, paste0("{\x12", field, "\x12, \x12NULL\x12}, "))
             } else if (type == "language") {
-                res <- append(res, paste0("[\x12", field, "\x12, \x12",
-                                          nvim.fix.string(deparse(frm[[field]]), FALSE), "\x12], "))
+                res <- append(res, paste0("{\x12", field, "\x12, \x12",
+                                          nvim.fix.string(deparse(frm[[field]]), FALSE), "\x12}, "))
             } else {
-                res <- append(res, paste0("[\x12", field, "\x12], "))
+                res <- append(res, paste0("{\x12", field, "\x12}, "))
                 warning(paste0("nvim.args: ", funcname, " [", field, "]", " (typeof = ", type, ")"))
             }
         }

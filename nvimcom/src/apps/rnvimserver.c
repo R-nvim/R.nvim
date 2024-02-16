@@ -1406,13 +1406,13 @@ char *complete_instlibs(char *p, const char *base) {
                             len - compl_buffer_size);
 
         if (str_here(il->name, base) && il->si) {
-            p = str_cat(p, "{'word': '");
+            p = str_cat(p, "{word = '");
             p = str_cat(p, il->name);
-            p = str_cat(p, "', 'menu': '[pkg]', 'user_data': {'ttl': '");
+            p = str_cat(p, "', menu = '[pkg]', user_data = {ttl = '");
             p = str_cat(p, il->title);
-            p = str_cat(p, "', 'descr': '");
+            p = str_cat(p, "', descr = '");
             p = str_cat(p, il->descr);
-            p = str_cat(p, "', 'cls': 'l'}},");
+            p = str_cat(p, "', cls = 'l'}},");
         }
         il = il->next;
     }
@@ -2032,7 +2032,7 @@ static void init(void) {
     update_pkg_list(NULL);
     build_omnils();
 
-    printf("let g:R_Nvim_status = 3\n");
+    printf("lua vim.g.R_Nvim_status = 3\n");
     fflush(stdout);
 
     Log("init() finished");
@@ -2115,23 +2115,23 @@ void completion_info(const char *wrd, const char *pkg) {
                 p = grow_buffer(&compl_buffer, &compl_buffer_size,
                                 nsz - compl_buffer_size);
 
-            p = str_cat(p, "{'cls': '");
+            p = str_cat(p, "{cls = '");
             if (f[1][0] == '\003')
                 p = str_cat(p, "f");
             else
                 p = str_cat(p, f[1]);
-            p = str_cat(p, "', 'word': '");
+            p = str_cat(p, "', word = '");
             p = str_cat(p, wrd);
-            p = str_cat(p, "', 'pkg': '");
+            p = str_cat(p, "', pkg = '");
             p = str_cat(p, f[3]);
-            p = str_cat(p, "', 'usage': [");
+            p = str_cat(p, "', usage = {");
             p = str_cat(p, f[4]);
-            p = str_cat(p, "], 'ttl': '");
+            p = str_cat(p, "}, ttl = '");
             p = str_cat(p, f[5]);
-            p = str_cat(p, "', 'descr': '");
+            p = str_cat(p, "', descr = '");
             p = str_cat(p, f[6]);
             p = str_cat(p, "'}");
-            printf("call %s(%s)\n", compl_info, compl_buffer);
+            printf("lua %s(%s)\n", compl_info, compl_buffer);
             fflush(stdout);
             return;
         }
@@ -2139,7 +2139,7 @@ void completion_info(const char *wrd, const char *pkg) {
             s++;
         s++;
     }
-    printf("call %s({})\n", compl_info);
+    printf("lua %s({})\n", compl_info);
     fflush(stdout);
 }
 
@@ -2183,13 +2183,13 @@ char *parse_omnils(const char *s, const char *base, const char *pkg, char *p) {
                 p = grow_buffer(&compl_buffer, &compl_buffer_size,
                                 nsz - compl_buffer_size);
 
-            p = str_cat(p, "{'word': '");
+            p = str_cat(p, "{word = '");
             if (pkg) {
                 p = str_cat(p, pkg);
                 p = str_cat(p, "::");
             }
             p = str_cat(p, f[0]);
-            p = str_cat(p, "', 'menu': '");
+            p = str_cat(p, "', menu = '");
             if (f[2][0] != 0) {
                 p = str_cat(p, f[2]);
             } else {
@@ -2231,12 +2231,12 @@ char *parse_omnils(const char *s, const char *base, const char *pkg, char *p) {
             }
             p = str_cat(p, " [");
             p = str_cat(p, f[3]);
-            p = str_cat(p, "]', 'user_data': {'cls': '");
+            p = str_cat(p, "]', user_data = {cls = '");
             if (f[1][0] == '\003')
                 p = str_cat(p, "f");
             else
                 p = str_cat(p, f[1]);
-            p = str_cat(p, "', 'pkg': '");
+            p = str_cat(p, "', pkg = '");
             p = str_cat(p, f[3]);
             p = str_cat(p, "'}}, "); // Don't include fields 4, 5 and 6 because
                                      // big data will be truncated.
@@ -2267,9 +2267,8 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
                                 while (*s && *s != '\005')
                                     s++;
                                 s++;
-                                printf("call "
-                                       "v:lua.require'cmp_r'.finish_get_"
-                                       "args('%s')\n",
+                                printf("lua "
+                                       "require'cmp_r'.finish_get_args('%s')\n",
                                        s);
                                 fflush(stdout);
                             }
@@ -2322,13 +2321,13 @@ char *complete_args(char *p, char *funcnm) {
                             i--;
                     }
                     s++;
-                    p = str_cat(p, "{'pkg': '");
+                    p = str_cat(p, "{pkg = '");
                     p = str_cat(p, pd->name);
-                    p = str_cat(p, "', 'fnm': '");
+                    p = str_cat(p, "', fnm = '");
                     p = str_cat(p, funcnm);
-                    p = str_cat(p, "', 'args': [");
+                    p = str_cat(p, "', args = {");
                     p = str_cat(p, s);
-                    p = str_cat(p, "]},");
+                    p = str_cat(p, "}},");
                     break;
                 } else {
                     while (*s != '\n')
@@ -2368,8 +2367,8 @@ void complete(const char *id, char *base, char *funcnm, char *args) {
             // Get menu completion for installed libraries
             p = complete_instlibs(p, base);
             printf("\x11%" PRI_SIZET "\x11"
-                   "call %s(%s, [%s])\n",
-                   strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 11,
+                   "lua %s(%s, {%s})\n",
+                   strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 10,
                    compl_cb, id, compl_buffer);
             fflush(stdout);
             return;
@@ -2394,8 +2393,8 @@ void complete(const char *id, char *base, char *funcnm, char *args) {
         if (base[0] == 0) {
             // base will be empty if completing only function arguments
             printf("\x11%" PRI_SIZET "\x11"
-                   "call %s(%s, [%s])\n",
-                   strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 11,
+                   "lua %s(%s, {%s})\n",
+                   strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 10,
                    compl_cb, id, compl_buffer);
             fflush(stdout);
             return;
@@ -2424,8 +2423,8 @@ void complete(const char *id, char *base, char *funcnm, char *args) {
     }
 
     printf("\x11%" PRI_SIZET "\x11"
-           "call %s(%s, [%s])\n",
-           strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 11, compl_cb,
+           "lua %s(%s, {%s})\n",
+           strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 10, compl_cb,
            id, compl_buffer);
     fflush(stdout);
 }
