@@ -45,7 +45,7 @@ end
 ---@param cmd string The command to execute.
 ---@param job_id number The ID of the job that produced the command.
 local exec_stdout_cmd = function (cmd, job_id)
-    if cmd:find("^lua ") or cmd:find("^let ") or cmd:find("^call ") then
+    if cmd:find("^lua ") then
         vim.fn.execute(cmd)
     else
         if cmd:len() > 128 then cmd = cmd:sub(1, 128) .. " [...]" end
