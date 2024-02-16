@@ -412,7 +412,7 @@ local do_common_global = function()
         config.hl_term = false
     end
 
-    if config.R_app:find("radian") then config.hl_term = false end
+    if config.R_app and config.R_app:find("radian") then config.hl_term = false end
 
     if config.is_windows then
         config.save_win_pos = true
