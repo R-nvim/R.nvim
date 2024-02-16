@@ -551,54 +551,82 @@ end
 -- Function to check if a string ends with a specific suffix
 local function ends_with(str, suffix) return str:sub(-#suffix) == suffix end
 
--- Remove the <-, |>/%>% or + from the text
-local function sanitize_text(array)
-    local result = {}
-    for _, line in ipairs(array) do
-        -- Remove lines starting with #
-        line = vim.fn.trim(line)
-        if not line:match("^#") then table.insert(result, line) end
+function trim_lines(array)
+    local result = {} -- Create a new table to store the trimmed lines
+
+    for i = 1, #array do
+        local line = array[i]
+        local trimmedLine = line:match("^%s*(.-)%s*$") -- Remove leading and trailing whitespace
+        table.insert(result, trimmedLine) -- Add the trimmed line to the result table
     end
-
-    local first_string = result[1]
-    -- Remove "<-" and everything before it from the first string
-    local modified_first_string = first_string:gsub(".*<%-%s*", "")
-    result[1] = modified_first_string
-
-    local last_index = #result
-    local last_string = result[last_index]
-
-    -- Check if the last string ends with either "|>" or "%>%"
-    local modified_string =
-        last_string:gsub("|>[%s]*$", ""):gsub("%%>%%[%s]*$", ""):gsub("%+[%s]*$", "")
-    result[last_index] = modified_string
 
     return result
 end
 
--- Function to get the current line and select previous lines based on the specified suffixes
--- The selected lines are sent to the R terminal
-M.chain = function()
-    local end_index = vim.fn.line(".")
-    local start_index = end_index
+-- Remove the <-, |>/%>% or + from the text
+local function sanatize_text(array)
+    local firstString = array[1]
+    -- Remove "<-" and everything before it from the first string
+    local modifiedFirstString = firstString:gsub(".*<%-%s*", "")
+    array[1] = modifiedFirstString
 
-    for i = end_index - 1, 1, -1 do
-        local line_text = vim.fn.trim(vim.fn.getline(i))
-        if
-            ends_with(line_text, "|>")
-            or ends_with(line_text, "%>%")
-            or ends_with(line_text, "+")
-        then
-            start_index = i
-        else
-            break
-        end
+    local lastIndex = #array
+    local lastString = array[lastIndex]
+
+    -- Check if the last string ends with either "|>" or "%>%"
+    local modifiedString =
+        lastString:gsub("|>[%s]*$", ""):gsub("%%>%%[%s]*$", ""):gsub("%+[%s]*$", "")
+    array[lastIndex] = modifiedString
+
+    return array
+end
+
+function ends_with(str)
+    return string.match(str, "[|%%]%>%%?[%s]*$") ~= nil
+        or string.match(str, "%+[%s]*$") ~= nil
+        or string.match(str, "%([%s]*$") ~= nil
+end
+
+local function chain_start_at(arr)
+    for i = 1, #arr do
+        if ends_with(arr[i]) then return i end
     end
 
-    local lines = vim.api.nvim_buf_get_lines(0, start_index - 1, end_index, false)
+    return #arr
+end
 
-    lines = sanitize_text(lines)
-    M.source_lines(lines, nil)
+M.chain = function()
+    -- Get the current line, the start and end line of the paragraph
+    local current_line = vim.fn.line(".")
+    local startLine = vim.fn.search("^$", "bnW") -- Search for previous empty line
+    local endLine = vim.fn.search("^$", "nW") - 1 -- Search for next empty line and adjust for exclusive range
+
+    -- Get the paragraph lines
+    local paragraphLines = vim.api.nvim_buf_get_lines(0, startLine, endLine, false)
+    paragraphLines = trim_lines(paragraphLines)
+
+    -- Get the relative line number within the paragraph
+    local relativeLineNumber = current_line - startLine
+
+    paragraphLines = trim_lines(paragraphLines)
+
+    local extractedLines = {}
+    for i = 1, relativeLineNumber do
+        table.insert(extractedLines, paragraphLines[i])
+    end
+
+    -- Find the starting line of the chain
+    local lineChainStartAt = chain_start_at(extractedLines)
+
+    local chain = {}
+
+    for i = lineChainStartAt, relativeLineNumber do
+        table.insert(chain, extractedLines[i])
+    end
+
+    chain = sanatize_text(chain)
+
+    M.source_lines(chain, nil)
 end
 
 return M
