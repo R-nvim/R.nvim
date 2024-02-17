@@ -295,10 +295,7 @@ M.start = function(_)
     start_OB()
     running_objbr = false
 
-    if config.hook.after_ob_open then
-        vim.fn.redraw()
-        config.hook.after_ob_open()
-    end
+    if config.hook.after_ob_open then config.hook.after_ob_open() end
 end
 
 M.get_curview = function() return curview end

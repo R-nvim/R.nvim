@@ -80,7 +80,7 @@ M.show_debug_info = function()
             warn("debug_info error: " .. type(v))
         end
     end
-    vim.api.nvim_echo(info, false, {})
+    vim.schedule(function() vim.api.nvim_echo(info, false, {}) end)
 end
 
 M.add_to_debug_info = function(title, info, parent)
@@ -107,17 +107,21 @@ end
 ---@param lnum2 number Last selected line of unformatted code.
 ---@param txt string Formatted text.
 M.finish_code_formatting = function(lnum1, lnum2, txt)
-    local lns = vim.split(txt:gsub("\019", "'"), "\020")
+    local lns = vim.split(txt, "\020")
     vim.api.nvim_buf_set_lines(0, lnum1 - 1, lnum2, true, lns)
-    vim.api.nvim_echo(
-        { { tostring(lnum2 - lnum1 + 1) .. " lines formatted." } },
-        false,
-        {}
+    vim.schedule(
+        function()
+            vim.api.nvim_echo(
+                { { tostring(lnum2 - lnum1 + 1) .. " lines formatted." } },
+                false,
+                {}
+            )
+        end
     )
 end
 
 M.finish_inserting = function(type, txt)
-    local lns = vim.split(txt:gsub("\019", "'"), "\020")
+    local lns = vim.split(txt, "\020")
     local lines
     if type == "comment" then
         lines = {}
@@ -150,7 +154,6 @@ M.get_output = function(fnm, txt)
     vim.cmd("tabnew " .. fnm)
     vim.fn.setline(1, vim.split(txt:gsub("\019", "'"), "\020"))
     vim.cmd("normal! gT")
-    vim.cmd("redraw")
 end
 
 M.view_df = function(oname, howto, txt)

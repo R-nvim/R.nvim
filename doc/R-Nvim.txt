@@ -2,19 +2,19 @@
                                   R-Nvim
                           Plugin to work with R
 
-Authors: R-Nvim-toolkit team
+Authors: R.nvim team (see: https://github.com/R.nvim)
 
 Version: 0.9.0
 For Neovim >= 0.9.0
 
- 1. Overview                                    |R-Nvim-overview|
- 2. Main features                               |R-Nvim-features|
- 3. Installation                                |R-Nvim-installation|
- 4. Use                                         |R-Nvim-use|
- 5. Known bugs and workarounds                  |R-Nvim-known-bugs|
- 6. Options                                     |R-Nvim-options|
- 7. Custom key bindings                         |R-Nvim-key-bindings|
- 8. News                                        |R-Nvim-news|
+ 1. Overview                                    |R.nvim-overview|
+ 2. Main features                               |R.nvim-features|
+ 3. Installation                                |R.nvim-installation|
+ 4. Use                                         |R.nvim-use|
+ 5. Known bugs and workarounds                  |R.nvim-known-bugs|
+ 6. Options                                     |R.nvim-options|
+ 7. Custom key bindings                         |R.nvim-key-bindings|
+ 8. History                                     |R.nvim-history|
 
 
 ==============================================================================
@@ -227,7 +227,7 @@ happier.
 You can also install additional plugins to get more useful functionality to
 edit R code. Please, access R-Nvim's wiki:
 
-   https://github.com/jalvesaq/R-Nvim/wiki
+   https://github.com/R.nvim/R.nvim/wiki
 
 
 ==============================================================================
@@ -540,7 +540,7 @@ in the current directory.
 4.7. Syntax highlight of .Rout files
 
 You can set both foreground and background colors of R output in your
-`init.lua`. The example below is for a interface of Neovim with
+`init.lua`. The example below is for an interface of Neovim with
 'termguicolors' (see |true-color|):
 >lua
    if vim.o.termguicolors then
@@ -588,7 +588,7 @@ will be no communication between R and the new Neovim instance.
 Please see the explanation on the communication between Neovim and R at the end
 of
 
-   https://github.com/jalvesaq/R-Nvim/blob/master/README.md
+   https://github.com/R.nvim/R.nvim/blob/master/README.md
 
 
 ------------------------------------------------------------------------------
@@ -603,12 +603,12 @@ difficult to find errors in the code sent to R. Details:
 
 
 ------------------------------------------------------------------------------
-5.3. Functions are not always correctly sent to R
+5.3. Functions are not sent to R
 
-The plugin is only capable of recognizing functions defined using the `<-`
-operator. Also, only the current function scope is sent to R. See:
+R.nvim does not send the code of functions to R Console. The feature was
+removed because it was problematic. See:
 
-   https://github.com/jalvesaq/R-Nvim/issues/34
+   https://github.com/jalvesaq/Nvim-R/issues/34
 
 
 ------------------------------------------------------------------------------
@@ -620,7 +620,7 @@ back to 0 when any code is successfully evaluated. If you send invalid code to
 R, there will be no successful evaluation of code and, thus, the value of
 `r_is_busy` will remain set to 1. Then, if you try to update the object
 browser, see the R documentation for any function, or do other tasks that
-require the hidden evaluation of code by R, the nvimcom library will refuse to
+require hidden evaluation of code by R, the nvimcom library will refuse to
 do the tasks to avoid any risk of corrupting R's memory. It will tell Neovim
 that "R is busy" and Neovim will display this message. Everything should work
 as expected again after any valid code is executed in the R Console.
@@ -657,7 +657,7 @@ be used at their default values even if their values have been set in
 the `init.vim`. The workaround is do not include the superfluous command
 `syntax enable` in the `init.vim`. For details, please, access:
 
-   https://github.com/jalvesaq/R-Nvim/issues/668
+   https://github.com/jalvesaq/Nvim-R/issues/668
 
 
 ==============================================================================
@@ -1691,7 +1691,7 @@ not be installed.
 ------------------------------------------------------------------------------
 6.37. Options for accessing Remote R from local Neovim        *remote_compldir*
 
-See https://github.com/jalvesaq/R-Nvim/wiki/Remote-access
+See https://github.com/R.nvim/R.nvim/wiki/Remote-access
 
 
 ------------------------------------------------------------------------------
@@ -1850,8 +1850,13 @@ passed to `hook.after_config` as in the examples below (see |hook|):
 
 
 ==============================================================================
-8. News                                                          *R-Nvim-news*
+8. History                                                    *R.nvim-history*
 
-For old news, see https://github.com/jalvesaq/Nvim-R
+See: https://www.vim.org/scripts/script.php?script_id=2628
+     https://groups.google.com/g/vim-r-plugin
+     https://github.com/jcfaria/Vim-R-plugin
+     https://github.com/jalvesaq/Nvim-R
+     https://github.com/R.nvim
+
 
 vim:tw=78:ts=8:ft=help:norl
