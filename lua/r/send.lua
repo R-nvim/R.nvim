@@ -551,7 +551,7 @@ end
 -- Function to check if a string ends with a specific suffix
 local function ends_with(str, suffix) return str:sub(-#suffix) == suffix end
 
-function trim_lines(array)
+local function trim_lines(array)
     local result = {} -- Create a new table to store the trimmed lines
 
     for i = 1, #array do
