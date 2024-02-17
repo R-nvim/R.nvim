@@ -73,7 +73,7 @@ We reduced the options on how to display R documentation to: `"split"`,
 `"tab"`, `"float"` (not implemented yet), and `"no"`.
 
 The options `openpdf` and `openhtml` were renamed as `open_pdf` and
-`open_html`, with a minor change in their behavior.
+`open_html`, with a minor change in how they behave.
 
 There are two new commands:
 
@@ -85,6 +85,12 @@ There are two new commands:
 
 There is one new command to send the above piped chain of commands. It's
 default key binding is `<LocalLeader>sc`.
+
+If you have [colorout] installed, and if you are not loading it in your
+`~/.Rprofile`, it should be the development version. Reason: R.nvim calls the
+function `colorout::isColorOut()` which actually enables the colorizing of
+output in the released version of [colorout]. This bug was fixed in [this
+commit](https://github.com/jalvesaq/colorout/commit/1080187f9474b71f16c3c0be676de4c54863d1e7).
 
 
 ## Screenshots
