@@ -239,24 +239,26 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass, extrainfo = FALS
     for (field in names(frm)) {
         type <- typeof(frm[[field]])
         if (extrainfo) {
-            str1 <- paste0("{word = \x12", field, "\x12, ")
-            if (type == "symbol") {
-                str2 <- paste0("menu = \x12 \x12")
-            } else if (type == "character") {
-                str2 <- paste0("menu = \x12\"", nvim.fix.string(frm[[field]]), "\"\x12")
+            str1 <- paste0("{word = \x12", field, "\x12")
+            str2 <- ""
+            if (type == "character") {
+                str2 <- paste0(", menu = \x12\"", nvim.fix.string(frm[[field]]), "\"\x12")
             } else if (type == "logical" || type == "double" || type == "integer") {
-                str2 <- paste0("menu = \x12", as.character(frm[[field]]), "\x12")
+                str2 <- paste0(", menu = \x12", as.character(frm[[field]]), "\x12")
             } else if (type == "NULL") {
-                str2 <- paste0("menu = \x12NULL\x12")
+                str2 <- paste0(", menu = \x12NULL\x12")
             } else if (type == "language") {
-                str2 <- paste0("menu = \x12",
+                str2 <- paste0(", menu = \x12",
                                nvim.fix.string(deparse(frm[[field]]), FALSE), "\x12")
-            } else {
-                str2 <- paste0("menu = \x12 \x12")
             }
-            if (pkgname != ".GlobalEnv" && extrainfo && length(frm) > 0) {
-                res <- append(res, paste0(str1, str2, ", user_data = {cls = \x12a\x12, argument = \x12",
-                                          arglist[[field]], "\x12}}, "))
+            if (length(frm) > 0) {
+                if (exists("arglist")) {
+                    res <- append(res, paste0(str1, str2,
+                                              ", user_data = {cls = \x12a\x12, argument = \x12",
+                                              arglist[[field]], "\x12}}, "))
+                } else {
+                    res <- append(res, paste0(str1, str2, ", user_data = {cls = \x12a\x12, pkg = \x12", pkgname[1], "\x12}}, "))
+                }
             } else {
                 res <- append(res, paste0(str1, str2, "}, "))
             }
@@ -280,13 +282,12 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass, extrainfo = FALS
         }
     }
 
-
     if (!extrainfo)
         res <- paste0(res, collapse = "")
 
 
     if (length(res) == 0 || (length(res) == 1 && res == "")) {
-        res <- "[]"
+        res <- "{}"
     } else {
         if (is.null(pkg)) {
             info <- pkgname

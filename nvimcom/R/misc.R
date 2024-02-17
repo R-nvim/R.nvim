@@ -255,8 +255,8 @@ nvim_insert <- function(cmd, howto = "tabnew") {
 #' @param funcname Name of function selected in the completion menu.
 nvim.GlobalEnv.fun.args <- function(funcname) {
     txt <- nvim.args(funcname)
-    # txt <- gsub('\\\\\\"', '\005', txt)
-    # txt <- gsub('"', '\\\\"', txt)
+    txt <- gsub('\\\\\\"', '\005', txt)
+    txt <- gsub('"', '\\\\"', txt)
     .C("nvimcom_msg_to_nvim",
        paste0("lua require('cmp_r').finish_ge_fun_args({", txt, "})"),
        PACKAGE = "nvimcom")
