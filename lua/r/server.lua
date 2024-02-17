@@ -111,7 +111,7 @@ local StartNServer = function()
 
     local nrs_path
 
-    if config.local_R_library_dir then
+    if config.local_R_library_dir ~= "" then
         nrs_path = FindNCSpath(config.local_R_library_dir .. "/nvimcom")
     else
         local info_path = config.compldir .. "/nvimcom_info"
@@ -407,7 +407,9 @@ M.check_nvimcom_version = function()
     }
 
     local remote_compldir = config.remote_compldir
-    if config.remote_compldir then scrptnm = remote_compldir .. "/tmp/before_nrs.R" end
+    if config.remote_compldir ~= "" then
+        scrptnm = remote_compldir .. "/tmp/before_nrs.R"
+    end
 
     Rtime = vim.fn.reltime()
     require("r.job").start(

@@ -130,7 +130,7 @@ start_R2 = function()
         vim.fn.writefile(start_options, config.tmpdir .. "/start_options.R")
     end
 
-    if config.RStudio_cmd then
+    if config.RStudio_cmd ~= "" then
         vim.env.R_DEFAULT_PACKAGES = rdp .. ",rstudioapi"
         require("r.rstudio").start_RStudio()
         return
@@ -275,7 +275,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         warn("nvimcom is not running")
     end
 
-    if config.RStudio_cmd then
+    if config.RStudio_cmd ~= "" then
         if
             config.is_windows
             and config.arrange_windows
