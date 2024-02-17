@@ -82,7 +82,7 @@ set_running_info <- function() {
     pd <- utils::packageDescription("nvimcom")
     hascolor <- FALSE
     if (length(find.package("colorout", quiet = TRUE, verbose = FALSE)) > 0)
-        hascolor <- TRUE
+        hascolor <- colorout::isColorOut()
     info <- paste0("{Rversion = '", sub("R ([^;]*).*", "\\1", pd$Built),
                   "', OutDec = '", getOption("OutDec"),
                   "', prompt = '", gsub("\n", "#N#", getOption("prompt")),
