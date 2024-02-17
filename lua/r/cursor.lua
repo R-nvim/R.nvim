@@ -83,6 +83,8 @@ M.get_first_obj = function()
         -- FIXME: The algorithm is too simple to correctly get the first object
         -- in complex cases.
         -- FIXME: Check if the first argument is being passed through a pipe operator
+        -- FIXME: try to use tree-sitter instead of patterns to find the first object
+        -- of a function.
     end
     if firstobj:find("=" .. vim.fn.char2nr('"')) then firstobj = "" end
 

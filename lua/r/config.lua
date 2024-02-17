@@ -578,7 +578,7 @@ local windows_config = function()
 
         local rinstallpath = nil
         rinstallpath = rip[1]
-        rinstallpath = rinstallpath:gsub(".*InstallPath.*REG_SZ\\s*", "")
+        rinstallpath = rinstallpath:gsub(".*InstallPath.*REG_SZ%s*", "")
         rinstallpath = rinstallpath:gsub("\n", "")
         rinstallpath = rinstallpath:gsub("%s*$", "")
         local hasR32 = vim.fn.isdirectory(rinstallpath .. "\\bin\\i386")
