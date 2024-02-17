@@ -92,14 +92,14 @@ end
 ---@param pid number Pid of window application.
 M.focus_window = function(wttl, pid)
     if config.has_X_tools then
-        vim.fn.system("wmctrl -a '" .. wttl .. "'")
+        vim.system({ "wmctrl", "-a", wttl })
     elseif
         vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
     then
         if pid and pid ~= 0 then
-            vim.fn.system("swaymsg '[pid=\"" .. tostring(pid) .. "\"] focus'")
-        else
-            vim.fn.system("swaymsg '[pid=\"" .. wttl .. "\"] focus'")
+            vim.system({ "swaymsg", '[pid="' .. tostring(pid) .. '"]', "focus" })
+        elseif wttl then
+            vim.system({ "swaymsg", '[name="' .. wttl .. '"]', "focus" })
         end
     end
 end

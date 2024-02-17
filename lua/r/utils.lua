@@ -112,8 +112,8 @@ end
 
 local get_fw_info_Sway = function()
     local config = require("r.config").get_config()
-    local sout = vim.fn.system("swaymsg -t get_tree")
-    local t = vim.json.decode(sout, { luanil = { object = true, array = true } })
+    local obj = vim.system({ "swaymsg", "-t", "get_tree" }, { text = true }):wait()
+    local t = vim.json.decode(obj.stdout, { luanil = { object = true, array = true } })
     for _, v1 in pairs(t.nodes) do
         if #v1 and v1.type == "output" and v1.nodes then
             for _, v2 in pairs(v1.nodes) do
