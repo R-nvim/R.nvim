@@ -1,5 +1,4 @@
 local M = {}
-local Rsource_read
 local config = require("r.config").get_config()
 local job = require("r.job")
 local edit = require("r.edit")
@@ -92,12 +91,10 @@ start_R2 = function()
         table.insert(start_options, 'options(nvimcom.delim = "\t")')
     end
 
-    if config.remote_compldir then
-        Rsource_read = config.remote_compldir .. "/tmp/Rsource-" .. vim.fn.getpid()
-    else
-        Rsource_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
-    end
-    table.insert(start_options, 'options(nvimcom.source.path = "' .. Rsource_read .. '")')
+    table.insert(
+        start_options,
+        'options(nvimcom.source.path = "' .. config.source_read .. '")'
+    )
 
     local rwd = ""
     if config.nvim_wd == 0 then
@@ -121,7 +118,7 @@ start_R2 = function()
         vim.fn.writefile(start_options, config.tmpdir .. "/start_options.R")
     end
 
-    if config.RStudio_cmd then
+    if config.RStudio_cmd ~= "" then
         vim.env.R_DEFAULT_PACKAGES = rdp .. ",rstudioapi"
         require("r.rstudio").start_RStudio()
         return
@@ -266,7 +263,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         warn("nvimcom is not running")
     end
 
-    if config.RStudio_cmd then
+    if config.RStudio_cmd ~= "" then
         if
             config.is_windows
             and config.arrange_windows

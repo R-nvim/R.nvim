@@ -2,6 +2,9 @@
 " Language:	Object browser of R Workspace
 " Maintainer:	Jakson Alves de Aquino (jalvesaq@gmail.com)
 
+if !has("nvim")
+    finish
+endif
 if exists("b:current_syntax")
     finish
 endif

@@ -28,8 +28,8 @@ end
 ---@param getclass boolean If the object is a function, whether R should check the class of the first argument passed to it to retrieve documentation on the appropriate method.
 M.ask_R_doc = function(rkeyword, package, getclass)
     local firstobj = ""
-    local R_bufnr = require("r.term").get_buf_nr()
-    if vim.fn.bufname("%") == "Object_Browser" or vim.fn.bufnr("%") == R_bufnr then
+    local rbn = require("r.term").get_buf_nr()
+    if vim.fn.bufname("%") == "Object_Browser" or vim.fn.bufnr("%") == rbn then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
         vim.cmd.sb(require("r.edit").get_rscript_name())
@@ -91,13 +91,13 @@ M.show = function(rkeyword, txt)
         vpager = config.nvimpager
     end
 
-    local R_bufnr = require("r.term").get_buf_nr()
-    if vim.fn.bufnr("%") == R_bufnr then
+    local rbn = require("r.term").get_buf_nr()
+    if vim.fn.bufnr("%") == rbn then
         -- Exit Terminal mode and go to Normal mode
         vim.cmd("stopinsert")
     end
 
-    if vim.fn.bufname("%"):match("Object_Browser") or vim.fn.bufnr("%") == R_bufnr then
+    if vim.fn.bufname("%"):match("Object_Browser") or vim.fn.bufnr("%") == rbn then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
         vim.cmd.sb(require("r.edit").get_rscript_name())
@@ -168,7 +168,6 @@ M.show = function(rkeyword, txt)
     vim.fn.setreg("@@", save_unnamed_reg)
     vim.cmd("setlocal nomodified")
     vim.cmd("stopinsert")
-    vim.cmd("redraw")
 end
 
 --- Function called by nvimcom when the user requests R documentation on a
@@ -180,9 +179,7 @@ M.choose_lib = function(topic, libs)
     local htw = get_win_width()
     vim.schedule(function()
         vim.ui.select(libs, {
-            prompt = "The topic '"
-                .. topic
-                .. "' was found in more than one library. Please, select one of them:",
+            prompt = "Please, select one library:",
         }, function(choice, _)
             if choice then
                 send_to_nvimcom(

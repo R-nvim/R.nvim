@@ -6,11 +6,11 @@ local uv = vim.loop
 
 local config = {
     OutDec              = ".",
-    RStudio_cmd         = nil,
-    R_app               = nil,
+    RStudio_cmd         = "",
+    R_app               = "R",
     R_args              = {},
-    R_cmd               = nil,
-    R_path              = nil,
+    R_cmd               = "R",
+    R_path              = "",
     Rout_more_colors    = false,
     applescript         = false,
     arrange_windows     = true,
@@ -23,8 +23,9 @@ local config = {
     clear_console       = true,
     clear_line          = false,
     close_term          = true,
-    compldir            = nil,
+    compldir            = "",
     config_tmux         = true,
+    csv_app             = "",
     disable_cmds        = { "" },
     esc_term            = true,
     external_term       = false, -- might be a string
@@ -42,7 +43,7 @@ local config = {
     insert_mode_cmds    = false,
     latexcmd            = { "default" },
     listmethods         = false,
-    local_R_library_dir = nil,
+    local_R_library_dir = "",
     max_paste_lines     = 20,
     min_editor_width    = 80,
     non_r_compl         = true,
@@ -65,14 +66,14 @@ local config = {
     quarto_render_args  = "",
     rconsole_height     = 15,
     rconsole_width      = 80,
-    remote_compldir     = nil,
+    remote_compldir     = "",
     rm_knit_cache       = false,
     rmarkdown_args      = "",
     rmd_environment     = ".GlobalEnv",
     rmdchunk            = 2, -- might be a string
     rmhidden            = false,
     rnowebchunk         = true,
-    rnvim_home          = nil,
+    rnvim_home          = "",
     routnotab           = false,
     save_win_pos        = true,
     set_home_env        = true,
@@ -85,8 +86,8 @@ local config = {
     term_pid            = 0,
     term_title          = "term",
     texerr              = true,
-    tmpdir              = nil,
-    user_login          = nil,
+    tmpdir              = "",
+    user_login          = "",
     user_maps_only      = false,
     wait                = 60,
     wait_reply          = 2,
@@ -140,16 +141,18 @@ local set_pdf_viewer = function()
 end
 
 local compare_types = function(k)
-    if
-        k == "external_term"
-        and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean")
-    then
-        warn("Option `external_term` should be either boolean or string.")
-    elseif
-        k == "rmdchunk"
-        and not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number")
-    then
-        warn("Option `rmdchunk` should be either number or string.")
+    if k == "external_term" then
+        if not (type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean") then
+            warn("Option `external_term` should be either boolean or string.")
+        end
+    elseif k == "rmdchunk" then
+        if not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number") then
+            warn("Option `rmdchunk` should be either number or string.")
+        end
+    elseif k == "csv_app" then
+        if not (type(config[k]) == "string" or type(config[k]) == "function") then
+            warn("Option `csv_app` should be either string or function.")
+        end
     elseif type(config[k]) ~= "nil" and (type(user_opts[k]) ~= type(config[k])) then
         warn(
             "Option `"
@@ -165,8 +168,8 @@ end
 
 local validate_user_opts = function()
     -- We don't use vim.validate() because its error message has traceback details not useful for users.
-    local has_key = false
     for k, _ in pairs(user_opts) do
+        local has_key = false
         for _, v in pairs(config_keys) do
             if v == k then
                 has_key = true
@@ -197,19 +200,21 @@ local do_common_global = function()
 
     -- Windows logins can include domain, e.g: 'DOMAIN\Username', need to remove
     -- the backslash from this as otherwise cause file path problems.
-    if vim.env.LOGNAME then
-        config.user_login = vim.fn.escape(vim.env.LOGNAME, "\\"):gsub("\\", "")
-    elseif vim.env.USER then
-        config.user_login = vim.fn.escape(vim.env.USER, "\\"):gsub("\\", "")
-    elseif vim.env.USERNAME then
-        config.user_login = vim.fn.escape(vim.env.USERNAME, "\\"):gsub("\\", "")
-    elseif vim.env.HOME then
-        config.user_login = vim.fn.escape(vim.env.HOME, "\\"):gsub("\\", "")
-    elseif vim.fn.executable("whoami") ~= 0 then
-        config.user_login = vim.fn.system("whoami")
-    else
-        config.user_login = "NoLoginName"
-        warn("Could not determine user name.")
+    if config.user_login == "" then
+        if vim.env.LOGNAME then
+            config.user_login = vim.fn.escape(vim.env.LOGNAME, "\\"):gsub("\\", "")
+        elseif vim.env.USER then
+            config.user_login = vim.fn.escape(vim.env.USER, "\\"):gsub("\\", "")
+        elseif vim.env.USERNAME then
+            config.user_login = vim.fn.escape(vim.env.USERNAME, "\\"):gsub("\\", "")
+        elseif vim.env.HOME then
+            config.user_login = vim.fn.escape(vim.env.HOME, "\\"):gsub("\\", "")
+        elseif vim.fn.executable("whoami") ~= 0 then
+            config.user_login = vim.fn.system("whoami")
+        else
+            config.user_login = "NoLoginName"
+            warn("Could not determine user name.")
+        end
     end
 
     config.user_login = config.user_login:gsub(".*\\", "")
@@ -224,7 +229,7 @@ local do_common_global = function()
         config.uservimfiles = utils.normalize_windows_path(config.uservimfiles)
     end
 
-    if config.compldir then
+    if config.compldir ~= "" then
         config.compldir = vim.fn.expand(config.compldir)
     elseif config.is_windows and vim.env.APPDATA then
         config.compldir = vim.fn.expand(vim.env.APPDATA) .. "\\R-Nvim"
@@ -248,7 +253,7 @@ local do_common_global = function()
     end
     if config.uname == "Darwin" then config.is_darwin = true end
 
-    if config.RStudio_cmd then
+    if config.RStudio_cmd ~= "" then
         config.bracketed_paste = false
         config.parenblock = false
     end
@@ -336,7 +341,7 @@ local do_common_global = function()
     end
 
     -- Check if the 'config' table has the key 'tmpdir'
-    if not config.tmpdir then
+    if not config.tmpdir ~= "" then
         -- Set temporary directory based on the platform
         if config.is_windows then
             if vim.env.TMP and vim.fn.isdirectory(vim.env.TMP) ~= 0 then
@@ -364,28 +369,25 @@ local do_common_global = function()
         end
     end
 
-    utils.ensure_directory_exists(config.tmpdir)
-
-    -- Set local tmp directory when accessing R remotely
+    -- Adjust options when accessing R remotely
     config.localtmpdir = config.tmpdir
-
-    -- Check if the 'config' table has the key 'remote_compldir'
-    if config.remote_compldir then
-        vim.env.NVIMR_REMOTE_COMPLDIR = config.remote_compldir
-        vim.env.NVIMR_REMOTE_TMPDIR = config.remote_compldir .. "/tmp"
+    if config.remote_compldir ~= "" then
+        vim.env.RNVIM_REMOTE_COMPLDIR = config.remote_compldir
+        vim.env.RNVIM_REMOTE_TMPDIR = config.remote_compldir .. "/tmp"
         config.tmpdir = config.compldir .. "/tmp"
     else
         vim.env.NVIMR_REMOTE_COMPLDIR = config.compldir
         vim.env.NVIMR_REMOTE_TMPDIR = config.tmpdir
     end
 
+    utils.ensure_directory_exists(config.tmpdir)
     utils.ensure_directory_exists(config.localtmpdir)
 
     vim.env.NVIMR_TMPDIR = config.tmpdir
     vim.env.NVIMR_COMPLDIR = config.compldir
 
     -- Make the file name of files to be sourced
-    if config.remote_compldir then
+    if config.remote_compldir ~= "" then
         config.source_read = config.remote_compldir .. "/tmp/Rsource-" .. vim.fn.getpid()
     else
         config.source_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
@@ -415,7 +417,7 @@ local do_common_global = function()
         config.hl_term = false
     end
 
-    if config.R_app and config.R_app:find("radian") then config.hl_term = false end
+    if config.R_app:find("radian") then config.hl_term = false end
 
     if config.is_windows then
         config.save_win_pos = true
@@ -480,9 +482,6 @@ local do_common_global = function()
             config.R_app = "Rgui.exe"
         end
         config.R_cmd = "R.exe"
-    else
-        config.R_app = "R"
-        config.R_cmd = "R"
     end
 
     -- Set security variables
@@ -516,7 +515,7 @@ local windows_config = function()
     local wtime = uv.hrtime()
     local isi386 = false
 
-    if config.R_path then
+    if config.R_path ~= "" then
         local rpath = vim.split(config.R_path, ";")
         resolve_fullpaths(rpath)
         vim.fn.reverse(rpath)
@@ -634,7 +633,7 @@ end
 
 local unix_config = function()
     local utime = uv.hrtime()
-    if config.R_path then
+    if config.R_path ~= "" then
         local rpath = vim.split(config.R_path, ":")
         resolve_fullpaths(rpath)
 

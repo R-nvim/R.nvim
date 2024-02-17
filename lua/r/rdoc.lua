@@ -1,10 +1,12 @@
 local config = require("r.config").get_config()
 local warn = require("r").warn
 
+local M = {}
+
 -- Check if the cursor is in the Examples section of R documentation
 ---@param vrb boolean
 ---@return boolean
-local is_in_R_code = function(vrb)
+M.is_in_R_code = function(vrb)
     local exline = vim.fn.search("^Examples:$", "bncW")
     if exline > 0 and vim.fn.line(".") > exline then
         return true
@@ -14,14 +16,12 @@ local is_in_R_code = function(vrb)
     end
 end
 
-local M = {}
-
 M.set_buf_options = function()
     if vim.o.filetype ~= "" then
         -- The buffer was previously used to display an R object.
         vim.api.nvim_set_option_value("filetype", "", { scope = "local" })
     end
-    vim.api.nvim_buf_set_var(0, "IsInRCode", is_in_R_code)
+    vim.api.nvim_buf_set_var(0, "IsInRCode", M.is_in_R_code)
     vim.api.nvim_set_option_value("number", false, { scope = "local" })
     vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
     vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
@@ -50,23 +50,23 @@ M.fix_rdoc = function(txt)
     if txt:find("\020Examples:\020") then txt = txt .. "\020###" end
 
     local lines = vim.split(txt, "\020")
-    local n = 1
-    local N = #lines
-    while n < N do
+    local i = 1
+    local j = #lines
+    while i < j do
         -- Add a tab character before each section to mark its end.
-        if lines[n]:match("^[A-Z][a-z]+:") then lines[n - 1] = lines[n - 1] .. "\t" end
-        n = n + 1
+        if lines[i]:match("^[A-Z][a-z]+:") then lines[i - 1] = lines[i - 1] .. "\t" end
+        i = i + 1
     end
     return lines
 end
 
 -- Move the cursor to the Examples section in R documentation
 M.go_to_ex_section = function()
-    local ii = vim.fn.search("^Examples:$", "nW")
-    if ii == 0 then
+    local i = vim.fn.search("^Examples:$", "nW")
+    if i == 0 then
         warn("No example section below.")
     else
-        vim.fn.cursor(ii + 1, 1)
+        vim.fn.cursor(i + 1, 1)
     end
 end
 

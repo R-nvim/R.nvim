@@ -53,7 +53,7 @@ M.set_send_cmd_fun = function()
         return
     end
 
-    if config.RStudio_cmd then
+    if config.RStudio_cmd ~= "" then
         M.cmd = require("r.rstudio").send_cmd_to_RStudio
     elseif type(config.external_term) == "boolean" and config.external_term == false then
         M.cmd = require("r.term").send_cmd_to_term

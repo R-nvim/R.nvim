@@ -142,7 +142,10 @@ function M.get_focused_win_info()
         vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
     then
         get_fw_info_Sway()
-    else
+    elseif
+        config.synctex
+        and (config.is_windows or config.is_darwin or vim.env.WAYLAND_DISPLAY)
+    then
         warn(
             "Cannot get active window info on your system.\n"
                 .. "Please, do a pull request fixing the problem.\n"

@@ -44,11 +44,16 @@ M.setup = function()
         M.SyncTeX_forward = require("r.pdf.generic").SyncTeX_forward
     end
 
-    if not config.is_windows and not config.is_darwin and not vim.env.WAYLAND_DISPLAY then
-        if vim.fn.executable("xprop") == 1 and vim.fn.executable("wmctrl") == 1 then
-            config.has_X_tools = true
-        else
-            if vim.o.filetype == "rnoweb" and config.synctex then
+    if vim.o.filetype == "rnoweb" and config.synctex then
+        if
+            not config.is_windows
+            and not config.is_darwin
+            and not vim.env.WAYLAND_DISPLAY
+            and vim.env.DISPLAY
+        then
+            if vim.fn.executable("xprop") == 1 and vim.fn.executable("wmctrl") == 1 then
+                config.has_X_tools = true
+            else
                 warn(
                     "SyncTeX requires the applications `xprop` and `wmctrl` for search forward and backward."
                 )

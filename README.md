@@ -9,29 +9,59 @@ R scripts.
 
 If you use a plugin manager, follow its instructions on how to install plugins
 from GitHub. Users of [lazy.nvim](https://github.com/folke/lazy.nvim) who
-opted for `defaults.lazy=true` have to configure R-Nvim with `lazy=false`.
-Example of configuration for `lazy.nvim`:
+opted for `defaults.lazy=true` have to configure R.nvim with `lazy=false`.
+Examples of configuration for `lazy.nvim` (see also [cmp-r]):
+
+Minimal configuration:
 
 ```lua
     {
-        'jalvesaq/tmp-R-Nvim',
-        init = function ()
-            vim.keymap.set('n', '<LocalLeader>rf', '<Plug>RStart')
-            vim.keymap.set('n', '<LocalLeader>rq', '<Plug>RClose')
-            vim.keymap.set('v', '<Enter>',         '<Plug>RDSendSelection')
-            vim.keymap.set('n', '<Enter>',         '<Plug>RDSendLine')
-            vim.keymap.set('n', '<LocalLeader>rh', '<Plug>RHelp')
-            vim.keymap.set('n', '<LocalLeader>rs', '<Plug>RSummary')
-            vim.keymap.set('n', '<LocalLeader>r=', '<Plug>ROpenLists')
-            vim.keymap.set('n', '<LocalLeader>r-', '<Plug>RCloseLists')
-        end,
-        config = {
-            R_args = {'--quiet', '--no-save'},
-            user_maps_only = true
-        },
+        'jalvesaq/tmp-R-nvim',
         lazy = false
     },
 
+```
+
+More complex configuration:
+
+```lua
+    {
+        'jalvesaq/tmp-R-nvim',
+        config = function ()
+            -- Create a table with the options to be passed to setup()
+            local opts = {
+                R_args = {'--quiet', '--no-save'},
+                hook = {
+                    after_config = function ()
+                        -- This function will be called at the FileType event
+                        -- of files supported by R.nvim. This is an
+                        -- opportunity to create mappings local to buffers.
+                        if vim.o.syntax ~= "rbrowser" then
+                            vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
+                            vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
+                        end
+                    end
+                },
+                min_editor_width = 72,
+                rconsole_width = 78,
+                disable_cmds = {
+                        "RClearConsole",
+                        "RCustomStart",
+                        "RSPlot",
+                        "RSaveClose",
+                    },
+                }
+                -- Check if the environment variable "R_AUTO_START" exists.
+                -- If using fish shell, you could put in your config.fish:
+                -- alias r "R_AUTO_START=true nvim"
+                if vim.env.R_AUTO_START == "true" then
+                    opts.auto_start = 1
+                    opts.objbr_auto_start = true
+                end
+                require("r").setup(opts)
+            end,
+        lazy = false
+    },
 ```
 
 The complete list of options is in the documentation.
@@ -163,13 +193,14 @@ but temporary files are used in a few cases.
 
 ## See also:
 
-- [cmp-r](https://github.com/R.nvim/cmp-r): [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) source using Nvim-R as backend.
+- [cmp-r]: [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) source using R.nvim as backend.
 
 - [languageserver](https://cran.r-project.org/web/packages/languageserver/index.html): a language server for R.
 
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's output.
 
 
+[cmp-r]: https://github.com/R.nvim/cmp-r
 [Neovim]: https://github.com/neovim/neovim
 [southernlights]: https://github.com/jalvesaq/southernlights
 [colorout]: https://github.com/jalvesaq/colorout
