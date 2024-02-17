@@ -33,7 +33,6 @@ end
 
 --- Begins waiting for more input to complete a command.
 local begin_waiting_more_input = function ()
-    -- Log("begin_waiting_more_input")
     waiting_more_input = true
     incomplete_input.size = in_size
     incomplete_input.received = received
@@ -67,7 +66,6 @@ M.on_stdout = function(job_id, data, _)
                 received = vim.fn.strlen(cmdsplt[2])
                 if in_size == received then
                     cmd = cmdsplt[2]
-                    -- Log("split but complete: " .. cmd:len())
                     exec_stdout_cmd(cmd, job_id)
                 else
                     begin_waiting_more_input()
@@ -76,8 +74,7 @@ M.on_stdout = function(job_id, data, _)
                 if waiting_more_input then
                     incomplete_input.received = incomplete_input.received + cmd:len()
                     if incomplete_input.received == incomplete_input.size then
-                        -- Log("input completed")
-                        waiting_more_input = true
+                        waiting_more_input = false
                         cmd = incomplete_input.str .. cmd
                         exec_stdout_cmd(cmd, job_id)
                     else
@@ -87,7 +84,6 @@ M.on_stdout = function(job_id, data, _)
                         end
                     end
                 else
-                    -- Log("no need to wait: " .. cmd:len())
                     exec_stdout_cmd(cmd, job_id)
                 end
             end
