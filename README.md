@@ -10,7 +10,7 @@ R scripts.
 If you use a plugin manager, follow its instructions on how to install plugins
 from GitHub. Users of [lazy.nvim](https://github.com/folke/lazy.nvim) who
 opted for `defaults.lazy=true` have to configure R.nvim with `lazy=false`.
-Examples of configuration for `lazy.nvim`:
+Examples of configuration for `lazy.nvim` (see also [cmp-r]):
 
 Minimal configuration:
 
@@ -193,13 +193,14 @@ but temporary files are used in a few cases.
 
 ## See also:
 
-- [cmp-r](https://github.com/R.nvim/cmp-r): [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) source using R.nvim as backend.
+- [cmp-r]: [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) source using R.nvim as backend.
 
 - [languageserver](https://cran.r-project.org/web/packages/languageserver/index.html): a language server for R.
 
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's output.
 
 
+[cmp-r]: https://github.com/R.nvim/cmp-r
 [Neovim]: https://github.com/neovim/neovim
 [southernlights]: https://github.com/jalvesaq/southernlights
 [colorout]: https://github.com/jalvesaq/colorout
