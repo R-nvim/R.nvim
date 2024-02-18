@@ -150,7 +150,6 @@ M.get_output = function(fnm, txt)
     vim.cmd("tabnew " .. fnm)
     vim.fn.setline(1, vim.split(txt:gsub("\019", "'"), "\020"))
     vim.cmd("normal! gT")
-    vim.cmd("redraw")
 end
 
 M.view_df = function(oname, howto, txt)

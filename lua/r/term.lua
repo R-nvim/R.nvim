@@ -129,7 +129,7 @@ M.start_term = function()
     if config.is_windows then require("r.windows").set_R_home() end
     require("r.job").R_term_open(config.R_app .. " " .. table.concat(config.R_args, " "))
     if config.is_windows then
-        vim.cmd("redraw")
+        -- vim.cmd("redraw") -- superfluous?
         require("r.windows").unset_R_home()
     end
     r_bufnr = vim.fn.bufnr("%")

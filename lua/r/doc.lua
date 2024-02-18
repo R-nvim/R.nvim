@@ -168,7 +168,6 @@ M.show = function(rkeyword, txt)
     vim.fn.setreg("@@", save_unnamed_reg)
     vim.cmd("setlocal nomodified")
     vim.cmd("stopinsert")
-    vim.cmd("redraw")
 end
 
 --- Function called by nvimcom when the user requests R documentation on a

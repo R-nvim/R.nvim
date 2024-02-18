@@ -127,7 +127,6 @@ local go_to_buf = function(rnwbn, rnwf, basedir, rnwln)
         end
     end
     vim.cmd(tostring(rnwln))
-    vim.cmd("redraw")
     return 1
 end
 
