@@ -180,9 +180,7 @@ M.choose_lib = function(topic, libs)
     local htw = get_win_width()
     vim.schedule(function()
         vim.ui.select(libs, {
-            prompt = "The topic '"
-                .. topic
-                .. "' was found in more than one library. Please, select one of them:",
+            prompt = "Please, select one library:",
         }, function(choice, _)
             if choice then
                 send_to_nvimcom(
