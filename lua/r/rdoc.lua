@@ -1,10 +1,12 @@
 local config = require("r.config").get_config()
 local warn = require("r").warn
 
+local M = {}
+
 -- Check if the cursor is in the Examples section of R documentation
 ---@param vrb boolean
 ---@return boolean
-local is_in_R_code = function(vrb)
+M.is_in_R_code = function(vrb)
     local exline = vim.fn.search("^Examples:$", "bncW")
     if exline > 0 and vim.fn.line(".") > exline then
         return true
@@ -14,14 +16,12 @@ local is_in_R_code = function(vrb)
     end
 end
 
-local M = {}
-
 M.set_buf_options = function()
     if vim.o.filetype ~= "" then
         -- The buffer was previously used to display an R object.
         vim.api.nvim_set_option_value("filetype", "", { scope = "local" })
     end
-    vim.api.nvim_buf_set_var(0, "IsInRCode", is_in_R_code)
+    vim.api.nvim_buf_set_var(0, "IsInRCode", M.is_in_R_code)
     vim.api.nvim_set_option_value("number", false, { scope = "local" })
     vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
     vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
