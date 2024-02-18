@@ -28,8 +28,8 @@ end
 ---@param getclass boolean If the object is a function, whether R should check the class of the first argument passed to it to retrieve documentation on the appropriate method.
 M.ask_R_doc = function(rkeyword, package, getclass)
     local firstobj = ""
-    local R_bufnr = require("r.term").get_buf_nr()
-    if vim.fn.bufname("%") == "Object_Browser" or vim.fn.bufnr("%") == R_bufnr then
+    local rbn = require("r.term").get_buf_nr()
+    if vim.fn.bufname("%") == "Object_Browser" or vim.fn.bufnr("%") == rbn then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
         vim.cmd.sb(require("r.edit").get_rscript_name())
@@ -91,13 +91,13 @@ M.show = function(rkeyword, txt)
         vpager = config.nvimpager
     end
 
-    local R_bufnr = require("r.term").get_buf_nr()
-    if vim.fn.bufnr("%") == R_bufnr then
+    local rbn = require("r.term").get_buf_nr()
+    if vim.fn.bufnr("%") == rbn then
         -- Exit Terminal mode and go to Normal mode
         vim.cmd("stopinsert")
     end
 
-    if vim.fn.bufname("%"):match("Object_Browser") or vim.fn.bufnr("%") == R_bufnr then
+    if vim.fn.bufname("%"):match("Object_Browser") or vim.fn.bufnr("%") == rbn then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
         vim.cmd.sb(require("r.edit").get_rscript_name())

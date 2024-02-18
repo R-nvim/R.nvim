@@ -50,23 +50,23 @@ M.fix_rdoc = function(txt)
     if txt:find("\020Examples:\020") then txt = txt .. "\020###" end
 
     local lines = vim.split(txt, "\020")
-    local n = 1
-    local N = #lines
-    while n < N do
+    local i = 1
+    local j = #lines
+    while i < j do
         -- Add a tab character before each section to mark its end.
-        if lines[n]:match("^[A-Z][a-z]+:") then lines[n - 1] = lines[n - 1] .. "\t" end
-        n = n + 1
+        if lines[i]:match("^[A-Z][a-z]+:") then lines[i - 1] = lines[i - 1] .. "\t" end
+        i = i + 1
     end
     return lines
 end
 
 -- Move the cursor to the Examples section in R documentation
 M.go_to_ex_section = function()
-    local ii = vim.fn.search("^Examples:$", "nW")
-    if ii == 0 then
+    local i = vim.fn.search("^Examples:$", "nW")
+    if i == 0 then
         warn("No example section below.")
     else
-        vim.fn.cursor(ii + 1, 1)
+        vim.fn.cursor(i + 1, 1)
     end
 end
 

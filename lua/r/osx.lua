@@ -1,15 +1,15 @@
 local config = require("r.config").get_config()
 local warn = require("r").warn
-local R64app = nil
+local r64app = nil
 
 local M = {}
 
 M.start_Rapp = function()
     vim.g.R_Nvim_status = 6
 
-    if not R64app then R64app = vim.fn.isdirectory("/Applications/R64.app") == 1 end
+    if not r64app then r64app = vim.fn.isdirectory("/Applications/R64.app") == 1 end
 
-    local rcmd = R64app and "/Applications/R64.app" or "/Applications/R.app"
+    local rcmd = r64app and "/Applications/R64.app" or "/Applications/R.app"
 
     local args_str = table.concat(config.R_args, " ")
     if args_str ~= " " and args_str ~= "" then
@@ -29,7 +29,7 @@ end
 M.send_cmd_to_Rapp = function(command)
     local cmd = config.clear_line and "\001\013" .. command or command
 
-    local rcmd = R64app and "R64" or "R"
+    local rcmd = r64app and "R64" or "R"
 
     -- For some reason, it doesn't like "\025"
     cmd = cmd:gsub("\\", "\\\\"):gsub('"', '\\"'):gsub("'", "'\\\\''")

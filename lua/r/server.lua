@@ -2,25 +2,24 @@ local edit = require("r.edit")
 local job = require("r.job")
 local config = require("r.config").get_config()
 local warn = require("r").warn
-local RWarn = {}
-local RBerr = {}
-local RBout = {}
+local b_warn = {}
+local b_err = {}
+local b_out = {}
+local b_time
 local libd = nil
-local RoutLine = ""
 local pkgbuild_attempt = false
-local Rhelp_loaded = {}
-local Rhelp_list = {}
-local Rtime
+local rhelp_list = {}
 
 local M = {}
 
-local RInitStdout = function(_, data, _)
+local init_stdout = function(_, data, _)
     if not data then return end
     local rcmd = string.gsub(table.concat(data, ""), "\r", "")
-    if RoutLine ~= "" then
-        rcmd = RoutLine .. rcmd
+    local out_line = ""
+    if out_line ~= "" then
+        rcmd = out_line .. rcmd
         if rcmd:find("\020") == nil then
-            RoutLine = rcmd
+            out_line = rcmd
             return
         end
     end
@@ -31,16 +30,16 @@ local RInitStdout = function(_, data, _)
         or rcmd:find("^LIBD: ")
     then
         if rcmd:find("\020") == nil then
-            RoutLine = rcmd
+            out_line = rcmd
             return
         end
-        RoutLine = ""
+        out_line = ""
 
         -- In spite of flush(stdout()), rcmd might be concatenating two commands
         local rcmdl = vim.fn.split(rcmd, "\020", 0)
         for _, c in ipairs(rcmdl) do
             if c:find("^WARN: ") then
-                table.insert(RWarn, c:sub(7))
+                table.insert(b_warn, c:sub(7))
             elseif c:find("^LIBD: ") then
                 libd = c:sub(7)
             elseif c:find("^ECHO: ") then
@@ -55,19 +54,19 @@ local RInitStdout = function(_, data, _)
             end
         end
     else
-        table.insert(RBout, rcmd)
+        table.insert(b_out, rcmd)
     end
 end
 
-local RInitStderr = function(_, data, _)
+local init_stderr = function(_, data, _)
     if data then
         local s = table.concat(data, "")
         s = string.gsub(s, "\r", "")
-        table.insert(RBerr, s)
+        table.insert(b_err, s)
     end
 end
 
-local MkRdir = function()
+local mk_R_dir = function()
     vim.api.nvim_command("redraw")
     local resp = vim.fn.input('"' .. libd .. '" is not writable. Create it now? [y/n] ')
     if resp:find("y") then
@@ -86,7 +85,7 @@ local MkRdir = function()
 end
 
 -- Find the path to the rnvimserver executable in the specified library directory.
-local FindNCSpath = function(libdir)
+local find_rns_path = function(libdir)
     local nrs
     if config.is_windows then
         nrs = "rnvimserver.exe"
@@ -106,13 +105,13 @@ local FindNCSpath = function(libdir)
 end
 
 -- Check and set some variables and, finally, start the rnvimserver
-local StartNServer = function()
+local start_rnvimserver = function()
     if job.is_running("Server") then return end
 
     local nrs_path
 
     if config.local_R_library_dir ~= "" then
-        nrs_path = FindNCSpath(config.local_R_library_dir .. "/nvimcom")
+        nrs_path = find_rns_path(config.local_R_library_dir .. "/nvimcom")
     else
         local info_path = config.compldir .. "/nvimcom_info"
         if vim.fn.filereadable(info_path) == 1 then
@@ -123,7 +122,7 @@ local StartNServer = function()
                     "nvimcom info",
                     { version = info[1], home = info[2], Rversion = info[3] }
                 )
-                nrs_path = FindNCSpath(info[2])
+                nrs_path = find_rns_path(info[2])
             else
                 vim.fn.delete(info_path)
                 warn("ERROR in nvimcom_info! Please, do :RDebugInfo for details.")
@@ -181,17 +180,17 @@ end
 
 -- Check if the exit code of the script that built nvimcom was zero
 -- and if the file nvimcom_info seems to be OK (has three lines).
-local RInitExit = function(_, data, _)
+local init_exit = function(_, data, _)
     local cnv_again = 0
 
     if data == 0 or data == 512 then -- ssh success seems to be 512
-        StartNServer()
+        start_rnvimserver()
     elseif data == 71 then
         -- No writable directory to update nvimcom
         -- Avoid redraw of status line while waiting user input in MkRdir()
-        RBerr = vim.list_extend(RBerr, RWarn)
-        RWarn = {}
-        MkRdir()
+        b_err = vim.list_extend(b_err, b_warn)
+        b_warn = {}
+        mk_R_dir()
     elseif data == 72 and not config.is_windows and not pkgbuild_attempt then
         -- R.nvim/nvimcom directory not found. Perhaps R running in remote machine...
         -- Try to use local R to build the nvimcom package.
@@ -227,29 +226,29 @@ local RInitExit = function(_, data, _)
         end
     end
 
-    edit.add_to_debug_info("before_nrs.R stderr", table.concat(RBerr, "\n"))
-    edit.add_to_debug_info("before_nrs.R stdout", table.concat(RBout, "\n"))
-    RBerr = {}
-    RBout = {}
+    edit.add_to_debug_info("before_nrs.R stderr", table.concat(b_err, "\n"))
+    edit.add_to_debug_info("before_nrs.R stdout", table.concat(b_out, "\n"))
+    b_err = {}
+    b_out = {}
     edit.add_for_deletion(config.tmpdir .. "/bo_code.R")
     edit.add_for_deletion(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.RNVIM_ID)
     edit.add_for_deletion(config.tmpdir .. "/libnames_" .. vim.env.RNVIM_ID)
-    if #RWarn > 0 then
-        local wrn = table.concat(RWarn, "\n")
+    if #b_warn > 0 then
+        local wrn = table.concat(b_warn, "\n")
         edit.add_to_debug_info("RInit Warning", wrn)
         warn(wrn)
     end
     if cnv_again == 0 then
         edit.add_to_debug_info(
             "before_nrs.R",
-            vim.fn.reltimefloat(vim.fn.reltime(Rtime, vim.fn.reltime())),
+            vim.fn.reltimefloat(vim.fn.reltime(b_time, vim.fn.reltime())),
             "Time"
         )
     end
 end
 
 -- List R libraries from buffer
-local ListRLibsFromBuffer = function()
+local list_libs_from_buffer = function()
     local start_libs = config.start_libs or "base,stats,graphics,grDevices,utils,methods"
     local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("$"), true)
     local lib
@@ -276,14 +275,15 @@ local ListRLibsFromBuffer = function()
 end
 
 -- Function to handle BAAExit
-local BAAExit = function(_, data, _)
+local baa_exit = function(_, data, _)
     if data == 0 or data == 512 then job.stdin("Server", "41\n") end
 end
 
 -- Build all arguments
-M.BuildAllArgs = function(_)
+local build_all_args
+build_all_args = function(_)
     if vim.fn.filereadable(config.compldir .. "/args_lock") == 1 then
-        vim.fn.timer_start(1000, M.BuildAllArgs)
+        vim.fn.timer_start(1000, build_all_args)
         return
     end
 
@@ -314,7 +314,7 @@ M.BuildAllArgs = function(_)
     if config.remote_compldir then
         scrptnm = config.remote_compldir .. "/tmp/build_args.R"
     end
-    local jobh = { on_exit = BAAExit }
+    local jobh = { on_exit = baa_exit }
     require("r.job").start(
         "Build_args",
         { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm },
@@ -323,12 +323,7 @@ M.BuildAllArgs = function(_)
 end
 
 -- Add words to the completion list of :Rhelp
-local AddToRhelpList = function(lib)
-    for _, lbr in ipairs(Rhelp_loaded) do
-        if lbr == lib then return end
-    end
-    table.insert(Rhelp_loaded, lib)
-
+local add_to_Rhelp_list = function(lib)
     local omf = config.compldir .. "/omnils_" .. lib
 
     -- List of objects
@@ -341,7 +336,7 @@ local AddToRhelpList = function(lib)
     for _, xx in ipairs(olist) do
         local xxx = vim.fn.split(xx, "\006")
         if #xxx > 0 and not string.match(xxx[1], "\\$") then
-            table.insert(Rhelp_list, xxx[1])
+            table.insert(rhelp_list, xxx[1])
         end
     end
 end
@@ -352,7 +347,7 @@ end
 --- _   number Cursor position in complete command line.
 M.list_objs = function(arg, _, _)
     local lob = {}
-    for _, xx in ipairs(Rhelp_list) do
+    for _, xx in ipairs(rhelp_list) do
         if xx:sub(1, 1) == arg:sub(1, 1) then table.insert(lob, xx) end
     end
     return lob
@@ -371,10 +366,10 @@ M.update_Rhelp_list = function()
     local libs_in_nrs =
         vim.fn.readfile(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.RNVIM_ID)
     for _, lib in ipairs(libs_in_nrs) do
-        AddToRhelpList(lib)
+        add_to_Rhelp_list(lib)
     end
     -- Building args_ files is too time-consuming. Do it asynchronously.
-    vim.fn.timer_start(1, M.BuildAllArgs)
+    vim.fn.timer_start(1, build_all_args)
 end
 
 M.check_nvimcom_version = function()
@@ -389,7 +384,7 @@ M.check_nvimcom_version = function()
         flines = { "needed_nvc_version <- NULL" }
     end
 
-    local libs = ListRLibsFromBuffer()
+    local libs = list_libs_from_buffer()
     table.insert(flines, 'nvim_r_home <- "' .. config.rnvim_home .. '"')
     table.insert(flines, "libs <- c(" .. libs .. ")")
     vim.list_extend(flines, vim.fn.readfile(config.rnvim_home .. "/scripts/before_nrs.R"))
@@ -401,9 +396,9 @@ M.check_nvimcom_version = function()
     -- Run the script as a job, setting callback functions to receive its
     -- stdout, stderr, and exit code.
     local jobh = {
-        on_stdout = RInitStdout,
-        on_stderr = RInitStderr,
-        on_exit = RInitExit,
+        on_stdout = init_stdout,
+        on_stderr = init_stderr,
+        on_exit = init_exit,
     }
 
     local remote_compldir = config.remote_compldir
@@ -411,7 +406,7 @@ M.check_nvimcom_version = function()
         scrptnm = remote_compldir .. "/tmp/before_nrs.R"
     end
 
-    Rtime = vim.fn.reltime()
+    b_time = vim.fn.reltime()
     require("r.job").start(
         "Init R",
         { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm },

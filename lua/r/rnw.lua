@@ -72,19 +72,19 @@ local SyncTeX_readconc = function(basenm)
         concnum = concnum:gsub("%%", "")
         concnum = concnum:gsub("%}", "")
         local concl = vim.split(concnum, " ")
-        local ii = 1
-        local maxii = #concl - 1
+        local i = 1
+        local max_i = #concl - 1
         local rnwl = tonumber(concl[1])
         lsrnwl[texidx] = rnwl
         lsrnwf[texidx] = rnwf
         texidx = texidx + 1
-        while ii < maxii and texidx < ntexln do
-            ii = ii + 1
-            local lnrange = vim.fn.range(1, concl[ii])
-            ii = ii + 1
+        while i < max_i and texidx < ntexln do
+            i = i + 1
+            local lnrange = vim.fn.range(1, concl[i])
+            i = i + 1
             for _, _ in ipairs(lnrange) do
                 if texidx > ntexln then break end
-                rnwl = rnwl + concl[ii]
+                rnwl = rnwl + concl[i]
                 lsrnwl[texidx] = rnwl
                 lsrnwf[texidx] = rnwf
                 texidx = texidx + 1
@@ -94,7 +94,7 @@ local SyncTeX_readconc = function(basenm)
     return { texlnum = lstexln, rnwfile = lsrnwf, rnwline = lsrnwl }
 end
 
-local GoToBuf = function(rnwbn, rnwf, basedir, rnwln)
+local go_to_buf = function(rnwbn, rnwf, basedir, rnwln)
     if vim.fn.expand("%:t") ~= rnwbn then
         if vim.fn.bufloaded(basedir .. "/" .. rnwf) == 1 then
             local savesb = vim.o.switchbuf
@@ -351,10 +351,10 @@ M.SyncTeX_backward = function(fname, ln)
         local rnwfile = concdata.rnwfile
         local rnwline = concdata.rnwline
         rnwln = 0
-        for ii, v in ipairs(texlnum) do
+        for k, v in ipairs(texlnum) do
             if v >= ln then
-                rnwf = rnwfile[ii]
-                rnwln = rnwline[ii]
+                rnwf = rnwfile[k]
+                rnwln = rnwline[k]
                 break
             end
         end
@@ -381,7 +381,7 @@ M.SyncTeX_backward = function(fname, ln)
     local rnwbn = rnwf:gsub(".*/", "")
     rnwf = rnwf:gsub("^%.\\/", "")
 
-    if GoToBuf(rnwbn, rnwf, basedir, rnwln) > 0 then
+    if go_to_buf(rnwbn, rnwf, basedir, rnwln) > 0 then
         require("r.pdf").focus_window(config.term_title, config.term_pid)
     end
 end
@@ -400,14 +400,14 @@ M.SyncTeX_forward = function(gotobuf)
             local mfile =
                 vim.fn.getline(ischild):gsub(".*%% *!Rnw *root *= *(.*) *", "%1")
             local mlines = vim.fn.readfile(vim.fn.expand("%:p:h") .. "/" .. mfile)
-            for ii, v in ipairs(mlines) do
+            for k, v in ipairs(mlines) do
                 if v:match("SweaveInput.*" .. vim.fn.expand("%:t")) then
                     lnum = vim.fn.line(".")
                     break
                 elseif
                     v:match("<<.*child *=.*" .. vim.fn.expand("%:t") .. '["' .. "']")
                 then
-                    lnum = ii
+                    lnum = k
                     rnwf = vim.fn.expand("%:p:h") .. "/" .. mfile
                     break
                 end
@@ -460,7 +460,7 @@ M.SyncTeX_forward = function(gotobuf)
     end
 
     if gotobuf then
-        GoToBuf(basenm .. ".tex", basenm .. ".tex", basedir, texln)
+        go_to_buf(basenm .. ".tex", basenm .. ".tex", basedir, texln)
         return
     end
 
