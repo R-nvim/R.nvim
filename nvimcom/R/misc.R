@@ -238,8 +238,9 @@ nvim_insert <- function(cmd, howto = "tabnew") {
            paste0("lua require('r').warn('Error trying to execute the command \"", cmd, "\"')"),
            PACKAGE = "nvimcom")
     } else {
+        o <- gsub("\\\\", "\\\\\\\\", o)
+        o <- gsub("'", "\\\\'", o)
         o <- paste0(o, collapse = "\x14")
-        o <- gsub("'", "\x13", o)
         .C("nvimcom_msg_to_nvim",
            paste0("lua require('r.edit').finish_inserting('", howto, "', '", o, "')"),
            PACKAGE = "nvimcom")

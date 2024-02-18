@@ -107,7 +107,7 @@ end
 ---@param lnum2 number Last selected line of unformatted code.
 ---@param txt string Formatted text.
 M.finish_code_formatting = function(lnum1, lnum2, txt)
-    local lns = vim.split(txt:gsub("\019", "'"), "\020")
+    local lns = vim.split(txt, "\020")
     vim.api.nvim_buf_set_lines(0, lnum1 - 1, lnum2, true, lns)
     vim.api.nvim_echo(
         { { tostring(lnum2 - lnum1 + 1) .. " lines formatted." } },
@@ -117,7 +117,7 @@ M.finish_code_formatting = function(lnum1, lnum2, txt)
 end
 
 M.finish_inserting = function(type, txt)
-    local lns = vim.split(txt:gsub("\019", "'"), "\020")
+    local lns = vim.split(txt, "\020")
     local lines
     if type == "comment" then
         lines = {}
