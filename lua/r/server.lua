@@ -44,10 +44,7 @@ local init_stdout = function(_, data, _)
                 libd = c:sub(7)
             elseif c:find("^ECHO: ") then
                 local msg = c:sub(7)
-                vim.schedule(function()
-                    vim.api.nvim_echo({ { msg } }, false, {})
-                    vim.api.nvim_command("redraw")
-                end)
+                vim.schedule(function() vim.api.nvim_echo({ { msg } }, false, {}) end)
             elseif c:find("^INFO: ") then
                 local info = vim.fn.split(c:sub(7), "=")
                 edit.add_to_debug_info(info[1], info[2])
@@ -67,9 +64,14 @@ local init_stderr = function(_, data, _)
 end
 
 local mk_R_dir = function()
-    vim.api.nvim_command("redraw")
-    local resp = vim.fn.input('"' .. libd .. '" is not writable. Create it now? [y/n] ')
-    if resp:find("y") then
+    local resp
+    vim.schedule(function()
+        vim.ui.input(
+            { prompt = '"' .. libd .. '" is not writable. Create it now? [y/n] ' },
+            function(input) resp = input end
+        )
+    end)
+    if resp and resp:find("y") then
         local dw = vim.fn.mkdir(libd, "p")
         if dw == 1 then
             -- Try again
@@ -78,8 +80,7 @@ local mk_R_dir = function()
             warn('Failed creating "' .. libd .. '"')
         end
     else
-        vim.api.nvim_out_write("\n")
-        vim.api.nvim_command("redraw")
+        vim.schedule(function() vim.api.nvim_out_write("\n") end)
     end
     libd = nil
 end
