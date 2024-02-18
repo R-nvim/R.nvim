@@ -381,7 +381,7 @@ local do_common_global = function()
     vim.env.RNVIM_COMPLDIR = config.compldir
 
     -- Make the file name of files to be sourced
-    if config.remote_compldir then
+    if config.remote_compldir ~= "" then
         config.source_read = config.remote_compldir .. "/tmp/Rsource-" .. vim.fn.getpid()
     else
         config.source_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()

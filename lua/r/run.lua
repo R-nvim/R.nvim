@@ -1,5 +1,4 @@
 local M = {}
-local Rsource_read
 local config = require("r.config").get_config()
 local job = require("r.job")
 local edit = require("r.edit")
@@ -101,12 +100,10 @@ start_R2 = function()
         table.insert(start_options, 'options(nvimcom.delim = "\t")')
     end
 
-    if config.remote_compldir then
-        Rsource_read = config.remote_compldir .. "/tmp/Rsource-" .. vim.fn.getpid()
-    else
-        Rsource_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
-    end
-    table.insert(start_options, 'options(nvimcom.source.path = "' .. Rsource_read .. '")')
+    table.insert(
+        start_options,
+        'options(nvimcom.source.path = "' .. config.source_read .. '")'
+    )
 
     local rwd = ""
     if config.nvim_wd == 0 then
