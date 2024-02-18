@@ -351,7 +351,7 @@ M.show_map_desc = function()
             table.insert(map_key_desc, { v[4] .. "\n" })
         end
     end
-    vim.api.nvim_echo(map_key_desc, false, {})
+    vim.schedule(function() vim.api.nvim_echo(map_key_desc, false, {}) end)
 end
 
 return M
