@@ -653,23 +653,26 @@ M.funs = function(bufnr, capture_all)
     end
 
     local root_node = get_root_node(bufnr)
-    local cursor_pos = vim.api.nvim_win_get_cursor(0)
+    local cursor_pos = vim.fn.line(".")
 
     for id, node in r_fun_query:iter_captures(root_node, bufnr, 0, -1) do
         local name = r_fun_query.captures[id]
         if name == "rfun" then
             local start_row, _, end_row, _ = node:range()
-            local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row, false)
-            local function_text = table.concat(lines, "\n")
 
-            if
-                cursor_pos[1] >= start_row
-                and cursor_pos[1] <= end_row
-                and not capture_all
-            then
-                M.cmd(function_text)
+            -- vim.print(start_row, end_row, cursor_pos, capture_all)
+            local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
+
+            -- Convert lines to a table
+            local lines_table = {}
+            for _, line in ipairs(lines) do
+                table.insert(lines_table, line)
+            end
+
+            if cursor_pos >= start_row and cursor_pos <= end_row and not capture_all then
+                M.source_lines(lines, nil)
             else
-                if capture_all then M.cmd(function_text) end
+                if capture_all then M.source_lines(lines) end
             end
         end
     end
