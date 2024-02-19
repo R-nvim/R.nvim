@@ -1,5 +1,3 @@
--- TODO: Make the echo/silent option work
-
 local config = require("r.config").get_config()
 local warn = require("r").warn
 local utils = require("r.utils")
@@ -106,7 +104,7 @@ M.source_lines = function(lines, what)
         rcmd = table.concat(lines, "\n")
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_Py_code(false)
+            and require("r.rmd").is_in_code_chunk("python", false)
         then
             rcmd = rcmd:gsub('"', '\\"')
             rcmd = 'reticulate::py_run_string("' .. rcmd .. '")'
@@ -351,7 +349,7 @@ M.selection = function(m)
     if vim.o.filetype ~= "r" then
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_Py_code(0)
+            and require("r.rmd").is_in_code_chunk('python', false)
         then
             ispy = true
         elseif not vim.b.IsInRCode(false) then
@@ -471,8 +469,8 @@ M.line = function(m, lnum)
             if m == true then cursor.move_next_line() end
             return
         end
-        if not require("r.rmd").is_in_R_code(false) then
-            if not require("r.rmd").is_in_Py_code(false) then
+        if not require("r.rmd").is_in_code_chunk('r', false) then
+            if not require("r.rmd").is_in_code_chunk('python', false) then
                 warn("Not inside either R or Python code chunk.")
             else
                 line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
