@@ -644,6 +644,7 @@ local get_root_node = function(bufnr)
     return tree:root()
 end
 
+-- Send all or the current function to R
 M.funs = function(bufnr, capture_all)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
@@ -661,11 +662,6 @@ M.funs = function(bufnr, capture_all)
             local start_row, _, end_row, _ = node:range()
 
             local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
-
-            local lines_table = {}
-            for _, line in ipairs(lines) do
-                table.insert(lines_table, line)
-            end
 
             if cursor_pos >= start_row and cursor_pos <= end_row and not capture_all then
                 M.source_lines(lines, nil)
