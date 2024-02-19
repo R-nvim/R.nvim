@@ -124,36 +124,44 @@ M.send_R_chunk = function(m)
     if m == true then M.next_chunk() end
 end
 
+--- Navigates to the previous R or Python code chunk in the document.
+-- This function searches backwards from the current cursor position for the start of
+-- any R or Python code chunk.
 M.previous_chunk = function()
     local curline = vim.fn.line(".")
-    if M.is_in_R_code(false) or M.is_in_Py_code(false) then
-        local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW")
-        if i ~= 0 then vim.fn.cursor(i - 1, 1) end
+    if M.is_in_code_chunk('r', false) or M.is_in_code_chunk('python', false) then
+        local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- search for chunk start
+        if i ~= 0 then vim.fn.cursor(i - 1, 1) end -- if found, move cursor at chunk
     end
-    local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW")
+    local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- Search again for chunk start
     if i == 0 then
         vim.fn.cursor(curline, 1)
         warn("There is no previous R code chunk to go.")
         return
     else
-        vim.fn.cursor(i + 1, 1)
+        vim.fn.cursor(i + 1, 1) -- position cursor inside the chunk
     end
 end
 
+--- Navigates to the next R or Python code chunk in the document.
+-- This function searches forward from the current cursor position for the start of any R or Python code chunk.
 M.next_chunk = function()
-    local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "nW")
+    local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "nW") -- Search for the next chunk start
     if i == 0 then
         warn("There is no next R code chunk to go.")
         return
     else
-        vim.fn.cursor(i + 1, 1)
+        vim.fn.cursor(i + 1, 1) -- position cursor inside the next chunk
     end
 end
 
+--- Setup function for initializing module functionality.
+-- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.
 M.setup = function()
-    local rmdtime = vim.fn.reltime()
+    local rmdtime = vim.fn.reltime() -- Track setup time
     local cfg = require("r.config").get_config()
 
+    -- Configure key mapping for writing chunks based on configuration settings (TODO: elaborate)
     if type(cfg.rmdchunk) == "number" and (cfg.rmdchunk == 1 or cfg.rmdchunk == 2) then
         vim.api.nvim_buf_set_keymap(
             0,
@@ -182,6 +190,7 @@ M.setup = function()
     require("r.maps").create(vim.o.filetype)
     -- Only .Rmd and .qmd files use these functions:
 
+    -- Schedule additional setup tasks for PDF viewing and undo functionality
     vim.schedule(function() require("r.pdf").setup() end)
 
     vim.schedule(function()
@@ -192,6 +201,7 @@ M.setup = function()
             vim.b.undo_ftplugin = "unlet! b:IsInRCode b:rplugin_knitr_pattern"
         end
     end)
+    -- Record setup time for debugging
     require("r.edit").add_to_debug_info(
         "rmd setup",
         vim.fn.reltimefloat(vim.fn.reltime(rmdtime, vim.fn.reltime())),
@@ -199,6 +209,12 @@ M.setup = function()
     )
 end
 
+--TODO: Explain the insides of M.make
+
+--- Compiles the current R Markdown document into a specified output format.
+-- This function updates the document before calling the R function `nvim.interlace.rmd`
+-- to compile the document, using the specified output format and additional arguments.
+-- @param outform string The output format for the document compilation (e.g., "html", "pdf").
 M.make = function(outform)
     vim.api.nvim_command("update")
 
