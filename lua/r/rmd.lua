@@ -4,12 +4,16 @@ local send = require("r.send")
 
 local M = {}
 
---- Check if cursor is within a R block of code
----@param vrb boolean
----@return boolean
+--- Checks if the cursor is currently positioned inside a R code block within a document.
+-- This function searches backwards for the start of an R code chunk indicated by ```{r
+-- and forwards for the end of any code chunk indicated by ```. It then compares these positions
+-- to determine if the cursor is inside a R code block.
+---@param vrb boolean If true, it will display a warning message when the cursor is not inside an R code chunk.
+---@return boolean Returns true if inside an R code chunk, false otherwise.
 M.is_in_R_code = function(vrb)
-    local chunkline = vim.fn.search("^[ \t]*```[ ]*{r", "bncW")
-    local docline = vim.fn.search("^[ \t]*```$", "bncW")
+    -- bncW: search backwards, don't move cursor, also match at cursor, no wrap around the end of the buffer
+    local chunkline = vim.fn.search("^[ \t]*```[ ]*{r", "bncW") -- Search for R chunk start
+    local docline = vim.fn.search("^[ \t]*```$", "bncW") -- Search for any code chunk end (buggy??)
     if chunkline > docline and chunkline ~= vim.fn.line(".") then
         return true
     else
@@ -18,6 +22,10 @@ M.is_in_R_code = function(vrb)
     end
 end
 
+--- Checks if the cursor is currently positioned inside a Python code block within a document.
+-- Similar to `is_in_R_code` but checks for Python code blocks instead.
+-- @param vrb boolean If true, displays a warning when not inside a Python code chunk.
+-- @return boolean True if inside a Python code chunk, false otherwise.
 M.is_in_Py_code = function(vrb)
     local chunkline = vim.fn.search("^[ \t]*```[ ]*{python", "bncW")
     local docline = vim.fn.search("^[ \t]*```$", "bncW")
