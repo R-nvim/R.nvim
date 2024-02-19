@@ -25,7 +25,6 @@ M.is_in_code_chunk = function(language, verbose)
     end
 end
 
---
 --- Checks if the cursor is currently positioned inside a R code block within a document.
 -- This function is now a wrapper around the generalized `is_in_code_chunk` function.
 ---@param vrb boolean If true, it will display a warning message when the cursor is not inside an R code chunk.
@@ -35,11 +34,16 @@ M.is_in_R_code = function(vrb)
 end
 
 
+--- Writes a new R code chunk at the current cursor position
+-- This function checks if the cursor is in an empty line and not in an R code chunk
+-- it then inserts a new R code chunk template.
+-- Different templates are used based on the file type (e.g., Quarto).
 M.write_chunk = function()
     if not M.is_in_code_chunk('r', false) then -- Check if cursor is inside an R code chunk
-        if vim.fn.getline(vim.fn.line(".")):find("^%s*$") then
+        if vim.fn.getline(vim.fn.line(".")):find("^%s*$") then  -- Check if cursor is in an empty line
             local curline = vim.fn.line(".")
-            if vim.o.filetype == "quarto" then
+            -- Insert new R code chunk template based on filetype
+            if vim.o.filetype == "quarto" then -- Quarto
                 vim.api.nvim_buf_set_lines(
                     0,
                     curline - 1,
@@ -48,7 +52,7 @@ M.write_chunk = function()
                     { "```{r}", "", "```", "" }
                 )
                 vim.api.nvim_win_set_cursor(0, { curline + 1, 1 })
-            else
+            else -- not Quarto (R Markdown)
                 vim.api.nvim_buf_set_lines(
                     0,
                     curline - 1,
@@ -60,6 +64,7 @@ M.write_chunk = function()
             end
             return
         else
+            -- TODO: Document this part
             if config.rmdchunk == 2 then
                 if vim.fn.col(".") == 1 then
                     vim.cmd([[normal! i`r `]])
@@ -71,6 +76,7 @@ M.write_chunk = function()
             end
         end
     end
+    -- TODO: Document this part
     if vim.fn.col(".") == 1 then
         vim.cmd("normal! i`")
     else
@@ -78,22 +84,29 @@ M.write_chunk = function()
     end
 end
 
--- Send Python chunk to R
+-- Internal function to send a Python code chunk to R for execution.
+-- This is not exposed in the module table `M` and is only called within `M.send_R_chunk`.
+-- @param m boolean If true, moves to the next chunk after sending the current one.
 local send_py_chunk = function(m)
+    -- Find the start and end of Python code chunk
     local chunkline = vim.fn.search("^[ \t]*```[ ]*{python", "bncW") + 1
     local docline = vim.fn.search("^[ \t]*```", "ncW") - 1
-    local lines = vim.api.nvim_buf_get_lines(0, chunkline - 1, docline, true)
+    local lines = vim.api.nvim_buf_get_lines(0, chunkline - 1, docline, true) -- Get chunk lines
     local ok = send.source_lines(lines, "PythonCode")
-    if ok == 0 then return end
-    if m == true then M.next_chunk() end
+    if ok == 0 then return end -- check if sending was successful
+    if m == true then M.next_chunk() end -- optional: move to next chunk
 end
 
--- Send R chunk to R
+--- Sends the current R code chunk to R for execution.
+-- This function ensures the cursor is positioned inside an R code chunk before attempting to send it.
+-- If inside a Python code chunk, it will delegate to `send_py_chunk`.
+-- @param m boolean If true, moves to the next chunk after sending the current one.
 M.send_R_chunk = function(m)
+    -- Ensure cursor is at the start of an R code chunk
     if vim.fn.getline(vim.fn.line(".")):find("^%s*```%s*{r") then
         vim.fn.cursor(vim.fn.line(".") + 1, 1)
     end
-    if not M.is_in_R_code(false) then
+    -- Check for R code chunk; if not, check for Python code chunk
     if not M.is_in_code_chunk('r', false) then
         if not M.is_in_code_chunk('python', false) then
             warn("Not inside an R code chunk.")
@@ -102,6 +115,7 @@ M.send_R_chunk = function(m)
         end
         return
     end
+    -- find and send R chunk for execution
     local chunkline = vim.fn.search("^[ \t]*```[ ]*{r", "bncW") + 1
     local docline = vim.fn.search("^[ \t]*```", "ncW") - 1
     local lines = vim.api.nvim_buf_get_lines(0, chunkline - 1, docline, true)
