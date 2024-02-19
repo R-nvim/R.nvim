@@ -1,5 +1,3 @@
--- TODO: Make the echo/silent option work
-
 local config = require("r.config").get_config()
 local warn = require("r").warn
 local utils = require("r.utils")

@@ -64,7 +64,7 @@ M.write_chunk = function()
             end
             return
         else
-            -- TODO: Document this part
+            -- inline R code within markdown text
             if config.rmdchunk == 2 then
                 if vim.fn.col(".") == 1 then
                     vim.cmd([[normal! i`r `]])
@@ -76,7 +76,7 @@ M.write_chunk = function()
             end
         end
     end
-    -- TODO: Document this part
+    -- R code: just insert the backtick
     if vim.fn.col(".") == 1 then
         vim.cmd("normal! i`")
     else
@@ -161,7 +161,7 @@ M.setup = function()
     local rmdtime = vim.fn.reltime() -- Track setup time
     local cfg = require("r.config").get_config()
 
-    -- Configure key mapping for writing chunks based on configuration settings (TODO: elaborate)
+    -- Configure key mapping for writing chunks based on configuration settings
     if type(cfg.rmdchunk) == "number" and (cfg.rmdchunk == 1 or cfg.rmdchunk == 2) then
         vim.api.nvim_buf_set_keymap(
             0,
@@ -208,8 +208,6 @@ M.setup = function()
         "Time"
     )
 end
-
---TODO: Explain the insides of M.make
 
 --- Compiles the current R Markdown document into a specified output format.
 -- This function updates the document before calling the R function `nvim.interlace.rmd`
