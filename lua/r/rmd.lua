@@ -4,41 +4,39 @@ local send = require("r.send")
 
 local M = {}
 
---- Checks if the cursor is currently positioned inside a R code block within a document.
--- This function searches backwards for the start of an R code chunk indicated by ```{r
+
+--- Checks if the cursor is currently positioned inside a code block within a document for a specified language.
+-- This function searches backwards for the start of a code chunk indicated by ```{language
 -- and forwards for the end of any code chunk indicated by ```. It then compares these positions
--- to determine if the cursor is inside a R code block.
+-- to determine if the cursor is inside a code block of the specified language.
+-- @param language string The programming language to check for (e.g., 'r', 'python').
+-- @param verbose boolean If true, it will display a warning message when the cursor is not inside a code chunk of the specified language.
+-- @return boolean Returns true if inside a code chunk of the specified language, false otherwise.
+M.is_in_code_chunk = function(language, verbose)
+    local chunkStartPattern = "^[ \t]*```[ ]*{" .. language
+    -- bncW: search backwards, don't move cursor, also match at cursor, no wrap around the end of the buffer
+    local chunkline = vim.fn.search(chunkStartPattern, "bncW") -- Search for chunk start
+    local docline = vim.fn.search("^[ \t]*```$", "bncW") -- Search for any code chunk end
+    if chunkline > docline and chunkline ~= vim.fn.line(".") then
+        return true
+    else
+        if verbose then warn("Not inside a " .. language .. " code chunk.") end -- Warn if not in chunk and verbose is true
+        return false
+    end
+end
+
+--
+--- Checks if the cursor is currently positioned inside a R code block within a document.
+-- This function is now a wrapper around the generalized `is_in_code_chunk` function.
 ---@param vrb boolean If true, it will display a warning message when the cursor is not inside an R code chunk.
 ---@return boolean Returns true if inside an R code chunk, false otherwise.
 M.is_in_R_code = function(vrb)
-    -- bncW: search backwards, don't move cursor, also match at cursor, no wrap around the end of the buffer
-    local chunkline = vim.fn.search("^[ \t]*```[ ]*{r", "bncW") -- Search for R chunk start
-    local docline = vim.fn.search("^[ \t]*```$", "bncW") -- Search for any code chunk end (buggy??)
-    if chunkline > docline and chunkline ~= vim.fn.line(".") then
-        return true
-    else
-        if vrb then warn("Not inside an R code chunk.") end
-        return false
-    end
+    return M.is_in_code_chunk("r", vrb)
 end
 
---- Checks if the cursor is currently positioned inside a Python code block within a document.
--- Similar to `is_in_R_code` but checks for Python code blocks instead.
--- @param vrb boolean If true, displays a warning when not inside a Python code chunk.
--- @return boolean True if inside a Python code chunk, false otherwise.
-M.is_in_Py_code = function(vrb)
-    local chunkline = vim.fn.search("^[ \t]*```[ ]*{python", "bncW")
-    local docline = vim.fn.search("^[ \t]*```$", "bncW")
-    if chunkline > docline and chunkline ~= vim.fn.line(".") then
-        return true
-    else
-        if vrb then warn("Not inside a Python code chunk.") end
-        return false
-    end
-end
 
 M.write_chunk = function()
-    if not M.is_in_R_code(false) then
+    if not M.is_in_code_chunk('r', false) then -- Check if cursor is inside an R code chunk
         if vim.fn.getline(vim.fn.line(".")):find("^%s*$") then
             local curline = vim.fn.line(".")
             if vim.o.filetype == "quarto" then
@@ -96,7 +94,8 @@ M.send_R_chunk = function(m)
         vim.fn.cursor(vim.fn.line(".") + 1, 1)
     end
     if not M.is_in_R_code(false) then
-        if not M.is_in_Py_code(false) then
+    if not M.is_in_code_chunk('r', false) then
+        if not M.is_in_code_chunk('python', false) then
             warn("Not inside an R code chunk.")
         else
             send_py_chunk(m)
@@ -162,6 +161,7 @@ M.setup = function()
     vim.api.nvim_buf_set_var(0, "rplugin_knitr_pattern", "^``` *{.*}$")
 
     -- Pointer to function called by generic functions
+    -- TODO: replace with M.is_in_code_chunk then remove is_in_R_code definition
     vim.api.nvim_buf_set_var(0, "IsInRCode", M.is_in_R_code)
 
     -- Key bindings
