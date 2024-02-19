@@ -629,4 +629,49 @@ M.chain = function()
     M.source_lines(chain, nil)
 end
 
+local r_fun_query = vim.treesitter.query.parse(
+    "r",
+    [[
+(left_assignment
+  (function_definition) 
+) @rfun
+]]
+)
+
+local get_root_node = function(bufnr)
+    local parser = vim.treesitter.get_parser(bufnr, "r", {})
+    local tree = parser:parse()[1]
+    return tree:root()
+end
+
+M.funs = function(bufnr, capture_all)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+    if vim.bo[bufnr].filetype ~= "r" then
+        vim.notify("Not an R file")
+        return
+    end
+
+    local root_node = get_root_node(bufnr)
+    local cursor_pos = vim.api.nvim_win_get_cursor(0)
+
+    for id, node in r_fun_query:iter_captures(root_node, bufnr, 0, -1) do
+        local name = r_fun_query.captures[id]
+        if name == "rfun" then
+            local start_row, _, end_row, _ = node:range()
+            local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row, false)
+            local function_text = table.concat(lines, "\n")
+
+            if
+                cursor_pos[1] >= start_row
+                and cursor_pos[1] <= end_row
+                and not capture_all
+            then
+                M.cmd(function_text)
+            else
+                if capture_all then M.cmd(function_text) end
+            end
+        end
+    end
+end
 return M
