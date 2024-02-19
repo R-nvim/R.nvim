@@ -657,8 +657,10 @@ M.funs = function(bufnr, capture_all)
     local cursor_pos = vim.fn.line(".")
 
     for id, node in r_fun_query:iter_captures(root_node, bufnr, 0, -1) do
+        -- vim.print(node:next_named_sibling())
         local name = r_fun_query.captures[id]
-        if name == "rfun" then
+        if name == "rfun" and node:next_named_sibling() ~= nil then
+            -- vim.print(node:child_count())
             local start_row, _, end_row, _ = node:range()
 
             local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
