@@ -351,7 +351,7 @@ M.selection = function(m)
     if vim.o.filetype ~= "r" then
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_code_chunk('python', 0)
+            and require("r.rmd").is_in_code_chunk('python', false)
         then
             ispy = true
         elseif not vim.b.IsInRCode(false) then
