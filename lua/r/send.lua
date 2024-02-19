@@ -660,10 +660,8 @@ M.funs = function(bufnr, capture_all)
         if name == "rfun" then
             local start_row, _, end_row, _ = node:range()
 
-            -- vim.print(start_row, end_row, cursor_pos, capture_all)
             local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
 
-            -- Convert lines to a table
             local lines_table = {}
             for _, line in ipairs(lines) do
                 table.insert(lines_table, line)
