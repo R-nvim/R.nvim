@@ -160,15 +160,15 @@ M.view_df = function(oname, howto, txt)
     local csv_lines = vim.split(string.gsub(txt, "\019", "'"), "\020")
     local tsvnm = config.tmpdir .. "/" .. oname .. ".tsv"
 
+    vim.fn.writefile(csv_lines, tsvnm)
+    M.add_for_deletion(tsvnm)
+
     if type(config.csv_app) == "function" then
-        config.csv_app(tsvnm)
+        config.csv_app(tsvnm, txt)
         return
     end
 
     if config.csv_app ~= "" then
-        vim.fn.writefile(csv_lines, tsvnm)
-        M.add_for_deletion(tsvnm)
-
         local cmd
         if config.csv_app:find("%%s") then
             cmd = string.format(config.csv_app, tsvnm)
@@ -201,8 +201,7 @@ M.view_df = function(oname, howto, txt)
         vim.api.nvim_cmd({ cmd = howto, args = { oname } }, {})
     end
     vim.api.nvim_set_option_value("modifiable", true, { scope = "local" })
-    vim.api.nvim_buf_set_lines(0, 1, 1, true, csv_lines)
-    vim.fn.setline(1, csv_lines)
+    vim.api.nvim_buf_set_lines(0, 0, 1, true, csv_lines)
     vim.api.nvim_set_option_value("modifiable", false, { scope = "local" })
     vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
     vim.api.nvim_set_option_value("filetype", "csv", { scope = "local" })
