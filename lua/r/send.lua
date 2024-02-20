@@ -633,8 +633,10 @@ local r_fun_query = vim.treesitter.query.parse(
     "r",
     [[
 (left_assignment
-  (function_definition) 
-) @rfun
+  (function_definition)) @rfun
+
+(equals_assignment
+  (function_definition)) @rfun
 ]]
 )
 
