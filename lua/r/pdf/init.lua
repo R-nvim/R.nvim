@@ -1,4 +1,5 @@
 local config = require("r.config").get_config()
+local utils = require("r.utils")
 local warn = require("r").warn
 local job = require("r.job")
 
@@ -97,14 +98,14 @@ end
 ---@param pid number Pid of window application.
 M.focus_window = function(wttl, pid)
     if config.has_X_tools then
-        vim.system({ "wmctrl", "-a", wttl })
+        utils.system({ "wmctrl", "-a", wttl })
     elseif
         vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
     then
         if pid and pid ~= 0 then
-            vim.system({ "swaymsg", '[pid="' .. tostring(pid) .. '"]', "focus" })
+            utils.system({ "swaymsg", '[pid="' .. tostring(pid) .. '"]', "focus" })
         elseif wttl then
-            vim.system({ "swaymsg", '[name="' .. wttl .. '"]', "focus" })
+            utils.system({ "swaymsg", '[name="' .. wttl .. '"]', "focus" })
         end
     end
 end

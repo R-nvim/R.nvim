@@ -1,4 +1,5 @@
 local config = require("r.config").get_config()
+local utils = require("r.utils")
 local warn = require("r").warn
 local saved_home = nil
 local M = {}
@@ -7,7 +8,7 @@ M.set_R_home = function()
     -- R and Vim use different values for the $HOME variable.
     if config.set_home_env then
         saved_home = vim.env.HOME
-        local obj = vim.system({
+        local obj = utils.system({
             "reg.exe",
             "QUERY",
             "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
