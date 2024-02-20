@@ -163,6 +163,7 @@ end
 ---@param cmd string[] The command to execute.
 ---@param opts table Options.
 function M.system(cmd, opts)
+    opts = opts or {}
     local function close_handles(state)
         for _, handle in pairs({ state.handle, state.stdout, state.stderr }) do
             if not handle:is_closing() then handle:close() end
@@ -235,7 +236,7 @@ function M.system(cmd, opts)
     end
     if stderr then
         stderr_data = {}
-        stderr:read_start(stdio_handler(state.stderr, stdout_data))
+        stderr:read_start(stdio_handler(state.stderr, stderr_data))
     end
 
     local methods = {}
@@ -248,6 +249,8 @@ function M.system(cmd, opts)
             local err = string.format("Command timed out: %s", table.concat(cmd, " "))
             return { code = 0, signal = 2, stdout = "", stderr = err }
         end
+
+        return state.result
     end
 
     return setmetatable({ pid = state.pid, _state = state }, { __index = methods })
