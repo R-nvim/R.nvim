@@ -16,7 +16,7 @@ Minimal configuration:
 
 ```lua
     {
-        'jalvesaq/tmp-R-nvim',
+        "jalvesaq/tmp-R-nvim",
         lazy = false
     },
 
@@ -26,11 +26,11 @@ More complex configuration:
 
 ```lua
     {
-        'jalvesaq/tmp-R-nvim',
+        "jalvesaq/tmp-R-nvim",
         config = function ()
             -- Create a table with the options to be passed to setup()
             local opts = {
-                R_args = {'--quiet', '--no-save'},
+                R_args = {"--quiet", "--no-save"},
                 hook = {
                     after_config = function ()
                         -- This function will be called at the FileType event

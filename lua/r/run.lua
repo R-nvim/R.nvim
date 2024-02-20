@@ -10,6 +10,7 @@ local what_R = "R"
 local R_pid = 0
 local r_args
 local nseconds
+local uv = vim.loop
 
 local start_R2
 start_R2 = function()
@@ -18,10 +19,11 @@ start_R2 = function()
         return
     end
 
+    r_args = table.concat(config.R_args, " ")
     if what_R:find("custom") then
-        r_args = vim.fn.split(vim.fn.input("Enter parameters for R: "))
-    else
-        r_args = config.R_args
+        vim.ui.input({ prompt = "Enter parameters for R: " }, function(input)
+            if input then r_args = input end
+        end)
     end
 
     vim.fn.writefile({}, config.localtmpdir .. "/globenv_" .. vim.env.NVIMR_ID)
@@ -100,7 +102,7 @@ start_R2 = function()
     if config.nvim_wd == 0 then
         rwd = M.get_buf_dir()
     elseif config.nvim_wd == 1 then
-        rwd = vim.fn.getcwd()
+        rwd = uv.cwd() or ""
     end
     if rwd ~= "" and not config.remote_compldir then
         if config.is_windows then rwd = rwd:gsub("\\", "/") end
@@ -139,11 +141,13 @@ start_R2 = function()
         return
     end
 
-    local args_str = table.concat(r_args, " ")
-    local rcmd = config.R_app .. " " .. args_str
-
-    require("r.external_term").start_extern_term(rcmd)
+    require("r.external_term").start_extern_term()
 end
+
+--- Return arguments to start R defined as config.R_args or during custom R
+--- start.
+---@return string
+M.get_r_args = function() return r_args end
 
 M.auto_start_R = function()
     if vim.g.R_Nvim_status > 3 then return end
@@ -201,7 +205,9 @@ end
 
 -- Send SIGINT to R
 M.signal_to_R = function(signal)
-    if R_pid ~= 0 then utils.system({ "kill", "-s", tostring(signal), tostring(R_pid) }) end
+    if R_pid ~= 0 then
+        utils.system({ "kill", "-s", tostring(signal), tostring(R_pid) })
+    end
 end
 
 M.check_nvimcom_running = function()
@@ -218,8 +224,7 @@ M.check_nvimcom_running = function()
 end
 
 M.wait_nvimcom_start = function()
-    local args_str = table.concat(r_args, " ")
-    if string.find(args_str, "vanilla") then return 0 end
+    if string.find(r_args, "vanilla") then return 0 end
 
     if config.wait < 2 then config.wait = 2 end
 
@@ -404,7 +409,7 @@ M.insert = function(cmd, type)
 end
 
 M.insert_commented = function()
-    local lin = vim.fn.getline(vim.fn.line("."))
+    local lin = utils.get_current_line()
     local cleanl = lin:gsub('".-"', "")
     if cleanl:find(";") then
         warn("`print(line)` works only if `line` is a single command")
@@ -416,11 +421,11 @@ end
 -- Get the word either under or after the cursor.
 -- Works for word(| where | is the cursor position.
 M.get_keyword = function()
-    local line = vim.fn.getline(vim.fn.line("."))
+    local line = utils.get_current_line()
     local llen = #line
     if llen == 0 then return "" end
 
-    local i = vim.fn.col(".")
+    local i = vim.api.nvim_win_get_cursor(0)[2] + 1
 
     -- Skip opening braces
     local char
@@ -466,22 +471,23 @@ M.action = function(rcmd, mode, args)
     if vim.o.syntax == "rdoc" then
         rkeyword = vim.fn.expand("<cword>")
     elseif vim.o.syntax == "rbrowser" then
-        local lnum = vim.fn.line(".")
+        local lnum = vim.api.nvim_win_get_cursor(0)[1]
         local line = vim.fn.getline(lnum)
         rkeyword = require("r.browser").get_name(lnum, line)
     elseif mode and mode == "v" and vim.fn.line("'<") == vim.fn.line("'>") then
-        rkeyword = vim.fn.strpart(
-            vim.fn.getline(vim.fn.line("'>")),
-            vim.fn.col("'<") - 1,
-            vim.fn.col("'>") - vim.fn.col("'<") + 1
-        )
+        local lnum = vim.fn.line("'>")
+        if lnum then
+            rkeyword = vim.fn.strpart(
+                vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1],
+                vim.fn.col("'<") - 1,
+                vim.fn.col("'>") - vim.fn.col("'<") + 1
+            )
+        end
     else
         rkeyword = M.get_keyword()
     end
 
-    if #rkeyword > 0 then
-        if rcmd == "help" then
-            local rhelppkg, rhelptopic
+    if not rkeyword or #rkeyword == 0 then return end
 
             if rkeyword:find("::") then
                 local rhelplist = vim.fn.split(rkeyword, "::")

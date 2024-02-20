@@ -134,41 +134,51 @@ M.finish_inserting = function(type, txt)
     vim.api.nvim_buf_set_lines(0, vim.fn.line("."), vim.fn.line("."), true, lines)
 end
 
--- This function is called by nvimcom
-M.obj = function(fname)
-    local fcont = vim.fn.readfile(fname)
-    vim.cmd({ cmd = "tabnew", args = config.tmpdir .. "/edit_" .. vim.env.NVIMR_ID })
-    vim.fn.setline(vim.fn.line("."), fcont)
-    vim.api.nvim_set_option_value("filetype", "r", { scope = "local" })
-    vim.cmd("stopinsert")
-    vim.cmd(
-        "autocmd BufUnload <buffer> lua require('os').remove('"
-            .. config.tmpdir
-            .. "/edit_"
-            .. vim.env.NVIMR_ID
-            .. "_wait')"
-    )
+-- This function is called by nvimcom::vi(object).
+-- The output of dput(object) is saved in fnm and R waits for the deletion of
+-- fnm_wait.
+---@param fnm string
+M.obj = function(fnm)
+    vim.schedule(function()
+        vim.cmd({ cmd = "tabnew", args = { fnm } })
+        vim.api.nvim_set_option_value("filetype", "r", { scope = "local" })
+        vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
+        vim.cmd("stopinsert")
+        vim.api.nvim_create_autocmd("BufUnload", {
+            command = "lua vim.loop.fs_unlink('" .. fnm .. "_wait')",
+            pattern = "<buffer>",
+        })
+    end)
 end
 
+--- Display output sent by nvimcom
+---@param fnm string File name
+---@param txt string Text to display
 M.get_output = function(fnm, txt)
+    txt = txt:gsub("\019", "'")
+    local lines = vim.split(txt, "\020")
     vim.cmd("tabnew " .. fnm)
-    vim.fn.setline(1, vim.split(txt:gsub("\019", "'"), "\020"))
+    vim.api.nvim_buf_set_lines(0, 0, -1, true, lines)
     vim.cmd("normal! gT")
 end
 
+--- Displays the contents of a data.frame or matrix sent by nvimcom.
+---@param oname string The name of the data.frame or matrix.
+---@param howto string How to display.
+---@param txt string The concatenated lines to be displayed.
 M.view_df = function(oname, howto, txt)
     local csv_lines = vim.split(string.gsub(txt, "\019", "'"), "\020")
     local tsvnm = config.tmpdir .. "/" .. oname .. ".tsv"
 
+    vim.fn.writefile(csv_lines, tsvnm)
+    M.add_for_deletion(tsvnm)
+
     if type(config.csv_app) == "function" then
-        config.csv_app(tsvnm)
+        config.csv_app(tsvnm, txt)
         return
     end
 
     if config.csv_app ~= "" then
-        vim.fn.writefile(csv_lines, tsvnm)
-        M.add_for_deletion(tsvnm)
-
         local cmd
         if config.csv_app:find("%%s") then
             cmd = string.format(config.csv_app, tsvnm)
@@ -201,13 +211,13 @@ M.view_df = function(oname, howto, txt)
         vim.api.nvim_cmd({ cmd = howto, args = { oname } }, {})
     end
     vim.api.nvim_set_option_value("modifiable", true, { scope = "local" })
-    vim.api.nvim_buf_set_lines(0, 1, 1, true, csv_lines)
-    vim.fn.setline(1, csv_lines)
+    vim.api.nvim_buf_set_lines(0, 0, 1, true, csv_lines)
     vim.api.nvim_set_option_value("modifiable", false, { scope = "local" })
     vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
     vim.api.nvim_set_option_value("filetype", "csv", { scope = "local" })
 end
 
+--- Called by nvimcom. Displays the "Examples" section of R documentation.
 M.open_example = function()
     if vim.fn.bufloaded(config.tmpdir .. "/example.R") ~= 0 then
         vim.cmd("bunload! " .. config.tmpdir:gsub(" ", "\\ "))

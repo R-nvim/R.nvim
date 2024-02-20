@@ -112,7 +112,7 @@ M.reopen_win = function()
             return
         end
     end
-    local edbuf = vim.fn.bufname("%")
+    local edbuf = vim.api.nvim_win_get_buf(0)
     split_window()
     vim.api.nvim_win_set_buf(0, r_bufnr)
     vim.cmd.sb(edbuf)
@@ -121,18 +121,18 @@ end
 M.start_term = function()
     vim.g.R_Nvim_status = 6
 
-    local edbuf = vim.fn.bufname("%")
+    local edbuf = vim.api.nvim_win_get_buf(0)
     vim.o.switchbuf = "useopen"
 
     split_window()
 
     if config.is_windows then require("r.windows").set_R_home() end
-    require("r.job").R_term_open(config.R_app .. " " .. table.concat(config.R_args, " "))
+    require("r.job").R_term_open(config.R_app .. " " .. require("r.run").get_r_args())
     if config.is_windows then
         -- vim.cmd("redraw") -- superfluous?
         require("r.windows").unset_R_home()
     end
-    r_bufnr = vim.fn.bufnr("%")
+    r_bufnr = vim.api.nvim_win_get_buf(0)
     if config.esc_term then
         vim.api.nvim_buf_set_keymap(
             0,
@@ -146,7 +146,7 @@ M.start_term = function()
         vim.cmd("setlocal " .. optn)
     end
 
-    if vim.b.number then
+    if vim.api.nvim_win_get_option(0, "number") then
         if config.setwidth < 0 and config.setwidth > -17 then
             number_col = config.setwidth
         else

@@ -37,7 +37,9 @@ M.set_buf_options = function()
     require("r.maps").create("rdoc")
 end
 
--- Prepare R documentation output to be displayed by Nvim
+---Prepare R documentation output to be displayed by Nvim
+---@param txt string
+---@return string[]
 M.fix_rdoc = function(txt)
     txt = string.gsub(txt, "%_\008", "")
     txt = string.gsub(txt, "<URL: %([^>]*%)>", " |%1|")
@@ -68,7 +70,7 @@ M.go_to_ex_section = function()
     if i == 0 then
         warn("No example section below.")
     else
-        vim.fn.cursor(i + 1, 1)
+        vim.api.nvim_win_set_cursor(0, { i, 0 })
     end
 end
 

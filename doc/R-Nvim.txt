@@ -5,7 +5,7 @@
 Authors: R.nvim team (see: https://github.com/R.nvim)
 
 Version: 0.9.0
-For Neovim >= 0.9.0
+For Neovim >= 0.9.5
 
  1. Overview                                    |R.nvim-overview|
  2. Main features                               |R.nvim-features|

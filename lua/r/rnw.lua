@@ -133,7 +133,7 @@ end
 local M = {}
 
 M.write_chunk = function()
-    if vim.fn.getline(vim.fn.line(".")) ~= "" and not M.is_in_R_code(false) then
+    if utils.get_current_line() ~= "" and not M.is_in_R_code(false) then
         vim.fn.feedkeys("<", "n")
     else
         local curline = vim.fn.line(".")
@@ -163,18 +163,18 @@ M.is_in_R_code = function(vrb)
 end
 
 M.previous_chunk = function()
-    local curline = vim.fn.line(".")
+    local curline = vim.api.nvim_win_get_cursor(0)[1]
     if M.is_in_R_code(false) then
         local i = vim.fn.search("^<<.*$", "bnW")
-        if i ~= 0 then vim.fn.cursor(i - 1, 1) end
+        if i ~= 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end
     end
     local i = vim.fn.search("^<<.*$", "bnW")
     if i == 0 then
-        vim.fn.cursor(curline, 1)
+        vim.api.nvim_win_set_cursor(0, { curline, 0 })
         warn("There is no previous R code chunk to go.")
         return
     else
-        vim.fn.cursor(i + 1, 1)
+        vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
     end
 end
 
@@ -184,7 +184,7 @@ M.next_chunk = function()
         warn("There is no next R code chunk to go.")
         return
     else
-        vim.fn.cursor(i + 1, 1)
+        vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
     end
 end
 
@@ -194,7 +194,7 @@ end
 -- let rm_knit_cache = true
 --
 -- If don't want to answer the question about deleting files, and
--- if you trust this code more than I do, put in your vimrc:
+-- if you trust this code more than I do, put in your config:
 --
 -- ask_rm_knitr_cache = false
 --
@@ -211,19 +211,16 @@ M.rm_knit_cache = function()
         if not cpdir:find("/$") then cpdir = cpdir .. "/" end
     end
 
-    local cleandir
-    vim.fn.inputsave()
-    local answer = vim.fn.input('Delete all files from "' .. cpdir .. '"? [y/n]: ')
-    vim.fn.inputrestore()
-    if answer == "y" then
-        cleandir = true
-    else
-        cleandir = false
-    end
-
-    if cleandir then
-        send.cmd('rm(list=ls(all.names=TRUE)); unlink("' .. cpdir .. '*")')
-    end
+    vim.schedule(function()
+        vim.ui.input(
+            { prompt = 'Delete all files from "' .. cpdir .. '"? [y/n]: ' },
+            function(input)
+                if input:find("y") then
+                    send.cmd('rm(list=ls(all.names=TRUE)); unlink("' .. cpdir .. '*")')
+                end
+            end
+        )
+    end)
 end
 
 M.weave = function(bibtex, knit, pdf)
@@ -276,7 +273,7 @@ end
 
 -- Send Sweave chunk to R
 M.send_chunk = function(m)
-    if vim.fn.getline(vim.fn.line(".")):find("^<<") then
+    if utils.get_current_line():find("^<<") then
         vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
     elseif not M.is_in_R_code(false) then
         return
@@ -305,7 +302,7 @@ M.SyncTeX_get_master = function()
         local basenm
         local mdir
         local mfile = vim.fn.getline(ischild):gsub(".*%% *!Rnw *root *= *(.*) *", "%1")
-        if vim.fn.match(mfile, "/") > 0 then
+        if mfile:find("/") > 1 then
             mdir = mfile:gsub("(.*)/.*", "%1")
             basenm = mfile:gsub(".*/", "")
             if mdir == ".." then mdir = vim.fn.expand("%:p:h:h") end
@@ -392,7 +389,7 @@ M.SyncTeX_forward = function(gotobuf)
     local basedir
 
     if vim.fn.filereadable(vim.fn.expand("%:p:r") .. "-concordance.tex") == 1 then
-        lnum = vim.fn.line(".")
+        lnum = vim.api.nvim_win_get_cursor(0)[1]
     else
         local ischild = vim.fn.search("% *!Rnw *root *=", "bwn")
         if ischild > 0 then
@@ -401,7 +398,7 @@ M.SyncTeX_forward = function(gotobuf)
             local mlines = vim.fn.readfile(vim.fn.expand("%:p:h") .. "/" .. mfile)
             for k, v in ipairs(mlines) do
                 if v:match("SweaveInput.*" .. vim.fn.expand("%:t")) then
-                    lnum = vim.fn.line(".")
+                    lnum = vim.api.nvim_win_get_cursor(0)[1]
                     break
                 elseif
                     v:match("<<.*child *=.*" .. vim.fn.expand("%:t") .. '["' .. "']")
@@ -487,7 +484,7 @@ M.SyncTeX_forward = function(gotobuf)
         )
         if config.latexcmd[1] ~= "default" and config.latexcmd ~= "synctex" then
             warn(
-                'Note: The string "-synctex=1" is not in your R_latexcmd. Please check your vimrc.'
+                'Note: The string "-synctex=1" is not in your latexcmd. Please check your config.'
             )
         end
         return

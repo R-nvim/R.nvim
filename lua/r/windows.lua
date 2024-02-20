@@ -8,13 +8,15 @@ M.set_R_home = function()
     -- R and Vim use different values for the $HOME variable.
     if config.set_home_env then
         saved_home = vim.env.HOME
-        local obj = utils.system({
-            "reg.exe",
-            "QUERY",
-            "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
-            "/v",
-            "Personal",
-        }, { text = true }):wait()
+        local obj = utils
+            .system({
+                "reg.exe",
+                "QUERY",
+                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+                "/v",
+                "Personal",
+            }, { text = true })
+            :wait()
         local prs = obj.stdout
         if prs and #prs > 0 then
             prs = prs:gsub(".*REG_SZ%s*", "")
@@ -36,13 +38,13 @@ end
 M.start_Rgui = function()
     vim.g.R_Nvim_status = 6
 
-    if vim.fn.match(config.R_app, "Rterm") then
+    if config.R_app:find("Rterm") then
         warn('"R_app" cannot be "Rterm.exe". R will crash if you send any command.')
         vim.wait(200)
     end
 
     M.set_R_home()
-    vim.fn.system("start " .. config.R_app .. " " .. table.concat(config.R_args, " "))
+    vim.fn.system("start " .. config.R_app .. " " .. require("r.run").get_r_args())
     M.unset_R_home()
 
     require("r.run").wait_nvimcom_start()

@@ -4,7 +4,6 @@ local warn = require("r").warn
 local cursor = require("r.cursor")
 local job = require("r.job")
 local doc_buf_id = nil
-local doc_buf_nr = -1
 
 local M = {}
 
@@ -107,7 +106,7 @@ M.show = function(rkeyword, txt)
     if doc_buf_id and vim.api.nvim_buf_is_loaded(doc_buf_id) then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
-        vim.cmd.sb(doc_buf_nr)
+        vim.cmd.sb(doc_buf_id)
         vim.cmd("set switchbuf=" .. savesb)
     else
         if vpager == "tab" or vpager == "float" then
@@ -123,14 +122,11 @@ M.show = function(rkeyword, txt)
     end
 
     doc_buf_id = vim.api.nvim_win_get_buf(0)
-    doc_buf_nr = vim.fn.bufnr()
     vim.api.nvim_buf_set_name(doc_buf_id, rkeyword)
 
-    vim.cmd("setlocal modifiable")
+    vim.api.nvim_set_option_value("modifiable", true, { scope = "local" })
+    vim.api.nvim_buf_set_lines(0, 0, -1, true, {})
 
-    local save_unnamed_reg = vim.fn.getreg("@@")
-    vim.o.modifiable = true
-    vim.cmd("silent normal! ggdG")
     txt = txt:gsub("\019", "'")
     local lines
     if txt:find("\008") then
@@ -138,18 +134,18 @@ M.show = function(rkeyword, txt)
     else
         lines = vim.split(txt, "\020")
     end
-    vim.fn.setline(1, lines)
+    vim.api.nvim_buf_set_lines(0, 0, -1, true, lines)
     if rkeyword:match("R History") then
         vim.api.nvim_set_option_value("filetype", "r", { scope = "local" })
-        vim.fn.cursor(1, 1)
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
     elseif rkeyword:match("(help)") or vim.fn.search("\008", "nw") > 0 then
         require("r.rdoc").set_buf_options()
-        vim.fn.cursor(1, 1)
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
     elseif rkeyword:find("%.Rd$") then
         -- Called by devtools::load_all().
         -- See https://github.com/jalvesaq/Nvim-R/issues/482
         vim.api.nvim_set_option_value("filetype", "rhelp", { scope = "local" })
-        vim.fn.cursor(1, 1)
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
     else
         vim.o.syntax = "rout"
         vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
@@ -163,9 +159,8 @@ M.show = function(rkeyword, txt)
             ":q<CR>",
             { noremap = true, silent = true }
         )
-        vim.fn.cursor(1, 1)
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
     end
-    vim.fn.setreg("@@", save_unnamed_reg)
     vim.cmd("setlocal nomodified")
     vim.cmd("stopinsert")
 end

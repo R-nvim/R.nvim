@@ -1,3 +1,5 @@
+local utils = require("r.utils")
+
 local M = {}
 
 --- Remove leading spaces and trailing comments from string
@@ -9,37 +11,43 @@ local clean_current_line = function(line)
     return cleanline
 end
 
+--- Remove the comment prefix from a line
+---@param line string
+---@return string
 M.clean_oxygen_line = function(line)
     if line:find("^%s*#'") then
-        local synID = vim.fn.synID(vim.fn.line("."), vim.fn.col("."), 1)
+        local lc = vim.api.nvim_win_get_cursor(0)
+        local synID = vim.fn.synID(lc[1], lc[2] + 1, 1)
         local synName = vim.fn.synIDattr(synID, "name")
         if synName == "rOExamples" then line = string.gsub(line, "^%s*#'", "") end
     end
     return line
 end
 
--- Returns the line number of the first non-empty line after the current
--- paragraph. If the cursor is on the last paragraph, returns the last line
--- number.
+---Returns the line number of the first non-empty line after the current
+---paragraph. If the cursor is on the last paragraph, returns the last line
+---number.
+---@return number
 M.find_next_paragraph = function()
-    local current_line = vim.fn.line(".")
+    local current_line = vim.api.nvim_win_get_cursor(0)[1]
+    local last_line = vim.fn.line("$")
     local next_empty_line = current_line
 
     -- Search for the next empty line (paragraph separator)
-    while next_empty_line <= vim.fn.line("$") do
+    while next_empty_line <= last_line do
         if vim.fn.trim(vim.fn.getline(next_empty_line)) == "" then break end
         next_empty_line = next_empty_line + 1
     end
 
     -- Move cursor to the first non-empty line after the empty line
-    while next_empty_line <= vim.fn.line("$") do
+    while next_empty_line <= last_line do
         if vim.fn.trim(vim.fn.getline(next_empty_line)) ~= "" then
             return next_empty_line
         end
         next_empty_line = next_empty_line + 1
     end
 
-    return vim.fn.line("$")
+    return last_line
 end
 
 -- Moves the cursor to the first non-empty line after the current paragraph.
@@ -69,6 +77,9 @@ M.move_next_line = function()
     vim.api.nvim_win_set_cursor(0, { lnum, 0 })
 end
 
+--- Get the first parameter passed to the function currently under the cursor
+--- Also look for piped objects as first parameters.
+---@return string
 M.get_first_obj = function()
     -- FIXME: The algorithm is too simple to correctly get the first object
     -- in complex cases.
@@ -76,8 +87,8 @@ M.get_first_obj = function()
     -- of a function.
 
     local firstobj = ""
-    local line = vim.fn.getline(vim.fn.line(".")):gsub("#.*", "")
-    local begin = vim.fn.col(".")
+    local line = utils.get_current_line():gsub("#.*", "")
+    local begin = vim.api.nvim_win_get_cursor(0)[2] + 1
 
     local find_po = function(s)
         if s:find("|>") then

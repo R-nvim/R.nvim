@@ -3,12 +3,13 @@ local warn = require("r").warn
 local job = require("r.job")
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 
-local envstring = vim.fn.tolower(
+local lc_env = string.lower(
     tostring(vim.env.LC_MESSAGES) .. tostring(vim.env.LC_ALL) .. tostring(vim.env.LANG)
 )
-local isutf8 = (envstring:find("utf-8") or envstring:find("utf8")) and 1 or 0
+local isutf8 = (lc_env:find("utf-8", 1, true) or lc_env:find("utf8", 1, true)) and true
+    or false
 local curview = "GlobalEnv"
-local ob_winnr
+local ob_win
 local ob_buf
 local upobcnt = false
 local running_objbr = false
@@ -151,7 +152,7 @@ local set_buf_options = function()
         pattern = "<buffer>",
     })
 
-    vim.fn.setline(1, ".GlobalEnv | Libraries")
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { ".GlobalEnv | Libraries" })
 
     require("r.config").real_setup()
     require("r.maps").create("rbrowser")
@@ -165,7 +166,8 @@ find_parent = function(child, curline, curpos)
     local suffix
     while curline > 3 do
         curline = curline - 1
-        line = vim.fn.getline(curline):gsub("\t.*", "")
+        line = vim.api.nvim_buf_get_lines(0, curline - 1, curline, true)[1]
+        line = line:gsub("\t.*", "")
         idx = line:find("#")
         if idx < curpos then
             parent = line:sub(idx + 1)
@@ -212,17 +214,12 @@ start_OB = function()
     local savesb = vim.o.switchbuf
     vim.o.switchbuf = "useopen,usetab"
 
-    if vim.fn.bufloaded("Object_Browser") == 1 then
-        local curwin = vim.fn.win_getid()
-        local curtab = vim.fn.tabpagenr()
-        vim.cmd.sb("Object_Browser")
-        local objbrtab = vim.fn.tabpagenr()
-        vim.cmd("quit")
-        vim.fn.win_gotoid(curwin)
-
-        if curtab ~= objbrtab then start_OB() end
+    if ob_buf and vim.api.nvim_buf_is_loaded(ob_buf) then
+        local ob_tab = vim.api.nvim_win_get_tabpage(ob_win)
+        vim.api.nvim_buf_delete(ob_buf, {})
+        if ob_tab ~= vim.api.nvim_win_get_tabpage(0) then start_OB() end
     else
-        local edbuf = vim.fn.bufnr()
+        local edbuf = vim.api.nvim_get_current_buf()
 
         if config.objbr_place:find("RIGHT") then
             vim.cmd("botright vsplit Object_Browser")
@@ -262,8 +259,8 @@ start_OB = function()
 
         set_buf_options()
         curview = "GlobalEnv"
-        ob_winnr = vim.fn.winnr()
-        ob_buf = vim.fn.bufnr()
+        ob_buf = vim.api.nvim_get_current_buf()
+        ob_win = vim.api.nvim_get_current_win()
 
         if config.objbr_auto_start and auto_starting then
             auto_starting = false
@@ -303,9 +300,9 @@ end
 M.get_curview = function() return curview end
 
 M.get_pkg_name = function()
-    local lnum = vim.fn.line(".")
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
     while lnum > 0 do
-        local line = vim.fn.getline(lnum)
+        local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
         if line:find("^   :#[0-9a-zA-Z%.]*\t") then
             return line:gsub("   :#(.-)\t.*", "%1")
         end
@@ -370,37 +367,28 @@ M.update_OB = function(what)
 
     upobcnt = true
 
-    local bufl = vim.fn.execute("buffers")
-    if bufl:find("Object_Browser") == nil then
+    if not ob_buf then
         upobcnt = false
         return "Object_Browser not listed"
     end
 
-    local fcntt
+    local lines
     if wht == "GlobalEnv" then
-        fcntt = vim.fn.readfile(config.localtmpdir .. "/globenv_" .. vim.env.NVIMR_ID)
+        lines = vim.fn.readfile(config.localtmpdir .. "/globenv_" .. vim.env.RNVIM_ID)
     else
-        fcntt = vim.fn.readfile(config.localtmpdir .. "/liblist_" .. vim.env.NVIMR_ID)
+        lines = vim.fn.readfile(config.localtmpdir .. "/liblist_" .. vim.env.RNVIM_ID)
     end
-
-    local obcur
-    if vim.api.nvim_win_is_valid(ob_winnr) then
-        obcur = vim.api.nvim_win_get_cursor(ob_winnr)
-    end
+    if not lines then lines = { "Error loading data" } end
 
     vim.api.nvim_set_option_value("modifiable", true, { buf = ob_buf })
-    vim.api.nvim_buf_set_lines(ob_buf, 0, -1, false, fcntt)
-
-    if vim.api.nvim_win_is_valid(ob_winnr) and obcur[1] <= #fcntt then
-        vim.api.nvim_win_set_cursor(ob_winnr, obcur)
-    end
+    vim.api.nvim_buf_set_lines(ob_buf, 0, -1, false, lines)
 
     vim.api.nvim_set_option_value("modifiable", false, { buf = ob_buf })
     upobcnt = false
 end
 
 M.on_double_click = function()
-    local lnum = vim.fn.line(".")
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
     if lnum == 2 then return end
 
     -- Toggle view: Objects in the workspace X List of libraries
@@ -416,7 +404,8 @@ M.on_double_click = function()
     end
 
     -- Toggle state of list or data.frame: open X closed
-    local curline = vim.fn.getline(vim.fn.line("."))
+    lnum = vim.api.nvim_win_get_cursor(0)[1]
+    local curline = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
     local key = M.get_name(lnum, curline)
     if curview == "GlobalEnv" then
         if curline:find("&#.*\t") then
@@ -454,10 +443,10 @@ end
 
 M.on_right_click = function()
     -- The function vim.fn.popup_menu() doesn't work when called from Lua.
-    local lnum = vim.fn.line(".")
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
     if lnum == 1 then return end
 
-    local line = vim.fn.getline(vim.fn.line("."))
+    local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
     local key = M.get_name(lnum, line)
     if key == "" then return end
 
@@ -512,7 +501,11 @@ M.on_right_click = function()
     hasbrowsermenu = true
 end
 
-M.on_BufUnload = function() send_to_nvimcom("N", "OnOBBufUnload") end
+M.on_BufUnload = function()
+    ob_buf = nil
+    ob_win = nil
+    send_to_nvimcom("N", "OnOBBufUnload")
+end
 
 M.print_list_tree = function()
     -- FIXME: document this function as a debugging tool or delete it and the

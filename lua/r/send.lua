@@ -129,7 +129,8 @@ end
 
 --- Send to R all lines above the current one.
 M.above_lines = function()
-    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("."), false)
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
+    local lines = vim.api.nvim_buf_get_lines(0, 0, lnum, false)
 
     -- Remove empty lines
     local filtered_lines = {}
@@ -191,10 +192,10 @@ end
 ---@param direction string
 ---@param correctpos boolean
 M.line_part = function(direction, correctpos)
-    local lin =
-        vim.api.nvim_buf_get_lines(0, vim.fn.line(".") - 1, vim.fn.line("."), true)[1]
+    local lin = utils.get_current_line()
     local idx = vim.fn.col(".") - 1
-    if correctpos then vim.fn.cursor(vim.fn.line("."), idx) end
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
+    if correctpos then vim.api.nvim_win_set_cursor(0, { lnum, idx - 1 }) end
     local rcmd
     if direction == "right" then
         rcmd = string.sub(lin, idx + 1)
@@ -285,9 +286,10 @@ M.chunks_up_to_here = function()
 end
 
 -- Send to R Console the code under a Vim motion
-M.motion = function(type)
+M.motion = function(_)
     local lstart = vim.fn.line("'[")
     local lend = vim.fn.line("']")
+    if not lstart or not lend then return end
     if lstart == lend then
         M.line("stay", lstart)
     else
@@ -336,7 +338,7 @@ M.marked_block = function(m)
     if ok == 0 then return end
 
     if m == true and lineB ~= vim.fn.line("$") then
-        vim.fn.cursor(lineB, 1)
+        vim.api.nvim_win_set_cursor(0, { lineB, 0 })
         cursor.move_next_line()
     end
 end
@@ -349,18 +351,15 @@ M.selection = function(m)
     if vim.o.filetype ~= "r" then
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_code_chunk('python', false)
+            and require("r.rmd").is_in_code_chunk("python", false)
         then
             ispy = true
         elseif not vim.b.IsInRCode(false) then
             if
-                (
-                    vim.o.filetype == "rnoweb"
-                    and vim.fn.getline(vim.fn.line(".")) ~= "\\Sexpr{"
-                )
+                (vim.o.filetype == "rnoweb" and utils.get_current_line() ~= "\\Sexpr{")
                 or (
                     (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-                    and vim.fn.getline(vim.fn.line(".")) ~= "`r "
+                    and utils.get_current_line() ~= "`r "
                 )
             then
                 warn("Not inside an R code chunk.")
@@ -469,8 +468,8 @@ M.line = function(m, lnum)
             if m == true then cursor.move_next_line() end
             return
         end
-        if not require("r.rmd").is_in_code_chunk('r', false) then
-            if not require("r.rmd").is_in_code_chunk('python', false) then
+        if not require("r.rmd").is_in_code_chunk("r", false) then
+            if not require("r.rmd").is_in_code_chunk("python", false) then
                 warn("Not inside either R or Python code chunk.")
             else
                 line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
@@ -482,7 +481,7 @@ M.line = function(m, lnum)
     end
 
     if vim.o.syntax == "rdoc" then
-        local line1 = vim.fn.getline(vim.fn.line("."))
+        local line1 = utils.get_current_line()
         if line1:find("^The topic") then
             local topic = line:gsub(".*::", "")
             local package = line:gsub("::.*", "")
@@ -522,7 +521,7 @@ M.line = function(m, lnum)
                 if rpd < 0 or has_op then
                     lnum = lnum + 1
                 else
-                    vim.fn.cursor(lnum, 1)
+                    vim.api.nvim_win_set_cursor(0, { lnum, 0 })
                     break
                 end
             end
@@ -547,6 +546,9 @@ M.line = function(m, lnum)
 end
 
 -- Function to check if a string ends with a specific suffix
+---@param str string
+---@param suffix string
+---@return boolean
 local function ends_with(str, suffix) return str:sub(-#suffix) == suffix end
 
 local function trim_lines(array)
@@ -562,6 +564,8 @@ local function trim_lines(array)
 end
 
 -- Remove the <-, |>/%>% or + from the text
+---@param array string[]
+---@return string[]
 local function sanatize_text(array)
     local firstString = array[1]
     -- Remove "<-" and everything before it from the first string
@@ -579,6 +583,9 @@ local function sanatize_text(array)
     return array
 end
 
+--- Check if string ends in one of specific pre-defined patterns
+---@param str string
+---@return boolean
 function ends_with(str)
     return string.match(str, "[|%%]%>%%?[%s]*$") ~= nil
         or string.match(str, "%+[%s]*$") ~= nil
@@ -593,6 +600,7 @@ local function chain_start_at(arr)
     return #arr
 end
 
+--- Send the above chain of piped commands
 M.chain = function()
     -- Get the current line, the start and end line of the paragraph
     local current_line = vim.fn.line(".")

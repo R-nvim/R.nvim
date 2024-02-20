@@ -37,7 +37,7 @@ local begin_waiting_more_input = function ()
     incomplete_input.size = in_size
     incomplete_input.received = received
     incomplete_input.str = cmdsplt[2]
-    vim.fn.timer_start(100, stop_waiting_nsr)
+    vim.fn.timer_start(1000, stop_waiting_nsr)
 end
 
 --- Executes a command received through stdout, if it matches known patterns.
@@ -62,8 +62,8 @@ M.on_stdout = function(job_id, data, _)
         if #cmd > 0 then
             if cmd:sub(1, 1) == "\017" then
                 cmdsplt = vim.fn.split(cmd, "\017")
-                in_size = vim.fn.str2nr(cmdsplt[1])
-                received = vim.fn.strlen(cmdsplt[2])
+                in_size = tonumber(cmdsplt[1])
+                received = string.len(cmdsplt[2])
                 if in_size == received then
                     cmd = cmdsplt[2]
                     exec_stdout_cmd(cmd, job_id)
@@ -127,7 +127,6 @@ local default_handlers = {
 ---@param job_name string The name of the job.
 ---@param cmd table The command to start the job with.
 ---@param opt table|nil Optional table of handlers for job events.
----@return number Job PID
 M.start = function(job_name, cmd, opt)
     local h = default_handlers
     if opt then h = opt end
@@ -140,7 +139,6 @@ M.start = function(job_name, cmd, opt)
         return 0
     end
     jobs[job_name] = jobid
-    return vim.fn.jobpid(jobid)
 end
 
 --- Opens an R terminal with the specified command.
@@ -171,7 +169,7 @@ end
 ---@return number
 M.get_pid = function(job_name)
     if jobs[job_name] then
-        return vim.fn.jobpid(jobs[job_name])
+        return vim.fn.jobpid(jobs[job_name]) or 0
     end
     return 0
 end

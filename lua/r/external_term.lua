@@ -1,12 +1,13 @@
 local config = require("r.config").get_config()
 local utils = require("r.utils")
+local uv = vim.loop
 local warn = require("r").warn
 local vit = require("r.utils").value_in_table
 
 local term_name = nil
 local term_cmd = nil
 local tmuxsname = nil
-local base_pane_index = nil
+local base_pane = nil
 
 -- local global_option_value = TmuxOption("some_option", "global")
 -- local window_option_value = TmuxOption("some_option", "")
@@ -29,7 +30,7 @@ local external_term_config = function()
         end
     end
 
-    local etime = vim.fn.reltime()
+    local etime = uv.hrtime()
     if type(config.external_term) == "boolean" then
         -- Terminal name not defined. Try to find a known one.
         local terminals = {
@@ -91,16 +92,15 @@ local external_term_config = function()
     else
         term_cmd = term_cmd .. " -e"
     end
-    require("r.edit").add_to_debug_info(
-        "external term setup",
-        vim.fn.reltimefloat(vim.fn.reltime(etime, vim.fn.reltime())),
-        "Time"
-    )
+    etime = (uv.hrtime() - etime) / 1000000000
+    require("r.edit").add_to_debug_info("external term setup", etime, "Time")
 end
 
 local M = {}
 
-M.start_extern_term = function(Rcmd)
+M.start_extern_term = function()
+    local rcmd = config.R_app .. " " .. require("r.run").get_r_args()
+
     local tmuxcnf = " "
     if config.config_tmux then
         tmuxcnf = '-f "' .. config.tmpdir .. "/tmux.conf" .. '"'
@@ -149,7 +149,7 @@ M.start_extern_term = function(Rcmd)
         .. " R_DEFAULT_PACKAGES="
         .. vim.env.R_DEFAULT_PACKAGES
         .. " "
-        .. Rcmd
+        .. rcmd
 
     if config.is_darwin then
         open_cmd = string.format(
@@ -193,10 +193,7 @@ M.start_extern_term = function(Rcmd)
             'cd "' .. vim.fn.getcwd() .. '"',
             open_cmd,
         }
-        local init_file = config.tmpdir
-            .. "/initterm_"
-            .. vim.fn.reltimefloat(vim.fn.reltime())
-            .. ".sh"
+        local init_file = config.tmpdir .. "/initterm_" .. vim.fn.rand() .. ".sh"
         vim.fn.writefile(initterm, init_file)
         local job = require("r.job")
         job.start("Terminal emulator", { "sh", init_file }, {
@@ -228,28 +225,33 @@ M.send_cmd_to_external_term = function(command)
     local str = cmd:gsub("'", "'\\\\''")
     if str:find("^-") then str = " " .. str end
 
-    if not base_pane_index then
-        local obj = utils.system(
-            { "tmux", "-L", "Rnvim show-options", "-gv", "pane-base-index" },
-            { text = true }
-        ):wait()
-        base_pane_index = obj.stdout:gsub("\n+$", "")
+    if not base_pane then
+        local obj = utils
+            .system(
+                { "tmux", "-L", "Rnvim show-options", "-gv", "pane-base-index" },
+                { text = true }
+            )
+            :wait()
+        base_pane = obj.stdout:gsub("\n+$", "")
     end
     local scmd
-    scmd = string.format(
-        "tmux -L Rnvim set-buffer '%s\n' ; tmux -L Rnvim paste-buffer -t %s.%s",
-        str,
-        tmuxsname,
-        base_pane_index
-    )
 
-    local rlog = vim.fn.system(scmd)
-    if vim.v.shell_error ~= 0 then
-        rlog = rlog:gsub("\n", " "):gsub("\r", " ")
-        warn(rlog)
+    scmd = { "tmux", "-L", "Rnvim", "set-buffer", str .. "\n" }
+    local obj = utils.system(scmd):wait()
+    if obj.code ~= 0 then
+        warn(obj.stderr)
         require("r.run").clear_R_info()
         return false
     end
+
+    scmd = { "tmux", "-L", "Rnvim", "paste-buffer", "-t", tmuxsname .. "." .. base_pane }
+    obj = utils.system(scmd):wait()
+    if obj.code ~= 0 then
+        warn(obj.stderr)
+        require("r.run").clear_R_info()
+        return false
+    end
+
     return true
 end
 

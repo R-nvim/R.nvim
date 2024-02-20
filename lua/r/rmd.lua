@@ -1,9 +1,10 @@
 local warn = require("r").warn
 local config = require("r.config").get_config()
 local send = require("r.send")
+local utils = require("r.utils")
+local uv = vim.loop
 
 local M = {}
-
 
 --- Checks if the cursor is currently positioned inside a code block within a document for a specified language.
 -- This function searches backwards for the start of a code chunk indicated by ```{language
@@ -29,18 +30,15 @@ end
 -- This function is now a wrapper around the generalized `is_in_code_chunk` function.
 ---@param vrb boolean If true, it will display a warning message when the cursor is not inside an R code chunk.
 ---@return boolean Returns true if inside an R code chunk, false otherwise.
-M.is_in_R_code = function(vrb)
-    return M.is_in_code_chunk("r", vrb)
-end
-
+M.is_in_R_code = function(vrb) return M.is_in_code_chunk("r", vrb) end
 
 --- Writes a new R code chunk at the current cursor position
 -- This function checks if the cursor is in an empty line and not in an R code chunk
 -- it then inserts a new R code chunk template.
 -- Different templates are used based on the file type (e.g., Quarto).
 M.write_chunk = function()
-    if not M.is_in_code_chunk('r', false) then -- Check if cursor is inside an R code chunk
-        if vim.fn.getline(vim.fn.line(".")):find("^%s*$") then  -- Check if cursor is in an empty line
+    if not M.is_in_code_chunk("r", false) then -- Check if cursor is inside an R code chunk
+        if utils.get_current_line():find("^%s*$") then -- Check if cursor is in an empty line
             local curline = vim.fn.line(".")
             -- Insert new R code chunk template based on filetype
             if vim.o.filetype == "quarto" then -- Quarto
@@ -103,12 +101,13 @@ end
 ---@param m boolean If true, moves to the next chunk after sending the current one.
 M.send_R_chunk = function(m)
     -- Ensure cursor is at the start of an R code chunk
-    if vim.fn.getline(vim.fn.line(".")):find("^%s*```%s*{r") then
-        vim.fn.cursor(vim.fn.line(".") + 1, 1)
+    if utils.get_current_line():find("^%s*```%s*{r") then
+        local lnum = vim.api.nvim_win_get_cursor(0)[1]
+        vim.api.nvim_win_set_cursor(0, { lnum + 1, 0 })
     end
     -- Check for R code chunk; if not, check for Python code chunk
-    if not M.is_in_code_chunk('r', false) then
-        if not M.is_in_code_chunk('python', false) then
+    if not M.is_in_code_chunk("r", false) then
+        if not M.is_in_code_chunk("python", false) then
             warn("Not inside an R code chunk.")
         else
             send_py_chunk(m)
@@ -128,18 +127,18 @@ end
 -- This function searches backwards from the current cursor position for the start of
 -- any R or Python code chunk.
 M.previous_chunk = function()
-    local curline = vim.fn.line(".")
-    if M.is_in_code_chunk('r', false) or M.is_in_code_chunk('python', false) then
+    local curline = vim.api.nvim_win_get_cursor(0)[1]
+    if M.is_in_code_chunk("r", false) or M.is_in_code_chunk("python", false) then
         local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- search for chunk start
-        if i ~= 0 then vim.fn.cursor(i - 1, 1) end -- if found, move cursor at chunk
+        if i ~= 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end -- if found, move cursor at chunk
     end
     local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- Search again for chunk start
     if i == 0 then
-        vim.fn.cursor(curline, 1)
+        vim.api.nvim_win_set_cursor(0, { curline, 0 })
         warn("There is no previous R code chunk to go.")
         return
     else
-        vim.fn.cursor(i + 1, 1) -- position cursor inside the chunk
+        vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the chunk
     end
 end
 
@@ -151,14 +150,14 @@ M.next_chunk = function()
         warn("There is no next R code chunk to go.")
         return
     else
-        vim.fn.cursor(i + 1, 1) -- position cursor inside the next chunk
+        vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the next chunk
     end
 end
 
 --- Setup function for initializing module functionality.
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.
 M.setup = function()
-    local rmdtime = vim.fn.reltime() -- Track setup time
+    local rmdtime = uv.hrtime() -- Track setup time
     local cfg = require("r.config").get_config()
 
     -- Configure key mapping for writing chunks based on configuration settings
@@ -202,11 +201,8 @@ M.setup = function()
         end
     end)
     -- Record setup time for debugging
-    require("r.edit").add_to_debug_info(
-        "rmd setup",
-        vim.fn.reltimefloat(vim.fn.reltime(rmdtime, vim.fn.reltime())),
-        "Time"
-    )
+    rmdtime = (uv.hrtime() - rmdtime) / 1000000000
+    require("r.edit").add_to_debug_info("rmd setup", rmdtime, "Time")
 end
 
 --- Compiles the current R Markdown document into a specified output format.

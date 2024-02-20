@@ -7,7 +7,7 @@ local M = {}
 -- If the cursor is on the last paragraph, the 'end' key contains the last line
 -- number.
 M.get_current = function()
-    local current_line = vim.fn.line(".")
+    local current_line = vim.api.nvim_win_get_cursor(0)[1]
     local start_line = current_line
     local end_line = current_line
 

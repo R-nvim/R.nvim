@@ -1,5 +1,13 @@
 local M = {}
 
+--- Return the line of the current buffer at the cursor position
+---@return string
+function M.get_current_line()
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
+    local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
+    return line
+end
+
 --- Get the directory of the current buffer in Neovim.
 -- This function retrieves the path of the current buffer and extracts the directory part.
 ---@return string The directory path of the current buffer or an empty string if not applicable.
@@ -114,14 +122,16 @@ local get_fw_info_Sway = function()
     local config = require("r.config").get_config()
     local obj = M.system({ "swaymsg", "-t", "get_tree" }, { text = true }):wait()
     local t = vim.json.decode(obj.stdout, { luanil = { object = true, array = true } })
-    for _, v1 in pairs(t.nodes) do
-        if #v1 and v1.type == "output" and v1.nodes then
-            for _, v2 in pairs(v1.nodes) do
-                if #v2 and v2.type == "workspace" and v2.nodes then
-                    for _, v3 in pairs(v2.nodes) do
-                        if v3.focused == true then
-                            config.term_title = v3.name
-                            config.term_pid = v3.pid
+    if t and t.nodes then
+        for _, v1 in pairs(t.nodes) do
+            if #v1 and v1.type == "output" and v1.nodes then
+                for _, v2 in pairs(v1.nodes) do
+                    if #v2 and v2.type == "workspace" and v2.nodes then
+                        for _, v3 in pairs(v2.nodes) do
+                            if v3.focused == true then
+                                config.term_title = v3.name
+                                config.term_pid = v3.pid
+                            end
                         end
                     end
                 end
@@ -130,7 +140,7 @@ local get_fw_info_Sway = function()
     end
 end
 
---- Get PID and name of active window and register them in config.term_pid and
+--- Record PID and name of active window and register them in config.term_pid and
 --- config.term_title respectively.
 --- This function call the appropriate function for each system.
 function M.get_focused_win_info()
@@ -161,7 +171,8 @@ end
 --- See: https://github.com/jalvesaq/tmp-R-Nvim/issues/36
 --- Note: Neovim source code is under Apache License 2.0.
 ---@param cmd string[] The command to execute.
----@param opts table Options.
+---@param opts table|nil Options.
+---@return table
 function M.system(cmd, opts)
     opts = opts or {}
     local function close_handles(state)
@@ -185,32 +196,29 @@ function M.system(cmd, opts)
             code = nil,
             signal = nil,
             stdout = nil,
-            stderr = nil
-        }
+            stderr = nil,
+        },
     }
 
     --- run the command
-    state.handle, state.pid = vim.loop.spawn(cmd[1],
-        {
-            args = vim.list_slice(cmd, 2),
-            stdio = { nil, stdout, stderr },
-            cwd = opts.cwd,
-            detach = opts.detach,
-            hide = true
-        },
-        function(code, signal)
-            --- make sure to close all handles
-            close_handles(state)
+    state.handle, state.pid = vim.loop.spawn(cmd[1], {
+        args = vim.list_slice(cmd, 2),
+        stdio = { nil, stdout, stderr },
+        cwd = opts.cwd,
+        detach = opts.detach,
+        hide = true,
+    }, function(code, signal)
+        --- make sure to close all handles
+        close_handles(state)
 
-            state.done = true
-            state.result = {
-                code = code,
-                signal = signal,
-                stdout = stdout_data and table.concat(stdout_data) or nil,
-                stderr = stderr_data and table.concat(stderr_data) or nil
-            }
-        end
-    )
+        state.done = true
+        state.result = {
+            code = code,
+            signal = signal,
+            stdout = stdout_data and table.concat(stdout_data) or nil,
+            stderr = stderr_data and table.concat(stderr_data) or nil,
+        }
+    end)
 
     local function stdio_handler(steam, store)
         return function(err, data)

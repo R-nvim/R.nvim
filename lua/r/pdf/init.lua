@@ -2,6 +2,7 @@ local config = require("r.config").get_config()
 local utils = require("r.utils")
 local warn = require("r").warn
 local job = require("r.job")
+local uv = vim.loop
 
 local check_installed = function()
     if vim.fn.executable(config.pdfviewer) == 0 then
@@ -16,7 +17,7 @@ end
 local M = {}
 
 M.setup = function()
-    local ptime = vim.fn.reltime()
+    local ptime = uv.hrtime()
     check_installed()
 
     -- FIXME: Delete evince.lua, okular.lua and qpdfview.lua if nobody has
@@ -64,11 +65,8 @@ M.setup = function()
 
     require("r.utils").get_focused_win_info()
 
-    require("r.edit").add_to_debug_info(
-        "pdf setup",
-        vim.fn.reltimefloat(vim.fn.reltime(ptime, vim.fn.reltime())),
-        "Time"
-    )
+    ptime = (uv.hrtime() - ptime) / 1000000000
+    require("r.edit").add_to_debug_info("pdf setup", ptime, "Time")
 end
 
 --- Call the appropriate function to open a PDF document.
