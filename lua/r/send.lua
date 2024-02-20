@@ -661,8 +661,14 @@ M.funs = function(bufnr, capture_all)
     for id, node in r_fun_query:iter_captures(root_node, bufnr, 0, -1) do
         local name = r_fun_query.captures[id]
 
-        if name == "rfun" and node:next_named_sibling() ~= nil then
+        -- Kinda hacky, but it works. Check if the parent of the function is
+        -- the root node, if so, it's a top level function
+        local s, _, _, _ = node:parent():range()
+
+        if name == "rfun" and s == 0 then
+            -- vim.print(node:parent():range())
             local start_row, _, end_row, _ = node:range()
+            vim.print(s)
 
             local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
 
