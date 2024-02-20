@@ -170,8 +170,8 @@ function M.system(cmd, opts)
     end
 
     --- init state
-    local stdout = assert(vim.uv.new_pipe(false))
-    local stderr = assert(vim.uv.new_pipe(false))
+    local stdout = assert(vim.loop.new_pipe(false))
+    local stderr = assert(vim.loop.new_pipe(false))
     local stdout_data, stderr_data
     local state = {
         handle = nil,
@@ -189,7 +189,7 @@ function M.system(cmd, opts)
     }
 
     --- run the command
-    state.handle, state.pid = vim.uv.spawn(cmd[1],
+    state.handle, state.pid = vim.loop.spawn(cmd[1],
         {
             args = vim.list_slice(cmd, 2),
             stdio = { nil, stdout, stderr },
