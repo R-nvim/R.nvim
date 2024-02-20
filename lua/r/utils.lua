@@ -61,7 +61,7 @@ end
 local get_fw_info_X = function()
     local config = require("r.config").get_config()
     local warn = require("r").warn
-    local obj = vim.system({ "xprop", "-root" }, { text = true }):wait()
+    local obj = M.system({ "xprop", "-root" }, { text = true }):wait()
     if obj.code ~= 0 then
         warn("Failed to run `xprop -root`")
         return
@@ -78,7 +78,7 @@ local get_fw_info_X = function()
         warn("Failed to get ID of active window")
         return
     end
-    obj = vim.system({ "xprop", "-id", awin }, { text = true }):wait()
+    obj = M.system({ "xprop", "-id", awin }, { text = true }):wait()
     if obj.code ~= 0 then
         warn("xprop is required to get window PID")
         return
@@ -112,7 +112,7 @@ end
 
 local get_fw_info_Sway = function()
     local config = require("r.config").get_config()
-    local obj = vim.system({ "swaymsg", "-t", "get_tree" }, { text = true }):wait()
+    local obj = M.system({ "swaymsg", "-t", "get_tree" }, { text = true }):wait()
     local t = vim.json.decode(obj.stdout, { luanil = { object = true, array = true } })
     for _, v1 in pairs(t.nodes) do
         if #v1 and v1.type == "output" and v1.nodes then
@@ -152,6 +152,105 @@ function M.get_focused_win_info()
                 .. "See: R.nvim/lua/r/utils.lua"
         )
     end
+end
+
+--- Execute a command with arguments.
+--- This is a simplified version of `vim.system()` in dev version of Neovim.
+--- This make sure that R.nvim can run on stable version of Neovim.
+--- This function will be removed when `vim.system()` is available in the stable version.
+--- See: https://github.com/jalvesaq/tmp-R-Nvim/issues/36
+--- Note: Neovim source code is under Apache License 2.0.
+---@param cmd string[] The command to execute.
+---@param opts table Options.
+function M.system(cmd, opts)
+    local function close_handles(state)
+        for _, handle in pairs({ state.handle, state.stdout, state.stderr }) do
+            if not handle:is_closing() then handle:close() end
+        end
+    end
+
+    --- init state
+    local stdout = assert(vim.uv.new_pipe(false))
+    local stderr = assert(vim.uv.new_pipe(false))
+    local stdout_data, stderr_data
+    local state = {
+        handle = nil,
+        pid = nil,
+        done = false,
+        cmd = cmd,
+        stdout = stdout,
+        stderr = stderr,
+        result = {
+            code = nil,
+            signal = nil,
+            stdout = nil,
+            stderr = nil
+        }
+    }
+
+    --- run the command
+    state.handle, state.pid = vim.uv.spawn(cmd[1],
+        {
+            args = vim.list_slice(cmd, 2),
+            stdio = { nil, stdout, stderr },
+            cwd = opts.cwd,
+            detach = opts.detach,
+            hide = true
+        },
+        function(code, signal)
+            --- make sure to close all handles
+            close_handles(state)
+
+            state.done = true
+            state.result = {
+                code = code,
+                signal = signal,
+                stdout = stdout_data and table.concat(stdout_data) or nil,
+                stderr = stderr_data and table.concat(stderr_data) or nil
+            }
+        end
+    )
+
+    local function stdio_handler(steam, store)
+        return function(err, data)
+            if err then error(err) end
+
+            if data ~= nil then
+                if opts.text then
+                    data = data:gsub("\r\n", "\n")
+                    table.insert(store, data)
+                else
+                    table.insert(store, data)
+                end
+            else
+                steam:read_stop()
+                steam:close()
+            end
+        end
+    end
+
+    if stdout then
+        stdout_data = {}
+        stdout:read_start(stdio_handler(state.stdout, stdout_data))
+    end
+    if stderr then
+        stderr_data = {}
+        stderr:read_start(stdio_handler(state.stderr, stdout_data))
+    end
+
+    local methods = {}
+    function methods:wait()
+        vim.wait(2 ^ 31, function() return state.done end)
+
+        if not state.done then
+            state.handle:kill("sigint")
+            close_handles(state)
+            local err = string.format("Command timed out: %s", table.concat(cmd, " "))
+            return { code = 0, signal = 2, stdout = "", stderr = err }
+        end
+    end
+
+    return setmetatable({ pid = state.pid, _state = state }, { __index = methods })
 end
 
 return M
