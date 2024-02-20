@@ -25,6 +25,7 @@ local config = {
     close_term          = true,
     compldir            = "",
     config_tmux         = true,
+    csv_app             = "",
     disable_cmds        = { "" },
     esc_term            = true,
     external_term       = false, -- might be a string
@@ -146,6 +147,10 @@ local compare_types = function(k)
     elseif k == "rmdchunk" then
         if not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number") then
             warn("Option `rmdchunk` should be either number or string.")
+        end
+    elseif k == "csv_app" then
+        if not (type(config[k]) == "string" or type(config[k]) == "function") then
+            warn("Option `csv_app` should be either string or function.")
         end
     elseif type(config[k]) ~= "nil" and (type(user_opts[k]) ~= type(config[k])) then
         warn(

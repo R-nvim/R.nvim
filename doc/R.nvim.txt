@@ -1735,7 +1735,14 @@ Calc:
    csv_app = 'localc'
    csv_app = 'c:/Program Files (x86)/LibreOffice 4/program/scalc.exe'
 <
-`csv_app` does not work on Windows.
+`csv_app` was not tested on Windows.
+
+Finally, `csv_app` can also be a Lua function which will receive a single
+argument: the name of the `tsv` file.
+
+If `csv_app` is not defined, there will be addional maps to open the file in a
+split window, in a vertical split window, or to see only the head of the csv
+in a split window.
 
 If the default field delimiter causes problems in your case, you can change it
 in your config. Valid values are `"\t"`, `";"` and `","`. Example:
