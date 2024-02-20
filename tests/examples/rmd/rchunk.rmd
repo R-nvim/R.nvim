@@ -1,0 +1,19 @@
+---
+title: "Example R Markdown"
+author: "Author Name"
+date: "2024-02-20"
+output: html_document
+---
+
+# Introduction
+
+This is an R Markdown document.
+Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents.
+For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+```{r load-data}
+library(ggplot2)
+data(mpg, package = "ggplot2")
+```
+
+That was an example R code chunk
