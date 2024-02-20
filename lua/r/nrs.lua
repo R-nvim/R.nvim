@@ -1,4 +1,5 @@
 local edit = require("r.edit")
+local utils = require("r.utils")
 local job = require("r.job")
 local config = require("r.config").get_config()
 local warn = require("r").warn
@@ -198,7 +199,7 @@ local init_exit = function(_, data, _)
                 "R CMD build " .. config.rnvim_home .. "/nvimcom",
             }
             vim.fn.writefile(shf, config.tmpdir .. "/buildpkg.sh")
-            local obj = vim.system(
+            local obj = utils.system(
                 { "sh", config.tmpdir .. "/buildpkg.sh" },
                 { text = true }
             )

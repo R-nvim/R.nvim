@@ -546,7 +546,7 @@ local windows_config = function()
         end
 
         local get_rip = function(run_cmd)
-            local resp = vim.system(run_cmd, { text = true }):wait()
+            local resp = utils.system(run_cmd, { text = true }):wait()
             local rout = vim.split(resp.stdout, "\n")
             local rip = {}
             for _, v in pairs(rout) do

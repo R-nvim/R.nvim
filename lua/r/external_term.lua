@@ -1,4 +1,5 @@
 local config = require("r.config").get_config()
+local utils = require("r.utils")
 local warn = require("r").warn
 local vit = require("r.utils").value_in_table
 
@@ -228,7 +229,7 @@ M.send_cmd_to_external_term = function(command)
     if str:find("^-") then str = " " .. str end
 
     if not base_pane_index then
-        local obj = vim.system(
+        local obj = utils.system(
             { "tmux", "-L", "Rnvim show-options", "-gv", "pane-base-index" },
             { text = true }
         ):wait()
