@@ -158,28 +158,33 @@ end
 
 M.view_df = function(oname, howto, txt)
     local csv_lines = vim.split(string.gsub(txt, "\019", "'"), "\020")
+    local tsvnm = config.tmpdir .. "/" .. oname .. ".tsv"
 
-    if config.csv_app then
-        local tsvnm = config.tmpdir .. "/" .. oname .. ".tsv"
+    if type(config.csv_app) == "function" then
+        config.csv_app(tsvnm)
+        return
+    end
+
+    if config.csv_app ~= "" then
         vim.fn.writefile(csv_lines, tsvnm)
         M.add_for_deletion(tsvnm)
 
-        if type(config.csv_app) == "function" then
-            config.csv_app(tsvnm)
-            return
-        end
-
         local cmd
-        if string.find(config.csv_app, "%%s") then
+        if config.csv_app:find("%%s") then
             cmd = string.format(config.csv_app, tsvnm)
         else
             cmd = config.csv_app .. " " .. tsvnm
         end
 
-        if string.find(config.csv_app, "^terminal:") == 0 then
+        if config.csv_app:find("^terminal:") then
             cmd = string.gsub(cmd, "^terminal:", "")
             vim.cmd("tabnew | terminal " .. cmd)
             vim.cmd("startinsert")
+            return
+        end
+
+        if config.csv_app:find("^:") then
+            vim.cmd(config.csv_app .. " " .. tsvnm)
             return
         end
 
