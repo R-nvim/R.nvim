@@ -27,6 +27,8 @@ M.set_buf_options = function()
     vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
     vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
     vim.api.nvim_set_option_value("iskeyword", "@,48-57,_,.", { scope = "local" })
+    vim.api.nvim_set_option_value("signcolumn", "no", { scope = "local" })
+    vim.api.nvim_set_option_value("foldcolumn", "0", { scope = "local" })
     if vim.bo.syntax ~= "rdoc" then
         vim.api.nvim_set_option_value("syntax", "rdoc", { scope = "local" })
     end

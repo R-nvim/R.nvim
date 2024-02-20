@@ -115,6 +115,8 @@ local set_buf_options = function()
     vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
     vim.api.nvim_set_option_value("syntax", "rbrowser", { scope = "local" })
     vim.api.nvim_set_option_value("iskeyword", "@,48-57,_,.", { scope = "local" })
+    vim.api.nvim_set_option_value("signcolumn", "no", { scope = "local" })
+    vim.api.nvim_set_option_value("foldcolumn", "0", { scope = "local" })
 
     local opts = { silent = true, noremap = true, expr = false }
     vim.api.nvim_buf_set_keymap(
