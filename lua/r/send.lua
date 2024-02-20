@@ -668,7 +668,6 @@ M.funs = function(bufnr, capture_all)
         if name == "rfun" and s == 0 then
             -- vim.print(node:parent():range())
             local start_row, _, end_row, _ = node:range()
-            vim.print(s)
 
             local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
 
