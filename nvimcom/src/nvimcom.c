@@ -37,8 +37,6 @@ static int verbose = 0;  // 1: version number; 2: initial information; 3: TCP in
 static int allnames = 0; // Show hidden objects in omni completion and
                          // Object Browser?
 static int nlibs = 0;    // Number of loaded libraries.
-static int needs_lib_msg = 0;    // Did the number of libraries change?
-static int needs_glbenv_msg = 0; // Did .GlobalEnv change?
 
 static char nrs_port[16]; // rnvimserver port.
 static char nvimsecr[32]; // Random string used to increase the safety of TCP
@@ -625,6 +623,28 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
 }
 
 /**
+ * @brief Send to R.nvim the string containing the list of objects in
+ * .GlobalEnv.
+ */
+static void send_glb_env(void) {
+    clock_t t1;
+
+    t1 = clock();
+
+    strcpy(send_ge_buf, "+G");
+    strcat(send_ge_buf, glbnvbuf2);
+    send_to_nvim(send_ge_buf);
+
+    if (verbose > 3)
+        REprintf("Time to send message to R.nvim: %f\n",
+                 1000 * ((double)clock() - t1) / CLOCKS_PER_SEC);
+
+    char *tmp = glbnvbuf1;
+    glbnvbuf1 = glbnvbuf2;
+    glbnvbuf2 = tmp;
+}
+
+/**
  * @brief Generate a list of objects in .GlobalEnv and store it in the
  * glbnvbuf2 buffer. The string stored in glbnvbuf2 represents a file with the
  * same format of the `omnils_` files in R.nvim's cache directory.
@@ -680,34 +700,12 @@ static void nvimcom_globalenv_list(void) {
     }
 
     if (changed)
-        needs_glbenv_msg = 1;
+        send_glb_env();
 
     double tmdiff = 1000 * ((double)clock() - tm) / CLOCKS_PER_SEC;
     if (verbose && tmdiff > 500.0)
         REprintf("Time to build GlobalEnv omnils [%lu bytes]: %f ms\n",
                  strlen(glbnvbuf2), tmdiff);
-}
-
-/**
- * @brief Send to R.nvim the string containing the list of objects in
- * .GlobalEnv.
- */
-static void send_glb_env(void) {
-    clock_t t1;
-
-    t1 = clock();
-
-    strcpy(send_ge_buf, "+G");
-    strcat(send_ge_buf, glbnvbuf2);
-    send_to_nvim(send_ge_buf);
-
-    if (verbose > 3)
-        REprintf("Time to send message to R.nvim: %f\n",
-                 1000 * ((double)clock() - t1) / CLOCKS_PER_SEC);
-
-    char *tmp = glbnvbuf1;
-    glbnvbuf1 = glbnvbuf2;
-    glbnvbuf2 = tmp;
 }
 
 /**
@@ -807,8 +805,6 @@ static void nvimcom_checklibs(void) {
 
     nlibs = newnlibs;
 
-    needs_lib_msg = 1;
-
     for (int i = 0; i < newnlibs; i++) {
         PROTECT(l = STRING_ELT(a, i));
         libname = CHAR(l);
@@ -843,6 +839,7 @@ static void nvimcom_checklibs(void) {
     }
     UNPROTECT(1);
 
+    send_libnames();
     return;
 }
 
@@ -876,12 +873,6 @@ static Rboolean nvimcom_task(__attribute__((unused)) SEXP expr,
         nvimcom_checklibs();
         if (autoglbenv)
             nvimcom_globalenv_list();
-        if (needs_lib_msg)
-            send_libnames();
-        if (needs_glbenv_msg)
-            send_glb_env();
-        needs_lib_msg = 0;
-        needs_glbenv_msg = 0;
     }
     if (setwidth && getenv("COLUMNS")) {
         int columns = atoi(getenv("COLUMNS"));
@@ -1003,6 +994,8 @@ static void nvimcom_parse_received_msg(char *buf) {
     switch (buf[0]) {
     case 'A':
         autoglbenv = 1;
+        flag_glbenv = 1;
+        nvimcom_fire();
         break;
     case 'N':
         autoglbenv = 0;
@@ -1254,8 +1247,6 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
         r_is_busy = 0;
 #endif
         nvimcom_checklibs();
-        needs_lib_msg = 0;
-        send_libnames();
     }
 }
 
