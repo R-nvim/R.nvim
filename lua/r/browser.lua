@@ -367,7 +367,7 @@ M.update_OB = function(what)
 
     upobcnt = true
 
-    if not vim.api.nvim_buf_is_loaded(ob_buf) then
+    if not ob_buf then
         upobcnt = false
         return "Object_Browser not listed"
     end
