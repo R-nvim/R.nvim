@@ -194,7 +194,7 @@ end
 -- let rm_knit_cache = true
 --
 -- If don't want to answer the question about deleting files, and
--- if you trust this code more than I do, put in your vimrc:
+-- if you trust this code more than I do, put in your config:
 --
 -- ask_rm_knitr_cache = false
 --
@@ -211,19 +211,16 @@ M.rm_knit_cache = function()
         if not cpdir:find("/$") then cpdir = cpdir .. "/" end
     end
 
-    local cleandir
-    vim.fn.inputsave()
-    local answer = vim.fn.input('Delete all files from "' .. cpdir .. '"? [y/n]: ')
-    vim.fn.inputrestore()
-    if answer == "y" then
-        cleandir = true
-    else
-        cleandir = false
-    end
-
-    if cleandir then
-        send.cmd('rm(list=ls(all.names=TRUE)); unlink("' .. cpdir .. '*")')
-    end
+    vim.schedule(function()
+        vim.ui.input(
+            { prompt = 'Delete all files from "' .. cpdir .. '"? [y/n]: ' },
+            function(input)
+                if input:find("y") then
+                    send.cmd('rm(list=ls(all.names=TRUE)); unlink("' .. cpdir .. '*")')
+                end
+            end
+        )
+    end)
 end
 
 M.weave = function(bibtex, knit, pdf)
@@ -305,7 +302,7 @@ M.SyncTeX_get_master = function()
         local basenm
         local mdir
         local mfile = vim.fn.getline(ischild):gsub(".*%% *!Rnw *root *= *(.*) *", "%1")
-        if vim.fn.match(mfile, "/") > 0 then
+        if mfile:find("/") > 1 then
             mdir = mfile:gsub("(.*)/.*", "%1")
             basenm = mfile:gsub(".*/", "")
             if mdir == ".." then mdir = vim.fn.expand("%:p:h:h") end

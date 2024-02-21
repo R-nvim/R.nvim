@@ -126,11 +126,9 @@ M.show = function(rkeyword, txt)
     doc_buf_nr = vim.fn.bufnr()
     vim.api.nvim_buf_set_name(doc_buf_id, rkeyword)
 
-    vim.cmd("setlocal modifiable")
+    vim.api.nvim_set_option_value("modifiable", true, { scope = "local" })
+    vim.api.nvim_buf_set_lines(0, 0, vim.fn.line("$"), true, {})
 
-    local save_unnamed_reg = vim.fn.getreg("@@")
-    vim.o.modifiable = true
-    vim.cmd("silent normal! ggdG")
     txt = txt:gsub("\019", "'")
     local lines
     if txt:find("\008") then
@@ -165,7 +163,6 @@ M.show = function(rkeyword, txt)
         )
         vim.fn.cursor(1, 1)
     end
-    vim.fn.setreg("@@", save_unnamed_reg)
     vim.cmd("setlocal nomodified")
     vim.cmd("stopinsert")
 end

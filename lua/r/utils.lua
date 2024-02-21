@@ -161,7 +161,7 @@ end
 --- See: https://github.com/jalvesaq/tmp-R-Nvim/issues/36
 --- Note: Neovim source code is under Apache License 2.0.
 ---@param cmd string[] The command to execute.
----@param opts table Options.
+---@param opts table|nil Options.
 function M.system(cmd, opts)
     opts = opts or {}
     local function close_handles(state)
@@ -185,32 +185,29 @@ function M.system(cmd, opts)
             code = nil,
             signal = nil,
             stdout = nil,
-            stderr = nil
-        }
+            stderr = nil,
+        },
     }
 
     --- run the command
-    state.handle, state.pid = vim.loop.spawn(cmd[1],
-        {
-            args = vim.list_slice(cmd, 2),
-            stdio = { nil, stdout, stderr },
-            cwd = opts.cwd,
-            detach = opts.detach,
-            hide = true
-        },
-        function(code, signal)
-            --- make sure to close all handles
-            close_handles(state)
+    state.handle, state.pid = vim.loop.spawn(cmd[1], {
+        args = vim.list_slice(cmd, 2),
+        stdio = { nil, stdout, stderr },
+        cwd = opts.cwd,
+        detach = opts.detach,
+        hide = true,
+    }, function(code, signal)
+        --- make sure to close all handles
+        close_handles(state)
 
-            state.done = true
-            state.result = {
-                code = code,
-                signal = signal,
-                stdout = stdout_data and table.concat(stdout_data) or nil,
-                stderr = stderr_data and table.concat(stderr_data) or nil
-            }
-        end
-    )
+        state.done = true
+        state.result = {
+            code = code,
+            signal = signal,
+            stdout = stdout_data and table.concat(stdout_data) or nil,
+            stderr = stderr_data and table.concat(stderr_data) or nil,
+        }
+    end)
 
     local function stdio_handler(steam, store)
         return function(err, data)

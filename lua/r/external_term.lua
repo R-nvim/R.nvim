@@ -1,5 +1,6 @@
 local config = require("r.config").get_config()
 local utils = require("r.utils")
+local uv = vim.loop
 local warn = require("r").warn
 local vit = require("r.utils").value_in_table
 
@@ -29,7 +30,7 @@ local external_term_config = function()
         end
     end
 
-    local etime = vim.fn.reltime()
+    local etime = uv.hrtime()
     if type(config.external_term) == "boolean" then
         -- Terminal name not defined. Try to find a known one.
         local terminals = {
@@ -91,11 +92,8 @@ local external_term_config = function()
     else
         term_cmd = term_cmd .. " -e"
     end
-    require("r.edit").add_to_debug_info(
-        "external term setup",
-        vim.fn.reltimefloat(vim.fn.reltime(etime, vim.fn.reltime())),
-        "Time"
-    )
+    etime = (uv.hrtime() - etime) / 1000000000
+    require("r.edit").add_to_debug_info("external term setup", etime, "Time")
 end
 
 local M = {}
@@ -195,10 +193,7 @@ M.start_extern_term = function()
             'cd "' .. vim.fn.getcwd() .. '"',
             open_cmd,
         }
-        local init_file = config.tmpdir
-            .. "/initterm_"
-            .. vim.fn.reltimefloat(vim.fn.reltime())
-            .. ".sh"
+        local init_file = config.tmpdir .. "/initterm_" .. vim.fn.rand() .. ".sh"
         vim.fn.writefile(initterm, init_file)
         local job = require("r.job")
         job.start("Terminal emulator", { "sh", init_file }, {
