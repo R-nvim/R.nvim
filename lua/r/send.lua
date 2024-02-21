@@ -349,7 +349,7 @@ M.selection = function(m)
     if vim.o.filetype ~= "r" then
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_code_chunk('python', false)
+            and require("r.rmd").is_in_code_chunk("python", false)
         then
             ispy = true
         elseif not vim.b.IsInRCode(false) then
@@ -469,8 +469,8 @@ M.line = function(m, lnum)
             if m == true then cursor.move_next_line() end
             return
         end
-        if not require("r.rmd").is_in_code_chunk('r', false) then
-            if not require("r.rmd").is_in_code_chunk('python', false) then
+        if not require("r.rmd").is_in_code_chunk("r", false) then
+            if not require("r.rmd").is_in_code_chunk("python", false) then
                 warn("Not inside either R or Python code chunk.")
             else
                 line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
@@ -648,8 +648,13 @@ end
 M.funs = function(bufnr, capture_all)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
+    if vim.bo[bufnr].filetype == "quarto" or vim.bo[bufnr].filetype == "rmd" then
+        vim.notify("Not yet supported in Rmd or Quarto files.")
+        return
+    end
+
     if vim.bo[bufnr].filetype ~= "r" then
-        vim.notify("Not an R file")
+        vim.notify("Not an R file.")
         return
     end
 
@@ -664,7 +669,6 @@ M.funs = function(bufnr, capture_all)
         local s, _, _, _ = node:parent():range()
 
         if name == "rfun" and s == 0 then
-            -- vim.print(node:parent():range())
             local start_row, _, end_row, _ = node:range()
 
             local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
