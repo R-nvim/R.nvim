@@ -349,7 +349,6 @@ M.selection = function(m)
     if vim.o.filetype ~= "r" then
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-
             and require("r.rmd").is_in_code_chunk("python", false)
         then
             ispy = true
@@ -471,7 +470,7 @@ M.line = function(m, lnum)
             return
         end
 
-    if not require("r.rmd").is_in_code_chunk("r", false) then
+        if not require("r.rmd").is_in_code_chunk("r", false) then
             if not require("r.rmd").is_in_code_chunk("python", false) then
                 warn("Not inside either R or Python code chunk.")
             else
