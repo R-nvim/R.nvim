@@ -38,7 +38,7 @@ end
 M.start_Rgui = function()
     vim.g.R_Nvim_status = 6
 
-    if vim.fn.match(config.R_app, "Rterm") then
+    if config.R_app:find("Rterm") then
         warn('"R_app" cannot be "Rterm.exe". R will crash if you send any command.')
         vim.wait(200)
     end

@@ -3,6 +3,7 @@ local utils = require("r.utils")
 local job = require("r.job")
 local config = require("r.config").get_config()
 local warn = require("r").warn
+local uv = vim.loop
 local b_warn = {}
 local b_err = {}
 local b_out = {}
@@ -203,10 +204,8 @@ local init_exit = function(_, data, _)
                 "R CMD build " .. config.rnvim_home .. "/nvimcom",
             }
             vim.fn.writefile(shf, config.tmpdir .. "/buildpkg.sh")
-            local obj = utils.system(
-                { "sh", config.tmpdir .. "/buildpkg.sh" },
-                { text = true }
-            )
+            local obj = utils
+                .system({ "sh", config.tmpdir .. "/buildpkg.sh" }, { text = true })
                 :wait()
             if obj.code == 0 then
                 M.check_nvimcom_version()
@@ -241,11 +240,8 @@ local init_exit = function(_, data, _)
         warn(wrn)
     end
     if cnv_again == 0 then
-        edit.add_to_debug_info(
-            "before_nrs.R",
-            vim.fn.reltimefloat(vim.fn.reltime(b_time, vim.fn.reltime())),
-            "Time"
-        )
+        b_time = (uv.hrtime() - b_time) / 1000000000
+        edit.add_to_debug_info("before_nrs.R", b_time, "Time")
     end
 end
 
@@ -408,7 +404,7 @@ M.check_nvimcom_version = function()
         scrptnm = remote_compldir .. "/tmp/before_nrs.R"
     end
 
-    b_time = vim.fn.reltime()
+    b_time = uv.hrtime()
     require("r.job").start(
         "Init R",
         { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm },

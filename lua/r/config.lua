@@ -484,23 +484,16 @@ local do_common_global = function()
     end
 
     -- Set security variables
-    if not vim.fn.has("nvim-0.7.0") then
-        vim.env.RNVIM_ID =
-            tostring(vim.fn.reltimefloat(vim.fn.reltime())):gsub(".*%.", "")
-        vim.env.RNVIM_SECRET =
-            tostring(vim.fn.reltimefloat(vim.fn.reltime())):gsub(".*%.", "")
-    else
-        vim.env.RNVIM_ID = vim.fn.rand(vim.fn.srand())
-        vim.env.RNVIM_SECRET = vim.fn.rand()
-    end
+    vim.env.RNVIM_ID = vim.fn.rand(vim.fn.srand())
+    vim.env.RNVIM_SECRET = vim.fn.rand()
 
     -- Avoid problems if either R_rconsole_width or R_rconsole_height is a float number
     -- (https://github.com/jalvesaq/Nvim-R/issues/751#issuecomment-1742784447).
     if type(config.rconsole_width) == "number" then
-        config.rconsole_width = vim.fn.float2nr(config.rconsole_width)
+        config.rconsole_width = math.floor(config.rconsole_width)
     end
     if type(config.rconsole_height) == "number" then
-        config.rconsole_height = vim.fn.float2nr(config.rconsole_height)
+        config.rconsole_height = math.floor(config.rconsole_height)
     end
 end
 
@@ -607,7 +600,7 @@ local windows_config = function()
 end
 
 local tmux_config = function()
-    local ttime = vim.fn.reltime()
+    local ttime = uv.hrtime()
     -- Check whether Tmux is OK
     if vim.fn.executable("tmux") == 0 then
         config.external_term = false
@@ -625,11 +618,8 @@ local tmux_config = function()
         if #tmuxversion ~= 3 then tmuxversion = "1.0" end
         if tmuxversion < "3.0" then warn("R.nvim requires Tmux >= 3.0") end
     end
-    require("r.edit").add_to_debug_info(
-        "tmux setup",
-        vim.fn.reltimefloat(vim.fn.reltime(ttime, vim.fn.reltime())),
-        "Time"
-    )
+    ttime = (uv.hrtime() - ttime) / 1000000000
+    require("r.edit").add_to_debug_info("tmux setup", ttime, "Time")
 end
 
 local unix_config = function()
@@ -678,7 +668,6 @@ end
 
 local global_setup = function()
     did_global_setup = true
-
     validate_user_opts()
 
     -- Override default config values with user options for the first time.
@@ -792,7 +781,7 @@ end
 --- Set initial values of some internal variables.
 --- Set the default value of config variables that depend on system features.
 M.real_setup = function()
-    local gtime = vim.fn.reltime()
+    local gtime = uv.hrtime()
 
     if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
 
@@ -810,11 +799,8 @@ M.real_setup = function()
         require("r.run").auto_start_R()
     end
 
-    require("r.edit").add_to_debug_info(
-        "global setup",
-        vim.fn.reltimefloat(vim.fn.reltime(gtime, vim.fn.reltime())),
-        "Time"
-    )
+    gtime = (uv.hrtime() - gtime) / 1000000000
+    require("r.edit").add_to_debug_info("global setup", gtime, "Time")
     if config.hook.after_config then config.hook.after_config() end
 end
 
@@ -838,6 +824,8 @@ M.check_health = function()
     if not config.R_cmd == config.R_app and vim.fn.executable(config.R_cmd) == 0 then
         warn("R_cmd executable not found: '" .. config.R_cmd .. "'")
     end
+
+    if vim.fn.has("nvim-0.9.5") ~= 1 then warn("R.nvim requires Neovim >= 0.9.5") end
 end
 
 return M
