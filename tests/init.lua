@@ -1,3 +1,6 @@
+-- TODO: This file should be in tests/xdg/config/nvim
+-- TODO: This file should be modified to work with tests/run
+--
 -- This file is adapted from github.com/folke
 -- This is a custom config file used in tests
 local M = {}
