@@ -11,7 +11,7 @@ M.start_Rapp = function()
 
     local rcmd = r64app and "/Applications/R64.app" or "/Applications/R.app"
 
-    local args_str = table.concat(config.R_args, " ")
+    local args_str = require("r.run").get_r_args()
     if args_str ~= " " and args_str ~= "" then
         -- https://github.com/jcfaria/Vim-R-plugin/issues/63
         -- https://stat.ethz.ch/pipermail/r-sig-mac/2013-February/009978.html

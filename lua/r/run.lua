@@ -18,10 +18,11 @@ start_R2 = function()
         return
     end
 
+    r_args = table.concat(config.R_args, " ")
     if what_R:find("custom") then
-        r_args = vim.fn.split(vim.fn.input("Enter parameters for R: "))
-    else
-        r_args = config.R_args
+        vim.ui.input({ prompt = "Enter parameters for R: " }, function(input)
+            if input then r_args = input end
+        end)
     end
 
     vim.fn.writefile({}, config.localtmpdir .. "/globenv_" .. vim.env.RNVIM_ID)
@@ -148,11 +149,13 @@ start_R2 = function()
         return
     end
 
-    local args_str = table.concat(r_args, " ")
-    local rcmd = config.R_app .. " " .. args_str
-
-    require("r.external_term").start_extern_term(rcmd)
+    require("r.external_term").start_extern_term()
 end
+
+--- Return arguments to start R defined as config.R_args or during custom R
+--- start.
+---@return string
+M.get_r_args = function() return r_args end
 
 M.auto_start_R = function()
     if vim.g.R_Nvim_status > 3 then return end
@@ -210,7 +213,9 @@ end
 
 -- Send SIGINT to R
 M.signal_to_R = function(signal)
-    if R_pid ~= 0 then utils.system({ "kill", "-s", tostring(signal), tostring(R_pid) }) end
+    if R_pid ~= 0 then
+        utils.system({ "kill", "-s", tostring(signal), tostring(R_pid) })
+    end
 end
 
 M.check_nvimcom_running = function()
@@ -227,8 +232,7 @@ M.check_nvimcom_running = function()
 end
 
 M.wait_nvimcom_start = function()
-    local args_str = table.concat(r_args, " ")
-    if string.find(args_str, "vanilla") then return 0 end
+    if string.find(r_args, "vanilla") then return 0 end
 
     if config.wait < 2 then config.wait = 2 end
 

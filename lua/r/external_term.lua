@@ -100,7 +100,9 @@ end
 
 local M = {}
 
-M.start_extern_term = function(Rcmd)
+M.start_extern_term = function()
+    local rcmd = config.R_app .. " " .. require("r.run").get_r_args()
+
     local tmuxcnf = " "
     if config.config_tmux then
         tmuxcnf = '-f "' .. config.tmpdir .. "/tmux.conf" .. '"'
@@ -149,7 +151,7 @@ M.start_extern_term = function(Rcmd)
         .. " R_DEFAULT_PACKAGES="
         .. vim.env.R_DEFAULT_PACKAGES
         .. " "
-        .. Rcmd
+        .. rcmd
 
     if config.is_darwin then
         open_cmd = string.format(
@@ -229,10 +231,12 @@ M.send_cmd_to_external_term = function(command)
     if str:find("^-") then str = " " .. str end
 
     if not base_pane_index then
-        local obj = utils.system(
-            { "tmux", "-L", "Rnvim show-options", "-gv", "pane-base-index" },
-            { text = true }
-        ):wait()
+        local obj = utils
+            .system(
+                { "tmux", "-L", "Rnvim show-options", "-gv", "pane-base-index" },
+                { text = true }
+            )
+            :wait()
         base_pane_index = obj.stdout:gsub("\n+$", "")
     end
     local scmd
