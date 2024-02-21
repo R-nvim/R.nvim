@@ -1,5 +1,40 @@
-#!/bin/sh
+#!/bin/bash
+# This script is the 'Lua interpreter' we use in testing with Busted
+# It's a wrapper around `nvim -l` which does the actual interpreting
+# Does it rerun every time a test is performed? No, This happens in *_spec files
+# Courtesy to https://hiphish.github.io/blog/2024/01/29/testing-neovim-plugins-with-busted/
+#
+# TODO: Can `https://github.com/notomo/vusted` replace this script entirely??
 
-TEST_DIR="tests"
-INIT_FILE="${TEST_DIR}/init.lua"
-nvim --headless -u "${INIT_FILE}" -c "PlenaryBustedDirectory ${TEST_DIR}/ {minimal_init = '${INIT_FILE}', sequential = true}"
+PACKAGE="r-nvim"
+
+# TODO:
+# If this script ever complains it's probably because I didn't preemptively mkdir the following
+export XDG_CONFIG_HOME='tests/xdg/config' # configuration for tests in test/xdg/config/nvim/
+export XDG_STATE_HOME='tests/xdg/local/state'
+export XDG_DATA_HOME='tests/xdg/local/share'
+
+# Install testing dependencies
+add_testing_dep() {
+    local plugin_url="$1"
+    local plugin_name="$(basename "$plugin_url" .git)"
+    local plugin_dir="${XDG_DATA_HOME}/nvim/site/pack/testing/start/${plugin_name}"
+
+    printf "\033[0;32mAdding %s:\033[0m %s \033[0;32m->\033[0m %s\n" "$plugin_name" "$plugin_url" "$plugin_dir"
+    git submodule add "${plugin_url}" "${plugin_dir}"
+}
+
+add_testing_dep 'https://github.com/nvim-lua/plenary.nvim'
+add_testing_dep 'https://github.com/nvim-treesitter/nvim-treesitter'
+
+ln -s "$(pwd)" "${XDG_DATA_HOME}/nvim/site/pack/testing/start/${PACKAGE}"
+printf "\033[0;32mTesting dependencies are now available.\033[0m\n"
+
+
+# Run tests
+nvim --cmd 'set loadplugins' -l "$@"
+exit_code=$? # Store the exit code to return it as the exit code of this script
+
+# Clean up
+rm "${XDG_DATA_HOME}/nvim/site/pack/testing/start/${PACKAGE}" # Otherwise LSP runs in loop
+exit $exit_code
