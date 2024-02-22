@@ -546,7 +546,7 @@ local windows_config = function()
             return rip
         end
 
-        local run_cmd = { "reg.exe", "QUERY", "HKLM\\SOFTWARE\\R-core\\R", "/s" }
+        local run_cmd = { "reg.exe", "QUERY", "HKCU\\SOFTWARE\\R-core\\R", "/s" }
         local rip = get_rip(run_cmd)
         if #rip == 0 then
             -- Normally, 32 bit applications access only 32 bit registry and...
