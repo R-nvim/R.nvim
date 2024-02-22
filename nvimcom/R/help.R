@@ -1,5 +1,5 @@
 # Function called by R if options(pager = nvim.hmsg).
-# R-Nvim sets this option during nvimcom loading.
+# R.nvim sets this option during nvimcom loading.
 nvim.hmsg <- function(files, header, title, delete.file) {
     doc <- gsub("'", "\x13", paste(readLines(files[1]), collapse = "\x14"))
     ttl <- sub("R Help on '(.*)'", "\\1 (help)", title)
@@ -9,8 +9,8 @@ nvim.hmsg <- function(files, header, title, delete.file) {
     return(invisible(NULL))
 }
 
-#' Function called by R-Nvim after `\rh` or `:Rhelp`.
-#' R-Nvim sends the command through the nvimrserver TCP connection to nvimcom
+#' Function called by R.nvim after `\rh` or `:Rhelp`.
+#' R.nvim sends the command through the rnvimserver TCP connection to nvimcom
 #' and R evaluates the command when idle.
 #' @param topic The word under cursor when `\rh` was pressed.
 #' @param w The width that lines should have in the formatted document.
@@ -109,7 +109,7 @@ nvim.help <- function(topic, w, firstobj, package) {
     return(invisible(NULL))
 }
 
-#' Function called by R-Nvim after `\re`.
+#' Function called by R.nvim after `\re`.
 #' @param The word under cursor. Should be a function.
 nvim.example <- function(topic) {
     saved.warn <- getOption("warn")
@@ -123,7 +123,7 @@ nvim.example <- function(topic) {
     } else {
         if (is.character(ret)) {
             if (length(ret) > 0) {
-                writeLines(ret, paste0(Sys.getenv("NVIMR_TMPDIR"), "/example.R"))
+                writeLines(ret, paste0(Sys.getenv("RNVIM_TMPDIR"), "/example.R"))
                 .C("nvimcom_msg_to_nvim", "lua require('r.edit').open_example()", PACKAGE = "nvimcom")
             } else {
                 .C("nvimcom_msg_to_nvim",

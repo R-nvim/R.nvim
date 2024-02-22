@@ -22,7 +22,7 @@
 
 import dbus, dbus.mainloop.glib, sys
 import signal
-from nvimr import nvimr_cmd, nvimr_warn
+from rnvim import rnvim_cmd, rnvim_warn
 from gi.repository import GLib
 
 RUNNING, CLOSED = range(2)
@@ -61,7 +61,7 @@ class EvinceWindowProxy:
             self._get_dbus_name(False)
 
         except dbus.DBusException:
-            nvimr_warn("Could not connect to the Evince Daemon")
+            rnvim_warn("Could not connect to the Evince Daemon")
             loop.quit()
 
     def _on_doc_loaded(self, uri, **keyargs):
@@ -75,7 +75,7 @@ class EvinceWindowProxy:
                      dbus_interface = EV_DAEMON_IFACE)
 
     def handle_find_document_error(self, error):
-        nvimr_warn("FindDocument DBus call has failed: " + str(error))
+        rnvim_warn("FindDocument DBus call has failed: " + str(error))
 
     def handle_find_document_reply(self, evince_name):
         if self._handler is not None:
@@ -91,7 +91,7 @@ class EvinceWindowProxy:
                           error_handler = self.handle_get_window_list_error)
 
     def handle_get_window_list_error (self, e):
-        nvimr_warn("GetWindowList DBus call has failed:" + str(e))
+        rnvim_warn("GetWindowList DBus call has failed:" + str(e))
 
     def handle_get_window_list_reply (self, window_list):
         if len(window_list) > 0:
@@ -101,7 +101,7 @@ class EvinceWindowProxy:
             self.window.connect_to_signal("SyncSource", self.on_sync_source)
         else:
             #That should never happen.
-            nvimr_warn("GetWindowList returned empty list")
+            rnvim_warn("GetWindowList returned empty list")
 
     def on_window_close(self):
         self.window = None

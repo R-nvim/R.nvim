@@ -153,7 +153,7 @@ M.start_extern_term = function()
 
     if config.is_darwin then
         open_cmd = string.format(
-            "tmux -L NvimR -2 %s new-session -s %s '%s'",
+            "tmux -L Rnvim -2 %s new-session -s %s '%s'",
             tmuxcnf,
             tmuxsname,
             cmd
@@ -164,7 +164,7 @@ M.start_extern_term = function()
         open_cmd = "open '" .. open_file .. "'"
     elseif term_name == "konsole" then
         open_cmd = string.format(
-            "%s 'tmux -L NvimR -2 %s new-session -s %s \"%s\"'",
+            "%s 'tmux -L Rnvim -2 %s new-session -s %s \"%s\"'",
             term_cmd,
             tmuxcnf,
             tmuxsname,
@@ -172,7 +172,7 @@ M.start_extern_term = function()
         )
     else
         open_cmd = string.format(
-            '%s tmux -L NvimR -2 %s new-session -s %s "%s"',
+            '%s tmux -L Rnvim -2 %s new-session -s %s "%s"',
             term_cmd,
             tmuxcnf,
             tmuxsname,

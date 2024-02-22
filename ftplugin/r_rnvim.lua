@@ -9,7 +9,7 @@ end
 local routfile
 
 -- Override default values with user variable options and set internal variables.
-require('r.config').real_setup()
+require("r.config").real_setup()
 
 local get_R_output = function(_)
     local config = require("r.config").get_config()

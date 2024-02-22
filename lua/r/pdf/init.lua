@@ -7,7 +7,7 @@ local uv = vim.loop
 local check_installed = function()
     if vim.fn.executable(config.pdfviewer) == 0 then
         warn(
-            "R-Nvim: Please, set the value of `pdfviewer`. The application `"
+            "R.nvim: Please, set the value of `pdfviewer`. The application `"
                 .. config.pdfviewer
                 .. "` was not found."
         )

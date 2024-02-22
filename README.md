@@ -1,8 +1,8 @@
-![Selene linter check](https://github.com/jalvesaq//tmp-R-Nvim/actions/workflows/selene.yml/badge.svg)
+![Selene linter check](https://github.com/jalvesaq/tmp-R-Nvim/actions/workflows/selene.yml/badge.svg)
 
-# R-Nvim
+# R.nvim
 
-This is the development code of R-Nvim which improves Neovim's support to edit
+This is the development code of R.nvim which improves Neovim's support to edit
 R scripts.
 
 ## Installation
@@ -175,7 +175,7 @@ used by R itself, but is run as a Neovim's job. That is, the communication
 between the _rnvimserver_ and Neovim is through the _rnvimserver_ standard
 input and output (green arrows). The _rnvimserver_ application runs a TCP
 server. When _nvimcom_ is loaded, it immediately starts a TCP client that
-connects to _nvimrserver_ (red arrows).
+connects to _rnvimserver_ (red arrows).
 
 Some commands that you trigger are not pasted into R Console and do not output
 anything in R Console; their results are seen in the editor itself. These are
@@ -188,7 +188,7 @@ When new objects are created or new libraries are loaded, nvimcom sends
 messages that tell the editor to update the Object Browser, update the syntax
 highlight to include newly loaded libraries and open the PDF output after
 knitting an Rnoweb file and compiling the LaTeX result. Most of the
-information is transmitted through the TCP connection to the _nvimrserver_,
+information is transmitted through the TCP connection to the _rnvimserver_,
 but temporary files are used in a few cases.
 
 ## See also:

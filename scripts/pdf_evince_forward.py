@@ -21,7 +21,7 @@
 # Perhaps an alternative: https://github.com/Vinno97/evince-synctex/blob/master/evince-synctex.sh
 
 import dbus, dbus.mainloop.glib, sys
-from nvimr import nvimr_cmd, nvimr_warn
+from rnvim import rnvim_cmd, rnvim_warn
 from gi.repository import GLib
 
 RUNNING, CLOSED = range(2)
@@ -62,7 +62,7 @@ class EvinceWindowProxy:
             self._get_dbus_name(False)
 
         except dbus.DBusException:
-            nvimr_warn("Could not connect to the Evince Daemon")
+            rnvim_warn("Could not connect to the Evince Daemon")
 
     def _on_doc_loaded(self, uri, **keyargs):
         if uri == self.uri and self._handler is None:
@@ -75,7 +75,7 @@ class EvinceWindowProxy:
                      dbus_interface = EV_DAEMON_IFACE)
 
     def handle_find_document_error(self, error):
-        nvimr_warn("FindDocument DBus call has failed: " + str(error))
+        rnvim_warn("FindDocument DBus call has failed: " + str(error))
 
     def handle_find_document_reply(self, evince_name):
         if self._handler is not None:
@@ -91,7 +91,7 @@ class EvinceWindowProxy:
                           error_handler = self.handle_get_window_list_error)
 
     def handle_get_window_list_error (self, e):
-        nvimr_warn("GetWindowList DBus call has failed: " + str(e))
+        rnvim_warn("GetWindowList DBus call has failed: " + str(e))
 
     def handle_get_window_list_reply (self, window_list):
         if len(window_list) > 0:
@@ -99,7 +99,7 @@ class EvinceWindowProxy:
             self.window = dbus.Interface(window_obj,EV_WINDOW_IFACE)
         else:
             #That should never happen.
-            nvimr_warn("GetWindowList returned empty list")
+            rnvim_warn("GetWindowList returned empty list")
 
 
     def SyncView(self, input_file, data):
@@ -108,7 +108,7 @@ class EvinceWindowProxy:
                 self._tmp_syncview = [input_file, data, 0]
                 self._handler = self._syncview_handler
                 self._get_dbus_name(True)
-                nvimr_cmd("lua require('r.pdf.evince').again()")
+                rnvim_cmd("lua require('r.pdf.evince').again()")
         else:
             self.window.SyncView(input_file, data, 0,  dbus_interface = "org.gnome.evince.Window")
             rnvim_cmd("lua require('r.pdf.evince').evince_loop = 0")

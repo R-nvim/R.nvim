@@ -37,7 +37,7 @@ M.open = function(fullpath)
         local olddir = vim.fn.getcwd():gsub("\\", "/"):gsub(" ", "\\ ")
         vim.cmd("cd " .. pdir)
         vim.fn.writefile({
-            'start SumatraPDF.exe -reuse-instance -inverse-search "nvimrserver.exe %%f %%l" "'
+            'start SumatraPDF.exe -reuse-instance -inverse-search "rnvimserver.exe %%f %%l" "'
                 .. fullpath
                 .. '"',
         }, config.tmpdir .. "/run_cmd.bat")
@@ -59,7 +59,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
                 .. tname
                 .. '" '
                 .. texln
-                .. ' -inverse-search "nvimrserver.exe %%f %%l" "'
+                .. ' -inverse-search "rnvimserver.exe %%f %%l" "'
                 .. pname
                 .. '"',
         }, config.tmpdir .. "/run_cmd.bat")

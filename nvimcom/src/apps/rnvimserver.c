@@ -426,7 +426,7 @@ static void SendToRConsole(char *aString) {
         NvimHwnd = GetForegroundWindow();
 
     char msg[1024];
-    snprintf(msg, 1023, "C%s%s", getenv("NVIMR_ID"), aString);
+    snprintf(msg, 1023, "C%s%s", getenv("RNVIM_ID"), aString);
     send_to_nvimcom(msg);
     Sleep(0.02);
 
@@ -956,13 +956,13 @@ static int run_R_code(const char *s, int senderror) {
     // Create the child process.
 
     char b[1024];
-    snprintf(b, 1023, "NVIMR_TMPDIR=%s", getenv("NVIMR_REMOTE_TMPDIR"));
+    snprintf(b, 1023, "RNVIM_TMPDIR=%s", getenv("RNVIM_REMOTE_TMPDIR"));
     putenv(b);
-    snprintf(b, 1023, "NVIMR_COMPLDIR=%s", getenv("NVIMR_REMOTE_COMPLDIR"));
+    snprintf(b, 1023, "RNVIM_COMPLDIR=%s", getenv("RNVIM_REMOTE_COMPLDIR"));
     putenv(b);
     snprintf(b, 1023,
              "%s --quiet --no-restore --no-save --no-echo --slave -f bo_code.R",
-             getenv("NVIMR_RPATH"));
+             getenv("RNVIM_RPATH"));
 
     res = CreateProcess(NULL,
                         b,                // Command line
@@ -982,9 +982,9 @@ static int run_R_code(const char *s, int senderror) {
         return 0;
     }
 
-    snprintf(b, 1023, "NVIMR_TMPDIR=%s", tmpdir);
+    snprintf(b, 1023, "RNVIM_TMPDIR=%s", tmpdir);
     putenv(b);
-    snprintf(b, 1023, "NVIMR_COMPLDIR=%s", compldir);
+    snprintf(b, 1023, "RNVIM_COMPLDIR=%s", compldir);
     putenv(b);
 
     DWORD exit_code;
@@ -1023,7 +1023,7 @@ static int run_R_code(const char *s, int senderror) {
 
     if (exit_code != 0) {
         if (senderror) {
-            printf("lua require('r.nrs').show_bol_error('%ld')\n", exit_code);
+            printf("lua require('r.server').show_bol_error('%ld')\n", exit_code);
             fflush(stdout);
         }
         return 0;
@@ -1033,17 +1033,17 @@ static int run_R_code(const char *s, int senderror) {
 #else
     char b[1024];
     snprintf(b, 1023,
-             "NVIMR_TMPDIR=%s NVIMR_COMPLDIR=%s '%s' --quiet --no-restore "
+             "RNVIM_TMPDIR=%s RNVIM_COMPLDIR=%s '%s' --quiet --no-restore "
              "--no-save --no-echo --slave -f \"%s/bo_code.R\""
              " > \"%s/run_R_stdout\" 2> \"%s/run_R_stderr\"",
-             getenv("NVIMR_REMOTE_TMPDIR"), getenv("NVIMR_REMOTE_COMPLDIR"),
-             getenv("NVIMR_RPATH"), tmpdir, tmpdir, tmpdir);
+             getenv("RNVIM_REMOTE_TMPDIR"), getenv("RNVIM_REMOTE_COMPLDIR"),
+             getenv("RNVIM_RPATH"), tmpdir, tmpdir, tmpdir);
     Log("R command: %s", b);
 
     int stt = system(b);
     if (stt != 0 && stt != 512) { // ssh success status seems to be 512
         if (senderror) {
-            printf("lua require('r.nrs').show_bol_error('%d')\n", stt);
+            printf("lua require('r.server').show_bol_error('%d')\n", stt);
             fflush(stdout);
         }
         return 0;
@@ -1371,7 +1371,7 @@ static void finish_bol(void) {
 
     // Finally create a list of built omnils_ because libnames_ might have
     // already changed and Nvim-R would try to read omnils_ files not built yet.
-    snprintf(buf, 511, "%s/libs_in_nrs_%s", localtmpdir, getenv("NVIMR_ID"));
+    snprintf(buf, 511, "%s/libs_in_nrs_%s", localtmpdir, getenv("RNVIM_ID"));
     FILE *f = fopen(buf, "w");
     if (f) {
         PkgData *pkg = pkgList;
@@ -1384,7 +1384,7 @@ static void finish_bol(void) {
     }
 
     // Message to Neovim: Update both syntax and Rhelp_list
-    printf("lua require('r.nrs').update_Rhelp_list()\n");
+    printf("lua require('r.server').update_Rhelp_list()\n");
     fflush(stdout);
 }
 
@@ -1467,7 +1467,7 @@ void update_pkg_list(char *libnms) {
         char lbnm[128];
         Log("update_pkg_list == NULL");
 
-        snprintf(buf, 511, "%s/libnames_%s", tmpdir, getenv("NVIMR_ID"));
+        snprintf(buf, 511, "%s/libnames_%s", tmpdir, getenv("RNVIM_ID"));
         FILE *flib = fopen(buf, "r");
         if (!flib) {
             fprintf(stderr, "Failed to open \"%s\"\n", buf);
@@ -1910,7 +1910,7 @@ static void fill_inst_libs(void) {
 }
 
 static void send_nrs_info(void) {
-    printf("lua require('r.nrs').echo_nrs_info('Loaded packages:");
+    printf("lua require('r.server').echo_nrs_info('Loaded packages:");
     PkgData *pkg = pkgList;
     while (pkg) {
         printf(" %s", pkg->name);
@@ -1929,7 +1929,7 @@ static void init(void) {
 #ifdef Debug_NRS
     time_t t;
     time(&t);
-    FILE *f = fopen("/dev/shm/nvimrserver_log", "w");
+    FILE *f = fopen("/dev/shm/rnvimserver_log", "w");
     fprintf(f, "NSERVER LOG | %s\n\n", ctime(&t));
     fclose(f);
 #endif
@@ -1956,36 +1956,36 @@ static void init(void) {
         strcpy(strT, "|- ");
     }
 
-    if (!getenv("NVIMR_SECRET")) {
-        fprintf(stderr, "NVIMR_SECRET not found\n");
+    if (!getenv("RNVIM_SECRET")) {
+        fprintf(stderr, "RNVIM_SECRET not found\n");
         fflush(stderr);
         exit(1);
     }
-    strncpy(VimSecret, getenv("NVIMR_SECRET"), 127);
+    strncpy(VimSecret, getenv("RNVIM_SECRET"), 127);
     VimSecretLen = strlen(VimSecret);
 
-    strncpy(compl_cb, getenv("NVIMR_COMPLCB"), 63);
-    strncpy(compl_info, getenv("NVIMR_COMPLInfo"), 63);
-    strncpy(compldir, getenv("NVIMR_COMPLDIR"), 255);
-    strncpy(tmpdir, getenv("NVIMR_TMPDIR"), 255);
-    if (getenv("NVIMR_LOCAL_TMPDIR")) {
-        strncpy(localtmpdir, getenv("NVIMR_LOCAL_TMPDIR"), 255);
+    strncpy(compl_cb, getenv("RNVIM_COMPLCB"), 63);
+    strncpy(compl_info, getenv("RNVIM_COMPLInfo"), 63);
+    strncpy(compldir, getenv("RNVIM_COMPLDIR"), 255);
+    strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 255);
+    if (getenv("RNVIM_LOCAL_TMPDIR")) {
+        strncpy(localtmpdir, getenv("RNVIM_LOCAL_TMPDIR"), 255);
     } else {
-        strncpy(localtmpdir, getenv("NVIMR_TMPDIR"), 255);
+        strncpy(localtmpdir, getenv("RNVIM_TMPDIR"), 255);
     }
 
-    snprintf(liblist, 575, "%s/liblist_%s", localtmpdir, getenv("NVIMR_ID"));
-    snprintf(globenv, 575, "%s/globenv_%s", localtmpdir, getenv("NVIMR_ID"));
+    snprintf(liblist, 575, "%s/liblist_%s", localtmpdir, getenv("RNVIM_ID"));
+    snprintf(globenv, 575, "%s/globenv_%s", localtmpdir, getenv("RNVIM_ID"));
 
-    if (getenv("NVIMR_OPENDF"))
+    if (getenv("RNVIM_OPENDF"))
         OpenDF = 1;
     else
         OpenDF = 0;
-    if (getenv("NVIMR_OPENLS"))
+    if (getenv("RNVIM_OPENLS"))
         OpenLS = 1;
     else
         OpenLS = 0;
-    if (getenv("NVIMR_OBJBR_ALLNAMES"))
+    if (getenv("RNVIM_OBJBR_ALLNAMES"))
         allnames = 1;
     else
         allnames = 0;
@@ -2102,7 +2102,7 @@ void completion_info(const char *wrd, const char *pkg) {
             if (f[1][0] == '\003' && str_here(f[4], "[\x12not_checked\x12]")) {
                 snprintf(compl_buffer, 1024,
                          "E%snvimcom:::nvim.GlobalEnv.fun.args(\"%s\")\n",
-                         getenv("NVIMR_ID"), wrd);
+                         getenv("RNVIM_ID"), wrd);
                 send_to_nvimcom(compl_buffer);
                 return;
             }

@@ -38,7 +38,7 @@ static int allnames = 0; // Show hidden objects in omni completion and
                          // Object Browser?
 static int nlibs = 0;    // Number of loaded libraries.
 
-static char nrs_port[16]; // nvimrserver port.
+static char nrs_port[16]; // rnvimserver port.
 static char nvimsecr[32]; // Random string used to increase the safety of TCP
                           // communication.
 
@@ -67,7 +67,7 @@ static int autoglbenv = 0; // Should the list of objects in .GlobalEnv be
 // always be 1 if cmp-r is installed or the Object Browser is open.
 static clock_t tm; // Time when the listing of objects from .GlobalEnv started.
 
-static char tmpdir[512]; // The environment variable NVIMR_TMPDIR.
+static char tmpdir[512]; // The environment variable RNVIM_TMPDIR.
 static int setwidth = 0; // Set the option width after each command is executed
 static int oldcolwd = 0; // Last set width.
 
@@ -89,7 +89,7 @@ static int flag_glbenv = 0; // Do we have to list objects from .GlobalEnv?
  * @brief Structure with name and version number of a library.
  *
  * The complete information of libraries is stored in its `omnils_`, `fun_` and
- * `args_` files in the R-Nvim cache directory. The nvimrserver only needs the
+ * `args_` files in the R.nvim cache directory. The rnvimserver only needs the
  * name and version number of the library to read the corresponding files.
  *
  */
@@ -109,12 +109,12 @@ static void nvimcom_eval_expr(const char *buf);
 
 #ifdef WIN32
 SOCKET sfd; // File descriptor of socket used in the TCP connection with the
-            // nvimrserver.
+            // rnvimserver.
 static HANDLE tid; // Identifier of thread running TCP connection loop.
 extern void Rconsolecmd(char *cmd); // Defined in R: src/gnuwin32/rui.c.
 #else
 static int sfd = -1;  // File descriptor of socket used in the TCP connection
-                      // with the nvimrserver.
+                      // with the rnvimserver.
 static pthread_t tid; // Identifier of thread running TCP connection loop.
 #endif
 
@@ -161,9 +161,9 @@ static char *nvimcom_grow_buffers(void) {
 }
 
 /**
- * @brief Send string to nvimrserver.
+ * @brief Send string to rnvimserver.
  *
- * The function sends a string to nvimrserver through the TCP connection
+ * The function sends a string to rnvimserver through the TCP connection
  * established at `nvimcom_Start()`.
  *
  * @param msg The message to be sent.
@@ -185,7 +185,7 @@ static void send_to_nvim(char *msg) {
 
     /*
        TCP message format:
-         NVIMR_SECRET : Prefix NVIMR_SECRET to msg to increase security
+         RNVIM_SECRET : Prefix RNVIM_SECRET to msg to increase security
          000000000    : Size of message in 9 digits
          msg          : The message
          \x11         : Final byte
@@ -208,9 +208,9 @@ static void send_to_nvim(char *msg) {
     sent = send(sfd, b, tcp_header_len, 0);
     if (sent != tcp_header_len) {
         if (sent == -1)
-            REprintf("Error sending message header to R-Nvim: -1\n");
+            REprintf("Error sending message header to R.nvim: -1\n");
         else
-            REprintf("Error sending message header to R-Nvim: %zu x %zu\n",
+            REprintf("Error sending message header to R.nvim: %zu x %zu\n",
                      tcp_header_len, sent);
 #ifdef WIN32
         closesocket(sfd);
@@ -233,7 +233,7 @@ static void send_to_nvim(char *msg) {
         if (sent >= 0) {
             pCur += sent;
         } else if (sent == -1) {
-            REprintf("Error sending message to R-Nvim: %zu x %zu\n", len,
+            REprintf("Error sending message to R.nvim: %zu x %zu\n", len,
                      pCur - msg);
             return;
         }
@@ -242,7 +242,7 @@ static void send_to_nvim(char *msg) {
             // The goal here is to avoid infinite loop.
             // TODO: Maybe delete this check because php code does not have
             // something similar
-            REprintf("Too many attempts to send message to R-Nvim: %zu x %zu\n",
+            REprintf("Too many attempts to send message to R.nvim: %zu x %zu\n",
                      len, sent);
             return;
         }
@@ -251,11 +251,11 @@ static void send_to_nvim(char *msg) {
     // End the message with \x11
     sent = send(sfd, "\x11", 1, 0);
     if (sent != 1)
-        REprintf("Error sending final byte to R-Nvim: 1 x %zu\n", sent);
+        REprintf("Error sending final byte to R.nvim: 1 x %zu\n", sent);
 }
 
 /**
- * @brief Function called by R code to send message to nvimrserver.
+ * @brief Function called by R code to send message to rnvimserver.
  *
  * @param cmd The message to be sent.
  */
@@ -489,7 +489,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
             snprintf(buf, 159, "\006\006%s", CHAR(STRING_ELT(txt, 0)));
             ptr = buf;
             while (*ptr) {
-                if (*ptr == '\n') // A new line will make nvimrserver crash
+                if (*ptr == '\n') // A new line will make rnvimserver crash
                     *ptr = ' ';
                 ptr++;
             }
@@ -647,7 +647,7 @@ static void send_glb_env(void) {
 /**
  * @brief Generate a list of objects in .GlobalEnv and store it in the
  * glbnvbuf2 buffer. The string stored in glbnvbuf2 represents a file with the
- * same format of the `omnils_` files in R-Nvim's cache directory.
+ * same format of the `omnils_` files in R.nvim's cache directory.
  */
 static void nvimcom_globalenv_list(void) {
     if (verbose > 4)
@@ -753,7 +753,7 @@ static void nvimcom_eval_expr(const char *buf) {
 
 /**
  * @brief Send the names and version numbers of currently loaded libraries to
- * R-Nvim.
+ * R.nvim.
  */
 static void send_libnames(void) {
     LibInfo *lib;
@@ -954,8 +954,8 @@ static void nvimcom_fire(void) {
 
 #ifdef WIN32
 /**
- * @brief This function is called after the TCP connection with the nvimrserver
- * is established. Its goal is to pass to R-Nvim information on the running R
+ * @brief This function is called after the TCP connection with the rnvimserver
+ * is established. Its goal is to pass to R.nvim information on the running R
  * instance.
  *
  * @param r_info Information on R (see `.onAttach()` at R/nvimcom.R)
@@ -977,7 +977,7 @@ static void nvimcom_send_running_info(const char *r_info, const char *nvv) {
 #endif
 
 /**
- * @brief Parse messages received from nvimrserver
+ * @brief Parse messages received from rnvimserver
  *
  * @param buf The message though the TCP connection
  */
@@ -987,7 +987,7 @@ static void nvimcom_parse_received_msg(char *buf) {
     if (verbose > 3) {
         REprintf("nvimcom received: %s\n", buf);
     } else if (verbose > 2) {
-        p = buf + strlen(getenv("NVIMR_ID")) + 1;
+        p = buf + strlen(getenv("RNVIM_ID")) + 1;
         REprintf("nvimcom Received: [%c] %s\n", buf[0], p);
     }
 
@@ -1018,8 +1018,8 @@ static void nvimcom_parse_received_msg(char *buf) {
     case 'C': // Send command to Rgui Console
         p = buf;
         p++;
-        if (strstr(p, getenv("NVIMR_ID")) == p) {
-            p += strlen(getenv("NVIMR_ID"));
+        if (strstr(p, getenv("RNVIM_ID")) == p) {
+            p += strlen(getenv("RNVIM_ID"));
             r_is_busy = 1;
             Rconsolecmd(p);
         }
@@ -1032,8 +1032,8 @@ static void nvimcom_parse_received_msg(char *buf) {
 #endif
         p = buf;
         p++;
-        if (strstr(p, getenv("NVIMR_ID")) == p) {
-            p += strlen(getenv("NVIMR_ID"));
+        if (strstr(p, getenv("RNVIM_ID")) == p) {
+            p += strlen(getenv("RNVIM_ID"));
 #ifdef WIN32
             char flag_eval[512];
             snprintf(flag_eval, 510, "%s <- %s", p, p);
@@ -1050,8 +1050,8 @@ static void nvimcom_parse_received_msg(char *buf) {
     case 'E': // eval expression
         p = buf;
         p++;
-        if (strstr(p, getenv("NVIMR_ID")) == p) {
-            p += strlen(getenv("NVIMR_ID"));
+        if (strstr(p, getenv("RNVIM_ID")) == p) {
+            p += strlen(getenv("RNVIM_ID"));
 #ifdef WIN32
             if (!r_is_busy)
                 nvimcom_eval_expr(p);
@@ -1060,7 +1060,7 @@ static void nvimcom_parse_received_msg(char *buf) {
             nvimcom_fire();
 #endif
         } else {
-            REprintf("\nvimcom: received invalid NVIMR_ID.\n");
+            REprintf("\nvimcom: received invalid RNVIM_ID.\n");
         }
         break;
     default: // do nothing
@@ -1071,14 +1071,14 @@ static void nvimcom_parse_received_msg(char *buf) {
 
 #ifdef WIN32
 /**
- * @brief Loop to receive TCP messages from nvimrserver
+ * @brief Loop to receive TCP messages from rnvimserver
  *
  * @param unused Unused parameter.
  */
 static DWORD WINAPI client_loop_thread(__attribute__((unused)) void *arg)
 #else
 /**
- * @brief Loop to receive TCP messages from nvimrserver
+ * @brief Loop to receive TCP messages from rnvimserver
  *
  * @param unused Unused parameter.
  */
@@ -1098,7 +1098,7 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
 #endif
         {
             if (len == 0)
-                REprintf("Connection with nvimrserver was lost\n");
+                REprintf("Connection with rnvimserver was lost\n");
             if (buff[0] == EOF)
                 REprintf("client_loop_thread: buff[0] == EOF\n");
 #ifdef WIN32
@@ -1120,7 +1120,7 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
 
 /**
  * @brief Set variables that will control nvimcom behavior and establish a TCP
- * connection with nvimrserver in a new thread. This function is called when
+ * connection with rnvimserver in a new thread. This function is called when
  * nvimcom package is attached (See `.onAttach()` at R/nvimcom.R).
  *
  * @param vrb Verbosity level (`nvimcom.verbose` in ~/.Rprofile).
@@ -1145,23 +1145,23 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
     setwidth = *swd;
     autoglbenv = *age;
 
-    if (getenv("NVIMR_TMPDIR")) {
-        strncpy(tmpdir, getenv("NVIMR_TMPDIR"), 500);
-        if (getenv("NVIMR_SECRET"))
-            strncpy(nvimsecr, getenv("NVIMR_SECRET"), 31);
+    if (getenv("RNVIM_TMPDIR")) {
+        strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 500);
+        if (getenv("RNVIM_SECRET"))
+            strncpy(nvimsecr, getenv("RNVIM_SECRET"), 31);
         else
             REprintf(
-                "nvimcom: Environment variable NVIMR_SECRET is missing.\n");
+                "nvimcom: Environment variable RNVIM_SECRET is missing.\n");
     } else {
         if (verbose)
             REprintf("nvimcom: It seems that R was not started by Neovim. The "
-                     "communication with R-Nvim will not work.\n");
+                     "communication with R.nvim will not work.\n");
         tmpdir[0] = 0;
         return;
     }
 
-    if (getenv("NVIMR_PORT"))
-        strncpy(nrs_port, getenv("NVIMR_PORT"), 15);
+    if (getenv("RNVIM_PORT"))
+        strncpy(nrs_port, getenv("RNVIM_PORT"), 15);
 
     if (verbose > 0)
         REprintf("nvimcom %s loaded\n", *nvv);
@@ -1169,10 +1169,10 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
         if (getenv("NVIM_IP_ADDRESS")) {
             REprintf("  NVIM_IP_ADDRESS: %s\n", getenv("NVIM_IP_ADDRESS"));
         }
-        REprintf("  NVIMR_PORT: %s\n", nrs_port);
-        REprintf("  NVIMR_ID: %s\n", getenv("NVIMR_ID"));
-        REprintf("  NVIMR_TMPDIR: %s\n", tmpdir);
-        REprintf("  NVIMR_COMPLDIR: %s\n", getenv("NVIMR_COMPLDIR"));
+        REprintf("  RNVIM_PORT: %s\n", nrs_port);
+        REprintf("  RNVIM_ID: %s\n", getenv("RNVIM_ID"));
+        REprintf("  RNVIM_TMPDIR: %s\n", tmpdir);
+        REprintf("  RNVIM_COMPLDIR: %s\n", getenv("RNVIM_COMPLDIR"));
         REprintf("  R info: %s\n\n", *rinfo);
     }
 
@@ -1256,7 +1256,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
 }
 
 /**
- * @brief Close the TCP connection with nvimrserver and do other cleanup.
+ * @brief Close the TCP connection with rnvimserver and do other cleanup.
  * This function is called by `.onUnload()` at R/nvimcom.R.
  */
 void nvimcom_Stop(void) {

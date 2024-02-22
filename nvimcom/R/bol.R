@@ -518,7 +518,7 @@ filter.objlist <- function(x) {
     x[!grepl("^[\\[\\(\\{:-@%/=+\\$<>\\|~\\*&!\\^\\-]", x) & !grepl("^\\.__", x)]
 }
 
-#' Build in R-Nvim's cache directory the `args_` file with arguments of
+#' Build in R.nvim's cache directory the `args_` file with arguments of
 #' functions.
 #' @param afile Full path of the `args_` file.
 #' @param pkg Library name.
@@ -562,7 +562,7 @@ nvim.buildargs <- function(afile, pkg) {
     return(invisible(NULL))
 }
 
-#' Build Omni List and list of functions for syntax highlighting in R-Nvim's
+#' Build Omni List and list of functions for syntax highlighting in R.nvim's
 #' cache directory.
 #' @param omnilist Full path of `omnils_` file to be built.
 #' @param libname Library name.
@@ -636,7 +636,7 @@ nvim.bol <- function(omnilist, libname) {
     return(invisible(NULL))
 }
 
-#' This function calls nvim.bol which writes two files in `~/.cache/R-Nvim`:
+#' This function calls nvim.bol which writes two files in `~/.cache/R.nvim`:
 #'   - `fun_`    : function names for syntax highlighting
 #'   - `omnils_` : data for omni completion and object browser
 #' @param p Character vector with names of libraries.
@@ -653,7 +653,7 @@ nvim.buildomnils <- function(p) {
     options(nvimcom.verbose = 0)
 
     pvi <- utils::packageDescription(p)$Version
-    bdir <- paste0(Sys.getenv("NVIMR_COMPLDIR"), "/")
+    bdir <- paste0(Sys.getenv("RNVIM_COMPLDIR"), "/")
     odir <- dir(bdir)
     pbuilt <- odir[grep(paste0("omnils_", p, "_"), odir)]
     fbuilt <- odir[grep(paste0("fun_", p, "_"), odir)]

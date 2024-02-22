@@ -119,7 +119,7 @@ M.source_lines = function(lines, what)
                 rcmd = "Rnvim." .. what .. "(" .. sargs .. ")"
             end
         else
-            rcmd = "NvimR.source(" .. sargs .. ")"
+            rcmd = "Rnvim.source(" .. sargs .. ")"
         end
     end
 

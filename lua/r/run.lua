@@ -26,11 +26,11 @@ start_R2 = function()
         end)
     end
 
-    vim.fn.writefile({}, config.localtmpdir .. "/globenv_" .. vim.env.NVIMR_ID)
-    vim.fn.writefile({}, config.localtmpdir .. "/liblist_" .. vim.env.NVIMR_ID)
+    vim.fn.writefile({}, config.localtmpdir .. "/globenv_" .. vim.env.RNVIM_ID)
+    vim.fn.writefile({}, config.localtmpdir .. "/liblist_" .. vim.env.RNVIM_ID)
 
-    edit.add_for_deletion(config.localtmpdir .. "/globenv_" .. vim.env.NVIMR_ID)
-    edit.add_for_deletion(config.localtmpdir .. "/liblist_" .. vim.env.NVIMR_ID)
+    edit.add_for_deletion(config.localtmpdir .. "/globenv_" .. vim.env.RNVIM_ID)
+    edit.add_for_deletion(config.localtmpdir .. "/liblist_" .. vim.env.RNVIM_ID)
 
     if vim.o.encoding == "utf-8" then
         edit.add_for_deletion(config.tmpdir .. "/start_options_utf8.R")
@@ -83,6 +83,15 @@ start_R2 = function()
         and config.esc_term
     then
         table.insert(start_options, "options(editor = nvimcom:::nvim.edit)")
+    end
+    if
+        (type(config.external_term) == "boolean" and config.external_term == true)
+        or type(config.external_term) == "string"
+    then
+        table.insert(
+            start_options,
+            "reg.finalizer(.GlobalEnv, nvimcom:::final_msg, onexit = TRUE)"
+        )
     end
     if config.csv_delim and (config.csv_delim == "," or config.csv_delim == ";") then
         table.insert(
@@ -160,7 +169,7 @@ end
 
 M.set_nrs_port = function(p)
     vim.g.R_Nvim_status = 5
-    vim.env.NVIMR_PORT = p
+    vim.env.RNVIM_PORT = p
 end
 
 M.start_R = function(whatr)
@@ -184,12 +193,12 @@ M.start_R = function(whatr)
         return
     end
     if vim.g.R_Nvim_status == 2 then
-        warn("Cannot start R: nvimrserver not ready yet.")
+        warn("Cannot start R: rnvimserver not ready yet.")
         return
     end
 
     if vim.g.R_Nvim_status == 1 then
-        warn("Cannot start R: nvimrserver not started yet.")
+        warn("Cannot start R: rnvimserver not started yet.")
         return
     end
 
@@ -288,7 +297,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         vim.wait(200)
     else
         vim.fn.delete(
-            config.tmpdir .. "/initterm_" .. vim.fn.string(vim.env.NVIMR_ID) .. ".sh"
+            config.tmpdir .. "/initterm_" .. vim.fn.string(vim.env.RNVIM_ID) .. ".sh"
         )
         vim.fn.delete(config.tmpdir .. "/openR")
     end
@@ -325,7 +334,7 @@ end
 
 -- Background communication with R
 
--- Send a message to nvimrserver job which will send the message to nvimcom
+-- Send a message to rnvimserver job which will send the message to nvimcom
 -- through a TCP connection.
 M.send_to_nvimcom = function(code, attch)
     if vim.g.R_Nvim_status < 6 then
@@ -342,7 +351,7 @@ M.send_to_nvimcom = function(code, attch)
         warn("Server not running.")
         return
     end
-    job.stdin("Server", "2" .. code .. vim.env.NVIMR_ID .. attch .. "\n")
+    job.stdin("Server", "2" .. code .. vim.env.RNVIM_ID .. attch .. "\n")
 end
 
 M.quit_R = function(how)
@@ -358,7 +367,7 @@ M.quit_R = function(how)
             -- SaveWinPos
             job.stdin(
                 "Server",
-                "84" .. vim.fn.escape(vim.env.NVIMR_COMPLDIR, "\\") .. "\n"
+                "84" .. vim.fn.escape(vim.env.RNVIM_COMPLDIR, "\\") .. "\n"
             )
         end
         job.stdin("Server", "2QuitNow\n")
@@ -489,107 +498,97 @@ M.action = function(rcmd, mode, args)
 
     if not rkeyword or #rkeyword == 0 then return end
 
-            if rkeyword:find("::") then
-                local rhelplist = vim.fn.split(rkeyword, "::")
-                rhelppkg = rhelplist[1]
-                rhelptopic = rhelplist[2]
-            else
-                rhelppkg = ""
-                rhelptopic = rkeyword
-            end
-
-            if config.nvimpager == "no" then
-                send.cmd("help(" .. rkeyword .. ")")
-            else
-                if vim.fn.bufname("%") == "Object_Browser" then
-                    if require("r.browser").get_curview() == "libraries" then
-                        rhelppkg = require("r.browser").get_pkg_name()
-                    end
+    if rcmd == "help" then
+        local rhelppkg, rhelptopic
+        if rkeyword:find("::") then
+            local rhelplist = vim.fn.split(rkeyword, "::")
+            rhelppkg = rhelplist[1]
+            rhelptopic = rhelplist[2]
+        else
+            rhelppkg = ""
+            rhelptopic = rkeyword
+        end
+        if config.nvimpager == "no" then
+            send.cmd("help(" .. rkeyword .. ")")
+        else
+            if vim.fn.bufname("%") == "Object_Browser" then
+                if require("r.browser").get_curview() == "libraries" then
+                    rhelppkg = require("r.browser").get_pkg_name()
                 end
-                require("r.doc").ask_R_doc(rhelptopic, rhelppkg, true)
             end
-
-            return
+            require("r.doc").ask_R_doc(rhelptopic, rhelppkg, true)
         end
-
-        if rcmd == "print" then
-            M.print_object(rkeyword)
-            return
-        end
-
-        local rfun = rcmd
-
-        if rcmd == "args" then
-            if config.listmethods and not rkeyword:find("::") then
-                send.cmd('nvim.list.args("' .. rkeyword .. '")')
-            else
-                send.cmd("args(" .. rkeyword .. ")")
-            end
-
-            return
-        end
-
-        if rcmd == "plot" and config.specialplot then rfun = "nvim.plot" end
-
-        if rcmd == "plotsumm" then
-            local raction
-
-            if config.specialplot then
-                raction = "nvim.plot(" .. rkeyword .. "); summary(" .. rkeyword .. ")"
-            else
-                raction = "plot(" .. rkeyword .. "); summary(" .. rkeyword .. ")"
-            end
-
-            send.cmd(raction)
-            return
-        end
-
-        if config.open_example and rcmd == "example" then
-            M.send_to_nvimcom("E", 'nvimcom:::nvim.example("' .. rkeyword .. '")')
-            return
-        end
-
-        local argmnts = args or ""
-
-        if rcmd == "viewobj" or rcmd == "dputtab" then
-            if rcmd == "viewobj" then
-                if config.df_viewer then
-                    argmnts = argmnts .. ', R_df_viewer = "' .. config.df_viewer .. '"'
-                end
-
-                if rkeyword:find("::") then
-                    M.send_to_nvimcom(
-                        "E",
-                        "nvimcom:::nvim_viewobj(" .. rkeyword .. argmnts .. ")"
-                    )
-                else
-                    local fenc = config.is_windows
-                            and vim.o.encoding == "utf-8"
-                            and ', fenc="UTF-8"'
-                        or ""
-                    M.send_to_nvimcom(
-                        "E",
-                        'nvimcom:::nvim_viewobj("'
-                            .. rkeyword
-                            .. '"'
-                            .. argmnts
-                            .. fenc
-                            .. ")"
-                    )
-                end
-            else
-                M.send_to_nvimcom(
-                    "E",
-                    'nvimcom:::nvim_dput("' .. rkeyword .. '"' .. argmnts .. ")"
-                )
-            end
-
-            return
-        end
-
-        local raction = rfun .. "(" .. rkeyword .. argmnts .. ")"
-        send.cmd(raction)
+        return
     end
+
+    if rcmd == "print" then
+        M.print_object(rkeyword)
+        return
+    end
+
+    local rfun = rcmd
+
+    if rcmd == "args" then
+        if config.listmethods and not rkeyword:find("::") then
+            send.cmd('nvim.list.args("' .. rkeyword .. '")')
+        else
+            send.cmd("args(" .. rkeyword .. ")")
+        end
+
+        return
+    end
+
+    if rcmd == "plot" and config.specialplot then rfun = "nvim.plot" end
+
+    if rcmd == "plotsumm" then
+        local raction
+
+        if config.specialplot then
+            raction = "nvim.plot(" .. rkeyword .. "); summary(" .. rkeyword .. ")"
+        else
+            raction = "plot(" .. rkeyword .. "); summary(" .. rkeyword .. ")"
+        end
+
+        send.cmd(raction)
+        return
+    end
+
+    if config.open_example and rcmd == "example" then
+        M.send_to_nvimcom("E", 'nvimcom:::nvim.example("' .. rkeyword .. '")')
+        return
+    end
+
+    local argmnts = args or ""
+
+    if rcmd == "viewobj" then
+        if config.df_viewer then
+            argmnts = argmnts .. ', R_df_viewer = "' .. config.df_viewer .. '"'
+        end
+        if rkeyword:find("::") then
+            M.send_to_nvimcom(
+                "E",
+                "nvimcom:::nvim_viewobj(" .. rkeyword .. argmnts .. ")"
+            )
+        else
+            local fenc = config.is_windows
+                    and vim.o.encoding == "utf-8"
+                    and ', fenc="UTF-8"'
+                or ""
+            M.send_to_nvimcom(
+                "E",
+                'nvimcom:::nvim_viewobj("' .. rkeyword .. '"' .. argmnts .. fenc .. ")"
+            )
+        end
+        return
+    elseif rcmd == "dputtab" then
+        M.send_to_nvimcom(
+            "E",
+            'nvimcom:::nvim_dput("' .. rkeyword .. '"' .. argmnts .. ")"
+        )
+        return
+    end
+    local raction = rfun .. "(" .. rkeyword .. argmnts .. ")"
+    send.cmd(raction)
 end
 
 M.print_object = function(rkeyword)
