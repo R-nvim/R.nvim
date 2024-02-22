@@ -15,18 +15,25 @@ Examples of configuration for `lazy.nvim` (see also [cmp-r]):
 Minimal configuration:
 
 ```lua
-    {
-        "jalvesaq/tmp-R-nvim",
-        lazy = false
-    },
-
+  {
+    "R-nvim/R.nvim",
+    lazy = false
+  },
+  "R-nvim/cmp-r",
+  {
+    "hrsh7th/nvim-cmp",
+    config = function()
+      require("cmp").setup({ sources = {{ name = "cmp_r" }}})
+      require("cmp_r").setup({ })
+    end,
+  },
 ```
 
-More complex configuration:
+More complex configuration (but not including `cmp`):
 
 ```lua
     {
-        "jalvesaq/tmp-R-nvim",
+        "R-nvim/R.nvim",
         config = function ()
             -- Create a table with the options to be passed to setup()
             local opts = {
@@ -68,14 +75,12 @@ The complete list of options is in the documentation.
 
 ## Usage
 
-Please read the plugin's
-[documentation](https://github.com/jamespeapen/Nvim-R/wiki) for instructions on
-[usage](https://github.com/jamespeapen/Nvim-R/wiki/Use).
+Please read the plugin's [documentation](https://github.com/jamespeapen/Nvim-R/wiki) for instructions on [usage](https://github.com/jamespeapen/Nvim-R/wiki/Use).
 
 ## Transitioning from Nvim-R
 
 
-During conversion of VimScript to Lua, we decide to end support for features
+During the conversion of VimScript to Lua, we decided to end support for features
 that were useful in the past but no longer sufficiently valuable to be worth
 the effort of conversion. We removed support for `Rrst` (it seems that not
 many people use it anymore), debugging code (a debug adapter would be better),
@@ -96,10 +101,10 @@ We removed the `"echo"` parameters from the functions that send code to R
 Console. Users can still set the value of `source_args` to define the
 arguments that will be passed to `base::source()` and include the argument
 `echo=TRUE`. Now, there is a new option to define how many lines can be sent
-directly to R Console without saving the code in a temporary file to be
+directly to the R Console without saving the code in a temporary file to be
 sourced (`max_lines_to_paste`).
 
-We reduced the options on how to display R documentation to: `"split"`,
+We reduced the number of options on how to display R documentation to: `"split"`,
 `"tab"`, `"float"` (not implemented yet), and `"no"`.
 
 The options `openpdf` and `openhtml` were renamed as `open_pdf` and
@@ -107,50 +112,25 @@ The options `openpdf` and `openhtml` were renamed as `open_pdf` and
 
 There are two new commands:
 
-- `:RMapsDesc` display the list of key bindings followed by short
+- `:RMapsDesc` displays the list of key bindings followed by short
   descriptions.
 
-- `:RConfigShow` display the list of configuration options and their current
+- `:RConfigShow` displays the list of configuration options and their current
   values.
 
-There is one new command to send the above piped chain of commands. It's
+There is one new command to send the above-piped chain of commands. Its
 default key binding is `<LocalLeader>sc`.
 
 If you have [colorout] installed, and if you are not loading it in your
 `~/.Rprofile`, it should be the development version. Reason: R.nvim calls the
-function `colorout::isColorOut()` which actually enables the colorizing of
+function `colorout::isColorOut()` which unduly enables the colorizing of
 output in the released version of [colorout]. This bug was fixed in [this
 commit](https://github.com/jalvesaq/colorout/commit/1080187f9474b71f16c3c0be676de4c54863d1e7).
 
 
-## Screenshots
+## Screenshots and videos
 
-The animated GIF below shows R running in a [Neovim] terminal buffer. We can
-note:
-
-1.  The editor has some code to load Afrobarometer data on Mozambique, R is
-    running below the editor and the Object Browser is on the right side. On
-    the R Console, we can see messages inform some packages were loaded. The
-    messages are in magenta because they were colorized by the package
-    [colorout].
-
-2.  When the command `library("foreign")` is sent to R, the string _read.spss_
-    turns blue because it is immediately recognized as a loaded function
-    (the Vim color scheme used is [southernlights]).
-
-3.  When Mozambique's `data.frame` is created, it is automatically displayed
-    in the Object Browser. Messages about unrecognized types are in magenta
-    because they were sent to _stderr_, and the line _Warning messages_ is in
-    red because colorout recognized it as a warning.
-
-4.  When the "label" attributes are applied to the `data.frame` elements, the
-    labels show up in the Object Browser.
-
-5.  The next images show results of omni completion.
-
-6.  The last slide shows the output of `summary`.
-
-![Nvim-R screenshots](https://raw.githubusercontent.com/jalvesaq/Nvim-R/master/Nvim-R.gif "Nvim-R screenshots")
+None yet. Tell us if published a video presenting R.nvim features.
 
 ## The communication between Neovim and R
 
@@ -171,23 +151,23 @@ There are three different ways of sending the commands to R Console:
   which forwards the command to R Console.
 
 The R package _nvimcom_ includes the application _rnvimserver_ which is never
-used by R itself, but is run as a Neovim's job. That is, the communication
+used by R itself but is run as a Neovim's job. That is, the communication
 between the _rnvimserver_ and Neovim is through the _rnvimserver_ standard
 input and output (green arrows). The _rnvimserver_ application runs a TCP
 server. When _nvimcom_ is loaded, it immediately starts a TCP client that
 connects to _rnvimserver_ (red arrows).
 
 Some commands that you trigger are not pasted into R Console and do not output
-anything in R Console; their results are seen in the editor itself. These are
-the commands to do omnicompletion (of names of objects and function
+anything in the R Console; their results are seen in the editor itself. These are
+the commands to do auto completion (of names of objects and function
 arguments), start and manipulate the Object Browser (`\ro`, `\r=` and `\r-`),
 call R help (`\rh` or `:Rhelp`), insert the output of an R command
-(`:Rinsert`) and format selected text (`:Rformat`).
+(`:Rinsert`), and format selected text (`:Rformat`).
 
 When new objects are created or new libraries are loaded, nvimcom sends
 messages that tell the editor to update the Object Browser, update the syntax
 highlight to include newly loaded libraries and open the PDF output after
-knitting an Rnoweb file and compiling the LaTeX result. Most of the
+knitting an Rnoweb file, and compiling the LaTeX result. Most of the
 information is transmitted through the TCP connection to the _rnvimserver_,
 but temporary files are used in a few cases.
 

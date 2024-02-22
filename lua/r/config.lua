@@ -90,7 +90,6 @@ local config = {
     user_login          = "",
     user_maps_only      = false,
     wait                = 60,
-    wait_reply          = 2,
 }
 
 -- stylua: ignore end
