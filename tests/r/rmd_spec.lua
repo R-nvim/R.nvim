@@ -1,31 +1,57 @@
---# selene: allow(incorrect_standard_library_use)
---
-
-local rmd = require("r.rmd")
-
--- local mock_cursor_position = require("tests.helpers").mock_cursor_position
+---@diagnostic disable: undefined-global
+---@diagnostic disable: undefined-field
+local jobopts = { rpc = true, width = 80, height = 24 }
+local rpcrequest = vim.rpcrequest
 
 describe("rmd module", function()
-    -- before_each(function() mock.setup() end)
-    -- after_each(function() mock.teardown() end)
+    local nvim -- Channel of the embedded Neovim process
+    local function send_lua(lua_command, args)
+        return rpcrequest(nvim, "nvim_exec_lua", lua_command, args or {})
+    end
 
-    -- TODO: How does this function behave if chunk start/end not found?
-    -- TODO: This function should work without defining a language
-    -- TODO: Add test to check verbosity
+    before_each(function()
+            nvim = vim.fn.jobstart({ "nvim", "--embed", "--headless", "tests/examples/rmd/rchunk.rmd"}, jobopts)
+    end)
+
+    after_each(function() vim.fn.jobstop(nvim) end)
+
     describe("is_in_code_chunk(language, verbose) Unit Tests", function()
-        -- it("returns true if in R chunk", function()
-        --   --TODO: Simulate cursor inside R chunk
-        --   local rchunk_rmd = [[ ]] -- Moved to tests/examples/rmd/rchunk.rmd
-        --   local handle = mock_cursor_position(rchunk_rmd, {15,3})
-        --   assert.is_true(rmd.is_in_code_chunk("r", false)) -- FIX: call this from nvim not in standalone Lua
-        --   handle:close()
-        -- end)
-        it("returns true if in R chunk", function() assert.is_true(false) end)
-        it("returns false if outside R chunk", function() assert.is_true(false) end)
-        it("returns true if in Python chunk", function() assert.is_true(false) end)
-        it("returns false if not in Python chunk", function() assert.is_true(false) end)
-        it("returns true if on an '```{r' line", function() assert.is_true(false) end)
-        it("returns true if on an '```' line that proceeds '```{r'", function() assert.is_true(false) end)
+        it("returns true if in R chunk", function()
+            rpcrequest(nvim, "nvim_win_set_cursor", 0, {13,0})
+            local result = send_lua([[return require('r.rmd').is_in_code_chunk('r', false)]])
+            assert.is_true(result)
+        end)
+        it("returns false if outside R chunk", function()
+            rpcrequest(nvim, "nvim_win_set_cursor", 0, {1,0})
+            local result = send_lua([[return require('r.rmd').is_in_code_chunk('r', false)]])
+            assert.is_false(result)
+        end)
+        it("returns true if in Python chunk", function()
+            rpcrequest(nvim, "nvim_win_set_cursor", 0, {19,0})
+            local result = send_lua([[return require('r.rmd').is_in_code_chunk('python', false)]])
+            assert.is_true(result)
+        end)
+        it("returns false if not in Python chunk", function()
+            rpcrequest(nvim, "nvim_win_set_cursor", 0, {13,0})
+            local result = send_lua([[return require('r.rmd').is_in_code_chunk('python', false)]])
+            assert.is_false(result)
+        end)
+        it("returns true if on an '```{r' line", function()
+            rpcrequest(nvim, "nvim_win_set_cursor", 0, {12,0})
+            local result = send_lua([[return require('r.rmd').is_in_code_chunk('r', false)]])
+            assert.is_true(result)
+        end)
+        it("test verbosity", function ()
+            pending("test verbosity")
+        end)
+        it("returns true if inside code chunk (filetype-agnostic)", function ()
+            pending("test filetype-agnostic code chunk detection")
+        end)
+        it("returns false if outside code chunk (filetype-agnostic)", function ()
+            pending("test filetype-agnostic code chunk detection")
+        end)
+        it("returns false if it cannot match ```", function ()
+            pending("test behaviour if chunk start/end not found")
+        end)
     end)
 end)
-
