@@ -10,7 +10,7 @@ describe("rmd module", function()
     end
 
     before_each(function()
-            nvim = vim.fn.jobstart({ "nvim", "--embed", "--headless", "tests/examples/rmd/rchunk.rmd"}, jobopts)
+            nvim = vim.fn.jobstart({ "nvim", "--embed", "--headless", "tests/examples/example.Rmd"}, jobopts)
     end)
 
     after_each(function() vim.fn.jobstop(nvim) end)
