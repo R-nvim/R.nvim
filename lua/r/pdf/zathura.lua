@@ -1,6 +1,5 @@
 local warn = require("r").warn
 local utils = require("r.utils")
-local pdf = require("r.pdf")
 local job = require("r.job")
 
 local M = {}
@@ -44,7 +43,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
         return
     end
 
-    pdf.focus_window(shortp, job.get_pid(ppath))
+    utils.focus_window(shortp, job.get_pid(ppath))
 end
 
 return M

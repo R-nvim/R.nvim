@@ -4,7 +4,7 @@ local evince_loop = 0
 local config = require("r.config").get_config()
 local rnw = require("r.rnw")
 local job = require("r.job")
-local pdf = require("r.pdf")
+local utils = require("r.pdf")
 
 -- Check if python3 is executable, otherwise use python
 if vim.fn.executable("python3") > 0 then
@@ -18,7 +18,7 @@ local M = {}
 M.open = function(fullpath)
     if job.is_running(fullpath) then
         local fname = fullpath:gsub(".*/", "")
-        pdf.focus_window(fname, job.get_pid(fullpath))
+        utils.focus_window(fname, job.get_pid(fullpath))
         return
     end
 
@@ -49,7 +49,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
     else
         evince_loop = 0
     end
-    require("r.pdf").focus_window(ppath:gsub(".*/", ""), job.get_pid(ppath))
+    utils.focus_window(ppath:gsub(".*/", ""), job.get_pid(ppath))
 end
 
 M.run_evince_SyncTeX_server = function()

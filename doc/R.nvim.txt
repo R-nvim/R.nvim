@@ -264,12 +264,12 @@ that follows <LocalLeader>m, e.g. <LocalLeader>m} (from the current line to
 the end of paragraph) or <LocalLeader>m3j (the next 3 lines including the
 current one).
 
-If the cursor is between manually inserted marks, the plugin will send the
-lines between them to R if you press <LocalLeader>bb. If the cursor is above
-the first mark, the plugin will send from the beginning of the file to the
-mark. If the cursor is below the last mark, the plugin will send from the mark
-to the end of the file. The mark above the cursor is included and the mark
-below is excluded from the block to be sent to R. To create a mark, press
+If the cursor is between manually inserted marks (a-z), the plugin will send
+the lines between them to R if you press <LocalLeader>bb. If the cursor is
+above the first mark, the plugin will send from the beginning of the file to
+the mark. If the cursor is below the last mark, the plugin will send from the
+mark to the end of the file. The mark above the cursor is included and the
+mark below is excluded from the block to be sent to R. To create a mark, press
 m<letter> in Normal mode (see |mark|). For example, consider the following
 code (with line numbers):
 >
@@ -280,8 +280,8 @@ code (with line numbers):
    5  z <- x + y
    6
 
-In Normal mode, go to line 1 and press `ma`; go to line 6 and press `mb`; go
-to line 4 and press `<LocalLeader>bb` to send lines 1 to 5 to R. Normally, Vim
+In Normal mode, go to line 2 and press `ma`; go to line 6 and press `mb`; go
+to line 4 and press `<LocalLeader>bb` to send lines 2 to 5 to R. Normally, Vim
 marks are not visible, but there are plugins that highlight them.
 
 Sending a selection of lines is actually a special case of sending a marked
@@ -1430,6 +1430,13 @@ this with the option `open_html` whose values are the same of `open_pdf`:
 The browser application called by R.nvim is whatever is returned by the R
 command `getOption("browser")`, unless it is NULL. In this case, R.nvim will
 call `open` on both Windows and Mac OS X, and `xdg-open` on Linux.
+
+Note: R.nvim tracks the browser PID to know that it is open and to try to
+focus its window. This means that if either `open` or `xdg-open` was callled
+instead of the browser directly, R.nvim will not know the browser's PID. This
+can be fixed by setting the "browser" option in the `~/.Rprofile`. Also, most
+browser will reuse any open window and close immediately. Consequently, R.nvim
+will consider that the browser was closed and will to open it again.
 
 For Quarto documents, the available key bindings are <LocalLeader>qr (render
 document), <LocalLeader>qp (preview document), and <LocalLeader>qs (stop

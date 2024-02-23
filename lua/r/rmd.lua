@@ -126,7 +126,7 @@ end
 --- Navigates to the previous R or Python code chunk in the document.
 -- This function searches backwards from the current cursor position for the start of
 -- any R or Python code chunk.
-M.previous_chunk = function()
+local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
     if M.is_in_code_chunk("r", false) or M.is_in_code_chunk("python", false) then
         local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- search for chunk start
@@ -136,21 +136,39 @@ M.previous_chunk = function()
     if i == 0 then
         vim.api.nvim_win_set_cursor(0, { curline, 0 })
         warn("There is no previous R code chunk to go.")
-        return
-    else
-        vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the chunk
+        return false
+    end
+    vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the chunk
+    return true
+end
+
+-- Call go_to_previous() as many times as requested by the user.
+M.previous_chunk = function()
+    local i = 0
+    while i < vim.v.count1 do
+        if not go_to_previous() then break end
+        i = i + 1
     end
 end
 
 --- Navigates to the next R or Python code chunk in the document.
 -- This function searches forward from the current cursor position for the start of any R or Python code chunk.
-M.next_chunk = function()
+local go_to_next = function()
     local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "nW") -- Search for the next chunk start
     if i == 0 then
         warn("There is no next R code chunk to go.")
-        return
-    else
-        vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the next chunk
+        return false
+    end
+    vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the next chunk
+    return true
+end
+
+-- Call go_to_next() as many times as requested by the user.
+M.next_chunk = function()
+    local i = 0
+    while i < vim.v.count1 do
+        if not go_to_next() then break end
+        i = i + 1
     end
 end
 

@@ -8,6 +8,25 @@ function M.get_current_line()
     return line
 end
 
+--- Request the windows manager to focus a window.
+--- Currently, has support only for Xorg.
+---@param wttl string Part of the window title.
+---@param pid number Pid of window application.
+M.focus_window = function(wttl, pid)
+    local config = require("r.config").get_config()
+    if config.has_X_tools then
+        M.system({ "wmctrl", "-a", wttl })
+    elseif
+        vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
+    then
+        if pid and pid ~= 0 then
+            M.system({ "swaymsg", '[pid="' .. tostring(pid) .. '"]', "focus" })
+        elseif wttl then
+            M.system({ "swaymsg", '[name="' .. wttl .. '"]', "focus" })
+        end
+    end
+end
+
 --- Get the directory of the current buffer in Neovim.
 -- This function retrieves the path of the current buffer and extracts the directory part.
 ---@return string The directory path of the current buffer or an empty string if not applicable.

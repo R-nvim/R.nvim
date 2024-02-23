@@ -4,7 +4,6 @@ local utils = require("r.utils")
 local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
-local all_marks = "abcdefghijklmnopqrstuvwxyz"
 
 --- Check if line ends with operator symbol
 ---@param line string
@@ -304,16 +303,20 @@ end
 M.marked_block = function(m)
     if not vim.b.IsInRCode(true) then return end
 
-    local curline = vim.fn.line(".")
+    -- FIXME: find a more efficient way of getting the last line without
+    -- either calling vim.fn.line("$") or getting the list of all lines.
+    local all_lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
+    local last_line = #all_lines
+
+    local curline = vim.api.nvim_win_get_cursor(0)[1]
     local lineA = 1
-    local lineB = vim.fn.line("$")
-    local maxmarks = string.len(all_marks)
-    local n = 0
+    local lineB = last_line
+    local lnum
+    local n = string.byte("a")
+    local z = string.byte("z")
 
-    while n < maxmarks do
-        local c = string.sub(all_marks, n + 1, n + 1)
-        local lnum = vim.fn.line("'" .. c)
-
+    while n <= z do
+        lnum = vim.api.nvim_buf_get_mark(0, string.char(n))[1]
         if lnum ~= 0 then
             if lnum <= curline and lnum > lineA then
                 lineA = lnum
@@ -321,23 +324,22 @@ M.marked_block = function(m)
                 lineB = lnum
             end
         end
-
         n = n + 1
     end
 
-    if lineA == 1 and lineB == vim.fn.line("$") then
+    if lineA == 1 and lineB == last_line then
         warn("The file has no mark!")
         return
     end
 
-    if lineB < vim.fn.line("$") then lineB = lineB - 1 end
+    if lineB < last_line then lineB = lineB - 1 end
 
-    local lines = vim.api.nvim_buf_get_lines(0, lineA, lineB, true)
+    local lines = vim.api.nvim_buf_get_lines(0, lineA - 1, lineB, true)
     local ok = M.source_lines(lines, "block")
 
     if ok == 0 then return end
 
-    if m == true and lineB ~= vim.fn.line("$") then
+    if m == true and lineB ~= last_line then
         vim.api.nvim_win_set_cursor(0, { lineB, 0 })
         cursor.move_next_line()
     end

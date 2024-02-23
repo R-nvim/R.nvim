@@ -1,6 +1,7 @@
 local config = require("r.config").get_config()
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 local warn = require("r").warn
+local utils = require("r.utils")
 local cursor = require("r.cursor")
 local job = require("r.job")
 local doc_buf_id = nil
@@ -200,7 +201,7 @@ M.load_html = function(fullpath, browser)
 
     local fname = fullpath:gsub(".*/", "")
     if job.is_running(fullpath) then
-        if config.open_pdf == 2 then M.focus_window(fname, job.get_pid(fullpath)) end
+        if config.open_html == 2 then utils.focus_window(fname, job.get_pid(fullpath)) end
         return
     end
 
@@ -216,7 +217,7 @@ M.load_html = function(fullpath, browser)
         table.insert(cmd, fullpath)
     end
 
-    job.start(fullpath, cmd, { detach = true })
+    job.start(fullpath, cmd, { detach = true, on_exit = job.on_exit })
 end
 
 M.open = function(fullpath, browser)
