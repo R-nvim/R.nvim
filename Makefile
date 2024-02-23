@@ -8,7 +8,12 @@ default: all
 all: help
 
 test:
-	eval $$(luarocks path --lua-version 5.1 --bin) && busted --run r_tests
+	@eval $$(luarocks path --lua-version 5.1 --bin) && (busted --run r_tests; exit_code=$$?; \
+	if [ $$exit_code -ne 0 ]; then \
+		echo "\nTests failed. Please review the errors above to diagnose issues.\n"; \
+	else \
+		echo "\nAll tests passed successfully.\n"; \
+	fi)
 
 help:
 	@echo "Available targets:"
