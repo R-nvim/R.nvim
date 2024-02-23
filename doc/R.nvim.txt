@@ -694,7 +694,6 @@ command:
 |compldir|            Where lists for auto completion are stored
 |fun_data_1|          What the data.frame to complete function arguments is
 |fun_data_2|          Where the data.frame to complete function arguments is
-|quarto_intel|        Where the Quarto completion data is
 |remote_compldir|     Mount point of remote cache directory
 |R.nvim-df-view|        Options for visualizing a data.frame or matrix
 |R.nvim-SyncTeX|        Options for SyncTeX
@@ -1593,7 +1592,6 @@ want to know what they are, while editing an R file, do in Normal mode:
 ------------------------------------------------------------------------------
 6.31. Auto completion                                           *fun_data_1*
                                                                 *fun_data_2*
-                                                                *quarto_intel*
 
 There are two ways of getting automatic completion of R objects names while
 you type: using R.nvim's built-in completion system (as a source for
