@@ -83,29 +83,11 @@ M.open = function(fullpath)
 
     local fname = fullpath:gsub(".*/", "")
     if job.is_running(fullpath) then
-        if config.open_pdf == 2 then M.focus_window(fname, job.get_pid(fullpath)) end
+        if config.open_pdf == 2 then utils.focus_window(fname, job.get_pid(fullpath)) end
         return
     end
 
     M.open2(fullpath)
-end
-
---- Request the windows manager to focus a window.
---- Currently, has support only for Xorg.
----@param wttl string Part of the window title.
----@param pid number Pid of window application.
-M.focus_window = function(wttl, pid)
-    if config.has_X_tools then
-        utils.system({ "wmctrl", "-a", wttl })
-    elseif
-        vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
-    then
-        if pid and pid ~= 0 then
-            utils.system({ "swaymsg", '[pid="' .. tostring(pid) .. '"]', "focus" })
-        elseif wttl then
-            utils.system({ "swaymsg", '[name="' .. wttl .. '"]', "focus" })
-        end
-    end
 end
 
 return M

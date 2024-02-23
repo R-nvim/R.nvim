@@ -32,7 +32,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
         on_stdout = require("r.job").on_stdout,
         on_exit = require("r.job").on_exit,
     })
-    require("r.pdf").focus_window(ppath, job.get_pid(ppath))
+    require("r.utils").focus_window(ppath, job.get_pid(ppath))
 end
 
 return M

@@ -162,7 +162,7 @@ M.is_in_R_code = function(vrb)
     end
 end
 
-M.previous_chunk = function()
+local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
     if M.is_in_R_code(false) then
         local i = vim.fn.search("^<<.*$", "bnW")
@@ -172,19 +172,36 @@ M.previous_chunk = function()
     if i == 0 then
         vim.api.nvim_win_set_cursor(0, { curline, 0 })
         warn("There is no previous R code chunk to go.")
-        return
-    else
-        vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+        return false
+    end
+    vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+    return true
+end
+
+-- Call go_to_previous() as many times as requested by the user.
+M.previous_chunk = function()
+    local i = 0
+    while i < vim.v.count1 do
+        if not go_to_previous() then break end
+        i = i + 1
     end
 end
 
-M.next_chunk = function()
+local go_to_next = function()
     local i = vim.fn.search("^<<.*$", "nW")
     if i == 0 then
         warn("There is no next R code chunk to go.")
-        return
-    else
-        vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+        return false
+    end
+    vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+    return true
+end
+
+M.next_chunk = function()
+    local i = 0
+    while i < vim.v.count1 do
+        if not go_to_next() then break end
+        i = i + 1
     end
 end
 
@@ -378,7 +395,7 @@ M.SyncTeX_backward = function(fname, ln)
     rnwf = rnwf:gsub("^%.\\/", "")
 
     if go_to_buf(rnwbn, rnwf, basedir, rnwln) > 0 then
-        require("r.pdf").focus_window(config.term_title, config.term_pid)
+        utils.focus_window(config.term_title, config.term_pid)
     end
 end
 
