@@ -933,19 +933,20 @@ If `rmdchunk = 2` (the default), in addition of creating an empty chunk
 block, a single backtick will be converted in inline R delimiters if the
 cursor is not at the beginning of the line.
 
-While editing R code, <M--> is replaced with `<-`. If you want to bind other
-keys to be replaced by `<-`, set the value of |assign_map| in your config,
-as in the example below which emulates RStudio behavior:
+While editing R code, <M--> is replaced with `<-`. To disable this feature,
+put in your config:
+>lua
+   assign = false
+<
+If you want to bind other keys to be replaced by `<-`, set the value of
+|assign_map| in your config, as in the example below which emulates RStudio
+behavior:
 >lua
    assign_map = "<M-=>"
 <
 Note: You can't map <C-=> because in Neovim only alphabetic letters can be
 mapped in combination with the CTRL key.
 
-To completely disable this feature, put in your config:
->lua
-   assign_map = ""
-<
 
 ------------------------------------------------------------------------------
 6.6. Object Browser options                                   *objbr_w*
