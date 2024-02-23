@@ -1,0 +1,11 @@
+return {
+    _all = {
+        lua = "./tests/run",
+    },
+    r_tests = {
+        ROOT = { "./tests/r/" },
+    },
+    -- tcp_server_tests = {
+    --     ROOT = { "./tests/tcp_server/" },
+    -- },
+}
