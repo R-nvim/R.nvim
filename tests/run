@@ -8,8 +8,6 @@
 
 PACKAGE="r-nvim"
 
-# TODO:
-# If this script ever complains it's probably because I didn't preemptively mkdir the following
 export XDG_CONFIG_HOME='tests/xdg/config' # configuration for tests in test/xdg/config/nvim/
 export XDG_STATE_HOME='tests/xdg/local/state'
 export XDG_DATA_HOME='tests/xdg/local/share'
