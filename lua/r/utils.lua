@@ -77,7 +77,7 @@ end
 
 --- Check if a table has a specific string value
 ---@param value string
----@param tbl table
+---@param tbl string[]
 function M.value_in_table(value, tbl)
     for _, v in pairs(tbl) do
         if v == value then return true end

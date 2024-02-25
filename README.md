@@ -108,7 +108,10 @@ We reduced the number of options on how to display R documentation to: `"split"`
 `"tab"`, `"float"` (not implemented yet), and `"no"`.
 
 The options `openpdf` and `openhtml` were renamed as `open_pdf` and
-`open_html`, with a minor change in how they behave.
+`open_html`, they now are strings and there with a minor change in how they
+behave.
+
+The option `nvim_wd` was renamed as `setwd` and it now is a string.
 
 There are two new commands:
 

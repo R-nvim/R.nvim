@@ -72,7 +72,7 @@ end
 --- Call the appropriate function to open a PDF document.
 ---@param fullpath string The path to the PDF file.
 M.open = function(fullpath)
-    if config.open_pdf == 0 then return end
+    if config.open_pdf == "no" then return end
 
     if fullpath == "Get Master" then
         local fpath = require("r.rnw").SyncTeX_get_master() .. ".pdf"
@@ -83,7 +83,9 @@ M.open = function(fullpath)
 
     local fname = fullpath:gsub(".*/", "")
     if job.is_running(fullpath) then
-        if config.open_pdf == 2 then utils.focus_window(fname, job.get_pid(fullpath)) end
+        if config.open_pdf:find("focus") then
+            utils.focus_window(fname, job.get_pid(fullpath))
+        end
         return
     end
 
