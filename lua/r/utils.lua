@@ -1,11 +1,12 @@
 local M = {}
 
---- Return the line of the current buffer at the cursor position
----@return string
-function M.get_current_line()
-    local lnum = vim.api.nvim_win_get_cursor(0)[1]
-    local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
-    return line
+--- Get number of the last line of a buffer
+---@return number
+M.get_last_line_num = function()
+    -- FIXME: find a more efficient way of getting the last line without
+    -- either calling vim.fn.line("$") or getting the list of all lines.
+    local all_lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
+    return #all_lines
 end
 
 --- Request the windows manager to focus a window.

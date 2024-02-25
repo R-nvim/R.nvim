@@ -155,7 +155,7 @@ M.source_file = function()
 
     if config.is_windows then fpath = utils.normalize_windows_path(fpath) end
 
-    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("$"), true)
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
 
     if #lines > config.max_paste_lines then
         -- Source the file.
@@ -191,7 +191,7 @@ end
 ---@param direction string
 ---@param correctpos boolean
 M.line_part = function(direction, correctpos)
-    local lin = utils.get_current_line()
+    local lin = vim.api.nvim_get_current_line()
     local idx = vim.fn.col(".") - 1
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     if correctpos then vim.api.nvim_win_set_cursor(0, { lnum, idx - 1 }) end
@@ -222,7 +222,7 @@ local knit_child = function(line, m)
     if vim.fn.filereadable(cfile) == 1 then
         M.cmd("require(knitr); knit('" .. cfile .. "', output=NULL)")
         if m then
-            vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
+            vim.api.nvim_win_set_cursor(0, { vim.api.nvim_win_get_cursor(0)[1] + 1, 1 })
             cursor.move_next_line()
         end
     else
@@ -235,7 +235,7 @@ end
 M.chunks_up_to_here = function()
     local filetype = vim.o.filetype
     local codelines = {}
-    local here = vim.fn.line(".")
+    local here = vim.api.nvim_win_get_cursor(0)[1]
     local curbuf = vim.fn.getline(1, "$")
     local idx = 0
 
@@ -286,8 +286,8 @@ end
 
 -- Send to R Console the code under a Vim motion
 M.motion = function(_)
-    local lstart = vim.fn.line("'[")
-    local lend = vim.fn.line("']")
+    local lstart = vim.api.nvim_buf_get_mark(0, "[")[1]
+    local lend = vim.api.nvim_buf_get_mark(0, "]")[1]
     if not lstart or not lend then return end
     if lstart == lend then
         M.line("stay", lstart)
@@ -303,10 +303,7 @@ end
 M.marked_block = function(m)
     if not vim.b.IsInRCode(true) then return end
 
-    -- FIXME: find a more efficient way of getting the last line without
-    -- either calling vim.fn.line("$") or getting the list of all lines.
-    local all_lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
-    local last_line = #all_lines
+    local last_line = utils.get_last_line_num()
 
     local curline = vim.api.nvim_win_get_cursor(0)[1]
     local lineA = 1
@@ -357,11 +354,12 @@ M.selection = function(m)
         then
             ispy = true
         elseif not vim.b.IsInRCode(false) then
+            local cline = vim.api.nvim_get_current_line()
             if
-                (vim.o.filetype == "rnoweb" and utils.get_current_line() ~= "\\Sexpr{")
+                (vim.o.filetype == "rnoweb" and not cline:find("\\Sexpr{"))
                 or (
                     (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-                    and utils.get_current_line() ~= "`r "
+                    and not cline:find("`r ")
                 )
             then
                 warn("Not inside an R code chunk.")
@@ -374,50 +372,43 @@ M.selection = function(m)
     local esc = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
     vim.api.nvim_feedkeys(esc, "x", false)
 
-    local start_line = vim.fn.line("'<")
-    local end_line = vim.fn.line("'>")
+    local start_pos = vim.api.nvim_buf_get_mark(0, "<")
+    local end_pos = vim.api.nvim_buf_get_mark(0, ">")
+    local lines = vim.api.nvim_buf_get_lines(0, start_pos[1] - 1, end_pos[1], true)
 
-    if start_line == end_line then
-        local i = vim.fn.col("'<")
-        local j = vim.fn.col("'>") - i
-        local l = vim.fn.getline(vim.fn.line("'<"))
-        local line = string.sub(l, i, i + j)
+    if start_pos[1] == end_pos[1] then
+        local line = lines[1]
+        line = string.sub(line, start_pos[2] + 1, end_pos[2] + 1)
         if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
         local ok = M.cmd(line)
         if ok and m == true then cursor.move_next_line() end
         return
     end
 
-    local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, true)
-    if vim.fn.visualmode() == "\\<C-V>" then
-        local cj = vim.fn.col("'<")
-        local ck = vim.fn.col("'>")
+    local vmode = vim.fn.visualmode()
+    if vmode == "\022" then
+        -- "\022" is <C-V>
+        local cj = start_pos[2] + 1
+        local ck = end_pos[2] + 1
         if cj > ck then
             local tmp = cj
             cj = ck
             ck = tmp
         end
-        local cutlines = {}
-        for _, v in pairs(lines) do
-            table.insert(cutlines, v:sub(cj, ck))
+        for k, _ in pairs(lines) do
+            lines[k] = string.sub(lines[k], cj, ck)
         end
-        lines = cutlines
-    else
-        local i = vim.fn.col("'<") - 1
-        local j = vim.fn.col("'>")
-        lines[1] = string.sub(lines[1], i)
+    elseif vmode == "v" then
+        lines[1] = string.sub(lines[1], start_pos[2] + 1, -1)
         local llen = #lines
-        lines[llen] = string.sub(lines[llen], 0, j - 1)
+        lines[llen] = string.sub(lines[llen], 1, end_pos[2] + 1)
     end
 
-    local curpos = vim.fn.getpos(".")
-    local curline = vim.fn.line("'<")
-    for idx, line in ipairs(lines) do
-        vim.fn.setpos(".", { 0, curline, 1, 0 })
-        if vim.o.filetype == "r" then lines[idx] = cursor.clean_oxygen_line(line) end
-        curline = curline + 1
+    if vim.o.filetype == "r" then
+        for k, _ in ipairs(lines) do
+            lines[k] = cursor.clean_oxygen_line(lines[k])
+        end
     end
-    vim.fn.setpos(".", curpos)
 
     local ok
     if ispy then
@@ -428,14 +419,17 @@ M.selection = function(m)
 
     if ok == 0 then return end
 
-    if m == true then cursor.move_next_line() end
+    if m == true then
+        vim.api.nvim_win_set_cursor(0, end_pos)
+        cursor.move_next_line()
+    end
 end
 
 --- Send current line to R Console
 ---@param m boolean|string Movement to do after sending the line.
 ---@param lnum number Number of line to send (optional).
 M.line = function(m, lnum)
-    if not lnum then lnum = vim.fn.line(".") end
+    if not lnum then lnum = vim.api.nvim_win_get_cursor(0)[1] end
     local line = vim.fn.getline(lnum)
     if #line == 0 then
         if m == true then cursor.move_next_line() end
@@ -483,7 +477,7 @@ M.line = function(m, lnum)
     end
 
     if vim.o.syntax == "rdoc" then
-        local line1 = utils.get_current_line()
+        local line1 = vim.api.nvim_get_current_line()
         if line1:find("^The topic") then
             local topic = line:gsub(".*::", "")
             local package = line:gsub("::.*", "")
@@ -512,7 +506,7 @@ M.line = function(m, lnum)
         local rpd = paren_diff(line)
         if rpd < 0 or has_op then
             lnum = lnum + 1
-            local last_buf_line = vim.fn.line("$")
+            local last_buf_line = utils.get_last_line_num()
             lines = { line }
             while lnum <= last_buf_line do
                 local txt = vim.fn.getline(lnum)
@@ -605,7 +599,7 @@ end
 --- Send the above chain of piped commands
 M.chain = function()
     -- Get the current line, the start and end line of the paragraph
-    local current_line = vim.fn.line(".")
+    local current_line = vim.api.nvim_win_get_cursor(0)[1]
     local startLine = vim.fn.search("^$", "bnW") -- Search for previous empty line
     local endLine = vim.fn.search("^$", "nW") - 1 -- Search for next empty line and adjust for exclusive range
 

@@ -1,7 +1,6 @@
 local warn = require("r").warn
 local config = require("r.config").get_config()
 local send = require("r.send")
-local utils = require("r.utils")
 local uv = vim.loop
 
 local M = {}
@@ -18,7 +17,7 @@ M.is_in_code_chunk = function(language, verbose)
     -- bncW: search backwards, don't move cursor, also match at cursor, no wrap around the end of the buffer
     local chunkline = vim.fn.search(chunkStartPattern, "bncW") -- Search for chunk start
     local docline = vim.fn.search("^[ \t]*```$", "bncW") -- Search for any code chunk end
-    if chunkline > docline and chunkline ~= vim.fn.line(".") then
+    if chunkline > docline and chunkline ~= vim.api.nvim_win_get_cursor(0)[1] then
         return true
     else
         if verbose then warn("Not inside a " .. language .. " code chunk.") end -- Warn if not in chunk and verbose is true
@@ -38,8 +37,8 @@ M.is_in_R_code = function(vrb) return M.is_in_code_chunk("r", vrb) end
 -- Different templates are used based on the file type (e.g., Quarto).
 M.write_chunk = function()
     if not M.is_in_code_chunk("r", false) then -- Check if cursor is inside an R code chunk
-        if utils.get_current_line():find("^%s*$") then -- Check if cursor is in an empty line
-            local curline = vim.fn.line(".")
+        if vim.api.nvim_get_current_line():find("^%s*$") then -- Check if cursor is in an empty line
+            local curline = vim.api.nvim_win_get_cursor(0)[1]
             -- Insert new R code chunk template based on filetype
             if vim.o.filetype == "quarto" then -- Quarto
                 vim.api.nvim_buf_set_lines(
@@ -69,7 +68,8 @@ M.write_chunk = function()
                 else
                     vim.cmd([[normal! a`r `]])
                 end
-                vim.api.nvim_win_set_cursor(0, { vim.fn.line("."), vim.fn.col(".") - 1 })
+                local pos = vim.api.nvim_win_get_cursor(0)
+                vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] })
                 return
             end
         end
@@ -101,7 +101,7 @@ end
 ---@param m boolean If true, moves to the next chunk after sending the current one.
 M.send_R_chunk = function(m)
     -- Ensure cursor is at the start of an R code chunk
-    if utils.get_current_line():find("^%s*```%s*{r") then
+    if vim.api.nvim_get_current_line():find("^%s*```%s*{r") then
         local lnum = vim.api.nvim_win_get_cursor(0)[1]
         vim.api.nvim_win_set_cursor(0, { lnum + 1, 0 })
     end

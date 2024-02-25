@@ -7,7 +7,7 @@ M.is_in_R_code = function(vrb)
     local lastsec = vim.fn.search("^\\\\[a-z][a-z]*{", "bncW")
     local secname = vim.fn.getline(lastsec)
     if
-        vim.fn.line(".") > lastsec
+        vim.api.nvim_win_get_cursor(0)[1] > lastsec
         and (
             secname == "\\usage{"
             or secname == "\\examples{"

@@ -366,8 +366,9 @@ M.quit_R = function(how)
         job.stdin("Server", "2QuitNow\n")
     end
 
-    if vim.fn.bufloaded("Object_Browser") == 1 then
-        vim.cmd("bunload! Object_Browser")
+    local bb = require("r.browser").get_buf_nr()
+    if bb then
+        vim.cmd("bunload! " .. tostring(bb))
         vim.wait(30)
     end
 
@@ -411,7 +412,7 @@ M.insert = function(cmd, type)
 end
 
 M.insert_commented = function()
-    local lin = utils.get_current_line()
+    local lin = vim.api.nvim_get_current_line()
     local cleanl = lin:gsub('".-"', "")
     if cleanl:find(";") then
         warn("`print(line)` works only if `line` is a single command")
@@ -423,7 +424,7 @@ end
 -- Get the word either under or after the cursor.
 -- Works for word(| where | is the cursor position.
 M.get_keyword = function()
-    local line = utils.get_current_line()
+    local line = vim.api.nvim_get_current_line()
     local llen = #line
     if llen == 0 then return "" end
 
@@ -476,8 +477,13 @@ M.action = function(rcmd, mode, args)
         local lnum = vim.api.nvim_win_get_cursor(0)[1]
         local line = vim.fn.getline(lnum)
         rkeyword = require("r.browser").get_name(lnum, line)
-    elseif mode and mode == "v" and vim.fn.line("'<") == vim.fn.line("'>") then
-        local lnum = vim.fn.line("'>")
+    elseif
+        mode
+        and mode == "v"
+        and vim.api.nvim_buf_get_mark(0, "<")[1]
+            == vim.api.nvim_buf_get_mark(0, ">")[1]
+    then
+        local lnum = vim.api.nvim_buf_get_mark(0, ">")[1]
         if lnum then
             rkeyword = vim.fn.strpart(
                 vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1],
@@ -504,7 +510,7 @@ M.action = function(rcmd, mode, args)
         if config.nvimpager == "no" then
             send.cmd("help(" .. rkeyword .. ")")
         else
-            if vim.fn.bufname("%") == "Object_Browser" then
+            if vim.api.nvim_get_current_buf() == require("r.browser").get_buf_nr then
                 if require("r.browser").get_curview() == "libraries" then
                     rhelppkg = require("r.browser").get_pkg_name()
                 end
@@ -587,7 +593,7 @@ end
 M.print_object = function(rkeyword)
     local firstobj
 
-    if vim.fn.bufname("%") == "Object_Browser" then
+    if vim.api.nvim_get_current_buf() == require("r.browser").get_buf_nr() then
         firstobj = ""
     else
         firstobj = cursor.get_first_obj()
