@@ -8,7 +8,7 @@ local M = {}
 ---@return boolean
 M.is_in_R_code = function(vrb)
     local exline = vim.fn.search("^Examples:$", "bncW")
-    if exline > 0 and vim.fn.line(".") > exline then
+    if exline > 0 and vim.api.nvim_win_get_cursor(0)[1] > exline then
         return true
     else
         if vrb then warn('Not in the "Examples" section.') end

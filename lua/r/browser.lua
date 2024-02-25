@@ -233,7 +233,7 @@ start_OB = function()
             if config.objbr_place:find("console") then
                 vim.cmd.sb(require("r.term").get_buf_nr())
             else
-                vim.cmd.sb(require("r.edit").get_rscript_name())
+                vim.cmd.sb(require("r.edit").get_rscript_buf())
             end
 
             if config.objbr_place:find("right") then
@@ -512,5 +512,7 @@ M.print_list_tree = function()
     -- correspoding rnvimserver function.
     job.stdin("Server", "37\n")
 end
+
+M.get_buf_nr = function() return ob_buf end
 
 return M

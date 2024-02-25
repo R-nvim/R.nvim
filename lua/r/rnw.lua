@@ -94,15 +94,29 @@ local SyncTeX_readconc = function(basenm)
     return { texlnum = lstexln, rnwfile = lsrnwf, rnwline = lsrnwl }
 end
 
+--- Find the correct Rnoweb buffer and goes to the specified line
+---@param rnwbn string Name of Rnw buffer
+---@param rnwf string Nam of Rnw file
+---@param basedir string Directory of Rnw file
+---@param rnwln number Line number in Rnw file
 local go_to_buf = function(rnwbn, rnwf, basedir, rnwln)
+    local rnwbf_ldd = false
+    local rnwf_ldd = false
+    local bl = vim.api.nvim_list_bufs()
+    for _, v in pairs(bl) do
+        if vim.api.nvim_buf_get_name(v) == rnwf then rnwf_ldd = true end
+        if vim.api.nvim_buf_get_name(v) == basedir .. "/" .. rnwf then
+            rnwbf_ldd = true
+        end
+    end
+
     if vim.fn.expand("%:t") ~= rnwbn then
-        if vim.fn.bufloaded(basedir .. "/" .. rnwf) == 1 then
+        if rnwbf_ldd then
             local savesb = vim.o.switchbuf
             vim.o.switchbuf = "useopen,usetab"
             vim.cmd.sb(string.gsub(basedir .. "/" .. rnwf, " ", "\\ "))
-            vim.cmd.sb(string.gsub(basedir .. "/" .. rnwf, " ", "\\ "))
             vim.o.switchbuf = savesb
-        elseif vim.fn.bufloaded(rnwf) > 0 then
+        elseif rnwf_ldd then
             local savesb = vim.o.switchbuf
             vim.o.switchbuf = "useopen,usetab"
             vim.cmd.sb(rnwf:gsub(" ", "\\ "))
@@ -133,10 +147,10 @@ end
 local M = {}
 
 M.write_chunk = function()
-    if utils.get_current_line() ~= "" and not M.is_in_R_code(false) then
+    if vim.api.nvim_get_current_line() ~= "" and not M.is_in_R_code(false) then
         vim.fn.feedkeys("<", "n")
     else
-        local curline = vim.fn.line(".")
+        local curline = vim.api.nvim_win_get_cursor(0)[1]
         vim.api.nvim_buf_set_lines(
             0,
             curline - 1,
@@ -154,7 +168,7 @@ end
 M.is_in_R_code = function(vrb)
     local chunkline = vim.fn.search("^<<", "bncW")
     local docline = vim.fn.search("^@", "bncW")
-    if chunkline ~= vim.fn.line(".") and chunkline > docline then
+    if chunkline ~= vim.api.nvim_win_get_cursor(0)[1] and chunkline > docline then
         return true
     else
         if vrb then warn("Not inside an R code chunk.") end
@@ -290,8 +304,8 @@ end
 
 -- Send Sweave chunk to R
 M.send_chunk = function(m)
-    if utils.get_current_line():find("^<<") then
-        vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
+    if vim.api.nvim_get_current_line():find("^<<") then
+        vim.api.nvim_win_set_cursor(0, { vim.api.nvim_win_get_cursor(0)[1] + 1, 1 })
     elseif not M.is_in_R_code(false) then
         return
     end
