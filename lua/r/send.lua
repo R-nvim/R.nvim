@@ -204,14 +204,6 @@ M.line_part = function(direction, correctpos)
     M.cmd(rcmd)
 end
 
--- Send the current function
-M.fun = function()
-    warn(
-        "Sending function not implemented. "
-            .. "It will be either implemented using treesitter or never implemented."
-    )
-end
-
 --- Send to R Console a command to source the document child indicated in chunk header.
 ---@param line string The chunck header.
 ---@param m boolean True if should move to the next chunk.
@@ -629,6 +621,61 @@ M.chain = function()
     chain = sanatize_text(chain)
 
     M.source_lines(chain, nil)
+end
+
+local r_fun_query = vim.treesitter.query.parse(
+    "r",
+    [[
+(left_assignment
+  (function_definition)) @rfun
+
+(equals_assignment
+  (function_definition)) @rfun
+]]
+)
+
+local get_root_node = function(bufnr)
+    local parser = vim.treesitter.get_parser(bufnr, "r", {})
+    local tree = parser:parse()[1]
+    return tree:root()
+end
+
+-- Send all or the current function to R
+M.funs = function(bufnr, capture_all)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+    if vim.bo[bufnr].filetype == "quarto" or vim.bo[bufnr].filetype == "rmd" then
+        vim.notify("Not yet supported in Rmd or Quarto files.")
+        return
+    end
+
+    if vim.bo[bufnr].filetype ~= "r" then
+        vim.notify("Not an R file.")
+        return
+    end
+
+    local root_node = get_root_node(bufnr)
+    local cursor_pos = vim.fn.line(".")
+
+    for id, node in r_fun_query:iter_captures(root_node, bufnr, 0, -1) do
+        local name = r_fun_query.captures[id]
+
+        -- Kinda hacky, but it works. Check if the parent of the function is
+        -- the root node, if so, it's a top level function
+        local s, _, _, _ = node:parent():range()
+
+        if name == "rfun" and s == 0 then
+            local start_row, _, end_row, _ = node:range()
+
+            local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
+
+            if cursor_pos >= start_row and cursor_pos <= end_row and not capture_all then
+                M.source_lines(lines, nil)
+            else
+                if capture_all then M.source_lines(lines) end
+            end
+        end
+    end
 end
 
 return M
