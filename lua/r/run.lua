@@ -107,19 +107,12 @@ start_R2 = function()
         'options(nvimcom.source.path = "' .. config.source_read .. '")'
     )
 
-    local rwd = ""
-    if config.nvim_wd == 0 then
-        rwd = M.get_buf_dir()
-    elseif config.nvim_wd == 1 then
-        rwd = uv.cwd() or ""
-    end
-    if rwd ~= "" and not config.remote_compldir then
-        if config.is_windows then rwd = rwd:gsub("\\", "/") end
-
+    local rsd = M.get_R_start_dir()
+    if rsd then
         -- `rwd` will not be a real directory if editing a file on the internet
         -- with netrw plugin
-        if vim.fn.isdirectory(rwd) == 1 then
-            table.insert(start_options, 'setwd("' .. rwd .. '")')
+        if vim.fn.isdirectory(rsd) == 1 then
+            table.insert(start_options, 'setwd("' .. rsd .. '")')
         end
     end
 
@@ -661,12 +654,21 @@ end
 
 M.get_buf_dir = function()
     local rwd = vim.api.nvim_buf_get_name(0)
-    if config.is_windows then
-        rwd = rwd:gsub("\\", "/")
-        rwd = utils.normalize_windows_path(rwd)
-    end
+    if config.is_windows then rwd = utils.normalize_windows_path(rwd) end
     rwd = rwd:gsub("(.*)/.*", "%1")
     return rwd
+end
+
+M.get_R_start_dir = function()
+    if not config.remote_compldir == "" then return nil end
+    local rsd
+    if config.setwd == "file" then
+        rsd = M.get_buf_dir()
+    elseif config.setwd == "nvim" then
+        rsd = uv.cwd()
+        if rsd and config.is_windows then rsd = rsd:gsub("\\", "/") end
+    end
+    return rsd
 end
 
 M.source_dir = function(dir)

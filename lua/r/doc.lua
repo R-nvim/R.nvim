@@ -197,11 +197,13 @@ end
 ---@param fullpath string
 ---@param browser string
 M.load_html = function(fullpath, browser)
-    if config.open_html == 0 then return end
+    if config.open_html == "no" then return end
 
     local fname = fullpath:gsub(".*/", "")
     if job.is_running(fullpath) then
-        if config.open_html == 2 then utils.focus_window(fname, job.get_pid(fullpath)) end
+        if config.open_html:find("focus") then
+            utils.focus_window(fname, job.get_pid(fullpath))
+        end
         return
     end
 

@@ -274,7 +274,7 @@ M.weave = function(bibtex, knit, pdf)
 
     if bibtex == "bibtex" then pdfcmd = pdfcmd .. ", bibtex = TRUE" end
 
-    if not pdf or config.open_pdf == 0 then pdfcmd = pdfcmd .. ", view = FALSE" end
+    if not pdf or config.open_pdf == "no" then pdfcmd = pdfcmd .. ", view = FALSE" end
 
     if config.latex_build_dir then
         pdfcmd = pdfcmd .. ', builddir="' .. config.latex_build_dir .. '"'
