@@ -376,6 +376,13 @@ M.selection = function(m)
     local end_pos = vim.api.nvim_buf_get_mark(0, ">")
     local lines = vim.api.nvim_buf_get_lines(0, start_pos[1] - 1, end_pos[1], true)
 
+    local vmode = vim.fn.visualmode()
+    if vmode == "V" then
+        local ok = M.source_lines(lines, "selection")
+        if ok and m == true then cursor.move_next_line() end
+        return
+    end
+
     if start_pos[1] == end_pos[1] then
         local line = lines[1]
         line = string.sub(line, start_pos[2] + 1, end_pos[2] + 1)
@@ -385,7 +392,6 @@ M.selection = function(m)
         return
     end
 
-    local vmode = vim.fn.visualmode()
     if vmode == "\022" then
         -- "\022" is <C-V>
         local cj = start_pos[2] + 1
