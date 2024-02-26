@@ -144,7 +144,7 @@ if (length(np) == 1) {
     nvimcom_info <- c(nd$Version, np, sub("R ([^;]*).*", "\\1", nd$Built))
     writeLines(nvimcom_info, paste0(Sys.getenv("RNVIM_COMPLDIR"), "/nvimcom_info"))
 
-    # Build omnils_, fun_ and args_ files, if necessary
+    # Build objls_, fun_ and args_ files, if necessary
     library("nvimcom", warn.conflicts = FALSE)
     hasl <- rep(FALSE, length(libs))
     lver <- rep("", length(libs))
@@ -157,7 +157,7 @@ if (length(np) == 1) {
     lver <- lver[hasl]
     cat(paste(libs, lver, collapse = '\n', sep = '_'),
         '\n', sep = '', file = paste0(Sys.getenv("RNVIM_TMPDIR"), "/libnames_", Sys.getenv("RNVIM_ID")))
-    if (nvimcom:::nvim.buildomnils(libs) > 0)
+    if (nvimcom:::nvim.build.cmplls(libs) > 0)
         out("ECHO:  ")
     quit(save = "no")
 }

@@ -1,6 +1,7 @@
 #include <R.h> /* to include Rconfig.h */
 #include <R_ext/Callbacks.h>
 #include <R_ext/Parse.h>
+#include <Rdefines.h>
 #include <Rinternals.h>
 #ifndef WIN32
 #define HAVE_SYS_SELECT_H
@@ -30,11 +31,13 @@
 #include <sys/socket.h>
 #endif
 
+#include "common.h"
+
 static int initialized = 0; // TCP client successfully connected to the server.
 
 static int verbose = 0;  // 1: version number; 2: initial information; 3: TCP in
                          // and out; 4: more verbose; 5: really verbose.
-static int allnames = 0; // Show hidden objects in omni completion and
+static int allnames = 0; // Show hidden objects in auto completion and
                          // Object Browser?
 static int nlibs = 0;    // Number of loaded libraries.
 
@@ -57,11 +60,11 @@ static unsigned long tcp_header_len; // Length of nvimsecr + 9. Stored in a
                                      // strlen().
 
 static int maxdepth = 6; // How many levels to parse in lists and S4 objects
-// when building list of objects for omni-completion. The value decreases if
+// when building list of objects for auto-completion. The value decreases if
 // the listing is too slow and increases if there are more levels to be parsed
 // and the listing is fast enough.
 static int curdepth = 0; // Current level of the list or S4 object being parsed
-                         // for omni-completion.
+                         // for auto-completion.
 static int autoglbenv = 0; // Should the list of objects in .GlobalEnv be
 // automatically updated after each top level command is executed? It will
 // always be 1 if cmp-r is installed or the Object Browser is open.
@@ -88,7 +91,7 @@ static int flag_glbenv = 0; // Do we have to list objects from .GlobalEnv?
  * @typedef lib_info_
  * @brief Structure with name and version number of a library.
  *
- * The complete information of libraries is stored in its `omnils_`, `fun_` and
+ * The complete information of libraries is stored in its `objls_`, `fun_` and
  * `args_` files in the R.nvim cache directory. The rnvimserver only needs the
  * name and version number of the library to read the corresponding files.
  *
@@ -118,23 +121,36 @@ static int sfd = -1;  // File descriptor of socket used in the TCP connection
 static pthread_t tid; // Identifier of thread running TCP connection loop.
 #endif
 
-/**
- * @brief Concatenate two strings.
- *
- * @param dest Destination buffer.
- * @param src String to be appended to `dest`.
- * @return Pointer to the new NULL terminating byte of `dest`.
- */
-static char *nvimcom_strcat(char *dest, const char *src) {
-    while (*dest)
-        dest++;
-    while ((*dest++ = *src++))
-        ;
-    return --dest;
+SEXP fmt_txt(SEXP txt, SEXP delim, SEXP nl) {
+    const char *s = CHAR(STRING_ELT(txt, 0));
+    const char *d = CHAR(STRING_ELT(delim, 0));
+    const char *n = CHAR(STRING_ELT(nl, 0));
+    char *b = calloc(strlen(s) + 1, sizeof(char));
+    format(s, b, d[0], n[0]);
+    REprintf("s:\n%s\n", s);
+    REprintf("b:\n%s\n", b);
+    SEXP ans = R_NilValue;
+    PROTECT(ans = NEW_CHARACTER(1));
+    SET_STRING_ELT(ans, 0, mkChar(b));
+    UNPROTECT(1);
+    free(b);
+    return ans;
+}
+
+SEXP fmt_usage(SEXP fnm, SEXP args) {
+    const char *f = CHAR(STRING_ELT(fnm, 0));
+    const char *a = CHAR(STRING_ELT(args, 0));
+    char *b = format_usage(f, a);
+    SEXP ans = R_NilValue;
+    PROTECT(ans = NEW_CHARACTER(1));
+    SET_STRING_ELT(ans, 0, mkChar(b));
+    UNPROTECT(1);
+    free(b);
+    return ans;
 }
 
 /**
- * @brief Replace buffers used to store omni-completion information with
+ * @brief Replace buffers used to store auto-completion information with
  * bigger ones.
  *
  * @return Pointer to the NULL terminating byte of glbnvbuf2.
@@ -262,21 +278,21 @@ static void send_to_nvim(char *msg) {
 void nvimcom_msg_to_nvim(char **cmd) { send_to_nvim(*cmd); }
 
 /**
- * @brief Duplicate single quotes.
+ * @brief Escape single quotes.
  *
- * We use single quote to define field names and values of Vim dictionaries.
- * Single quotes within such strings must be duplicated to avoid Vim errors
- * when evaluating the string as a dictionary.
+ * We use single quotes to define strings to be sent to Neovim. Consequently,
+ * single quotes within such strings must be escaped to avoid Lua errors
+ * when evaluating the string.
  *
  * @param buf Original string.
- * @param buf2 Destination buffer of the new string with duplicated quotes.
+ * @param buf2 Destination buffer of the new string with escaped quotes.
  * @param bsize Size limit of destination buffer.
  */
 static void nvimcom_squo(const char *buf, char *buf2, int bsize) {
     int i = 0, j = 0;
     while (j < bsize) {
         if (buf[i] == '\'') {
-            buf2[j] = '\'';
+            buf2[j] = '\\';
             j++;
             buf2[j] = '\'';
         } else if (buf[i] == 0) {
@@ -392,7 +408,7 @@ static LibInfo *nvimcom_get_lib(const char *nm) {
 
 /**
  * @brief This function adds a line with information for
- * omni-completion.
+ * auto-completion.
  *
  * @param x Object whose information is to be generated.
  *
@@ -428,55 +444,55 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
     if ((strlen(glbnvbuf2 + lastglbnvbsz)) > 31744)
         p = nvimcom_grow_buffers();
 
-    p = nvimcom_strcat(p, curenv);
+    p = str_cat(p, curenv);
     snprintf(ebuf, 63, "%s", xname);
-    p = nvimcom_strcat(p, ebuf);
+    p = str_cat(p, ebuf);
 
     if (Rf_isLogical(*x)) {
-        p = nvimcom_strcat(p, "\006%\006");
+        p = str_cat(p, "\006%\006");
     } else if (Rf_isNumeric(*x)) {
-        p = nvimcom_strcat(p, "\006{\006");
+        p = str_cat(p, "\006{\006");
     } else if (Rf_isFactor(*x)) {
-        p = nvimcom_strcat(p, "\006!\006");
+        p = str_cat(p, "\006!\006");
     } else if (Rf_isValidString(*x)) {
-        p = nvimcom_strcat(p, "\006~\006");
+        p = str_cat(p, "\006~\006");
     } else if (Rf_isFunction(*x)) {
-        p = nvimcom_strcat(p, "\006\003\006");
+        p = str_cat(p, "\006(\006");
         xgroup = 1;
     } else if (Rf_isFrame(*x)) {
-        p = nvimcom_strcat(p, "\006$\006");
+        p = str_cat(p, "\006$\006");
         xgroup = 2;
     } else if (Rf_isNewList(*x)) {
-        p = nvimcom_strcat(p, "\006[\006");
+        p = str_cat(p, "\006[\006");
         xgroup = 3;
     } else if (Rf_isS4(*x)) {
-        p = nvimcom_strcat(p, "\006<\006");
+        p = str_cat(p, "\006<\006");
         xgroup = 4;
     } else if (Rf_isEnvironment(*x)) {
-        p = nvimcom_strcat(p, "\006:\006");
+        p = str_cat(p, "\006:\006");
     } else if (TYPEOF(*x) == PROMSXP) {
-        p = nvimcom_strcat(p, "\006&\006");
+        p = str_cat(p, "\006&\006");
     } else {
-        p = nvimcom_strcat(p, "\006*\006");
+        p = str_cat(p, "\006*\006");
     }
 
     // Specific class of object, if any
     PROTECT(txt = getAttrib(*x, R_ClassSymbol));
     if (!isNull(txt)) {
-        p = nvimcom_strcat(p, CHAR(STRING_ELT(txt, 0)));
+        p = str_cat(p, CHAR(STRING_ELT(txt, 0)));
     }
     UNPROTECT(1);
 
-    p = nvimcom_strcat(p, "\006.GlobalEnv\006");
+    p = str_cat(p, "\006.GlobalEnv\006");
 
     if (xgroup == 1) {
         /* It would be necessary to port args2buff() from src/main/deparse.c to
            here but it's too big. So, it's better to call nvimcom:::nvim.args()
-           during omni completion. FORMALS() may return an object that will
+           during auto completion. FORMALS() may return an object that will
            later crash R:
            https://github.com/jalvesaq/Nvim-R/issues/543#issuecomment-748981771
          */
-        p = nvimcom_strcat(p, "[\x12not_checked\x12]");
+        p = str_cat(p, ">not_checked<");
     }
 
     // Add label
@@ -489,27 +505,30 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
             snprintf(buf, 159, "\006\006%s", CHAR(STRING_ELT(txt, 0)));
             ptr = buf;
             while (*ptr) {
-                if (*ptr == '\n') // A new line will make rnvimserver crash
+                if (*ptr == '\n') // It would prematurely send the string
                     *ptr = ' ';
+                if (*ptr == '\x5c') // Backslash is misinterpreted by Lua
+                    *ptr = '\x12';
+                if (*ptr == '\'') // Single quote prematurely finishes strings
+                    *ptr = '\x13';
                 ptr++;
             }
-            p = nvimcom_strcat(p, buf);
+            p = str_cat(p, buf);
         } else {
-            p = nvimcom_strcat(p,
-                               "\006\006Error: label is not a valid string.");
+            p = str_cat(p, "\006\006Error: label is not a valid string.");
         }
     } else {
-        p = nvimcom_strcat(p, "\006\006");
+        p = str_cat(p, "\006\006");
     }
     UNPROTECT(2);
 
     // Add the object length
     if (xgroup == 2) {
         snprintf(buf, 127, " [%d, %d]", length(Rf_GetRowNames(*x)), length(*x));
-        p = nvimcom_strcat(p, buf);
+        p = str_cat(p, buf);
     } else if (xgroup == 3) {
         snprintf(buf, 127, " [%d]", length(*x));
-        p = nvimcom_strcat(p, buf);
+        p = str_cat(p, buf);
     } else if (xgroup == 4) {
         SEXP cmdSexp, cmdexpr;
         ParseStatus status;
@@ -534,11 +553,11 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
         }
         UNPROTECT(2);
         snprintf(buf, 127, " [%d]", len);
-        p = nvimcom_strcat(p, buf);
+        p = str_cat(p, buf);
     }
 
     // finish the line
-    p = nvimcom_strcat(p, "\006\n");
+    p = str_cat(p, "\006\n");
 
     if (xgroup > 1) {
         char newenv[576];
@@ -647,7 +666,7 @@ static void send_glb_env(void) {
 /**
  * @brief Generate a list of objects in .GlobalEnv and store it in the
  * glbnvbuf2 buffer. The string stored in glbnvbuf2 represents a file with the
- * same format of the `omnils_` files in R.nvim's cache directory.
+ * same format of the `objls_` files in R.nvim's cache directory.
  */
 static void nvimcom_globalenv_list(void) {
     if (verbose > 4)
@@ -704,7 +723,7 @@ static void nvimcom_globalenv_list(void) {
 
     double tmdiff = 1000 * ((double)clock() - tm) / CLOCKS_PER_SEC;
     if (verbose && tmdiff > 500.0)
-        REprintf("Time to build GlobalEnv omnils [%lu bytes]: %f ms\n",
+        REprintf("Time to build GlobalEnv cmplls [%lu bytes]: %f ms\n",
                  strlen(glbnvbuf2), tmdiff);
 }
 
@@ -768,13 +787,13 @@ static void send_libnames(void) {
     libbuf = malloc(totalsz + 1);
 
     libbuf[0] = 0;
-    nvimcom_strcat(libbuf, "+L");
+    str_cat(libbuf, "+L");
     lib = libList;
     do {
-        nvimcom_strcat(libbuf, lib->name);
-        nvimcom_strcat(libbuf, "\003");
-        nvimcom_strcat(libbuf, lib->version);
-        nvimcom_strcat(libbuf, "\004");
+        str_cat(libbuf, lib->name);
+        str_cat(libbuf, "\003");
+        str_cat(libbuf, lib->version);
+        str_cat(libbuf, "\004");
         lib = lib->next;
     } while (lib);
     libbuf[totalsz] = 0;
@@ -966,10 +985,12 @@ static void nvimcom_send_running_info(const char *r_info, const char *nvv) {
 
 #ifdef _WIN64
     snprintf(msg, 2175,
-             "lua require('r.run').set_nvimcom_info('%s', %" PRId64 ", '%" PRId64 "', %s)", nvv,
-             R_PID, (long long)GetForegroundWindow(), r_info);
+             "lua require('r.run').set_nvimcom_info('%s', %" PRId64
+             ", '%" PRId64 "', %s)",
+             nvv, R_PID, (long long)GetForegroundWindow(), r_info);
 #else
-    snprintf(msg, 2175, "lua require('r.run').set_nvimcom_info('%s', %d, '%ld', %s)", nvv,
+    snprintf(msg, 2175,
+             "lua require('r.run').set_nvimcom_info('%s', %d, '%ld', %s)", nvv,
              R_PID, (long)GetForegroundWindow(), r_info);
 #endif
     send_to_nvim(msg);
@@ -1169,6 +1190,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
         if (getenv("NVIM_IP_ADDRESS")) {
             REprintf("  NVIM_IP_ADDRESS: %s\n", getenv("NVIM_IP_ADDRESS"));
         }
+        REprintf("  CMPR_DOC_WIDTH: %s\n", getenv("CMPR_DOC_WIDTH"));
         REprintf("  RNVIM_PORT: %s\n", nrs_port);
         REprintf("  RNVIM_ID: %s\n", getenv("RNVIM_ID"));
         REprintf("  RNVIM_TMPDIR: %s\n", tmpdir);
@@ -1229,7 +1251,8 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
                 nvimcom_send_running_info(*rinfo, *nvv);
 #else
                 pthread_create(&tid, NULL, client_loop_thread, NULL);
-                snprintf(flag_eval, 510, "nvimcom:::send_nvimcom_info('%d')", getpid());
+                snprintf(flag_eval, 510, "nvimcom:::send_nvimcom_info('%d')",
+                         getpid());
                 nvimcom_fire();
 #endif
             } else {
