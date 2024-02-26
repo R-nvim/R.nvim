@@ -377,21 +377,6 @@ M.selection = function(m)
     local lines = vim.api.nvim_buf_get_lines(0, start_pos[1] - 1, end_pos[1], true)
 
     local vmode = vim.fn.visualmode()
-    if vmode == "V" then
-        local ok = M.source_lines(lines, "selection")
-        if ok and m == true then cursor.move_next_line() end
-        return
-    end
-
-    if start_pos[1] == end_pos[1] then
-        local line = lines[1]
-        line = string.sub(line, start_pos[2] + 1, end_pos[2] + 1)
-        if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
-        local ok = M.cmd(line)
-        if ok and m == true then cursor.move_next_line() end
-        return
-    end
-
     if vmode == "\022" then
         -- "\022" is <C-V>
         local cj = start_pos[2] + 1
@@ -405,9 +390,13 @@ M.selection = function(m)
             lines[k] = string.sub(lines[k], cj, ck)
         end
     elseif vmode == "v" then
-        lines[1] = string.sub(lines[1], start_pos[2] + 1, -1)
-        local llen = #lines
-        lines[llen] = string.sub(lines[llen], 1, end_pos[2] + 1)
+        if start_pos[1] == end_pos[1] then
+            lines[1] = string.sub(lines[1], start_pos[2] + 1, end_pos[2] + 1)
+        else
+            lines[1] = string.sub(lines[1], start_pos[2] + 1, -1)
+            local llen = #lines
+            lines[llen] = string.sub(lines[llen], 1, end_pos[2] + 1)
+        end
     end
 
     if vim.o.filetype == "r" then
