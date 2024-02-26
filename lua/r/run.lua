@@ -160,6 +160,8 @@ M.auto_start_R = function()
     M.start_R("R")
 end
 
+--- Register rnvimserver port in a environment variable
+---@param p string
 M.set_nrs_port = function(p)
     vim.g.R_Nvim_status = 5
     vim.env.RNVIM_PORT = p
@@ -205,7 +207,8 @@ M.start_R = function(whatr)
     end
 end
 
--- Send SIGINT to R
+---Send signal to R
+---@param signal string | number
 M.signal_to_R = function(signal)
     if R_pid ~= 0 then
         utils.system({ "kill", "-s", tostring(signal), tostring(R_pid) })
@@ -327,8 +330,10 @@ end
 
 -- Background communication with R
 
--- Send a message to rnvimserver job which will send the message to nvimcom
--- through a TCP connection.
+---Send a message to rnvimserver job which will send the message to nvimcom
+---through a TCP connection.
+---@param code string Single letter to be interpreted by nvimcom
+---@param attch string Additional command to be evaluated by nvimcom
 M.send_to_nvimcom = function(code, attch)
     if vim.g.R_Nvim_status < 6 then
         warn("R is not running")
@@ -375,6 +380,8 @@ M.quit_R = function(how)
     require("r.send").cmd(qcmd)
 end
 
+---Request R to format code
+---@param tbl table Table sent by Neovim's mapping function
 M.formart_code = function(tbl)
     if vim.g.R_Nvim_status < 7 then return end
 
@@ -406,6 +413,9 @@ M.formart_code = function(tbl)
     )
 end
 
+--- Request R to evaluate a command and send its output back
+---@param cmd string
+---@param type string
 M.insert = function(cmd, type)
     if vim.g.R_Nvim_status < 7 then return end
     M.send_to_nvimcom("E", "nvimcom:::nvim_insert(" .. cmd .. ', "' .. type .. '")')
@@ -421,8 +431,9 @@ M.insert_commented = function()
     M.insert("print(" .. cleanl .. ")", "comment")
 end
 
--- Get the word either under or after the cursor.
--- Works for word(| where | is the cursor position.
+---Get the word either under or after the cursor.
+---Works for word(| where | is the cursor position.
+---@return string
 M.get_keyword = function()
     local line = vim.api.nvim_get_current_line()
     local llen = #line
@@ -467,7 +478,10 @@ M.get_keyword = function()
     return line:sub(i, j)
 end
 
--- Call R functions for the word under cursor
+---Call R functions for the word under cursor
+---@param rcmd string Function to call or action to execute
+---@param mode string Vim's mode ("n" or "v")
+---@param args string Additional argument on how to call the function
 M.action = function(rcmd, mode, args)
     local rkeyword
 
@@ -510,7 +524,7 @@ M.action = function(rcmd, mode, args)
         if config.nvimpager == "no" then
             send.cmd("help(" .. rkeyword .. ")")
         else
-            if vim.api.nvim_get_current_buf() == require("r.browser").get_buf_nr then
+            if vim.api.nvim_get_current_buf() == require("r.browser").get_buf_nr() then
                 if require("r.browser").get_curview() == "libraries" then
                     rhelppkg = require("r.browser").get_pkg_name()
                 end
@@ -590,6 +604,8 @@ M.action = function(rcmd, mode, args)
     send.cmd(raction)
 end
 
+---Send the print() command to R with rkeyword as parameter
+---@param rkeyword string
 M.print_object = function(rkeyword)
     local firstobj
 
@@ -665,6 +681,8 @@ M.get_buf_dir = function()
     return rwd
 end
 
+---Get the directory where R should start
+---@return string | nil
 M.get_R_start_dir = function()
     if not config.remote_compldir == "" then return nil end
     local rsd
@@ -677,6 +695,8 @@ M.get_R_start_dir = function()
     return rsd
 end
 
+---Send to R the command to source all files in a directory
+---@param dir string
 M.source_dir = function(dir)
     if config.is_windows then dir = utils.normalize_windows_path(dir) end
     if dir == "" then

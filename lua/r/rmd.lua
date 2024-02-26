@@ -126,6 +126,7 @@ end
 --- Navigates to the previous R or Python code chunk in the document.
 -- This function searches backwards from the current cursor position for the start of
 -- any R or Python code chunk.
+---@return boolean
 local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
     if M.is_in_code_chunk("r", false) or M.is_in_code_chunk("python", false) then
@@ -153,6 +154,7 @@ end
 
 --- Navigates to the next R or Python code chunk in the document.
 -- This function searches forward from the current cursor position for the start of any R or Python code chunk.
+---@return boolean
 local go_to_next = function()
     local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "nW") -- Search for the next chunk start
     if i == 0 then

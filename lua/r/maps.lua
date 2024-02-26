@@ -113,6 +113,8 @@ local create_maps = function(mode, plug, combo, target)
     end
 end
 
+--- Create control maps
+---@param file_type string
 local control = function(file_type)
     -- List space, clear console, clear all
     create_maps("nvi", "RListSpace",        "rl", "<Cmd>lua require('r.send').cmd('ls()')")
@@ -306,9 +308,9 @@ local fill_k2 = function(mlist, m)
 end
 
 local fill_k = function()
-    local nlist = vim.split(vim.fn.execute("nmap", "silent!"), "\n")
-    local vlist = vim.split(vim.fn.execute("vmap", "silent!"), "\n")
-    local ilist = vim.split(vim.fn.execute("imap", "silent!"), "\n")
+    local nlist = vim.split(vim.fn.execute("nmap", "silent!") or "", "\n")
+    local vlist = vim.split(vim.fn.execute("vmap", "silent!") or "", "\n")
+    local ilist = vim.split(vim.fn.execute("imap", "silent!") or "", "\n")
     fill_k2(nlist, "n")
     fill_k2(vlist, "v")
     fill_k2(ilist, "i")

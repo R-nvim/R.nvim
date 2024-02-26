@@ -21,6 +21,7 @@ local hasbrowsermenu = false
 --- Escape with backticks invalid R names
 ---@param word string
 ---@param esc_reserved boolean
+---@return string
 local add_backticks = function(word, esc_reserved)
     -- Unamed list element
     if word:find("^%[%[") then return word end
@@ -159,6 +160,12 @@ local set_buf_options = function()
 end
 
 local find_parent
+
+--- Return the parent list, data.frame or S4 object
+---@param child string
+---@param curline number
+---@param curpos number
+---@return string
 find_parent = function(child, curline, curpos)
     local line
     local idx
@@ -297,14 +304,18 @@ M.start = function(_)
     if config.hook.after_ob_open then config.hook.after_ob_open() end
 end
 
+--- Return the active pane of the Object Browser
+---@return string
 M.get_curview = function() return curview end
 
+--- Get the name of parent library
+---@return string
 M.get_pkg_name = function()
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
-    while lnum > 0 do
+    while lnum > 2 do
         local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
         if line:find("^   :#[0-9a-zA-Z%.]*\t") then
-            return line:gsub("   :#(.-)\t.*", "%1")
+            return tostring(line:gsub("   :#(.-)\t.*", "%1"))
         end
         lnum = lnum - 1
     end
@@ -314,6 +325,7 @@ end
 --- Get name of object on te current line
 ---@param lnum number
 ---@param line string
+---@return string
 M.get_name = function(lnum, line)
     if lnum < 3 or line:find("^$") then return "" end
 
@@ -507,12 +519,8 @@ M.on_BufUnload = function()
     send_to_nvimcom("N", "OnOBBufUnload")
 end
 
-M.print_list_tree = function()
-    -- FIXME: document this function as a debugging tool or delete it and the
-    -- correspoding rnvimserver function.
-    job.stdin("Server", "37\n")
-end
-
+--- Return Object Browser buffer number
+---@return number
 M.get_buf_nr = function() return ob_buf end
 
 return M
