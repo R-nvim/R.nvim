@@ -32,6 +32,10 @@ M.open = function(fullpath)
     job.start(fullpath, ecmd, eopts)
 end
 
+---Send to Evince the SyncTeX forward command
+---@param tpath string
+---@param ppath string
+---@param texln number
 M.SyncTeX_forward = function(tpath, ppath, texln)
     local n1 = tpath:gsub("(^/.*/).*", "%1")
     local n2 = tpath:gsub(".*/(.*)", "%1")
@@ -78,7 +82,7 @@ end
 -- Avoid possible infinite loop
 M.again = function()
     evince_loop = evince_loop + 1
-    rnw.SyncTeX_forward()
+    rnw.SyncTeX_forward(false)
 end
 
 return M

@@ -3,6 +3,7 @@ local M = {}
 
 --- Remove leading spaces and trailing comments from string
 ---@param line string Line to clean
+---@return string The clean line
 local clean_current_line = function(line)
     local cleanline = line:gsub("^%s*", "")
     cleanline = cleanline:gsub("#.*", "")

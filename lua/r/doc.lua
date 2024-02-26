@@ -8,8 +8,12 @@ local doc_buf_id = nil
 
 local M = {}
 
+--- Calculate adequate width for documentation
+---@return number
 local get_win_width = function() return vim.o.columns > 80 and 80 or vim.o.columns - 1 end
 
+--- Call the appropriate function to request documentation on a topic
+---@param topic string
 M.ask_R_help = function(topic)
     if topic == "" then
         require("r.send").cmd("help.start()")
@@ -22,7 +26,7 @@ M.ask_R_help = function(topic)
     end
 end
 
---- Request R documentation on an object
+--- Request R documentation on an object through nvimcom
 ---@param rkeyword string The topic of the requested help
 ---@param package string Library of the object
 ---@param getclass boolean If the object is a function, whether R should check the class of the first argument passed to it to retrieve documentation on the appropriate method.
@@ -65,6 +69,9 @@ M.ask_R_doc = function(rkeyword, package, getclass)
     send_to_nvimcom("E", rcmd)
 end
 
+--- Show documentation sent by nvimcom
+---@param rkeyword string The topic
+---@param txt string The text to display
 M.show = function(rkeyword, txt)
     if
         not config.nvimpager:find("tab")

@@ -286,6 +286,7 @@ end
 
 -- Send to R Console the code under a Vim motion
 M.motion = function(_)
+    -- FIXME: not working
     local lstart = vim.api.nvim_buf_get_mark(0, "[")[1]
     local lend = vim.api.nvim_buf_get_mark(0, "]")[1]
     if not lstart or not lend then return end
@@ -588,6 +589,9 @@ function ends_with(str)
         or string.match(str, "%([%s]*$") ~= nil
 end
 
+--- Return the line where piped chain begins
+---@param arr string[]
+---@return number
 local function chain_start_at(arr)
     for i = 1, #arr do
         if ends_with(arr[i]) then return i end

@@ -18,6 +18,9 @@ M.start_RStudio = function()
     require("r.run").wait_nvimcom_start()
 end
 
+--- Send coommand to RStudio
+---@param command string
+---@return boolean
 M.send_cmd_to_RStudio = function(command)
     if not require("r.job").is_running("RStudio") then
         warn("Is RStudio running?")

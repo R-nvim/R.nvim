@@ -1,5 +1,7 @@
 local M = {}
 
+--- Call vim.notify() with a warning message
+---@param msg string
 M.warn = function(msg)
     vim.schedule(
         function() vim.notify(msg, vim.log.levels.WARN, { title = "R.nvim" }) end
