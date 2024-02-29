@@ -665,6 +665,8 @@ M.funs = function(bufnr, capture_all, move_down)
     local root_node = get_root_node(bufnr)
     local cursor_pos = vim.api.nvim_win_get_cursor(0)[1]
 
+    local lines = {}
+
     for id, node in r_fun_query:iter_captures(root_node, bufnr, 0, -1) do
         local name = r_fun_query.captures[id]
 
@@ -677,24 +679,22 @@ M.funs = function(bufnr, capture_all, move_down)
 
             local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
 
-            -- Only send the function if the user wants to caputre the current
-            -- function
             if
-                cursor_pos >= start_row + 1
-                and cursor_pos <= end_row + 1
-                and not capture_all
+                capture_all or (cursor_pos >= start_row + 1 and cursor_pos <= end_row + 1)
             then
                 M.source_lines(lines, nil)
-
+                lines = vim.fn.extend(
+                    lines,
+                    vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
+                )
                 if move_down == true then
-                    local move_by = (end_row == utils.get_last_line_num() - 1) and 1 or 2
-                    vim.api.nvim_win_set_cursor(bufnr, { end_row + move_by, 0 })
+                    vim.api.nvim_win_set_cursor(bufnr, { end_row + 1, 0 })
+                    cursor.move_next_line()
                 end
-            else
-                if capture_all then M.source_lines(lines) end
             end
         end
     end
+    if #lines then M.source_lines(lines) end
 end
 
 return M
