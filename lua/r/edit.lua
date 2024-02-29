@@ -85,6 +85,10 @@ M.show_debug_info = function()
     vim.schedule(function() vim.api.nvim_echo(info, false, {}) end)
 end
 
+--- Add item to debug info
+---@param title string|table
+---@param info string|number|table
+---@param parent? string parent item
 M.add_to_debug_info = function(title, info, parent)
     if parent then
         if debug_info[parent] == nil then debug_info[parent] = {} end

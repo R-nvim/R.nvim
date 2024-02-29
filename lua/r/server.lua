@@ -14,6 +14,7 @@ local rhelp_list = {}
 
 local M = {}
 
+---Callback function to process the stdout of before_nrs.R
 local init_stdout = function(_, data, _)
     if not data then return end
     local rcmd = string.gsub(table.concat(data, ""), "\r", "")
@@ -87,7 +88,9 @@ local mk_R_dir = function()
     libd = nil
 end
 
--- Find the path to the rnvimserver executable in the specified library directory.
+---Find the path to the rnvimserver executable in the specified library directory.
+---@param libdir string
+---@return string
 local find_rns_path = function(libdir)
     local nrs
     if config.is_windows then

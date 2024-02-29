@@ -180,7 +180,7 @@ M.start_extern_term = function()
         open_cmd = open_cmd .. " &"
         local rlog = vim.fn.system(open_cmd)
         if vim.v.shell_error ~= 0 then
-            warn(rlog)
+            if rlog then warn(rlog) end
             return
         end
     else

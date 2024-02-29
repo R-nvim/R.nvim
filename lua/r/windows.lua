@@ -56,6 +56,9 @@ M.clean_and_start_Rgui = function()
     M.start_Rgui()
 end
 
+---Send command to Rgui.exe
+---@param command string
+---@return boolean
 M.send_cmd_to_Rgui = function(command)
     local cmd
     if config.clear_line then

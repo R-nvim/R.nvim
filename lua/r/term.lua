@@ -6,6 +6,9 @@ local r_width = 80
 local number_col
 local r_bufnr = nil
 
+---Send command to R running a built-in terminal emulator
+---@param command string
+---@return boolean
 M.send_cmd_to_term = function(command)
     local is_running
     require("r.job").is_running("R")
@@ -167,6 +170,8 @@ M.highlight_term = function()
     if r_bufnr then vim.api.nvim_set_option_value("syntax", "rout", { buf = r_bufnr }) end
 end
 
+---Return built-in termina buffer number
+---@return number
 M.get_buf_nr = function() return r_bufnr end
 
 return M

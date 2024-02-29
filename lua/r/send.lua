@@ -278,6 +278,7 @@ end
 
 -- Send to R Console the code under a Vim motion
 M.motion = function(_)
+    -- FIXME: not working
     local lstart = vim.api.nvim_buf_get_mark(0, "[")[1]
     local lend = vim.api.nvim_buf_get_mark(0, "]")[1]
     if not lstart or not lend then return end
@@ -368,15 +369,6 @@ M.selection = function(m)
     local end_pos = vim.api.nvim_buf_get_mark(0, ">")
     local lines = vim.api.nvim_buf_get_lines(0, start_pos[1] - 1, end_pos[1], true)
 
-    if start_pos[1] == end_pos[1] then
-        local line = lines[1]
-        line = string.sub(line, start_pos[2] + 1, end_pos[2] + 1)
-        if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
-        local ok = M.cmd(line)
-        if ok and m == true then cursor.move_next_line() end
-        return
-    end
-
     local vmode = vim.fn.visualmode()
     if vmode == "\022" then
         -- "\022" is <C-V>
@@ -391,9 +383,13 @@ M.selection = function(m)
             lines[k] = string.sub(lines[k], cj, ck)
         end
     elseif vmode == "v" then
-        lines[1] = string.sub(lines[1], start_pos[2] + 1, -1)
-        local llen = #lines
-        lines[llen] = string.sub(lines[llen], 1, end_pos[2] + 1)
+        if start_pos[1] == end_pos[1] then
+            lines[1] = string.sub(lines[1], start_pos[2] + 1, end_pos[2] + 1)
+        else
+            lines[1] = string.sub(lines[1], start_pos[2] + 1, -1)
+            local llen = #lines
+            lines[llen] = string.sub(lines[llen], 1, end_pos[2] + 1)
+        end
     end
 
     if vim.o.filetype == "r" then
@@ -580,6 +576,9 @@ function ends_with(str)
         or string.match(str, "%([%s]*$") ~= nil
 end
 
+--- Return the line where piped chain begins
+---@param arr string[]
+---@return number
 local function chain_start_at(arr)
     for i = 1, #arr do
         if ends_with(arr[i]) then return i end

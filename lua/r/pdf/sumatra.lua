@@ -1,19 +1,21 @@
 local config = require("r.config").get_config()
-local sumatra_in_path = 0
+local sumatra_in_path = false
 
+---Check if Sumatra is in the PATH
+---@return boolean
 local function SumatraInPath()
-    if sumatra_in_path ~= 0 then return 1 end
+    if sumatra_in_path then return true end
 
     if vim.env.PATH:find("SumatraPDF") then
-        sumatra_in_path = 1
-        return 1
+        sumatra_in_path = true
+        return true
     end
 
     -- $ProgramFiles has different values for win32 and win64
     if vim.fn.executable(os.getenv("ProgramFiles") .. "\\SumatraPDF\\SumatraPDF.exe") then
         vim.env.PATH = os.getenv("ProgramFiles") .. "\\SumatraPDF;" .. vim.env.PATH
-        sumatra_in_path = 1
-        return 1
+        sumatra_in_path = true
+        return true
     end
 
     if
@@ -22,15 +24,17 @@ local function SumatraInPath()
         )
     then
         vim.env.PATH = os.getenv("ProgramFiles") .. " (x86)\\SumatraPDF;" .. vim.env.PATH
-        sumatra_in_path = 1
-        return 1
+        sumatra_in_path = true
+        return true
     end
 
-    return 0
+    return false
 end
 
 local M = {}
 
+---Open the PDF in SumatraPDF
+---@param fullpath string
 M.open = function(fullpath)
     if SumatraInPath() then
         local pdir = fullpath:gsub("(.*)/.*", "%1")
@@ -46,6 +50,10 @@ M.open = function(fullpath)
     end
 end
 
+---Send the SyncTeX forward command to Sumatra
+---@param tpath string
+---@param ppath string
+---@param texln number
 M.SyncTeX_forward = function(tpath, ppath, texln)
     -- Empty spaces must be removed from the rnoweb file name to get SyncTeX support with SumatraPDF.
     if SumatraInPath() then
