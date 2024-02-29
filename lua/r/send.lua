@@ -677,8 +677,6 @@ M.funs = function(bufnr, capture_all, move_down)
         if name == "rfun" and s == 0 then
             local start_row, _, end_row, _ = node:range()
 
-            local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
-
             if
                 capture_all or (cursor_pos >= start_row + 1 and cursor_pos <= end_row + 1)
             then
