@@ -183,7 +183,7 @@ but temporary files are used in a few cases.
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's output.
 
 
-[cmp-r]: https://github.com/R.nvim/cmp-r
+[cmp-r]: https://github.com/R-nvim/cmp-r
 [Neovim]: https://github.com/neovim/neovim
 [southernlights]: https://github.com/jalvesaq/southernlights
 [colorout]: https://github.com/jalvesaq/colorout
