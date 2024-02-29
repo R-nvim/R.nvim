@@ -640,7 +640,7 @@ local get_root_node = function(bufnr)
 end
 
 -- Send all or the current function to R
-M.funs = function(bufnr, capture_all)
+M.funs = function(bufnr, capture_all, move_down)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
     if vim.bo[bufnr].filetype == "quarto" or vim.bo[bufnr].filetype == "rmd" then
@@ -654,7 +654,7 @@ M.funs = function(bufnr, capture_all)
     end
 
     local root_node = get_root_node(bufnr)
-    local cursor_pos = vim.fn.line(".")
+    local cursor_pos = vim.api.nvim_win_get_cursor(0)[1]
 
     for id, node in r_fun_query:iter_captures(root_node, bufnr, 0, -1) do
         local name = r_fun_query.captures[id]
@@ -668,8 +668,19 @@ M.funs = function(bufnr, capture_all)
 
             local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
 
-            if cursor_pos >= start_row and cursor_pos <= end_row and not capture_all then
+            -- Only send the function if the user wants to caputre the current
+            -- function
+            if
+                cursor_pos >= start_row + 1
+                and cursor_pos <= end_row + 1
+                and not capture_all
+            then
                 M.source_lines(lines, nil)
+
+                if move_down == true then
+                    local move_by = (end_row == utils.get_last_line_num() - 1) and 1 or 2
+                    vim.api.nvim_win_set_cursor(bufnr, { end_row + move_by, 0 })
+                end
             else
                 if capture_all then M.source_lines(lines) end
             end
