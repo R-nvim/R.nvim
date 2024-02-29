@@ -641,6 +641,15 @@ end
 
 -- Send all or the current function to R
 M.funs = function(bufnr, capture_all, move_down)
+    -- Check if treesitter is available
+    local has_treesitter, _ = pcall(require, "nvim-treesitter")
+    if not has_treesitter then
+        vim.notify(
+            "nvim-treesitter is not available. Please install it to use this feature."
+        )
+        return
+    end
+
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
     if vim.bo[bufnr].filetype == "quarto" or vim.bo[bufnr].filetype == "rmd" then
