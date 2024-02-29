@@ -210,9 +210,9 @@ local send = function(file_type)
     create_maps("ni",  "RDSendMBlock",     "bd", "<Cmd>lua require('r.send').marked_block(true)")
 
     -- Function
-    create_maps("nvi", "RSourceAllFun",    "fa", "<Cmd>lua require('r.send').funs(0, true, false)")
-    create_maps("nvi", "RSourceCurrentFun",   "fc", "<Cmd>lua require('r.send').funs(0, false, false)")
-    create_maps("nvi", "RDSourceCurrentFun",   "fd", "<Cmd>lua require('r.send').funs(0, false, true)")
+    create_maps("nvi", "RSendAllFun",    "fa", "<Cmd>lua require('r.send').funs(0, true, false)")
+    create_maps("nvi", "RSendCurrentFun",   "fc", "<Cmd>lua require('r.send').funs(0, false, false)")
+    create_maps("nvi", "RDSendCurrentFun",   "fd", "<Cmd>lua require('r.send').funs(0, false, true)")
 
     -- Pipe chain breaker
     create_maps("nv", "RSendChain",      "sc", "<Cmd>lua require('r.send').chain()")
