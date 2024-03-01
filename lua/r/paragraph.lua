@@ -6,6 +6,7 @@ local M = {}
 -- The 'end' key contains the line number of the last line of the paragraph.
 -- If the cursor is on the last paragraph, the 'end' key contains the last line
 -- number.
+---@return number, number
 M.get_current = function()
     local current_line = vim.api.nvim_win_get_cursor(0)[1]
     local start_line = current_line
@@ -17,7 +18,7 @@ M.get_current = function()
     end
 
     -- Find the end of the paragraph
-    local last_line = vim.fn.line("$")
+    local last_line = require("r.utils").get_last_line_num()
     while end_line < last_line and vim.fn.trim(vim.fn.getline(end_line + 1)) ~= "" do
         end_line = end_line + 1
     end

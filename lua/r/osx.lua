@@ -22,10 +22,15 @@ M.start_Rapp = function()
         )
     end
     local rlog = vim.fn.system("open " .. rcmd)
-    if vim.v.shell_error ~= 0 then warn(rlog) end
+    if vim.v.shell_error ~= 0 then
+        if rlog then warn(rlog) end
+    end
     require("r.run").wait_nvimcom_start()
 end
 
+--- Send command to Rapp
+---@param command string
+---@return boolean
 M.send_cmd_to_Rapp = function(command)
     local cmd = config.clear_line and "\001\013" .. command or command
 

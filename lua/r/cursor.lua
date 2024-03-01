@@ -1,9 +1,9 @@
 local utils = require("r.utils")
-
 local M = {}
 
 --- Remove leading spaces and trailing comments from string
 ---@param line string Line to clean
+---@return string The clean line
 local clean_current_line = function(line)
     local cleanline = line:gsub("^%s*", "")
     cleanline = cleanline:gsub("#.*", "")
@@ -16,10 +16,12 @@ end
 ---@return string
 M.clean_oxygen_line = function(line)
     if line:find("^%s*#'") then
-        local lc = vim.api.nvim_win_get_cursor(0)
-        local synID = vim.fn.synID(lc[1], lc[2] + 1, 1)
-        local synName = vim.fn.synIDattr(synID, "name")
-        if synName == "rOExamples" then line = string.gsub(line, "^%s*#'", "") end
+        -- synID, synName, and synIDattr don't work with treesitter.
+        -- local lc = vim.api.nvim_win_get_cursor(0)
+        -- local synID = vim.fn.synID(lc[1], lc[2] + 1, 1)
+        -- local synName = vim.fn.synIDattr(synID, "name")
+        -- if synName == "rOExamples" then line = string.gsub(line, "^%s*#'", "") end
+        line = line:gsub("^%s*#'", "")
     end
     return line
 end
@@ -30,7 +32,7 @@ end
 ---@return number
 M.find_next_paragraph = function()
     local current_line = vim.api.nvim_win_get_cursor(0)[1]
-    local last_line = vim.fn.line("$")
+    local last_line = utils.get_last_line_num()
     local next_empty_line = current_line
 
     -- Search for the next empty line (paragraph separator)
@@ -57,12 +59,13 @@ end
 
 -- Moe the cursor to the next line
 M.move_next_line = function()
-    local lnum = vim.fn.line(".")
-    if lnum == vim.fn.line("$") then return end
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
+    local lastlnum = utils.get_last_line_num()
+    if lnum == lastlnum then return end
 
     local filetype = vim.o.filetype
     local has_code = false
-    while not has_code do
+    while not has_code and lnum < lastlnum do
         lnum = lnum + 1
         local curline = clean_current_line(vim.fn.getline(lnum))
         if filetype == "rnoweb" and string.sub(curline, 1, 1) == "@" then
@@ -87,7 +90,7 @@ M.get_first_obj = function()
     -- of a function.
 
     local firstobj = ""
-    local line = utils.get_current_line():gsub("#.*", "")
+    local line = vim.api.nvim_get_current_line():gsub("#.*", "")
     local begin = vim.api.nvim_win_get_cursor(0)[2] + 1
 
     local find_po = function(s)
@@ -121,7 +124,9 @@ M.get_first_obj = function()
         firstobj = find_po(piece)
         return firstobj
     elseif line:find("^%s+") then
-        local pline = vim.fn.getline(vim.fn.line(".") - 1):gsub("#.*", "")
+        local plnum = vim.api.nvim_win_get_cursor(0)[1] - 1
+        local pline = vim.api.nvim_buf_get_lines(0, plnum - 1, plnum, true)[1]
+        pline = pline:gsub("#.*", "")
         if pline:find("|>%s*$") or pline:find("%%>%%%s*$") or pline:find("%+%s*$") then
             firstobj = find_po(pline)
             return firstobj

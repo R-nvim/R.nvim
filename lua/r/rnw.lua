@@ -46,7 +46,10 @@ local check_latex_cmd = function()
     end
 end
 
+-- Read concordance file and return table with the necessary information to
+-- correctly jump to and from Rnoweb/LaTeX.
 -- See http://www.stats.uwo.ca/faculty/murdoch/9864/Sweave.pdf page 25
+---@return table
 local SyncTeX_readconc = function(basenm)
     local texidx = 1
     local ntexln = #vim.fn.readfile(basenm .. ".tex")
@@ -94,15 +97,30 @@ local SyncTeX_readconc = function(basenm)
     return { texlnum = lstexln, rnwfile = lsrnwf, rnwline = lsrnwl }
 end
 
+--- Find the correct Rnoweb buffer and goes to the specified line
+---@param rnwbn string Name of Rnw buffer
+---@param rnwf string Nam of Rnw file
+---@param basedir string Directory of Rnw file
+---@param rnwln number Line number in Rnw file
+---@return boolean
 local go_to_buf = function(rnwbn, rnwf, basedir, rnwln)
+    local rnwbf_ldd = false
+    local rnwf_ldd = false
+    local bl = vim.api.nvim_list_bufs()
+    for _, v in pairs(bl) do
+        if vim.api.nvim_buf_get_name(v) == rnwf then rnwf_ldd = true end
+        if vim.api.nvim_buf_get_name(v) == basedir .. "/" .. rnwf then
+            rnwbf_ldd = true
+        end
+    end
+
     if vim.fn.expand("%:t") ~= rnwbn then
-        if vim.fn.bufloaded(basedir .. "/" .. rnwf) == 1 then
+        if rnwbf_ldd then
             local savesb = vim.o.switchbuf
             vim.o.switchbuf = "useopen,usetab"
             vim.cmd.sb(string.gsub(basedir .. "/" .. rnwf, " ", "\\ "))
-            vim.cmd.sb(string.gsub(basedir .. "/" .. rnwf, " ", "\\ "))
             vim.o.switchbuf = savesb
-        elseif vim.fn.bufloaded(rnwf) > 0 then
+        elseif rnwf_ldd then
             local savesb = vim.o.switchbuf
             vim.o.switchbuf = "useopen,usetab"
             vim.cmd.sb(rnwf:gsub(" ", "\\ "))
@@ -122,21 +140,21 @@ local go_to_buf = function(rnwbn, rnwf, basedir, rnwln)
                         .. basedir
                         .. '".'
                 )
-                return 0
+                return false
             end
         end
     end
     vim.cmd(tostring(rnwln))
-    return 1
+    return true
 end
 
 local M = {}
 
 M.write_chunk = function()
-    if utils.get_current_line() ~= "" and not M.is_in_R_code(false) then
+    if vim.api.nvim_get_current_line() ~= "" and not M.is_in_R_code(false) then
         vim.fn.feedkeys("<", "n")
     else
-        local curline = vim.fn.line(".")
+        local curline = vim.api.nvim_win_get_cursor(0)[1]
         vim.api.nvim_buf_set_lines(
             0,
             curline - 1,
@@ -154,7 +172,7 @@ end
 M.is_in_R_code = function(vrb)
     local chunkline = vim.fn.search("^<<", "bncW")
     local docline = vim.fn.search("^@", "bncW")
-    if chunkline ~= vim.fn.line(".") and chunkline > docline then
+    if chunkline ~= vim.api.nvim_win_get_cursor(0)[1] and chunkline > docline then
         return true
     else
         if vrb then warn("Not inside an R code chunk.") end
@@ -162,7 +180,9 @@ M.is_in_R_code = function(vrb)
     end
 end
 
-M.previous_chunk = function()
+--- Move the cursor to the previous chunk
+---@return boolean
+local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
     if M.is_in_R_code(false) then
         local i = vim.fn.search("^<<.*$", "bnW")
@@ -172,19 +192,38 @@ M.previous_chunk = function()
     if i == 0 then
         vim.api.nvim_win_set_cursor(0, { curline, 0 })
         warn("There is no previous R code chunk to go.")
-        return
-    else
-        vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+        return false
+    end
+    vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+    return true
+end
+
+-- Call go_to_previous() as many times as requested by the user.
+M.previous_chunk = function()
+    local i = 0
+    while i < vim.v.count1 do
+        if not go_to_previous() then break end
+        i = i + 1
     end
 end
 
-M.next_chunk = function()
+--- Move the cursor to the next chunk
+---@return boolean
+local go_to_next = function()
     local i = vim.fn.search("^<<.*$", "nW")
     if i == 0 then
         warn("There is no next R code chunk to go.")
-        return
-    else
-        vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+        return false
+    end
+    vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+    return true
+end
+
+M.next_chunk = function()
+    local i = 0
+    while i < vim.v.count1 do
+        if not go_to_next() then break end
+        i = i + 1
     end
 end
 
@@ -223,6 +262,10 @@ M.rm_knit_cache = function()
     end)
 end
 
+--- Send to R the command to either Knitr or Sweave a document
+---@param bibtex string
+---@param knit boolean
+---@param pdf boolean
 M.weave = function(bibtex, knit, pdf)
     if check_latexcmd then check_latex_cmd() end
 
@@ -257,7 +300,7 @@ M.weave = function(bibtex, knit, pdf)
 
     if bibtex == "bibtex" then pdfcmd = pdfcmd .. ", bibtex = TRUE" end
 
-    if not pdf or config.open_pdf == 0 then pdfcmd = pdfcmd .. ", view = FALSE" end
+    if not pdf or config.open_pdf == "no" then pdfcmd = pdfcmd .. ", view = FALSE" end
 
     if config.latex_build_dir then
         pdfcmd = pdfcmd .. ', builddir="' .. config.latex_build_dir .. '"'
@@ -271,10 +314,11 @@ M.weave = function(bibtex, knit, pdf)
     send.cmd(pdfcmd)
 end
 
--- Send Sweave chunk to R
+---Send Sweave chunk to R
+---@param m boolean
 M.send_chunk = function(m)
-    if utils.get_current_line():find("^<<") then
-        vim.api.nvim_win_set_cursor(0, { vim.fn.line(".") + 1, 1 })
+    if vim.api.nvim_get_current_line():find("^<<") then
+        vim.api.nvim_win_set_cursor(0, { vim.api.nvim_win_get_cursor(0)[1] + 1, 1 })
     elseif not M.is_in_R_code(false) then
         return
     end
@@ -288,6 +332,8 @@ M.send_chunk = function(m)
     if m == true then M.next_chunk() end
 end
 
+--- Get the full path of the master Rnoweb file
+---@return string
 M.SyncTeX_get_master = function()
     if vim.fn.filereadable(vim.fn.expand("%:p:r") .. "-concordance.tex") == 1 then
         if config.is_windows then
@@ -325,6 +371,10 @@ M.SyncTeX_get_master = function()
     end
 end
 
+--- Move the cursor to the position at the Rnoweb file corresponding to the
+--- informed position at the generated LaTeX file.
+---@param fname string
+---@param ln number
 M.SyncTeX_backward = function(fname, ln)
     local flnm = fname:gsub("/%./", "/") -- Okular
     local basenm = flnm:gsub("%....$", "") -- Delete extension
@@ -377,11 +427,14 @@ M.SyncTeX_backward = function(fname, ln)
     local rnwbn = rnwf:gsub(".*/", "")
     rnwf = rnwf:gsub("^%.\\/", "")
 
-    if go_to_buf(rnwbn, rnwf, basedir, rnwln) > 0 then
-        require("r.pdf").focus_window(config.term_title, config.term_pid)
+    if go_to_buf(rnwbn, rnwf, basedir, rnwln) then
+        utils.focus_window(config.term_title, config.term_pid)
     end
 end
 
+--- Run the necessary command to tell the PDF viewer to highlight the line in
+--- corresponding the current cursor positon at the Rnoweb file.
+---@param gotobuf boolean If true, the cursor will move to the corresponding line in the LaTeX document.
 M.SyncTeX_forward = function(gotobuf)
     local basenm = vim.fn.expand("%:t:r")
     local lnum = 0

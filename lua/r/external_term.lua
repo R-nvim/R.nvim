@@ -2,7 +2,6 @@ local config = require("r.config").get_config()
 local utils = require("r.utils")
 local uv = vim.loop
 local warn = require("r").warn
-local vit = require("r.utils").value_in_table
 
 local term_name = nil
 local term_cmd = nil
@@ -57,6 +56,7 @@ local external_term_config = function()
         )
     end
 
+    local vit = utils.value_in_table
     if vit(term_name, { "foot", "gnome-terminal", "xfce4-terminal", "alacritty" }) then
         term_cmd = term_name .. " --title R"
     elseif vit(term_name, { "xterm", "uxterm", "lxterm" }) then
@@ -67,21 +67,16 @@ local external_term_config = function()
 
     if term_name == "foot" then term_cmd = term_cmd .. " --log-level error" end
 
-    if not config.nvim_wd then
+    local wd = require("r.run").get_R_start_dir()
+    if wd then
         if
             vit(term_name, { "gnome-terminal", "xfce4-terminal", "lxterminal", "foot" })
         then
-            term_cmd = term_cmd
-                .. " --working-directory='"
-                .. vim.fn.expand("%:p:h")
-                .. "'"
+            term_cmd = term_cmd .. " --working-directory='" .. wd .. "'"
         elseif term_name == "konsole" then
-            term_cmd = term_cmd
-                .. " -p tabtitle=R --workdir '"
-                .. vim.fn.expand("%:p:h")
-                .. "'"
+            term_cmd = term_cmd .. " -p tabtitle=R --workdir '" .. wd .. "'"
         elseif term_name == "roxterm" then
-            term_cmd = term_cmd .. " --directory='" .. vim.fn.expand("%:p:h") .. "'"
+            term_cmd = term_cmd .. " --directory='" .. wd .. "'"
         end
     end
 
@@ -185,7 +180,7 @@ M.start_extern_term = function()
         open_cmd = open_cmd .. " &"
         local rlog = vim.fn.system(open_cmd)
         if vim.v.shell_error ~= 0 then
-            warn(rlog)
+            if rlog then warn(rlog) end
             return
         end
     else

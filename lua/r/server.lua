@@ -14,6 +14,7 @@ local rhelp_list = {}
 
 local M = {}
 
+---Callback function to process the stdout of before_nrs.R
 local init_stdout = function(_, data, _)
     if not data then return end
     local rcmd = string.gsub(table.concat(data, ""), "\r", "")
@@ -87,7 +88,9 @@ local mk_R_dir = function()
     libd = nil
 end
 
--- Find the path to the rnvimserver executable in the specified library directory.
+---Find the path to the rnvimserver executable in the specified library directory.
+---@param libdir string
+---@return string
 local find_rns_path = function(libdir)
     local nrs
     if config.is_windows then
@@ -248,7 +251,7 @@ end
 -- List R libraries from buffer
 local list_libs_from_buffer = function()
     local start_libs = config.start_libs or "base,stats,graphics,grDevices,utils,methods"
-    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("$"), true)
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
     local lib
     local flibs = {}
     for _, v in pairs(lines) do

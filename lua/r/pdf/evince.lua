@@ -4,7 +4,7 @@ local evince_loop = 0
 local config = require("r.config").get_config()
 local rnw = require("r.rnw")
 local job = require("r.job")
-local pdf = require("r.pdf")
+local utils = require("r.pdf")
 
 -- Check if python3 is executable, otherwise use python
 if vim.fn.executable("python3") > 0 then
@@ -18,7 +18,7 @@ local M = {}
 M.open = function(fullpath)
     if job.is_running(fullpath) then
         local fname = fullpath:gsub(".*/", "")
-        pdf.focus_window(fname, job.get_pid(fullpath))
+        utils.focus_window(fname, job.get_pid(fullpath))
         return
     end
 
@@ -32,6 +32,10 @@ M.open = function(fullpath)
     job.start(fullpath, ecmd, eopts)
 end
 
+---Send to Evince the SyncTeX forward command
+---@param tpath string
+---@param ppath string
+---@param texln number
 M.SyncTeX_forward = function(tpath, ppath, texln)
     local n1 = tpath:gsub("(^/.*/).*", "%1")
     local n2 = tpath:gsub(".*/(.*)", "%1")
@@ -49,7 +53,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
     else
         evince_loop = 0
     end
-    require("r.pdf").focus_window(ppath:gsub(".*/", ""), job.get_pid(ppath))
+    utils.focus_window(ppath:gsub(".*/", ""), job.get_pid(ppath))
 end
 
 M.run_evince_SyncTeX_server = function()
@@ -78,7 +82,7 @@ end
 -- Avoid possible infinite loop
 M.again = function()
     evince_loop = evince_loop + 1
-    rnw.SyncTeX_forward()
+    rnw.SyncTeX_forward(false)
 end
 
 return M

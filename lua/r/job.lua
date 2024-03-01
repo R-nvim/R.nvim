@@ -163,7 +163,7 @@ end
 ---@param job_name string The job name.
 ---@return number
 M.get_pid = function(job_name)
-    if jobs[job_name] then
+    if M.is_running(job_name) then
         return vim.fn.jobpid(jobs[job_name]) or 0
     end
     return 0

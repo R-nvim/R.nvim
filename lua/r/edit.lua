@@ -1,7 +1,7 @@
 local config = require("r.config").get_config()
 local warn = require("r").warn
 local del_list = {}
-local rscript_name = "undefined"
+local rscript_buf = nil
 local debug_info = { Time = {} }
 
 local M = {}
@@ -22,11 +22,13 @@ M.buf_enter = function()
         or vim.o.filetype == "quarto"
         or vim.o.filetype == "rhelp"
     then
-        rscript_name = vim.fn.bufname("%")
+        rscript_buf = vim.api.nvim_get_current_buf()
     end
 end
 
-M.get_rscript_name = function() return rscript_name end
+--- Get the number of R script buffer
+---@return number
+M.get_rscript_buf = function() return rscript_buf end
 
 -- Store list of files to be deleted on VimLeave
 M.add_for_deletion = function(fname)
@@ -83,6 +85,10 @@ M.show_debug_info = function()
     vim.schedule(function() vim.api.nvim_echo(info, false, {}) end)
 end
 
+--- Add item to debug info
+---@param title string|table
+---@param info string|number|table
+---@param parent? string parent item
 M.add_to_debug_info = function(title, info, parent)
     if parent then
         if debug_info[parent] == nil then debug_info[parent] = {} end
@@ -131,7 +137,8 @@ M.finish_inserting = function(type, txt)
     else
         lines = lns
     end
-    vim.api.nvim_buf_set_lines(0, vim.fn.line("."), vim.fn.line("."), true, lines)
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
+    vim.api.nvim_buf_set_lines(0, lnum, lnum, true, lines)
 end
 
 -- This function is called by nvimcom::vi(object).
@@ -219,9 +226,14 @@ end
 
 --- Called by nvimcom. Displays the "Examples" section of R documentation.
 M.open_example = function()
-    if vim.fn.bufloaded(config.tmpdir .. "/example.R") ~= 0 then
-        vim.cmd("bunload! " .. config.tmpdir:gsub(" ", "\\ "))
+    local bl = vim.api.nvim_list_bufs()
+    for _, v in pairs(bl) do
+        if vim.api.nvim_buf_get_name(v) == config.tmpdir .. "/example.R" then
+            vim.cmd("bunload! " .. tostring(v))
+            break
+        end
     end
+
     if config.nvimpager == "tabnew" or config.nvimpager == "tab" then
         vim.cmd("tabnew " .. config.tmpdir:gsub(" ", "\\ ") .. "/example.R")
     else

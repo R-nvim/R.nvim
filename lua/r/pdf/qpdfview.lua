@@ -3,6 +3,8 @@ local job = require("r.job")
 local warn = require("r").warn
 local M = {}
 
+---Open the PDF in Qpdfview
+---@param fullpath string
 M.open = function(fullpath)
     if config.synctex and fullpath:find(" ") then
         warn("Qpdfview's SyncTeX backward does not support file names with spaces.")
@@ -23,6 +25,10 @@ M.open = function(fullpath)
     job.start(fullpath, cmd, opts)
 end
 
+---Send the SyncTeX forward command to Qpdfview
+---@param tpath string
+---@param ppath string
+---@param texln number
 M.SyncTeX_forward = function(tpath, ppath, texln, _)
     local texname = tpath:gsub(" ", "\\ ")
     local pdfname = ppath:gsub(" ", "\\ ")
@@ -35,7 +41,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln, _)
             .. texln
             .. ":1 2> /dev/null >/dev/null &"
     )
-    require("r.pdf").focus_window(ppath, job.get_pid(ppath))
+    require("r.utils").focus_window(ppath, job.get_pid(ppath))
 end
 
 return M

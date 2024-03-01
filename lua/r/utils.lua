@@ -1,11 +1,31 @@
 local M = {}
 
---- Return the line of the current buffer at the cursor position
----@return string
-function M.get_current_line()
-    local lnum = vim.api.nvim_win_get_cursor(0)[1]
-    local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
-    return line
+--- Get number of the last line of a buffer
+---@return number
+M.get_last_line_num = function()
+    -- FIXME: find a more efficient way of getting the last line without
+    -- either calling vim.fn.line("$") or getting the list of all lines.
+    local all_lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
+    return #all_lines
+end
+
+--- Request the windows manager to focus a window.
+--- Currently, has support only for Xorg.
+---@param wttl string Part of the window title.
+---@param pid number Pid of window application.
+M.focus_window = function(wttl, pid)
+    local config = require("r.config").get_config()
+    if config.has_X_tools then
+        M.system({ "wmctrl", "-a", wttl })
+    elseif
+        vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
+    then
+        if pid and pid ~= 0 then
+            M.system({ "swaymsg", '[pid="' .. tostring(pid) .. '"]', "focus" })
+        elseif wttl then
+            M.system({ "swaymsg", '[name="' .. wttl .. '"]', "focus" })
+        end
+    end
 end
 
 --- Get the directory of the current buffer in Neovim.
@@ -58,7 +78,8 @@ end
 
 --- Check if a table has a specific string value
 ---@param value string
----@param tbl table
+---@param tbl string[]
+---@return boolean
 function M.value_in_table(value, tbl)
     for _, v in pairs(tbl) do
         if v == value then return true end

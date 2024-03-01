@@ -2436,7 +2436,6 @@ void complete(const char *id, char *base, char *funcnm, char *args) {
  */
 void stdin_loop(void) {
     char line[1024];
-    FILE *f;
     char *msg;
     char t;
     memset(line, 0, 1024);
@@ -2489,11 +2488,6 @@ void stdin_loop(void) {
                     omni2ob();
                 else
                     lib2ob();
-                break;
-            case '7':
-                f = fopen("/tmp/listTree", "w");
-                print_listTree(listTree, f);
-                fclose(f);
                 break;
             }
             break;

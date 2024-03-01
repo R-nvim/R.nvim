@@ -17,7 +17,7 @@ local config = {
     assign              = true,
     assign_map          = "<M-->",
     auto_scroll         = true,
-    auto_start          = 0,
+    auto_start          = "no",
     bracketed_paste     = false,
     buffer_opts         = "winfixwidth winfixheight nobuflisted",
     clear_console       = true,
@@ -47,7 +47,7 @@ local config = {
     max_paste_lines     = 20,
     min_editor_width    = 80,
     non_r_compl         = true,
-    nvim_wd             = 0,
+    setwd               = "file",
     nvimpager           = "split",
     objbr_allnames      = false,
     objbr_auto_start    = false,
@@ -57,8 +57,8 @@ local config = {
     objbr_place         = "script,right",
     objbr_w             = 40,
     open_example        = true,
-    open_html           = 2,
-    open_pdf            = 2,
+    open_html           = "open and focus",
+    open_pdf            = "open and focus",
     paragraph_begin     = true,
     parenblock          = true,
     pdfviewer           = "undefined",
@@ -494,6 +494,12 @@ local do_common_global = function()
     if type(config.rconsole_height) == "number" then
         config.rconsole_height = math.floor(config.rconsole_height)
     end
+
+    -- Ensure that some config options will be in lower case
+    config.auto_start = string.lower(config.auto_start)
+    config.setwd = string.lower(config.setwd)
+    config.open_pdf = string.lower(config.open_pdf)
+    config.open_html = string.lower(config.open_html)
 end
 
 local resolve_fullpaths = function(tbl)
@@ -794,8 +800,8 @@ M.real_setup = function()
     if not did_global_setup then global_setup() end
 
     if
-        (config.auto_start == 1 and vim.v.vim_did_enter == 0)
-        or config.auto_start == 2
+        config.auto_start:find("always")
+        or (config.auto_start:find("startup") and vim.v.vim_did_enter == 0)
     then
         require("r.run").auto_start_R()
     end

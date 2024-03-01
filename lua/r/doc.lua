@@ -1,14 +1,19 @@
 local config = require("r.config").get_config()
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 local warn = require("r").warn
+local utils = require("r.utils")
 local cursor = require("r.cursor")
 local job = require("r.job")
 local doc_buf_id = nil
 
 local M = {}
 
+--- Calculate adequate width for documentation
+---@return number
 local get_win_width = function() return vim.o.columns > 80 and 80 or vim.o.columns - 1 end
 
+--- Call the appropriate function to request documentation on a topic
+---@param topic string
 M.ask_R_help = function(topic)
     if topic == "" then
         require("r.send").cmd("help.start()")
@@ -21,17 +26,19 @@ M.ask_R_help = function(topic)
     end
 end
 
---- Request R documentation on an object
+--- Request R documentation on an object through nvimcom
 ---@param rkeyword string The topic of the requested help
 ---@param package string Library of the object
 ---@param getclass boolean If the object is a function, whether R should check the class of the first argument passed to it to retrieve documentation on the appropriate method.
 M.ask_R_doc = function(rkeyword, package, getclass)
     local firstobj = ""
-    local rbn = require("r.term").get_buf_nr()
-    if vim.fn.bufname("%") == "Object_Browser" or vim.fn.bufnr("%") == rbn then
+    local cb = vim.api.nvim_get_current_buf()
+    local rb = require("r.term").get_buf_nr()
+    local bb = require("r.browser").get_buf_nr()
+    if cb == rb or cb == bb then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
-        vim.cmd.sb(require("r.edit").get_rscript_name())
+        vim.cmd.sb(require("r.edit").get_rscript_buf())
         vim.cmd("set switchbuf=" .. savesb)
     else
         if getclass then firstobj = cursor.get_first_obj() end
@@ -62,6 +69,9 @@ M.ask_R_doc = function(rkeyword, package, getclass)
     send_to_nvimcom("E", rcmd)
 end
 
+--- Show documentation sent by nvimcom
+---@param rkeyword string The topic
+---@param txt string The text to display
 M.show = function(rkeyword, txt)
     if
         not config.nvimpager:find("tab")
@@ -90,16 +100,18 @@ M.show = function(rkeyword, txt)
         vpager = config.nvimpager
     end
 
-    local rbn = require("r.term").get_buf_nr()
-    if vim.fn.bufnr("%") == rbn then
+    local cb = vim.api.nvim_get_current_buf()
+    local bb = require("r.browser").get_buf_nr()
+    local rb = require("r.term").get_buf_nr()
+    if cb == rb then
         -- Exit Terminal mode and go to Normal mode
         vim.cmd("stopinsert")
     end
 
-    if vim.fn.bufname("%"):match("Object_Browser") or vim.fn.bufnr("%") == rbn then
+    if cb == bb or cb == rb then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
-        vim.cmd.sb(require("r.edit").get_rscript_name())
+        vim.cmd.sb(require("r.edit").get_rscript_buf())
         vim.cmd("set switchbuf=" .. savesb)
     end
 
@@ -121,7 +133,7 @@ M.show = function(rkeyword, txt)
         end
     end
 
-    doc_buf_id = vim.api.nvim_win_get_buf(0)
+    doc_buf_id = vim.api.nvim_get_current_buf()
     vim.api.nvim_buf_set_name(doc_buf_id, rkeyword)
 
     vim.api.nvim_set_option_value("modifiable", true, { scope = "local" })
@@ -196,11 +208,13 @@ end
 ---@param fullpath string
 ---@param browser string
 M.load_html = function(fullpath, browser)
-    if config.open_html == 0 then return end
+    if config.open_html == "no" then return end
 
     local fname = fullpath:gsub(".*/", "")
     if job.is_running(fullpath) then
-        if config.open_pdf == 2 then M.focus_window(fname, job.get_pid(fullpath)) end
+        if config.open_html:find("focus") then
+            utils.focus_window(fname, job.get_pid(fullpath))
+        end
         return
     end
 
@@ -216,7 +230,7 @@ M.load_html = function(fullpath, browser)
         table.insert(cmd, fullpath)
     end
 
-    job.start(fullpath, cmd, { detach = true })
+    job.start(fullpath, cmd, { detach = true, on_exit = job.on_exit })
 end
 
 M.open = function(fullpath, browser)

@@ -107,19 +107,12 @@ start_R2 = function()
         'options(nvimcom.source.path = "' .. config.source_read .. '")'
     )
 
-    local rwd = ""
-    if config.nvim_wd == 0 then
-        rwd = M.get_buf_dir()
-    elseif config.nvim_wd == 1 then
-        rwd = uv.cwd() or ""
-    end
-    if rwd ~= "" and not config.remote_compldir then
-        if config.is_windows then rwd = rwd:gsub("\\", "/") end
-
+    local rsd = M.get_R_start_dir()
+    if rsd then
         -- `rwd` will not be a real directory if editing a file on the internet
         -- with netrw plugin
-        if vim.fn.isdirectory(rwd) == 1 then
-            table.insert(start_options, 'setwd("' .. rwd .. '")')
+        if vim.fn.isdirectory(rsd) == 1 then
+            table.insert(start_options, 'setwd("' .. rsd .. '")')
         end
     end
 
@@ -167,6 +160,8 @@ M.auto_start_R = function()
     M.start_R("R")
 end
 
+--- Register rnvimserver port in a environment variable
+---@param p string
 M.set_nrs_port = function(p)
     vim.g.R_Nvim_status = 5
     vim.env.RNVIM_PORT = p
@@ -212,7 +207,8 @@ M.start_R = function(whatr)
     end
 end
 
--- Send SIGINT to R
+---Send signal to R
+---@param signal string | number
 M.signal_to_R = function(signal)
     if R_pid ~= 0 then
         utils.system({ "kill", "-s", tostring(signal), tostring(R_pid) })
@@ -334,8 +330,10 @@ end
 
 -- Background communication with R
 
--- Send a message to rnvimserver job which will send the message to nvimcom
--- through a TCP connection.
+---Send a message to rnvimserver job which will send the message to nvimcom
+---through a TCP connection.
+---@param code string Single letter to be interpreted by nvimcom
+---@param attch string Additional command to be evaluated by nvimcom
 M.send_to_nvimcom = function(code, attch)
     if vim.g.R_Nvim_status < 6 then
         warn("R is not running")
@@ -373,14 +371,17 @@ M.quit_R = function(how)
         job.stdin("Server", "2QuitNow\n")
     end
 
-    if vim.fn.bufloaded("Object_Browser") == 1 then
-        vim.cmd("bunload! Object_Browser")
+    local bb = require("r.browser").get_buf_nr()
+    if bb then
+        vim.cmd("bunload! " .. tostring(bb))
         vim.wait(30)
     end
 
     require("r.send").cmd(qcmd)
 end
 
+---Request R to format code
+---@param tbl table Table sent by Neovim's mapping function
 M.formart_code = function(tbl)
     if vim.g.R_Nvim_status < 7 then return end
 
@@ -412,13 +413,16 @@ M.formart_code = function(tbl)
     )
 end
 
+--- Request R to evaluate a command and send its output back
+---@param cmd string
+---@param type string
 M.insert = function(cmd, type)
     if vim.g.R_Nvim_status < 7 then return end
     M.send_to_nvimcom("E", "nvimcom:::nvim_insert(" .. cmd .. ', "' .. type .. '")')
 end
 
 M.insert_commented = function()
-    local lin = utils.get_current_line()
+    local lin = vim.api.nvim_get_current_line()
     local cleanl = lin:gsub('".-"', "")
     if cleanl:find(";") then
         warn("`print(line)` works only if `line` is a single command")
@@ -427,10 +431,11 @@ M.insert_commented = function()
     M.insert("print(" .. cleanl .. ")", "comment")
 end
 
--- Get the word either under or after the cursor.
--- Works for word(| where | is the cursor position.
+---Get the word either under or after the cursor.
+---Works for word(| where | is the cursor position.
+---@return string
 M.get_keyword = function()
-    local line = utils.get_current_line()
+    local line = vim.api.nvim_get_current_line()
     local llen = #line
     if llen == 0 then return "" end
 
@@ -473,7 +478,10 @@ M.get_keyword = function()
     return line:sub(i, j)
 end
 
--- Call R functions for the word under cursor
+---Call R functions for the word under cursor
+---@param rcmd string Function to call or action to execute
+---@param mode string Vim's mode ("n" or "v")
+---@param args string Additional argument on how to call the function
 M.action = function(rcmd, mode, args)
     local rkeyword
 
@@ -483,8 +491,13 @@ M.action = function(rcmd, mode, args)
         local lnum = vim.api.nvim_win_get_cursor(0)[1]
         local line = vim.fn.getline(lnum)
         rkeyword = require("r.browser").get_name(lnum, line)
-    elseif mode and mode == "v" and vim.fn.line("'<") == vim.fn.line("'>") then
-        local lnum = vim.fn.line("'>")
+    elseif
+        mode
+        and mode == "v"
+        and vim.api.nvim_buf_get_mark(0, "<")[1]
+            == vim.api.nvim_buf_get_mark(0, ">")[1]
+    then
+        local lnum = vim.api.nvim_buf_get_mark(0, ">")[1]
         if lnum then
             rkeyword = vim.fn.strpart(
                 vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1],
@@ -511,7 +524,7 @@ M.action = function(rcmd, mode, args)
         if config.nvimpager == "no" then
             send.cmd("help(" .. rkeyword .. ")")
         else
-            if vim.fn.bufname("%") == "Object_Browser" then
+            if vim.api.nvim_get_current_buf() == require("r.browser").get_buf_nr() then
                 if require("r.browser").get_curview() == "libraries" then
                     rhelppkg = require("r.browser").get_pkg_name()
                 end
@@ -591,10 +604,12 @@ M.action = function(rcmd, mode, args)
     send.cmd(raction)
 end
 
+---Send the print() command to R with rkeyword as parameter
+---@param rkeyword string
 M.print_object = function(rkeyword)
     local firstobj
 
-    if vim.fn.bufname("%") == "Object_Browser" then
+    if vim.api.nvim_get_current_buf() == require("r.browser").get_buf_nr() then
         firstobj = ""
     else
         firstobj = cursor.get_first_obj()
@@ -661,14 +676,27 @@ end
 
 M.get_buf_dir = function()
     local rwd = vim.api.nvim_buf_get_name(0)
-    if config.is_windows then
-        rwd = rwd:gsub("\\", "/")
-        rwd = utils.normalize_windows_path(rwd)
-    end
+    if config.is_windows then rwd = utils.normalize_windows_path(rwd) end
     rwd = rwd:gsub("(.*)/.*", "%1")
     return rwd
 end
 
+---Get the directory where R should start
+---@return string | nil
+M.get_R_start_dir = function()
+    if not config.remote_compldir == "" then return nil end
+    local rsd
+    if config.setwd == "file" then
+        rsd = M.get_buf_dir()
+    elseif config.setwd == "nvim" then
+        rsd = uv.cwd()
+        if rsd and config.is_windows then rsd = rsd:gsub("\\", "/") end
+    end
+    return rsd
+end
+
+---Send to R the command to source all files in a directory
+---@param dir string
 M.source_dir = function(dir)
     if config.is_windows then dir = utils.normalize_windows_path(dir) end
     if dir == "" then
