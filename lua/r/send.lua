@@ -284,17 +284,31 @@ M.chunks_up_to_here = function()
     M.source_lines(codelines, "chunk")
 end
 
+-- TODO: Test if this version works: git blame me to see previous version.
 -- Send to R Console the code under a Vim motion
-M.motion = function(_)
-    -- FIXME: not working
-    local lstart = vim.api.nvim_buf_get_mark(0, "[")[1]
-    local lend = vim.api.nvim_buf_get_mark(0, "]")[1]
-    if not lstart or not lend then return end
-    if lstart == lend then
-        M.line("stay", lstart)
-    else
-        local lines = vim.api.nvim_buf_get_lines(0, lstart, lend, true)
+M.motion = function()
+    local startPos, endPos = vim.api.nvim_buf_get_mark(0, '['), vim.api.nvim_buf_get_mark(0, ']')
+    local startLine, endLine = startPos[1], endPos[1]
+
+    -- Check if the marks are valid
+    if startLine <= 0 or startLine > endLine
+    or endLine > vim.api.nvim_buf_line_count(0)
+    then
+        warn("Invalid motion range")
+        return
+    end
+
+    -- Adjust endLine to include the line under the ']` mark
+    endLine = endLine < vim.api.nvim_buf_line_count(0) and endLine or endLine - 1
+
+    -- Fetch the lines from the buffer
+    local lines = vim.api.nvim_buf_get_lines(0, startLine - 1, endLine, false)
+
+    -- Send the fetched lines to be sourced by R
+    if lines and #lines > 0 then
         M.source_lines(lines, "block")
+    else
+        warn("No lines to send")
     end
 end
 
