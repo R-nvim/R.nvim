@@ -1,12 +1,9 @@
 local M = {}
 
 --- Get number of the last line of a buffer
----@return number
+---@return number last_line_number Line count of the current buffer, also number of the last line
 M.get_last_line_num = function()
-    -- FIXME: find a more efficient way of getting the last line without
-    -- either calling vim.fn.line("$") or getting the list of all lines.
-    local all_lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
-    return #all_lines
+    return vim.api.nvim_buf_line_count(0)
 end
 
 --- Request the windows manager to focus a window.
