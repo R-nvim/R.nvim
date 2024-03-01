@@ -42,6 +42,9 @@ local map_desc = {
     RNRightPart         = { m = "", k = "", c = "Send",     d = "Send to R the part of the line on the right of the cursor" },
     RDSendSelection     = { m = "", k = "", c = "Send",     d = "Send to R visually selected lines or part of a line" },
     RSendSelection      = { m = "", k = "", c = "Send",     d = "Send visually selected lines of part of a line" },
+    RSendCurrentFun     = { m = "", k = "", c = "Send",     d = "Send the current function" },
+    RDSendCurrentFun    = { m = "", k = "", c = "Send",     d = "Send the current function and move the cursor to the end of the function definition" },
+    RSourceAllFun       = { m = "", k = "", c = "Send",     d = "Send all the top level functions in the current buffer" },
     RHelp               = { m = "", k = "", c = "Command",  d = "Ask for R documentation on the object under cursor" },
     RShowRout           = { m = "", k = "", c = "Command",  d = "R CMD BATCH the current document and show the output in a new tab" },
     RSPlot              = { m = "", k = "", c = "Command",  d = "Send to R command to run summary and plot with <cword> as argument" },
@@ -207,9 +210,9 @@ local send = function(file_type)
     create_maps("ni",  "RDSendMBlock",     "bd", "<Cmd>lua require('r.send').marked_block(true)")
 
     -- Function
-    -- Not currently implemented
-    -- create_maps("nvi", "RSendFunction",    "ff", "<Cmd>lua require('r.send').fun(false)")
-    -- create_maps("nvi", "RDSendFunction",   "fd", "<Cmd>lua require('r.send').fun(true)")
+    create_maps("nvi", "RSendAllFun",    "fa", "<Cmd>lua require('r.send').funs(0, true, false)")
+    create_maps("nvi", "RSendCurrentFun",   "fc", "<Cmd>lua require('r.send').funs(0, false, false)")
+    create_maps("nvi", "RDSendCurrentFun",   "fd", "<Cmd>lua require('r.send').funs(0, false, true)")
 
     -- Pipe chain breaker
     create_maps("nv", "RSendChain",      "sc", "<Cmd>lua require('r.send').chain()")
