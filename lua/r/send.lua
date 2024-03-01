@@ -318,7 +318,7 @@ end
 M.marked_block = function(m)
     if not vim.b.IsInRCode(true) then return end
 
-    local last_line = utils.get_last_line_num()
+    local last_line = vim.api.nvim_buf_line_count(0)
 
     local curline = vim.api.nvim_win_get_cursor(0)[1]
     local lineA = 1
@@ -516,7 +516,7 @@ M.line = function(m, lnum)
         local rpd = paren_diff(line)
         if rpd < 0 or has_op then
             lnum = lnum + 1
-            local last_buf_line = utils.get_last_line_num()
+            local last_buf_line = vim.api.nvim_buf_line_count(0)
             lines = { line }
             while lnum <= last_buf_line do
                 local txt = vim.fn.getline(lnum)

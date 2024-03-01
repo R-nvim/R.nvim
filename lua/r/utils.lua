@@ -1,10 +1,5 @@
 local M = {}
 
---- Get number of the last line of a buffer
----@return number last_line_number Line count of the current buffer, also number of the last line
-M.get_last_line_num = function()
-    return vim.api.nvim_buf_line_count(0)
-end
 
 --- Request the windows manager to focus a window.
 --- Currently, has support only for Xorg.

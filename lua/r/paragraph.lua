@@ -18,7 +18,7 @@ M.get_current = function()
     end
 
     -- Find the end of the paragraph
-    local last_line = require("r.utils").get_last_line_num()
+    local last_line = vim.api.nvim_buf_line_count(0)
     while end_line < last_line and vim.fn.trim(vim.fn.getline(end_line + 1)) ~= "" do
         end_line = end_line + 1
     end

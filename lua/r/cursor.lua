@@ -32,7 +32,7 @@ end
 ---@return number
 M.find_next_paragraph = function()
     local current_line = vim.api.nvim_win_get_cursor(0)[1]
-    local last_line = utils.get_last_line_num()
+    local last_line = vim.api.nvim_buf_line_count(0)
     local next_empty_line = current_line
 
     -- Search for the next empty line (paragraph separator)
@@ -59,15 +59,15 @@ end
 
 -- Moe the cursor to the next line
 M.move_next_line = function()
-    local lnum = vim.api.nvim_win_get_cursor(0)[1]
-    local lastlnum = utils.get_last_line_num()
-    if lnum == lastlnum then return end
+    local current_line_num = vim.api.nvim_win_get_cursor(0)[1]
+    local last_line_num = vim.api.nvim_buf_line_count(0)
+    if current_line_num == last_line_num then return end
 
     local filetype = vim.o.filetype
     local has_code = false
-    while not has_code and lnum < lastlnum do
-        lnum = lnum + 1
-        local curline = clean_current_line(vim.fn.getline(lnum))
+    while not has_code and current_line_num < last_line_num do
+        current_line_num = current_line_num + 1
+        local curline = clean_current_line(vim.fn.getline(current_line_num))
         if filetype == "rnoweb" and string.sub(curline, 1, 1) == "@" then
             require("r.rnw").next_chunk()
             return
@@ -77,7 +77,7 @@ M.move_next_line = function()
         end
         if #curline > 0 then break end
     end
-    vim.api.nvim_win_set_cursor(0, { lnum, 0 })
+    vim.api.nvim_win_set_cursor(0, { current_line_num, 0 })
 end
 
 --- Get the first parameter passed to the function currently under the cursor
