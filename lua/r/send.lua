@@ -213,7 +213,7 @@ M.fun = function()
 end
 
 --- Send to R Console a command to source the document child indicated in chunk header.
----@param line string The chunck header.
+---@param line string The chunk header.
 ---@param m boolean True if should move to the next chunk.
 local knit_child = function(line, m)
     local nline = line:gsub(".*child *= *", "")
