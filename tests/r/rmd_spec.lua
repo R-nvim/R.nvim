@@ -9,12 +9,13 @@ describe("rmd module", function()
     local function send_lua_via_rpc(lua_command, args)
         return rpcrequest(nvim, "nvim_exec_lua", lua_command, args or {})
     end
-    local function set_filetype(filetype)
-        rpcrequest(nvim, "nvim_buf_set_option", 0, "filetype", filetype)
-    end
-    local function get_current_line()
-        return rpcrequest(nvim, "nvim_win_get_cursor", 0)[2]
-    end
+    -- TODO: Move this to helpers file
+    -- local function set_filetype(filetype)
+    --     rpcrequest(nvim, "nvim_buf_set_option", 0, "filetype", filetype)
+    -- end
+    -- local function get_current_line()
+    --     return rpcrequest(nvim, "nvim_win_get_cursor", 0)[2]
+    -- end
 
     before_each(
         function()
