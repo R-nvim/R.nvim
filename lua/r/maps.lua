@@ -44,7 +44,7 @@ local map_desc = {
     RSendSelection      = { m = "", k = "", c = "Send",     d = "Send visually selected lines of part of a line" },
     RSendCurrentFun     = { m = "", k = "", c = "Send",     d = "Send the current function" },
     RDSendCurrentFun    = { m = "", k = "", c = "Send",     d = "Send the current function and move the cursor to the end of the function definition" },
-    RSourceAllFun       = { m = "", k = "", c = "Send",     d = "Send all the top level functions in the current buffer" },
+    RSendAllFun         = { m = "", k = "", c = "Send",     d = "Send all the top level functions in the current buffer" },
     RHelp               = { m = "", k = "", c = "Command",  d = "Ask for R documentation on the object under cursor" },
     RShowRout           = { m = "", k = "", c = "Command",  d = "R CMD BATCH the current document and show the output in a new tab" },
     RSPlot              = { m = "", k = "", c = "Command",  d = "Send to R command to run summary and plot with <cword> as argument" },

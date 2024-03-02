@@ -312,7 +312,7 @@ build_all_args = function(_)
     local scrptnm = config.tmpdir .. "/build_args.R"
     edit.add_for_deletion(scrptnm)
     vim.fn.writefile(rscrpt, scrptnm)
-    if config.remote_compldir then
+    if config.remote_compldir ~= "" then
         scrptnm = config.remote_compldir .. "/tmp/build_args.R"
     end
     local jobh = { on_exit = baa_exit }

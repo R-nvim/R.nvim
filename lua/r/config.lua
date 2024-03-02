@@ -1,5 +1,4 @@
 local warn = require("r").warn
-local utils = require("r.utils")
 local uv = vim.loop
 
 -- stylua: ignore start
@@ -183,6 +182,8 @@ local validate_user_opts = function()
 end
 
 local do_common_global = function()
+    local utils = require("r.utils")
+
     config.is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
 
     -- config.rnvim_home should be the directory where the plugin files are.
@@ -509,6 +510,7 @@ local resolve_fullpaths = function(tbl)
 end
 
 local windows_config = function()
+    local utils = require("r.utils")
     local wtime = uv.hrtime()
     local isi386 = false
 
