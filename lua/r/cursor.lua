@@ -1,4 +1,3 @@
-local utils = require("r.utils")
 local M = {}
 
 --- Remove leading spaces and trailing comments from string
