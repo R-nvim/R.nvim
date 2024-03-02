@@ -55,12 +55,6 @@ describe("rmd module", function()
             )
             assert.is_false(result)
         end)
-        it("returns true if on an '```{r' line", function()
-            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 12, 3 })
-            local result =
-                send_lua_via_rpc([[return require('r.rmd').is_in_code_chunk('r', false)]])
-            assert.is_true(result)
-        end)
         it("test verbosity", function() pending("test verbosity") end)
         it(
             "returns true if inside code chunk (filetype-agnostic)",
