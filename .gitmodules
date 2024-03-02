@@ -1,0 +1,6 @@
+[submodule "tests/xdg/local/share/nvim/site/pack/testing/start/plenary.nvim"]
+	path = tests/xdg/local/share/nvim/site/pack/testing/start/plenary.nvim
+	url = https://github.com/nvim-lua/plenary.nvim
+[submodule "tests/xdg/local/share/nvim/site/pack/testing/start/nvim-treesitter"]
+	path = tests/xdg/local/share/nvim/site/pack/testing/start/nvim-treesitter
+	url = https://github.com/nvim-treesitter/nvim-treesitter

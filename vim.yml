@@ -38,3 +38,33 @@ globals:
   pending:
     args:
       - type: string
+  assert.equals:
+        args:
+            - type: any
+            - type: any
+  assert.same:
+      args:
+          - type: any
+          - type: any
+  assert.is_true:
+      args:
+          - type: any
+  assert.is_false:
+      args:
+          - type: any
+  assert.has_error:
+      args:
+          - type: function
+  assert.is_nil:
+      args:
+          - type: any
+  assert.is_not_nil:
+      args:
+          - type: any
+  assert.spy:
+      any: true
+  assert.snapshot:
+      args: []
+  assert.is_not.has_error:
+      args:
+          - type: function
