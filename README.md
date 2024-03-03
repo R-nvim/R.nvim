@@ -89,9 +89,9 @@ legacy omni-completion (auto completion with
 functions from .GlobalEnv (difficult to make compatible with tree-sitter + LSP
 highlighting).
 
-We changed the key binding to insert the assignment operator (` <- `) from an
+We changed the default key binding to insert the assignment operator (` <- `) from an
 underscore (which was familiar to Emacs-ESS users) to `Alt+-` which is more
-convenient (but does not work on Vim).
+convenient (but does not work on Vim). See the option `assign_map`.
 
 We replaced the options `R_source` and `after_R_start` with `hook` and we can
 insert other hooks for Lua functions at other parts of the code under user

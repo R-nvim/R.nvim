@@ -8,6 +8,16 @@ local M = {}
 
 M.assign = function()
     if vim.b.IsInRCode(false) then
+        if config.assign_map == "_" then
+            local line = vim.api.nvim_get_current_line()
+            local pos = vim.api.nvim_win_get_cursor(0)
+            if line:len() > 4 and line:sub(pos[2] - 3, pos[2]) == " <- " then
+                line = line:sub(0, pos[2] - 4) .. "_" .. line:sub(pos[2] + 1, -1)
+                vim.api.nvim_buf_set_lines(0, pos[1] - 1, pos[1], true, { line })
+                vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] - 3 })
+                return
+            end
+        end
         vim.fn.feedkeys(" <- ", "n")
     else
         vim.fn.feedkeys(config.assign_map, "n")

@@ -937,10 +937,11 @@ put in your config:
    assign = false
 <
 If you want to bind other keys to be replaced by `<-`, set the value of
-|assign_map| in your config, as in the example below which emulates RStudio
-behavior:
+|assign_map| in your config, as in the examples below which emulate,
+respectively, RStudio and Emacs+ESS behavior:
 >lua
    assign_map = "<M-=>"
+   assign_map = "_"
 <
 Note: You can't map <C-=> because in Neovim only alphabetic letters can be
 mapped in combination with the CTRL key.
