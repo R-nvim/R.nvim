@@ -127,8 +127,6 @@ SEXP fmt_txt(SEXP txt, SEXP delim, SEXP nl) {
     const char *n = CHAR(STRING_ELT(nl, 0));
     char *b = calloc(strlen(s) + 1, sizeof(char));
     format(s, b, d[0], n[0]);
-    REprintf("s:\n%s\n", s);
-    REprintf("b:\n%s\n", b);
     SEXP ans = R_NilValue;
     PROTECT(ans = NEW_CHARACTER(1));
     SET_STRING_ELT(ans, 0, mkChar(b));
