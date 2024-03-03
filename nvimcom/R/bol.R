@@ -135,17 +135,14 @@ gbRd.args2txt <- function(pkg = NULL, rdo, arglist) {
 
 # For building omnls files
 #' @param x
-#' @param edq Whether double quotes should be escaped.
-nvim.fix.string <- function(x, edq = TRUE) {
+nvim.fix.string <- function(x, edq = FALSE) {
+    x <- gsub("\\\\", "\x12", x)
+    x <- gsub("'", "\x13", x)
     x <- gsub("\n", "\\\\n", x)
     x <- gsub("\r", "\\\\r", x)
     x <- gsub("\t", "\\\\t", x)
-    x <- gsub("'", "\x13", x)
     if (edq) {
-        x <- gsub('"', '\\\\\\\\"', x)
-    } else {
-        x <- sub("^\\s*", "", x)
-        x <- paste(x, collapse = "")
+        x <- gsub('"', '\x12"', x)
     }
     x
 }
@@ -155,9 +152,7 @@ nvim.fix.string <- function(x, edq = TRUE) {
 #' @param txt Begin of parameter name.
 #' @param pkg Library name. If not NULL, restrict the search to `pkg`.
 #' @param objclass Class of first argument of the function.
-#' @param extrainfo Whether to include additional information for completion.
-#' @param edq Whether double quotes should be escaped.
-nvim.args <- function(funcname, txt = "", pkg = NULL, objclass, extrainfo = FALSE, edq = TRUE) {
+nvim.args <- function(funcname, txt = "", pkg = NULL, objclass) {
     # Adapted from: https://stat.ethz.ch/pipermail/ess-help/2011-March/006791.html
     if (!exists(funcname))
         return("")
@@ -210,7 +205,7 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass, extrainfo = FALS
             if (length(idx)) {
                 ff <- "NULL"
                 tr <- try(ff <- get(paste0(funcname, ".default"), pos = idx), silent = TRUE)
-                if (class(tr)[1] == "try-error")
+                if (inherits(tr, "try-error"))
                     ff <- get(funcname, pos = idx)
                 if (is.primitive(ff)) {
                     a <- args(ff)
@@ -230,60 +225,28 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass, extrainfo = FALS
         }
     }
 
-    if (pkgname[1] != ".GlobalEnv" && extrainfo && length(frm) > 0) {
-        arglist <- gbRd.args2txt(pkgname, funcname, names(frm))
-        arglist <- lapply(arglist, nvim.fix.string, edq)
-    }
-
     res <- NULL
     for (field in names(frm)) {
         type <- typeof(frm[[field]])
-        if (extrainfo) {
-            str1 <- paste0("{word = \x12", field, "\x12")
-            str2 <- ""
-            if (type == "character") {
-                str2 <- paste0(", menu = \x12\"", nvim.fix.string(frm[[field]]), "\"\x12")
-            } else if (type == "logical" || type == "double" || type == "integer") {
-                str2 <- paste0(", menu = \x12", as.character(frm[[field]]), "\x12")
-            } else if (type == "NULL") {
-                str2 <- paste0(", menu = \x12NULL\x12")
-            } else if (type == "language") {
-                str2 <- paste0(", menu = \x12",
-                               nvim.fix.string(deparse(frm[[field]]), FALSE), "\x12")
-            }
-            if (length(frm) > 0) {
-                if (exists("arglist")) {
-                    res <- append(res, paste0(str1, str2,
-                                              ", user_data = {cls = \x12a\x12, argument = \x12",
-                                              arglist[[field]], "\x12}}, "))
-                } else {
-                    res <- append(res, paste0(str1, str2, ", user_data = {cls = \x12a\x12, pkg = \x12", pkgname[1], "\x12}}, "))
-                }
-            } else {
-                res <- append(res, paste0(str1, str2, "}, "))
-            }
+        if (type == "symbol") {
+            res <- append(res, paste0(field, "\x05"))
+        } else if (type == "character") {
+            res <- append(res, paste0(field, "\x04\"",
+                                      nvim.fix.string(frm[[field]], TRUE), "\"\x05"))
+        } else if (type == "logical" || type == "double" || type == "integer") {
+            res <- append(res, paste0(field, "\x04", as.character(frm[[field]]), "\x05"))
+        } else if (type == "NULL") {
+            res <- append(res, paste0(field, "\x04NULL\x05"))
+        } else if (type == "language") {
+            res <- append(res, paste0(field, "\x04",
+                                      nvim.fix.string(deparse(frm[[field]])), "\x05"))
         } else {
-            if (type == "symbol") {
-                res <- append(res, paste0("{\x12", field, "\x12}, "))
-            } else if (type == "character") {
-                res <- append(res, paste0("{\x12", field, "\x12, \x12\"",
-                                          nvim.fix.string(frm[[field]]), "\"\x12}, "))
-            } else if (type == "logical" || type == "double" || type == "integer") {
-                res <- append(res, paste0("{\x12", field, "\x12, \x12", as.character(frm[[field]]), "\x12}, "))
-            } else if (type == "NULL") {
-                res <- append(res, paste0("{\x12", field, "\x12, \x12NULL\x12}, "))
-            } else if (type == "language") {
-                res <- append(res, paste0("{\x12", field, "\x12, \x12",
-                                          nvim.fix.string(deparse(frm[[field]]), FALSE), "\x12}, "))
-            } else {
-                res <- append(res, paste0("{\x12", field, "\x12}, "))
-                warning(paste0("nvim.args: ", funcname, " [", field, "]", " (typeof = ", type, ")"))
-            }
+            res <- append(res, paste0(field, "\x05"))
+            warning(paste0("nvim.args: ", funcname, " [", field, "]", " (typeof = ", type, ")"))
         }
     }
 
-    if (!extrainfo)
-        res <- paste0(res, collapse = "")
+    res <- paste0(res, collapse = "")
 
 
     if (length(res) == 0 || (length(res) == 1 && res == "")) {
@@ -328,8 +291,8 @@ nvim.getInfo <- function(printenv, x) {
     return("\006\006")
 }
 
-#' Make a single line of the `omnils_` file with information for omni or auto
-#' completion of object names.
+#' Make a single line of the `objls_` file with information for auto completion
+#' of object names.
 #' @param x R object
 #' @param envir Current "environment" of object x. It will be
 #' `package:libname`.
@@ -337,7 +300,7 @@ nvim.getInfo <- function(printenv, x) {
 #' @param curlevel Current number of levels in lists and S4 objects.
 #' @param maxlevel Maximum number of levels in lists and S4 objects to parse,
 #' with 0 meanin no limit.
-nvim.omni.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
+nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
     if (curlevel == 0) {
         xx <- try(get(x, envir), silent = TRUE)
         if (inherits(xx, "try-error"))
@@ -364,7 +327,7 @@ nvim.omni.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
             xx <- NULL
         } else {
             xx <- try(eval(parse(text = x)), silent = TRUE)
-            if (class(xx)[1] == "try-error") {
+            if (inherits(xx, "try-error")) {
                 xx <- NULL
             }
         }
@@ -405,16 +368,16 @@ nvim.omni.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
         if (x.group == "f") {
             if (curlevel == 0) {
                 if (nvim.grepl("GlobalEnv", printenv)) {
-                    cat(x, "\006\003\006\006", printenv, "\006",
+                    cat(x, "\006(\006function\006", printenv, "\006",
                         nvim.args(x), "\n", sep = "")
                 } else {
                     info <- nvim.getInfo(printenv, x)
-                    cat(x, "\006\003\006\006", printenv, "\006",
+                    cat(x, "\006(\006function\006", printenv, "\006",
                         nvim.args(x, pkg = printenv), info, "\006\n", sep = "")
                 }
             } else {
                 # some libraries have functions as list elements
-                cat(x, "\006\003\006\006", printenv,
+                cat(x, "\006(\006function\006", printenv,
                     "\006Unknown arguments\006\006\006\n", sep = "")
             }
         } else {
@@ -441,7 +404,7 @@ nvim.omni.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
                     xattr <- try(attr(xx, "label"), silent = TRUE)
                     if (!inherits(xattr, "try-error"))
                         if (!is.null(xattr) && length(xattr) == 1)
-                            info <- paste0("\006\006", .Call("rd2md", xattr, PACKAGE = "nvimcom"))
+                            info <- paste0("\006\006", nvim.fix.string(.Call("rd2md", xattr, PACKAGE = "nvimcom")))
                 }
                 cat(x, "\006", x.group, "\006", x.class, "\006", printenv,
                     "\006[]", info, "\006\n", sep = "")
@@ -455,7 +418,7 @@ nvim.omni.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
         xxl <- length(xx)
         if (!is.null(xxl) && xxl > 0) {
             for (k in obj.names) {
-                nvim.omni.line(paste(x, "$", k, sep = ""), envir, printenv, curlevel, maxlevel)
+                nvim.cmpl.line(paste(x, "$", k, sep = ""), envir, printenv, curlevel, maxlevel)
             }
         }
     } else if (isS4(xx) && curlevel <= maxlevel) {
@@ -464,7 +427,7 @@ nvim.omni.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
         xxl <- length(xx)
         if (!is.null(xxl) && xxl > 0) {
             for (k in obj.names) {
-                nvim.omni.line(paste(x, "@", k, sep = ""), envir, printenv, curlevel, maxlevel)
+                nvim.cmpl.line(paste(x, "@", k, sep = ""), envir, printenv, curlevel, maxlevel)
             }
         }
     }
@@ -506,6 +469,8 @@ GetFunDescription <- function(pkg) {
         x <- paste0(x, collapse = "")
         ttl <- .Call("get_section", x, "title", PACKAGE = "nvimcom")
         dsc <- .Call("get_section", x, "description", PACKAGE = "nvimcom")
+        ttl <- nvim.fix.string(ttl)
+        dsc <- nvim.fix.string(dsc)
         x <- paste0("\006", ttl, "\006", dsc)
         x
     }
@@ -564,9 +529,9 @@ nvim.buildargs <- function(afile, pkg) {
 
 #' Build Omni List and list of functions for syntax highlighting in R.nvim's
 #' cache directory.
-#' @param omnilist Full path of `omnils_` file to be built.
+#' @param cmpllist Full path of `objls_` file to be built.
 #' @param libname Library name.
-nvim.bol <- function(omnilist, libname) {
+nvim.bol <- function(cmpllist, libname) {
     nvim.OutDec <- getOption("OutDec")
     on.exit(options(nvim.OutDec))
     options(OutDec = ".")
@@ -589,62 +554,29 @@ nvim.bol <- function(omnilist, libname) {
 
     l <- length(obj.list)
     if (l > 0) {
-        # Build omnils_ for both omni completion and Object Browser
-        sink(omnilist, append = FALSE)
+        # Build objls_ for auto completion and Object Browser
+        sink(cmpllist, append = FALSE)
         for (obj in obj.list) {
-            ol <- try(nvim.omni.line(obj, packname, libname, 0))
+            ol <- try(nvim.cmpl.line(obj, packname, libname, 0))
             if (inherits(ol, "try-error"))
-                warning(paste0("Error while generating omni completion line for: ",
+                warning(paste0("Error while generating completion line for: ",
                                obj, " (", packname, ", ", libname, ").\n"))
         }
         sink()
-        # Build list of functions for syntax highlight
-        fl <- readLines(omnilist)
-        fl <- fl[grep("\006\003\006", fl)]
-        fl <- sub("\006.*", "", fl)
-        fl <- fl[!grepl("[<%\\[\\+\\*&=\\$:{|@\\(\\^>/~!]", fl)]
-        fl <- fl[!grepl("-", fl)]
-        if (libname == "base") {
-            fl <- fl[!grepl("^array$", fl)]
-            fl <- fl[!grepl("^attach$", fl)]
-            fl <- fl[!grepl("^character$", fl)]
-            fl <- fl[!grepl("^complex$", fl)]
-            fl <- fl[!grepl("^data.frame$", fl)]
-            fl <- fl[!grepl("^detach$", fl)]
-            fl <- fl[!grepl("^double$", fl)]
-            fl <- fl[!grepl("^function$", fl)]
-            fl <- fl[!grepl("^integer$", fl)]
-            fl <- fl[!grepl("^library$", fl)]
-            fl <- fl[!grepl("^list$", fl)]
-            fl <- fl[!grepl("^logical$", fl)]
-            fl <- fl[!grepl("^matrix$", fl)]
-            fl <- fl[!grepl("^numeric$", fl)]
-            fl <- fl[!grepl("^require$", fl)]
-            fl <- fl[!grepl("^source$", fl)]
-            fl <- fl[!grepl("^vector$", fl)]
-        }
-        if (length(fl) > 0) {
-            fl <- paste("syn keyword rFunction", fl)
-            writeLines(text = fl, con = sub("omnils_", "fun_", omnilist))
-        } else {
-            writeLines(text = '" No functions found.', con = sub("omnils_", "fun_", omnilist))
-        }
     } else {
-        writeLines(text = "", con = omnilist)
-        writeLines(text = '" No functions found.', con = sub("omnils_", "fun_", omnilist))
+        writeLines(text = "", con = cmpllist)
     }
     return(invisible(NULL))
 }
 
 #' This function calls nvim.bol which writes two files in `~/.cache/R.nvim`:
-#'   - `fun_`    : function names for syntax highlighting
-#'   - `omnils_` : data for omni completion and object browser
+#'   - `objls_` : data for auto completion and object browser
 #' @param p Character vector with names of libraries.
-nvim.buildomnils <- function(p) {
+nvim.build.cmplls <- function(p) {
     if (length(p) > 1) {
         n <- 0
         for (pkg in p)
-            n <- n + nvim.buildomnils(pkg)
+            n <- n + nvim.build.cmplls(pkg)
         if (n > 0)
             return(invisible(1))
         return(invisible(0))
@@ -655,22 +587,21 @@ nvim.buildomnils <- function(p) {
     pvi <- utils::packageDescription(p)$Version
     bdir <- paste0(Sys.getenv("RNVIM_COMPLDIR"), "/")
     odir <- dir(bdir)
-    pbuilt <- odir[grep(paste0("omnils_", p, "_"), odir)]
-    fbuilt <- odir[grep(paste0("fun_", p, "_"), odir)]
+    pbuilt <- odir[grep(paste0("objls_", p, "_"), odir)]
     abuilt <- odir[grep(paste0("args_", p, "_"), odir)]
 
     need_build <- FALSE
 
-    if (length(fbuilt) == 0 || length(pbuilt) == 0) {
-        # no omnils
+    if (length(pbuilt) == 0) {
+        # no completion file
         need_build <- TRUE
     } else {
-        if (length(fbuilt) > 1 || length(pbuilt) > 1) {
-            # omnils is duplicated (should never happen)
+        if (length(pbuilt) > 1) {
+            # completion file is duplicated (should never happen)
             need_build <- TRUE
         } else {
             pvb <- sub(".*_.*_", "", pbuilt)
-            # omnils is either outdated or older than the README
+            # completion file is either outdated or older than the README
             if (pvb != pvi ||
                 file.info(paste0(bdir, "README"))$mtime > file.info(paste0(bdir, pbuilt))$mtime)
                 need_build <- TRUE
@@ -681,8 +612,8 @@ nvim.buildomnils <- function(p) {
         msg <- paste0("ECHO: Building completion list for \"", p, "\"\x14\n")
         cat(msg)
         flush(stdout())
-        unlink(c(paste0(bdir, pbuilt), paste0(bdir, fbuilt), paste0(bdir, abuilt)))
-        nvim.bol(paste0(bdir, "omnils_", p, "_", pvi), p)
+        unlink(c(paste0(bdir, pbuilt), paste0(bdir, abuilt)))
+        nvim.bol(paste0(bdir, "objls_", p, "_", pvi), p)
         return(invisible(1))
     }
     return(invisible(0))

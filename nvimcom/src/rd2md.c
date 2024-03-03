@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "common.h"
 
 typedef struct pattern {
     char *ptrn;   // pattern, not including the backslash
@@ -112,19 +113,6 @@ static struct pattern rd[] = {
     {"out", 3, 1, "\000", "\000"},
     {"examples", 8, 1, "\x14```r\x14", "```\x14"},
     {NULL, 0, 0, NULL, NULL}};
-
-// Check if the `i` is at the beginning of `o`
-static int str_here(const char *o, const char *i) {
-    while (*i && *o) {
-        if (*o != *i)
-            return 0;
-        o++;
-        i++;
-    }
-    if (*i)
-        return 0;
-    return 1;
-}
 
 // Insert `s` at position `p`
 static char *insert_str(char *p, const char *s) {
@@ -396,7 +384,7 @@ SEXP rd2md(SEXP txt) {
     char *b = calloc(maxp + 1, sizeof(char));
     strcpy(b, s);
 
-    // Run three times to convert nested \commands.
+    // Run four times to convert nested \commands.
 
     char *p1 = a;
     char *p2 = b;
@@ -410,77 +398,82 @@ SEXP rd2md(SEXP txt) {
     p2 = b;
     pre_rd_md(&p1, &p2, a + maxp);
 
-    // Final cleanup for nvimcom/R.nvim:
-    // - Replace \n with \x14 within pre-formatted code to restore them during
-    // omni completion.
-    // - Replace \n with empty space to avoid problems for Vim dictionaries
     p1 = b;
     p2 = a;
+    pre_rd_md(&p1, &p2, b + maxp);
+
+    // Final cleanup for nvimcom/R.nvim:
+    // - Replace \n with \x14 within pre-formatted code to restore them during
+    // auto completion.
+    // - Replace \n with empty space to avoid problems transmitting strings to
+    // Lua.
+    p1 = a;
+    p2 = b;
     // Skip leading empty spaces:
-    while (p2 && (*p2 == ' ' || *p2 == '\n' || *p2 == '\t' || *p2 == '\r'))
-        p2++;
-    while (*p2) {
-        if (p2[0] && p2[1] && p2[2] && p2[0] == '`' && p2[1] == '`' &&
-            p2[2] == '`') {
-            *p1 = *p2;
-            p1++;
+    while (p1 && (*p1 == ' ' || *p1 == '\n' || *p1 == '\t' || *p1 == '\r'))
+        p1++;
+    while (*p1) {
+        if (p1[0] && p1[1] && p1[2] && p1[0] == '`' && p1[1] == '`' &&
+            p1[2] == '`') {
+            *p2 = *p1;
             p2++;
-            *p1 = *p2;
             p1++;
+            *p2 = *p1;
             p2++;
-            *p1 = *p2;
             p1++;
+            *p2 = *p1;
             p2++;
-            while (p2[0] && p2[1] && p2[2] &&
-                   !(p2[0] == '`' && p2[1] == '`' && p2[2] == '`')) {
-                if (*p2 == '\n')
-                    *p2 = '\x14';
-                *p1 = *p2;
-                p1++;
+            p1++;
+            while (p1[0] && p1[1] && p1[2] &&
+                   !(p1[0] == '`' && p1[1] == '`' && p1[2] == '`')) {
+                if (*p1 == '\n')
+                    *p1 = '\x14';
+                *p2 = *p1;
                 p2++;
+                p1++;
             }
         } else {
-            if (p2[0] == ' ' && p2[1] == '`' && p2[2] == '`' &&
-                ((p2[3] >= 'a' && p2[3] <= 'z') ||
-                 (p2[3] >= 'A' && p2[3] <= 'Z'))) {
-                *p1 = ' ';
-                p1++;
-                *p1 = '"';
-                p1++;
-                p2 += 3;
-            }
-            if (*p2 == '\n' || *p2 == '\r')
+            if (p1[0] == ' ' && p1[1] == '`' && p1[2] == '`' &&
+                ((p1[3] >= 'a' && p1[3] <= 'z') ||
+                 (p1[3] >= 'A' && p1[3] <= 'Z'))) {
                 *p2 = ' ';
-            if (*p2 == ' ') {
+                p2++;
+                *p2 = '"';
+                p2++;
+                p1 += 3;
+            }
+            if (*p1 == '\n' || *p1 == '\r')
                 *p1 = ' ';
-                p1++;
+            if (*p1 == ' ') {
+                *p2 = ' ';
                 p2++;
+                p1++;
                 // - Replace two or more empty spaces with a single one
-                while (p2 && (*p2 == ' ' || *p2 == '\n'))
-                    p2++;
+                while (p1 && (*p1 == ' ' || *p1 == '\n'))
+                    p1++;
             } else {
-                *p1 = *p2;
-                p1++;
+                *p2 = *p1;
                 p2++;
+                p1++;
             }
         }
     }
-    *p1 = 0;
+    *p2 = 0;
 
     // Delete trailing spaces
-    p1--;
-    while (p1 && (*p1 == ' ' || *p1 == '\x14')) {
-        *p1 = 0;
-        p1--;
+    p2--;
+    while (p2 && (*p2 == ' ' || *p2 == '\x14')) {
+        *p2 = 0;
+        p2--;
     }
 
     // - Replace single quotes to avoid problems when sending the string as a
-    // Vim dictionary
-    p1 = b;
-    while (*p1) {
-        if (*p1 == '\'')
-            *p1 = '\x13';
-        p1++;
+    // Lua dictionary
+    p2 = b;
+    while (*p2) {
+        if (*p2 == '\'')
+            *p2 = '\x13';
+        p2++;
     }
 
     SEXP ans;

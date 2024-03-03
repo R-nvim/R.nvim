@@ -42,7 +42,7 @@ Git pull requests are welcome.
       - Send commands with the object under cursor as argument: help, args,
         plot, print, str, summary, example, names.
       - Send to R the Sweave, knit and LaTeX commands.
-  * Auto completion of (with `cmp-r`):
+  * Auto completion (with `cmp-r`):
       - R objects (.GlobalEnv and loaded packages).
       - function arguments.
       - knitr chunk options.
@@ -692,8 +692,6 @@ command:
 |disable_cmds|        List of commands to be disabled
 |tmpdir|              Where temporary files are created
 |compldir|            Where lists for auto completion are stored
-|fun_data_1|          What the data.frame to complete function arguments is
-|fun_data_2|          Where the data.frame to complete function arguments is
 |remote_compldir|     Mount point of remote cache directory
 |R.nvim-df-view|        Options for visualizing a data.frame or matrix
 |R.nvim-SyncTeX|        Options for SyncTeX
@@ -1086,6 +1084,27 @@ the SDI style of the graphical user interface.
 
 ------------------------------------------------------------------------------
 6.10. Auto-completion                                             *start_libs*
+
+There are two ways of getting automatic completion of R objects names while
+you type: using R.nvim's built-in completion system (as a source for
+`nvim-cmp`) and using a language server. See:
+
+   https://github.com/jalvesaq/cmp-r
+   https://github.com/REditorSupport/languageserver
+
+The advantage of R.nvim's built-in system is the ability to complete objects
+of the R's workspace (`.GlobalEnv`), including column names of data.frames.
+
+Note: If you are using the `languageserver` package, you should disable its
+auto completion feature in your `~/.Rprofile` to get completions from
+`cmp-r`:
+>r
+   options(languageserver.server_capabilities =
+           list(completionProvider = FALSE,
+                completionItemResolve = FALSE))
+<
+If you prefer to get completions from the language server, `cmp-r` should
+not be installed.
 
 The list of objects for auto completion is built dynamically as the libraries
 are loaded by R. If R is running, only the names of objects in .GlobalEnv and
@@ -1596,38 +1615,13 @@ want to know what they are, while editing an R file, do in Normal mode:
 <
 
 ------------------------------------------------------------------------------
-6.31. Auto completion                                           *fun_data_1*
-                                                                *fun_data_2*
-
-There are two ways of getting automatic completion of R objects names while
-you type: using R.nvim's built-in completion system (as a source for
-`nvim-cmp`) and using a language server. See:
-
-   https://github.com/jalvesaq/cmp-r
-   https://github.com/REditorSupport/languageserver
-
-The advantage of R.nvim's built-in system is the ability to complete objects
-of the R's workspace (`.GlobalEnv`), including column names of data.frames.
-
-Note: If you are using the `languageserver` package, you should disable its
-auto completion feature in your `~/.Rprofile` to get completions from
-`cmp-r`:
->r
-   options(languageserver.server_capabilities =
-           list(completionProvider = FALSE,
-                completionItemResolve = FALSE))
-<
-If you prefer to get completions from the language server, `cmp-r` should
-not be installed.
-
-------------------------------------------------------------------------------
-6.32. Options for accessing Remote R from local Neovim        *remote_compldir*
+6.31. Options for accessing Remote R from local Neovim        *remote_compldir*
 
 See https://github.com/R-nvim/R.nvim/wiki/Remote-access
 
 
 ------------------------------------------------------------------------------
-6.33. View a data.frame or matrix                             *R.nvim-df-view*
+6.32. View a data.frame or matrix                             *R.nvim-df-view*
                                                               *csv_app*
                                                               *csv_delim*
 
@@ -1688,7 +1682,7 @@ name of the object under the cursor.
 
 
 ------------------------------------------------------------------------------
-6.34. SyncTeX support                                         *R.nvim-SyncTeX*
+6.33. SyncTeX support                                         *R.nvim-SyncTeX*
 
 SyncTeX is a communication system used by some PDF viewers and by some text
 editors which allow users to jump from a specific line in the text editor to

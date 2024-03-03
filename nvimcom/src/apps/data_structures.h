@@ -35,12 +35,12 @@ typedef struct pkg_data_ {
     char *version; // The package version number
     char *fname;   // Omnils_ file name in the compldir
     char *descr;   // The package short description
-    char *omnils;  // A copy of the omnils_ file
+    char *objls;  // A copy of the objls_ file
     char *args;    // A copy of the args file
-    int nobjs;     // Number of objects in the omnils
+    int nobjs;     // Number of objects in objls
     int loaded;    // Loaded flag in libnames_
     int to_build;  // Flag to indicate if the name is sent to build list
-    int built;     // Flag to indicate if omnils_ found
+    int built;     // Flag to indicate if objls_ found
     struct pkg_data_ *next; // Pointer to next package data
 } PkgData;
 

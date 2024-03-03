@@ -159,7 +159,7 @@ local start_rnvimserver = function()
     nrs_env["RNVIM_LOCAL_TMPDIR"] = config.localtmpdir
 
     -- We have to set R's home directory on Windows because rnvimserver will
-    -- run R to build the list for omni completion.
+    -- run R to build the list for auto completion.
     if config.is_windows then require("r.windows").set_R_home() end
 
     local nrs_opts = {
@@ -277,7 +277,9 @@ end
 
 -- Function to handle BAAExit
 local baa_exit = function(_, data, _)
-    if data == 0 or data == 512 then job.stdin("Server", "41\n") end
+    if (data == 0 or data == 512) and vim.g.R_Nvim_status > 2 then
+        job.stdin("Server", "41\n")
+    end
 end
 
 -- Build all arguments
@@ -288,9 +290,9 @@ build_all_args = function(_)
         return
     end
 
-    local flist = vim.fn.glob(config.compldir .. "/omnils_*", false, true)
+    local flist = vim.fn.glob(config.compldir .. "/objls_*", false, true)
     for i, afile in ipairs(flist) do
-        flist[i] = afile:gsub("/omnils_", "/args_")
+        flist[i] = afile:gsub("/objls_", "/args_")
     end
 
     local rscrpt = { 'library("nvimcom", warn.conflicts = FALSE)' }
@@ -304,7 +306,10 @@ build_all_args = function(_)
         end
     end
 
-    if #rscrpt == 1 then return end
+    if #rscrpt == 1 then
+        if vim.g.R_Nvim_status > 2 then job.stdin("Server", "41\n") end
+        return
+    end
 
     vim.fn.writefile({ "" }, config.compldir .. "/args_lock")
     table.insert(rscrpt, 'unlink("' .. config.compldir .. '/args_lock")')
@@ -315,7 +320,10 @@ build_all_args = function(_)
     if config.remote_compldir ~= "" then
         scrptnm = config.remote_compldir .. "/tmp/build_args.R"
     end
-    local jobh = { on_exit = baa_exit }
+    local jobh = {
+        on_stdout = job.on_stderr,
+        on_exit = baa_exit,
+    }
     require("r.job").start(
         "Build_args",
         { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm },
@@ -325,7 +333,7 @@ end
 
 -- Add words to the completion list of :Rhelp
 local add_to_Rhelp_list = function(lib)
-    local omf = config.compldir .. "/omnils_" .. lib
+    local omf = config.compldir .. "/objls_" .. lib
 
     -- List of objects
     local olist = vim.fn.readfile(omf)
@@ -355,7 +363,7 @@ M.list_objs = function(arg, _, _)
 end
 
 -- This function is called for the first time before R is running because we
--- support syntax highlighting and omni completion of default libraries' objects.
+-- support auto completion of default libraries' objects.
 M.update_Rhelp_list = function()
     if
         vim.fn.filereadable(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.RNVIM_ID)
@@ -432,7 +440,7 @@ M.show_bol_error = function(stt)
             errmsg = errmsg .. "\nPlease, restart " .. vim.v.progname
         end
         edit.add_to_debug_info("Error running R code", errmsg)
-        warn("Error building omnils_ file. Run :RDebugInfo for details.")
+        warn("Error building objls_ file. Run :RDebugInfo for details.")
         vim.fn.delete(config.tmpdir .. "/run_R_stderr")
     else
         warn(config.tmpdir .. "/run_R_stderr not found")

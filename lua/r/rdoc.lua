@@ -42,6 +42,8 @@ end
 ---@return string[]
 M.fix_rdoc = function(txt)
     txt = string.gsub(txt, "%_\008", "")
+    txt = string.gsub(txt, "\019", "'")
+    txt = string.gsub(txt, "\018", "\\")
     txt = string.gsub(txt, "<URL: %([^>]*%)>", " |%1|")
     txt = string.gsub(txt, "<email: %([^>]*%)>", " |%1|")
     if not config.is_windows then

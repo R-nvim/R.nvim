@@ -1,6 +1,5 @@
 local M = {}
 
-
 --- Request the windows manager to focus a window.
 --- Currently, has support only for Xorg.
 ---@param wttl string Part of the window title.
