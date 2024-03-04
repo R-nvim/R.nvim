@@ -8,11 +8,32 @@ local b_warn = {}
 local b_err = {}
 local b_out = {}
 local b_time
-local libd = nil
 local pkgbuild_attempt = false
 local rhelp_list = {}
 
 local M = {}
+
+---@param libd string
+local mk_R_dir = function(libd)
+    vim.schedule(function()
+        vim.ui.input(
+            { prompt = '"' .. libd .. '" is not writable. Create it now? [y/n] ' },
+            function(input)
+                if input and input:find("y") then
+                    local dw = vim.fn.mkdir(libd, "p")
+                    if dw == 1 then
+                        -- Try again
+                        M.check_nvimcom_version()
+                    else
+                        warn('Failed creating "' .. libd .. '"')
+                    end
+                else
+                    vim.schedule(function() vim.api.nvim_out_write("\n") end)
+                end
+            end
+        )
+    end)
+end
 
 ---Callback function to process the stdout of before_nrs.R
 local init_stdout = function(_, data, _)
@@ -32,7 +53,7 @@ local init_stdout = function(_, data, _)
         or rcmd:find("^WARN: ")
         or rcmd:find("^LIBD: ")
     then
-        if rcmd:find("\020") == nil then
+        if not rcmd:find("\020") then
             out_line = rcmd
             return
         end
@@ -44,7 +65,7 @@ local init_stdout = function(_, data, _)
             if c:find("^WARN: ") then
                 table.insert(b_warn, c:sub(7))
             elseif c:find("^LIBD: ") then
-                libd = c:sub(7)
+                mk_R_dir(c:sub(7))
             elseif c:find("^ECHO: ") then
                 local msg = c:sub(7)
                 vim.schedule(function() vim.api.nvim_echo({ { msg } }, false, {}) end)
@@ -64,28 +85,6 @@ local init_stderr = function(_, data, _)
         s = string.gsub(s, "\r", "")
         table.insert(b_err, s)
     end
-end
-
-local mk_R_dir = function()
-    local resp
-    vim.schedule(function()
-        vim.ui.input(
-            { prompt = '"' .. libd .. '" is not writable. Create it now? [y/n] ' },
-            function(input) resp = input end
-        )
-    end)
-    if resp and resp:find("y") then
-        local dw = vim.fn.mkdir(libd, "p")
-        if dw == 1 then
-            -- Try again
-            M.check_nvimcom_version()
-        else
-            warn('Failed creating "' .. libd .. '"')
-        end
-    else
-        vim.schedule(function() vim.api.nvim_out_write("\n") end)
-    end
-    libd = nil
 end
 
 ---Find the path to the rnvimserver executable in the specified library directory.
@@ -196,7 +195,6 @@ local init_exit = function(_, data, _)
         -- Avoid redraw of status line while waiting user input in MkRdir()
         b_err = vim.list_extend(b_err, b_warn)
         b_warn = {}
-        mk_R_dir()
     elseif data == 72 and not config.is_windows and not pkgbuild_attempt then
         -- R.nvim/nvimcom directory not found. Perhaps R running in remote machine...
         -- Try to use local R to build the nvimcom package.
