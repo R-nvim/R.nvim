@@ -730,7 +730,7 @@ local global_setup = function()
 
     vim.api.nvim_create_user_command(
         "RSend",
-        function(tbl) require("r.send").cmd(tbl.fargs) end,
+        function(tbl) require("r.send").cmd(tbl.args) end,
         { nargs = 1 }
     )
 
@@ -742,19 +742,19 @@ local global_setup = function()
 
     vim.api.nvim_create_user_command(
         "RInsert",
-        function(tbl) require("r.run").insert(table.concat(tbl.fargs, " "), "here") end,
+        function(tbl) require("r.run").insert(tbl.args, "here") end,
         { nargs = 1 }
     )
 
     vim.api.nvim_create_user_command(
         "RSourceDir",
-        function(tbl) require("r.run").source_dir(tbl.fargs) end,
+        function(tbl) require("r.run").source_dir(tbl.args) end,
         { nargs = 1, complete = "dir" }
     )
 
     vim.api.nvim_create_user_command(
         "Rhelp",
-        function(tbl) require("r.doc").ask_R_help(tbl.fargs) end,
+        function(tbl) require("r.doc").ask_R_help(tbl.args) end,
         {
             nargs = 1,
             complete = require("r.server").list_objs,
