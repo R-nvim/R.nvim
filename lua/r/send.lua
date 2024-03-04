@@ -639,17 +639,6 @@ M.chain = function()
     M.source_lines(chain, nil)
 end
 
-local r_fun_query = vim.treesitter.query.parse(
-    "r",
-    [[
-(left_assignment
-  (function_definition)) @rfun
-
-(equals_assignment
-  (function_definition)) @rfun
-]]
-)
-
 local get_root_node = function(bufnr)
     local parser = vim.treesitter.get_parser(bufnr, "r", {})
     local tree = parser:parse()[1]
@@ -666,6 +655,17 @@ M.funs = function(bufnr, capture_all, move_down)
         )
         return
     end
+
+    local r_fun_query = vim.treesitter.query.parse(
+        "r",
+        [[
+    (left_assignment
+      (function_definition)) @rfun
+
+    (equals_assignment
+      (function_definition)) @rfun
+    ]]
+    )
 
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
