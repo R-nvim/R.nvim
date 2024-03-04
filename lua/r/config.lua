@@ -715,7 +715,7 @@ local global_setup = function()
     -- Commands:
     -- See: :help lua-guide-commands-create
     vim.api.nvim_create_user_command(
-        "Rstop",
+        "RStop",
         function(_) require("r.run").signal_to_R("SIGINT") end,
         {}
     )
@@ -753,7 +753,7 @@ local global_setup = function()
     )
 
     vim.api.nvim_create_user_command(
-        "Rhelp",
+        "RHelp",
         function(tbl) require("r.doc").ask_R_help(tbl.args) end,
         {
             nargs = 1,
