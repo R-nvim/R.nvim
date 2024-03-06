@@ -433,8 +433,6 @@ local do_common_global = function()
 
     -- The environment variables RNVIM_COMPLCB and RNVIM_COMPLInfo must be defined
     -- before starting the rnvimserver because it needs them at startup.
-    config.update_glbenv = false
-    if type(package.loaded["cmp_r"]) == "table" then config.update_glbenv = true end
     vim.env.RNVIM_COMPL_CB = "require('cmp_r').complete_cb"
     vim.env.RNVIM_RSLV_CB = "require('cmp_r').resolve_cb"
 

@@ -62,10 +62,12 @@ start_R2 = function()
     else
         table.insert(start_options, "options(nvimcom.texerrs = FALSE)")
     end
-    if config.update_glbenv then
-        table.insert(start_options, "options(nvimcom.autoglbenv = TRUE)")
+
+    local has_cmp_r, _ = pcall(require, "cmp_r")
+    if has_cmp_r then
+        table.insert(start_options, "options(nvimcom.autoglbenv = 2)")
     else
-        table.insert(start_options, "options(nvimcom.autoglbenv = FALSE)")
+        table.insert(start_options, "options(nvimcom.autoglbenv = 0)")
     end
     if config.setwidth and config.setwidth == 2 then
         table.insert(start_options, "options(nvimcom.setwidth = TRUE)")

@@ -67,7 +67,8 @@ static int curdepth = 0; // Current level of the list or S4 object being parsed
                          // for auto-completion.
 static int autoglbenv = 0; // Should the list of objects in .GlobalEnv be
 // automatically updated after each top level command is executed? It will
-// always be 1 if cmp-r is installed or the Object Browser is open.
+// always be 2 if cmp-r is installed; otherwise, it will be 1 if the Object
+// Browser is open.
 static clock_t tm; // Time when the listing of objects from .GlobalEnv started.
 
 static char tmpdir[512]; // The environment variable RNVIM_TMPDIR.
@@ -1011,8 +1012,9 @@ static void nvimcom_parse_received_msg(char *buf) {
     }
 
     switch (buf[0]) {
-    case 'A':
-        autoglbenv = 1;
+    case 'A': // Object Browser started
+        if (autoglbenv == 0)
+            autoglbenv = 1;
 #ifdef WIN32
         if (!r_is_busy)
             nvimcom_globalenv_list();
@@ -1021,8 +1023,9 @@ static void nvimcom_parse_received_msg(char *buf) {
         nvimcom_fire();
 #endif
         break;
-    case 'N':
-        autoglbenv = 0;
+    case 'N': // Object Browser closed
+        if (autoglbenv == 1)
+            autoglbenv = 0;
         break;
     case 'G':
 #ifdef WIN32

@@ -22,7 +22,7 @@ NvimcomEnv$pkgdescr <- list()
         options(nvimcom.allnames = FALSE)
         options(nvimcom.texerrs = TRUE)
         options(nvimcom.setwidth = TRUE)
-        options(nvimcom.autoglbenv = FALSE)
+        options(nvimcom.autoglbenv = 0)
         options(nvimcom.nvimpager = TRUE)
         options(nvimcom.delim = "\t")
     }
