@@ -26,6 +26,7 @@ local config = {
     config_tmux         = true,
     csv_app             = "",
     disable_cmds        = { "" },
+    editing_mode        = "",
     esc_term            = true,
     external_term       = false, -- might be a string
     has_X_tools         = false,
@@ -107,6 +108,8 @@ local show_config = function(tbl)
 end
 
 local set_editing_mode = function()
+    if config.editing_mode ~= "" then return end
+
     local em = "emacs"
     local iprc = tostring(vim.fn.expand("~/.inputrc"))
     if vim.fn.filereadable(iprc) == 1 then
