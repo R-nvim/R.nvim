@@ -167,6 +167,7 @@ function M.get_focused_win_info()
     elseif
         config.synctex
         and (config.is_windows or config.is_darwin or vim.env.WAYLAND_DISPLAY)
+        and config.active_window_warn
     then
         warn(
             "Cannot get active window info on your system.\n"
