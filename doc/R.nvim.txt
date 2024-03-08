@@ -1527,23 +1527,16 @@ higher value for the variable in your config. Example:
 ------------------------------------------------------------------------------
 6.27. Start R in working directory of Neovim                           *setwd*
 
-When you are editing an R file (.R, .Rnw, .Rd, .Rmd, or .qmd) and start R, the
-R package nvimcom runs the command `setwd()` with the directory of the file
-being edited as argument, that is, the R working directory becomes the same
-directory of the R file (option `setwd` = "file"). If you want R's working
-directory to be the same as Neovim's working directory, put in your config:
+If you want that R starts in the directory of the file that you are editing,
+put in your config:
+>lua
+   setwd = "file"
+<
+If you want that R starts in Neovim's working directory, put in your config:
 >lua
    setwd = "nvim"
 <
-This option is useful only for those who did not enable 'autochdir'.
-
-If you prefer that R.nvim does not set the working directory in any way, put
-in your config:
->lua
-   setwd = "no"
-<
-The workding directory is not set when running R in a remote machine from a
-local Neovim.
+The default value of `setwd` is "no". See also 'autochdir'.
 
 
 ------------------------------------------------------------------------------

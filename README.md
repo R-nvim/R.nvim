@@ -111,7 +111,8 @@ The options `openpdf` and `openhtml` were renamed as `open_pdf` and
 `open_html`, they now are strings and there with a minor change in how they
 behave.
 
-The option `nvim_wd` was renamed as `setwd` and it now is a string.
+The option `nvim_wd` was renamed as `setwd` and it now is a string and its
+default value is "no".
 
 There are two new commands:
 
@@ -140,7 +141,7 @@ None yet. Tell us if published a video presenting R.nvim features.
 The diagram below shows how the communication between Neovim and R works.
 ![Neovim-R communication](https://raw.githubusercontent.com/jalvesaq/tmp-R-Nvim/master/nvimrcom.svg "Neovim-R communication")
 
-The black arrow represents all commands that you trigger in the editor and
+The black arrows represent all commands that you trigger in the editor and
 that you can see being pasted into R Console.
 There are three different ways of sending the commands to R Console:
 
