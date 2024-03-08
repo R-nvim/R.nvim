@@ -755,7 +755,7 @@ local global_setup = function()
         "RHelp",
         function(tbl) require("r.doc").ask_R_help(tbl.args) end,
         {
-            nargs = 1,
+            nargs = "?",
             complete = require("r.server").list_objs,
         }
     )
