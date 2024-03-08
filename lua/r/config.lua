@@ -166,7 +166,19 @@ local compare_types = function(k)
 end
 
 local validate_user_opts = function()
-    -- We don't use vim.validate() because its error message has traceback details not useful for users.
+    -- Ensure that some config options will be in lower case
+    for _, v in pairs({
+        "auto_start",
+        "editing_mode",
+        "nvimpager",
+        "open_pdf",
+        "open_html",
+        "setwd",
+    }) do
+        if user_opts[v] then user_opts[v] = string.lower(user_opts[v]) end
+    end
+
+    -- We don't use vim.validate() because its error message has traceback details not helpful for users.
     for k, _ in pairs(user_opts) do
         local has_key = false
         for _, v in pairs(config_keys) do
@@ -181,6 +193,23 @@ local validate_user_opts = function()
             compare_types(k)
         end
     end
+
+    local validate_string = function(opt, valid_values)
+        if user_opts[opt] then
+            for _, v in pairs(valid_values) do
+                if user_opts[opt] == v then return end
+            end
+            local vv = ' "' .. table.concat(valid_values, '", "') .. '".'
+            warn("Valid values for `" .. opt .. "` are:" .. vv)
+        end
+    end
+
+    validate_string("auto_start", { "no", "on startup", "always" })
+    validate_string("editing_mode", { "vi", "emacs" })
+    validate_string("nvimpager", { "no", "tab", "split", "float" })
+    validate_string("open_html", { "no", "open", "open and focus" })
+    validate_string("open_pdf", { "no", "open", "open and focus" })
+    validate_string("setwd", { "no", "file", "nvim" })
 end
 
 local do_common_global = function()
@@ -495,12 +524,6 @@ local do_common_global = function()
     if type(config.rconsole_height) == "number" then
         config.rconsole_height = math.floor(config.rconsole_height)
     end
-
-    -- Ensure that some config options will be in lower case
-    config.auto_start = string.lower(config.auto_start)
-    config.setwd = string.lower(config.setwd)
-    config.open_pdf = string.lower(config.open_pdf)
-    config.open_html = string.lower(config.open_html)
 end
 
 local resolve_fullpaths = function(tbl)
