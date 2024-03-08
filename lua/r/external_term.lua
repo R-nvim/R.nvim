@@ -52,8 +52,9 @@ local external_term_config = function()
 
     if not term_name then
         warn(
-            "Please, set the value of `external_term` as either the name or the complete command to run your terminal emulator."
+            "Please, set the value of `external_term` as either the name of your terminal emulator executable or the complete command to run it."
         )
+        return
     end
 
     local vit = utils.value_in_table
@@ -217,8 +218,7 @@ M.send_cmd_to_external_term = function(command)
     end
 
     -- Send the command to R running in an external terminal emulator
-    local str = cmd:gsub("'", "'\\\\''")
-    if str:find("^-") then str = " " .. str end
+    if cmd:find("^-") then cmd = " " .. cmd end
 
     if not base_pane then
         local obj = utils
@@ -231,7 +231,7 @@ M.send_cmd_to_external_term = function(command)
     end
     local scmd
 
-    scmd = { "tmux", "-L", "Rnvim", "set-buffer", str .. "\n" }
+    scmd = { "tmux", "-L", "Rnvim", "set-buffer", cmd .. "\n" }
     local obj = utils.system(scmd):wait()
     if obj.code ~= 0 then
         warn(obj.stderr)
