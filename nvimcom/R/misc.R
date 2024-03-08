@@ -424,7 +424,7 @@ nvim.getclass <- function(x) {
 }
 
 nvim.getmethod <- function(fname, objclass) {
-    mname <- paste0(fname, objclass)
+    mname <- paste0(fname, ".", objclass)
     if (exists(mname) && is.function(get(mname)))
         return(mname)
     return(fname)
@@ -460,7 +460,7 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
     if (firstobj != "" && exists(firstobj)) {
         objclass <- nvim.getclass(firstobj)
         if (objclass[1] != "#E#" && objclass[1] != "") {
-            rkeyword <- nvim.getmethod(rkeyword, objclass)
+            rkeyword <- nvim.getmethod(rkeyword, objclass[1])
         }
 
         if (!(ldf && is.data.frame(get(firstobj)))) {
