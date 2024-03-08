@@ -254,11 +254,6 @@ local do_common_global = function()
     end
     if config.uname == "Darwin" then config.is_darwin = true end
 
-    if config.RStudio_cmd ~= "" then
-        config.bracketed_paste = false
-        config.parenblock = false
-    end
-
     -- Create or update the README (objls_ files will be regenerated if older than
     -- the README).
     local need_readme = false
@@ -400,15 +395,17 @@ local do_common_global = function()
 
     -- Default values of some variables
     if
-        config.is_windows
-        and not (
-            type(config.external_term) == "boolean" and config.external_term == false
+        config.RStudio_cmd ~= ""
+        or (
+            config.is_windows
+            and type(config.external_term) == "boolean"
+            and config.external_term == true
         )
     then
-        -- Sending multiple lines at once to Rgui on Windows does not work.
+        -- Sending multiple lines at once to either Rgui on Windows or RStudio does not work.
+        config.max_paste_lines = 1
+        config.bracketed_paste = false
         config.parenblock = false
-    else
-        config.parenblock = true
     end
 
     if type(config.external_term) == "boolean" and config.external_term == false then

@@ -661,7 +661,7 @@ command:
 |rconsole_width|      Number of columns of R Console
 |min_editor_width|    Minimum number of columns of editor after R start
 |applescript|         Use osascript in Mac OS X to run R.app
-|Rstudio_cmd|           Run RStudio instead of R.
+|RStudio_cmd|           Run RStudio instead of R.
 |listmethods|         Do `nvim.list.args()` instead of `args()`
 |specialplot|         Do `nvim.plot()` instead of `plot()`
 |paragraph_begin|     Send paragraph from its beginning
@@ -1218,13 +1218,11 @@ window.
 If you are on Mac OS X and want to use the R.app graphical application, put in
 your config:
 >lua
-   external_term = true
    applescript = true
 <
 If you want to run RStudio instead of R, set in your config the value of
 `RStudio_cmd` to the complete path of the RStudio_cmd binary. Example:
 >lua
-   external_term = true
    RStudio_cmd = "C:\\Program Files\\RStudio\\bin\\rstudio"
 <
 Note: On Windows, you must manually run a successful comand in RStudio Console
