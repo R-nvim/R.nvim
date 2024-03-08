@@ -423,13 +423,6 @@ nvim.getclass <- function(x) {
     return(cls)
 }
 
-nvim.getmethod <- function(fname, objclass) {
-    mname <- paste0(fname, objclass)
-    if (exists(mname) && is.function(get(mname)))
-        return(mname)
-    return(fname)
-}
-
 #' Complete arguments of functions.
 #' Called during nvim-cmp completion with cmp-r as source.
 #' @param id Completion identification number.
@@ -439,8 +432,7 @@ nvim.getmethod <- function(fname, objclass) {
 #' @param lib Name of library preceding the name of the function
 #' (example: `library::function`).
 #' @param ldf Whether the function is in `R_fun_data_1` or not.
-nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, ldf = TRUE) {
-
+nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, ldf = FALSE) {
     # Check if rkeyword is a .GlobalEnv function:
     if(length(grep(paste0("^", rkeyword, "$"), objects(.GlobalEnv))) == 1) {
         args <- nvim.args(rkeyword, txt = argkey)
@@ -458,11 +450,6 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
     }
 
     if (firstobj != "" && exists(firstobj)) {
-        objclass <- nvim.getclass(firstobj)
-        if (objclass[1] != "#E#" && objclass[1] != "") {
-            rkeyword <- nvim.getmethod(rkeyword, objclass)
-        }
-
         if (!(ldf && is.data.frame(get(firstobj)))) {
             firstobj <- "#"
         }
