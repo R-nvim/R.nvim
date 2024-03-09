@@ -464,8 +464,6 @@ nvim.getmethod <- function(fname, objclass) {
 #' @param ldf Whether the function is in `R_fun_data_1` or not.
 nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, ldf = FALSE) {
 
-    # FIXME: lib not used
-
     # Check if rkeyword is a .GlobalEnv function:
     if(length(grep(paste0("^", rkeyword, "$"), objects(.GlobalEnv))) == 1) {
         args <- nvim.args(rkeyword, txt = argkey)
@@ -485,9 +483,12 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
     if (firstobj != "" && exists(firstobj)) {
         # Completion of columns of data.frame
         if (ldf && is.data.frame(get(firstobj))) {
-            .C("nvimcom_msg_to_nvim",
-               paste0("+A", id, ";", argkey, ";", rkeyword, ";", firstobj),
-               PACKAGE = "nvimcom")
+            if (is.null(lib)) {
+                msg <- paste0("+A", id, ";", argkey, ";", rkeyword, ";", firstobj)
+            } else {
+                msg <- paste0("+A", id, ";", argkey, ";", lib, "::", rkeyword, ";", firstobj)
+            }
+            .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
             return(invisible(NULL))
         }
 
@@ -505,8 +506,11 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
     }
 
     # Normal completion of arguments
-    .C("nvimcom_msg_to_nvim",
-       paste0("+A", id, ";", argkey, ";", rkeyword, ";#"),
-       PACKAGE = "nvimcom")
+    if (is.null(lib)) {
+        msg <- paste0("+A", id, ";", argkey, ";", rkeyword, ";#")
+    } else {
+        msg <- paste0("+A", id, ";", argkey, ";", lib, "::", rkeyword, ";#")
+    }
+    .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
     return(invisible(NULL))
 }
