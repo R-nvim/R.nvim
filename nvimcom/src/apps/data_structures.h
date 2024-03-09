@@ -36,6 +36,7 @@ typedef struct pkg_data_ {
     char *fname;   // Omnils_ file name in the compldir
     char *descr;   // The package short description
     char *objls;  // A copy of the objls_ file
+    char *alias;  // A copy of the alias_ file
     char *args;    // A copy of the args file
     int nobjs;     // Number of objects in objls
     int loaded;    // Loaded flag in libnames_
