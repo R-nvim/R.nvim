@@ -394,11 +394,10 @@ static void *receive_msg(void *v) // Thread function to receive messages on Unix
     size_t rlen;
 
     for (;;) {
-        bzero(b, blen);
+        bzero(b, 32);
         rlen = recv(connfd, b, blen, 0);
         if (rlen == blen) {
-            Log("TCP in [%" PRI_SIZET " x %" PRI_SIZET "] (message header): %s",
-                rlen, blen, b);
+            Log("TCP in (message header): %s", b);
             get_whole_msg(b);
         } else {
             r_conn = 0;
@@ -725,6 +724,7 @@ char *count_sep(char *b1, int *size) {
  * error.
  */
 char *read_file(const char *fn, int verbose) {
+    Log("read_file: %s", fn);
     FILE *f = fopen(fn, "rb");
     if (!f) {
         if (verbose) {
@@ -824,6 +824,22 @@ char *read_objls_file(const char *fn, int *size) {
     return check_omils_buffer(buffer, size);
 }
 
+char *read_alias_file(const char *nm) {
+    Log("read_alias_file(%s)", nm);
+    char fnm[512];
+    snprintf(fnm, 511, "%s/alias_%s", compldir, nm);
+    char *buffer = read_file(fnm, 1);
+    if (!buffer)
+        return NULL;
+    char *p = buffer;
+    while (*p) {
+        if (*p == '\x09')
+            *p = 0;
+        p++;
+    }
+    return buffer;
+}
+
 char *get_pkg_descr(const char *pkgnm) {
     Log("get_pkg_descr(%s)", pkgnm);
     InstLibs *il = instlibs;
@@ -856,6 +872,7 @@ void load_pkg_data(PkgData *pd) {
     if (!pd->descr)
         pd->descr = get_pkg_descr(pd->name);
     pd->objls = read_objls_file(pd->fname, &size);
+    pd->alias = read_alias_file(pd->name);
     pd->nobjs = 0;
     if (pd->objls) {
         pd->loaded = 1;
@@ -2164,14 +2181,6 @@ void resolve(const char *wrd, const char *pkg) {
                 p = str_cat(p, b);
                 free(b);
             }
-            // char *s = compl_buffer;
-            // while (*s) {
-            //     if (*s == '\'')
-            //         *s = '\x13';
-            //     if (*s == '\\')
-            //         *s = '\x12';
-            //     s++;
-            // }
             printf("lua %s('%s')\n", resolve_cb, compl_buffer);
             fflush(stdout);
             return;
@@ -2308,7 +2317,38 @@ char *parse_objls(const char *s, const char *base, const char *pkg, char *lib,
     return p;
 }
 
+void get_alias(char **pkg, char **fun) {
+    char *s = malloc(strlen(*pkg) + strlen(*fun) + 3);
+    sprintf(s, "%s\n", *fun);
+    char *p;
+    char *f;
+    PkgData *pd = pkgList;
+    while (pd) {
+        if (pd->alias) {
+            p = pd->alias;
+            while (*p) {
+                f = p;
+                while (*f)
+                    f++;
+                f++;
+                if (*f && str_here(f, s)) {
+                    *pkg = pd->name;
+                    *fun = p;
+                    return;
+                }
+                p = f;
+                while(*p && *p != '\n')
+                    p++;
+                p++;
+            }
+        }
+        pd = pd->next;
+    }
+    *pkg = NULL;
+}
+
 void resolve_arg_item(char *pkg, char *fnm, char *itm) {
+    Log("resolve_arg_item: %s, %s, %s", pkg, fnm, itm);
     char item[128];
     snprintf(item, 127, "%s\005", itm);
     PkgData *p = pkgList;
@@ -2331,9 +2371,12 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
                                 printf("lua %s('%s')\n", resolve_cb, b);
                                 fflush(stdout);
                                 free(b);
+                                return;
                             }
                             s++;
                         }
+                        printf("lua %s('')\n", resolve_cb);
+                        fflush(stdout);
                         return;
                     } else {
                         while (*s != '\n')
@@ -2346,6 +2389,8 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
         }
         p = p->next;
     }
+    printf("lua %s('')\n", resolve_cb);
+    fflush(stdout);
 }
 
 /*
@@ -2632,7 +2677,15 @@ void stdin_loop(void) {
                 msg++;
             *msg = 0;
             msg++;
-            resolve_arg_item(p, f, msg);
+            char *itm = msg;
+            while (*msg != '\002')
+                msg++;
+            *msg = 0;
+            msg++;
+            if (*msg == 'm')
+                get_alias(&p, &f);
+            if (p)
+                resolve_arg_item(p, f, itm);
             break;
 #ifdef WIN32
         case '8':

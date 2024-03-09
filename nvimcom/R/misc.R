@@ -424,9 +424,32 @@ nvim.getclass <- function(x) {
 }
 
 nvim.getmethod <- function(fname, objclass) {
-    mname <- paste0(fname, ".", objclass)
-    if (exists(mname) && is.function(get(mname)))
-        return(mname)
+    if (exists(fname) && is.function(get(fname)) &&
+        (isGeneric(fname) || isS3stdGeneric(fname))) {
+        mtd <- rownames(attr(methods(fname), "info"))
+        fnm <- paste0(fname, ".", objclass)
+        idx <- grep(paste0("^", fnm, "$"), mtd)
+        if(length(idx) == 1) {
+            fun <- NULL
+            try(fun <- getS3method(fname, objclass))
+            if (is.function(fun)) {
+                frm <- formals(fun)
+                luatbl <- sapply(frm,
+                                 function(x)
+                                     if (length(x) == 0) {
+                                         return("")
+                                     } else {
+                                         return(" = ")
+                                     })
+                env <- paste0(fname, "\x02", fnm)
+                clpstr <- paste0( "', cls = 'm', env = '", env, "'}, {label = '")
+                luastr <- paste0(names(luatbl), unname(luatbl),
+                                 collapse = clpstr)
+                luastr <- paste0("{{label = '", luastr, "', cls = 'm', env = '", env, "'}}")
+                return(luastr)
+            }
+        }
+    }
     return(fname)
 }
 
@@ -436,10 +459,12 @@ nvim.getmethod <- function(fname, objclass) {
 #' @param rkeyword Name of function whose arguments are being completed.
 #' @param argkey First characters of argument to be completed.
 #' @param firstobj First parameter of function being completed.
-#' @param lib Name of library preceding the name of the function
+#' @param lib Name of library preceding the function name
 #' (example: `library::function`).
 #' @param ldf Whether the function is in `R_fun_data_1` or not.
-nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, ldf = TRUE) {
+nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, ldf = FALSE) {
+
+    # FIXME: lib not used
 
     # Check if rkeyword is a .GlobalEnv function:
     if(length(grep(paste0("^", rkeyword, "$"), objects(.GlobalEnv))) == 1) {
@@ -458,19 +483,30 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
     }
 
     if (firstobj != "" && exists(firstobj)) {
-        objclass <- nvim.getclass(firstobj)
-        if (objclass[1] != "#E#" && objclass[1] != "") {
-            rkeyword <- nvim.getmethod(rkeyword, objclass[1])
+        # Completion of columns of data.frame
+        if (ldf && is.data.frame(get(firstobj))) {
+            .C("nvimcom_msg_to_nvim",
+               paste0("+A", id, ";", argkey, ";", rkeyword, ";", firstobj),
+               PACKAGE = "nvimcom")
+            return(invisible(NULL))
         }
 
-        if (!(ldf && is.data.frame(get(firstobj)))) {
-            firstobj <- "#"
+        # Completion of method arguments
+        objclass <- nvim.getclass(firstobj)
+        if (objclass[1] != "#E#" && objclass[1] != "") {
+            mthd <- nvim.getmethod(rkeyword, objclass[1])
+            if (mthd != rkeyword) {
+                .C("nvimcom_msg_to_nvim",
+                   paste0("lua ", Sys.getenv("RNVIM_COMPL_CB"), "(", id, ", ", mthd, ")"),
+                   PACKAGE = "nvimcom")
+                return(invisible(NULL))
+            }
         }
-    } else {
-        firstobj <- "#"
     }
+
+    # Normal completion of arguments
     .C("nvimcom_msg_to_nvim",
-       paste0("+A", id, ";", argkey, ";", rkeyword, ";", firstobj),
+       paste0("+A", id, ";", argkey, ";", rkeyword, ";#"),
        PACKAGE = "nvimcom")
     return(invisible(NULL))
 }

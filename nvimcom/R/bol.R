@@ -474,6 +474,8 @@ GetFunDescription <- function(pkg) {
         x <- paste0("\006", ttl, "\006", dsc)
         x
     }
+    write.table(als, sep = "\t", row.names = FALSE, quote = FALSE,
+                file = paste0(Sys.getenv("RNVIM_COMPLDIR"), "/alias_", pkg))
     NvimcomEnv$pkgdescr[[pkg]] <- list("descr" = sapply(pkgInfo, GetDescr),
                                        "alias" = als)
 }
