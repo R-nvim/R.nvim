@@ -427,26 +427,28 @@ nvim.getmethod <- function(fname, objclass) {
     if (exists(fname) && is.function(get(fname)) &&
         (isGeneric(fname) || isS3stdGeneric(fname))) {
         mtd <- rownames(attr(methods(fname), "info"))
-        fnm <- paste0(fname, ".", objclass)
-        idx <- grep(paste0("^", fnm, "$"), mtd)
-        if(length(idx) == 1) {
-            fun <- NULL
-            try(fun <- getS3method(fname, objclass))
-            if (is.function(fun)) {
-                frm <- formals(fun)
-                luatbl <- sapply(frm,
-                                 function(x)
-                                     if (length(x) == 0) {
-                                         return("")
-                                     } else {
-                                         return(" = ")
-                                     })
-                env <- paste0(fname, "\x02", fnm)
-                clpstr <- paste0( "', cls = 'm', env = '", env, "'}, {label = '")
-                luastr <- paste0(names(luatbl), unname(luatbl),
-                                 collapse = clpstr)
-                luastr <- paste0("{{label = '", luastr, "', cls = 'm', env = '", env, "'}}")
-                return(luastr)
+        for (obc in objclass) {
+            fnm <- paste0(fname, ".", obc)
+            idx <- grep(paste0("^", fnm, "$"), mtd)
+            if(length(idx) == 1) {
+                fun <- NULL
+                try(fun <- getS3method(fname, obc))
+                if (is.function(fun)) {
+                    frm <- formals(fun)
+                    luatbl <- sapply(frm,
+                                     function(x)
+                                         if (length(x) == 0) {
+                                             return("")
+                                         } else {
+                                             return(" = ")
+                                         })
+                    env <- paste0("#\x02", fnm)
+                    clpstr <- paste0( "', cls = 'a', env = '", env, "'}, {label = '")
+                    luastr <- paste0(names(luatbl), unname(luatbl),
+                                     collapse = clpstr)
+                    luastr <- paste0("{{label = '", luastr, "', cls = 'a', env = '", env, "'}}")
+                    return(luastr)
+                }
             }
         }
     }
@@ -495,7 +497,7 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
         # Completion of method arguments
         objclass <- nvim.getclass(firstobj)
         if (objclass[1] != "#E#" && objclass[1] != "") {
-            mthd <- nvim.getmethod(rkeyword, objclass[1])
+            mthd <- nvim.getmethod(rkeyword, objclass)
             if (mthd != rkeyword) {
                 .C("nvimcom_msg_to_nvim",
                    paste0("lua ", Sys.getenv("RNVIM_COMPL_CB"), "(", id, ", ", mthd, ")"),

@@ -8,8 +8,10 @@ local b_warn = {}
 local b_err = {}
 local b_out = {}
 local b_time
+local o_err = {}
 local pkgbuild_attempt = false
 local rhelp_list = {}
+local building_objls = false
 
 local M = {}
 
@@ -35,7 +37,7 @@ local mk_R_dir = function(libd)
     end)
 end
 
----Callback function to process the stdout of before_nrs.R
+---Callback function to process the stdout of before_rns.R
 local init_stdout = function(_, data, _)
     if not data then return end
     local rcmd = string.gsub(table.concat(data, ""), "\r", "")
@@ -71,11 +73,15 @@ local init_stdout = function(_, data, _)
                 vim.schedule(function() vim.api.nvim_echo({ { msg } }, false, {}) end)
             elseif c:find("^INFO: ") then
                 local info = vim.fn.split(c:sub(7), "=")
-                edit.add_to_debug_info(info[1], info[2])
+                if #info == 3 then
+                    edit.add_to_debug_info(info[1], info[2], info[3])
+                else
+                    edit.add_to_debug_info(info[1], info[2])
+                end
             end
         end
     else
-        table.insert(b_out, rcmd)
+        if not building_objls then table.insert(b_out, rcmd) end
     end
 end
 
@@ -83,7 +89,11 @@ local init_stderr = function(_, data, _)
     if data then
         local s = table.concat(data, "")
         s = string.gsub(s, "\r", "")
-        table.insert(b_err, s)
+        if building_objls then
+            table.insert(o_err, s)
+        else
+            table.insert(b_err, s)
+        end
     end
 end
 
@@ -91,21 +101,21 @@ end
 ---@param libdir string
 ---@return string
 local find_rns_path = function(libdir)
-    local nrs
+    local rns
     if config.is_windows then
-        nrs = "rnvimserver.exe"
+        rns = "rnvimserver.exe"
     else
-        nrs = "rnvimserver"
+        rns = "rnvimserver"
     end
     local paths = {
-        libdir .. "/bin/" .. nrs,
-        libdir .. "/bin/x64/" .. nrs,
-        libdir .. "/bin/i386/" .. nrs,
+        libdir .. "/bin/" .. rns,
+        libdir .. "/bin/x64/" .. rns,
+        libdir .. "/bin/i386/" .. rns,
     }
     for _, path in ipairs(paths) do
         if vim.fn.filereadable(path) == 1 then return path end
     end
-    warn('Application "' .. nrs .. '" not found at "' .. libdir .. '"')
+    warn('Application "' .. rns .. '" not found at "' .. libdir .. '"')
     return ""
 end
 
@@ -113,10 +123,10 @@ end
 local start_rnvimserver = function()
     if job.is_running("Server") then return end
 
-    local nrs_path
+    local rns_path
 
     if config.local_R_library_dir ~= "" then
-        nrs_path = find_rns_path(config.local_R_library_dir .. "/nvimcom")
+        rns_path = find_rns_path(config.local_R_library_dir .. "/nvimcom")
     else
         local info_path = config.compldir .. "/nvimcom_info"
         if vim.fn.filereadable(info_path) == 1 then
@@ -127,7 +137,7 @@ local start_rnvimserver = function()
                     "nvimcom info",
                     { version = info[1], home = info[2], Rversion = info[3] }
                 )
-                nrs_path = find_rns_path(info[2])
+                rns_path = find_rns_path(info[2])
             else
                 vim.fn.delete(info_path)
                 warn("ERROR in nvimcom_info! Please, do :RDebugInfo for details.")
@@ -139,36 +149,36 @@ local start_rnvimserver = function()
         end
     end
 
-    local nrs_dir = nrs_path:gsub("/rnvimserver.*", "")
+    local rns_dir = rns_path:gsub("/rnvimserver.*", "")
 
-    local nrs_env = {}
+    local rns_env = {}
 
     -- Some pdf viewers run rnvimserver to send SyncTeX messages back to Neovim
     if config.is_windows then
-        nrs_env["PATH"] = nrs_dir .. ";" .. vim.env.PATH
+        rns_env["PATH"] = rns_dir .. ";" .. vim.env.PATH
     else
-        nrs_env["PATH"] = nrs_dir .. ":" .. vim.env.PATH
+        rns_env["PATH"] = rns_dir .. ":" .. vim.env.PATH
     end
 
     -- Options in the rnvimserver application are set through environment variables
-    if config.objbr_opendf then nrs_env["RNVIM_OPENDF"] = "TRUE" end
-    if config.objbr_openlist then nrs_env["RNVIM_OPENLS"] = "TRUE" end
-    if config.objbr_allnames then nrs_env["RNVIM_OBJBR_ALLNAMES"] = "TRUE" end
-    nrs_env["RNVIM_RPATH"] = config.R_cmd
-    nrs_env["RNVIM_LOCAL_TMPDIR"] = config.localtmpdir
+    if config.objbr_opendf then rns_env["RNVIM_OPENDF"] = "TRUE" end
+    if config.objbr_openlist then rns_env["RNVIM_OPENLS"] = "TRUE" end
+    if config.objbr_allnames then rns_env["RNVIM_OBJBR_ALLNAMES"] = "TRUE" end
+    rns_env["RNVIM_RPATH"] = config.R_cmd
+    rns_env["RNVIM_LOCAL_TMPDIR"] = config.localtmpdir
 
     -- We have to set R's home directory on Windows because rnvimserver will
     -- run R to build the list for auto completion.
     if config.is_windows then require("r.windows").set_R_home() end
 
-    local nrs_opts = {
+    local rns_opts = {
         on_stdout = require("r.job").on_stdout,
         on_stderr = require("r.job").on_stderr,
         on_exit = require("r.job").on_exit,
-        env = nrs_env,
+        env = rns_env,
     }
-    -- require("r.job").start("Server", { "valgrind", "--log-file=/tmp/rnvimserver_valgrind_log", nrs_path }, nrs_opts)
-    require("r.job").start("Server", { nrs_path }, nrs_opts)
+    -- require("r.job").start("Server", { "valgrind", "--log-file=/tmp/rnvimserver_valgrind_log", rns_path }, rns_opts)
+    require("r.job").start("Server", { rns_path }, rns_opts)
     vim.g.R_Nvim_status = 2
 
     if config.is_windows then require("r.windows").unset_R_home() end
@@ -178,7 +188,7 @@ local start_rnvimserver = function()
 
     vim.api.nvim_create_user_command(
         "RGetNRSInfo",
-        require("r.server").request_nrs_info,
+        require("r.server").request_rns_info,
         {}
     )
 end
@@ -228,12 +238,12 @@ local init_exit = function(_, data, _)
         end
     end
 
-    edit.add_to_debug_info("before_nrs.R stderr", table.concat(b_err, "\n"))
-    edit.add_to_debug_info("before_nrs.R stdout", table.concat(b_out, "\n"))
+    edit.add_to_debug_info("before_rns.R stderr", table.concat(b_err, "\n"))
+    edit.add_to_debug_info("before_rns.R stdout", table.concat(b_out, "\n"))
     b_err = {}
     b_out = {}
     edit.add_for_deletion(config.tmpdir .. "/bo_code.R")
-    edit.add_for_deletion(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.RNVIM_ID)
+    edit.add_for_deletion(config.localtmpdir .. "/libs_in_rns_" .. vim.env.RNVIM_ID)
     edit.add_for_deletion(config.tmpdir .. "/libnames_" .. vim.env.RNVIM_ID)
     if #b_warn > 0 then
         local wrn = table.concat(b_warn, "\n")
@@ -242,8 +252,18 @@ local init_exit = function(_, data, _)
     end
     if cnv_again == 0 then
         b_time = (uv.hrtime() - b_time) / 1000000000
-        edit.add_to_debug_info("before_nrs.R", b_time, "Time")
+        edit.add_to_debug_info("before_rns.R", b_time, "Time")
     end
+end
+
+local build_objls_exit = function()
+    vim.schedule(function() vim.api.nvim_echo({ { " " } }, false, {}) end)
+    edit.add_to_debug_info(
+        "stderr of last completion data building",
+        table.concat(o_err, "\n")
+    )
+    building_objls = false
+    job.stdin("Server", "41\n")
 end
 
 -- List R libraries from buffer
@@ -253,7 +273,7 @@ local list_libs_from_buffer = function()
     local lib
     local flibs = {}
     for _, v in pairs(lines) do
-        if v:find("^%s*library%s*%(") or v:find("^%s*library%s*%(") then
+        if v:find("^%s*library%s*%(") or v:find("^%s*require%s*%(") then
             lib = string.gsub(v, "%s*", "")
             lib = string.gsub(lib, "%s*,.*", "")
             lib = string.gsub(lib, "%s*library%s*%(%s*", "")
@@ -271,62 +291,6 @@ local list_libs_from_buffer = function()
         libs = libs .. '"' .. table.concat(flibs, '", "') .. '"'
     end
     return libs
-end
-
--- Function to handle BAAExit
-local baa_exit = function(_, data, _)
-    if (data == 0 or data == 512) and vim.g.R_Nvim_status > 2 then
-        job.stdin("Server", "41\n")
-    end
-end
-
--- Build all arguments
-local build_all_args
-build_all_args = function(_)
-    if vim.fn.filereadable(config.compldir .. "/args_lock") == 1 then
-        vim.fn.timer_start(1000, build_all_args)
-        return
-    end
-
-    local flist = vim.fn.glob(config.compldir .. "/objls_*", false, true)
-    for i, afile in ipairs(flist) do
-        flist[i] = afile:gsub("/objls_", "/args_")
-    end
-
-    local rscrpt = { 'library("nvimcom", warn.conflicts = FALSE)' }
-    for _, afile in ipairs(flist) do
-        if vim.fn.filereadable(afile) == 0 then
-            local pkg = afile:gsub(".*/args_", ""):gsub("_.*", "")
-            table.insert(
-                rscrpt,
-                'nvimcom:::nvim.buildargs("' .. afile .. '", "' .. pkg .. '")'
-            )
-        end
-    end
-
-    if #rscrpt == 1 then
-        if vim.g.R_Nvim_status > 2 then job.stdin("Server", "41\n") end
-        return
-    end
-
-    vim.fn.writefile({ "" }, config.compldir .. "/args_lock")
-    table.insert(rscrpt, 'unlink("' .. config.compldir .. '/args_lock")')
-
-    local scrptnm = config.tmpdir .. "/build_args.R"
-    edit.add_for_deletion(scrptnm)
-    vim.fn.writefile(rscrpt, scrptnm)
-    if config.remote_compldir ~= "" then
-        scrptnm = config.remote_compldir .. "/tmp/build_args.R"
-    end
-    local jobh = {
-        on_stdout = job.on_stderr,
-        on_exit = baa_exit,
-    }
-    require("r.job").start(
-        "Build_args",
-        { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm },
-        jobh
-    )
 end
 
 -- Add words to the completion list of :Rhelp
@@ -364,19 +328,17 @@ end
 -- support auto completion of default libraries' objects.
 M.update_Rhelp_list = function()
     if
-        vim.fn.filereadable(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.RNVIM_ID)
+        vim.fn.filereadable(config.localtmpdir .. "/libs_in_rns_" .. vim.env.RNVIM_ID)
         == 0
     then
         return
     end
 
-    local libs_in_nrs =
-        vim.fn.readfile(config.localtmpdir .. "/libs_in_nrs_" .. vim.env.RNVIM_ID)
-    for _, lib in ipairs(libs_in_nrs) do
+    local libs_in_rns =
+        vim.fn.readfile(config.localtmpdir .. "/libs_in_rns_" .. vim.env.RNVIM_ID)
+    for _, lib in ipairs(libs_in_rns) do
         add_to_Rhelp_list(lib)
     end
-    -- Building args_ files is too time-consuming. Do it asynchronously.
-    vim.fn.timer_start(1, build_all_args)
 end
 
 M.check_nvimcom_version = function()
@@ -394,11 +356,11 @@ M.check_nvimcom_version = function()
     local libs = list_libs_from_buffer()
     table.insert(flines, 'nvim_r_home <- "' .. config.rnvim_home .. '"')
     table.insert(flines, "libs <- c(" .. libs .. ")")
-    vim.list_extend(flines, vim.fn.readfile(config.rnvim_home .. "/scripts/before_nrs.R"))
+    vim.list_extend(flines, vim.fn.readfile(config.rnvim_home .. "/scripts/before_rns.R"))
 
-    local scrptnm = config.tmpdir .. "/before_nrs.R"
+    local scrptnm = config.tmpdir .. "/before_rns.R"
     vim.fn.writefile(flines, scrptnm)
-    edit.add_for_deletion(config.tmpdir .. "/before_nrs.R")
+    edit.add_for_deletion(config.tmpdir .. "/before_rns.R")
 
     -- Run the script as a job, setting callback functions to receive its
     -- stdout, stderr, and exit code.
@@ -410,7 +372,7 @@ M.check_nvimcom_version = function()
 
     local remote_compldir = config.remote_compldir
     if config.remote_compldir ~= "" then
-        scrptnm = remote_compldir .. "/tmp/before_nrs.R"
+        scrptnm = remote_compldir .. "/tmp/before_rns.R"
     end
 
     b_time = uv.hrtime()
@@ -422,8 +384,34 @@ M.check_nvimcom_version = function()
     edit.add_for_deletion(config.tmpdir .. "/libPaths")
 end
 
+--- Build objls_ files
+---@param olist string[] List of packages whose completion files need to be
+---built.
+M.build_objls = function(olist)
+    local Rcode = {
+        "library('nvimcom', character.only = TRUE, warn.conflicts = FALSE,",
+        "  verbose = FALSE, quietly = TRUE, mask.ok = 'vi')",
+        "p <- c('" .. table.concat(olist, "', '") .. "')",
+        "nvimcom:::nvim.build.cmplls(p)",
+    }
+    local scrptnm = config.tmpdir .. "/bo_code.R"
+    vim.fn.writefile(Rcode, scrptnm)
+    local opts = {
+        on_stdout = init_stdout,
+        on_stderr = init_stderr,
+        on_exit = build_objls_exit,
+    }
+
+    building_objls = true
+    require("r.job").start(
+        "Build completion data",
+        { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm },
+        opts
+    )
+end
+
 -- Get information from rnvimserver (currently only the names of loaded libraries).
-M.request_nrs_info = function() job.stdin("Server", "42\n") end
+M.request_rns_info = function() job.stdin("Server", "42\n") end
 
 -- Called by rnvimserver when it gets an error running R code
 M.show_bol_error = function(stt)
@@ -446,7 +434,7 @@ M.show_bol_error = function(stt)
 end
 
 -- Callback function
-M.echo_nrs_info = function(info)
+M.echo_rns_info = function(info)
     vim.schedule(function() vim.api.nvim_echo({ { info } }, false, {}) end)
 end
 

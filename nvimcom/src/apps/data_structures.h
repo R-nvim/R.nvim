@@ -33,7 +33,7 @@ ListStatus *search(ListStatus *root, const char *s);
 typedef struct pkg_data_ {
     char *name;    // The package name
     char *version; // The package version number
-    char *fname;   // Omnils_ file name in the compldir
+    char *fname;   // Objls_ file name in the compldir
     char *descr;   // The package short description
     char *objls;  // A copy of the objls_ file
     char *alias;  // A copy of the alias_ file

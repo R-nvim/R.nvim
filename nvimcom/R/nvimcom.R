@@ -1,5 +1,6 @@
 NvimcomEnv <- new.env()
 NvimcomEnv$pkgdescr <- list()
+NvimcomEnv$pkgRdDB <- list()
 
 #' Function called by R when nvimcom is being loaded.
 #' R.nvim creates environment variables and the start_options.R file to set

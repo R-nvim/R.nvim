@@ -49,7 +49,7 @@ M.add_for_deletion = function(fname)
 end
 
 M.vim_leave = function()
-    require("r.job").stop_nrs()
+    require("r.job").stop_rns()
 
     for _, fn in pairs(del_list) do
         vim.fn.delete(fn)

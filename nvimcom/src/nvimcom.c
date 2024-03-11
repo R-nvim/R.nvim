@@ -41,7 +41,7 @@ static int allnames = 0; // Show hidden objects in auto completion and
                          // Object Browser?
 static int nlibs = 0;    // Number of loaded libraries.
 
-static char nrs_port[16]; // rnvimserver port.
+static char rns_port[16]; // rnvimserver port.
 static char nvimsecr[32]; // Random string used to increase the safety of TCP
                           // communication.
 
@@ -92,7 +92,7 @@ static int flag_glbenv = 0; // Do we have to list objects from .GlobalEnv?
  * @typedef lib_info_
  * @brief Structure with name and version number of a library.
  *
- * The complete information of libraries is stored in its `objls_`, `fun_` and
+ * The complete information of libraries is stored in its `objls_`, `alias_`, and
  * `args_` files in the R.nvim cache directory. The rnvimserver only needs the
  * name and version number of the library to read the corresponding files.
  *
@@ -234,7 +234,7 @@ static void send_to_nvim(char *msg) {
         close(sfd);
 #endif
         sfd = -1;
-        strcpy(nrs_port, "0");
+        strcpy(rns_port, "0");
         return;
     }
 
@@ -887,7 +887,7 @@ static Rboolean nvimcom_task(__attribute__((unused)) SEXP expr,
 #ifdef WIN32
     r_is_busy = 0;
 #endif
-    if (nrs_port[0] != 0) {
+    if (rns_port[0] != 0) {
         nvimcom_checklibs();
         if (autoglbenv)
             nvimcom_globalenv_list();
@@ -1183,7 +1183,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
     }
 
     if (getenv("RNVIM_PORT"))
-        strncpy(nrs_port, getenv("RNVIM_PORT"), 15);
+        strncpy(rns_port, getenv("RNVIM_PORT"), 15);
 
     if (verbose > 0)
         REprintf("nvimcom %s loaded\n", *nvv);
@@ -1192,7 +1192,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
             REprintf("  NVIM_IP_ADDRESS: %s\n", getenv("NVIM_IP_ADDRESS"));
         }
         REprintf("  CMPR_DOC_WIDTH: %s\n", getenv("CMPR_DOC_WIDTH"));
-        REprintf("  RNVIM_PORT: %s\n", nrs_port);
+        REprintf("  RNVIM_PORT: %s\n", rns_port);
         REprintf("  RNVIM_ID: %s\n", getenv("RNVIM_ID"));
         REprintf("  RNVIM_TMPDIR: %s\n", tmpdir);
         REprintf("  RNVIM_COMPLDIR: %s\n", getenv("RNVIM_COMPLDIR"));
@@ -1221,7 +1221,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
 
     static int failure = 0;
 
-    if (atoi(nrs_port) > 0) {
+    if (atoi(rns_port) > 0) {
         struct sockaddr_in servaddr;
 #ifdef WIN32
         WSADATA d;
@@ -1241,7 +1241,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
                 servaddr.sin_addr.s_addr = inet_addr(getenv("NVIM_IP_ADDRESS"));
             else
                 servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-            servaddr.sin_port = htons(atoi(nrs_port));
+            servaddr.sin_port = htons(atoi(rns_port));
 
             // connect the client socket to server socket
             if (connect(sfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) ==
@@ -1258,11 +1258,11 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
 #endif
             } else {
                 REprintf("nvimcom: connection with the server failed (%s)\n",
-                         nrs_port);
+                         rns_port);
                 failure = 1;
             }
         } else {
-            REprintf("nvimcom: socket creation failed (%d)\n", atoi(nrs_port));
+            REprintf("nvimcom: socket creation failed (%d)\n", atoi(rns_port));
             failure = 1;
         }
     }

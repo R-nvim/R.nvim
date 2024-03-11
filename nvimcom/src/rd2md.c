@@ -1,9 +1,5 @@
 #include <R.h>
 #include <Rdefines.h>
-#include <Rinternals.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "common.h"
 
 typedef struct pattern {
@@ -33,7 +29,7 @@ typedef struct pattern {
 // packages : \code (1814), \R (220), \emph (97), sQuote (76), \eqn (59),
 // \dQuote (41), \link (30), \pkg (29) etc...
 static struct pattern rd[] = {
-    // Optimized for default R 4.2.2 packages
+    // Order optimized for default R 4.2.2 packages
     {"code", 4, 8, "`", "`"},
     {"R", 1, 0, "*R*", "\000"},
     {"emph", 4, 1, "*", "*"},
@@ -410,7 +406,7 @@ SEXP rd2md(SEXP txt) {
     p1 = a;
     p2 = b;
     // Skip leading empty spaces:
-    while (p1 && (*p1 == ' ' || *p1 == '\n' || *p1 == '\t' || *p1 == '\r'))
+    while (*p1 && (*p1 == ' ' || *p1 == '\n' || *p1 == '\t' || *p1 == '\r'))
         p1++;
     while (*p1) {
         if (p1[0] && p1[1] && p1[2] && p1[0] == '`' && p1[1] == '`' &&
@@ -448,8 +444,8 @@ SEXP rd2md(SEXP txt) {
                 *p2 = ' ';
                 p2++;
                 p1++;
-                // - Replace two or more empty spaces with a single one
-                while (p1 && (*p1 == ' ' || *p1 == '\n'))
+                // - Skip the second and following spaces
+                while (*p1 && (*p1 == ' ' || *p1 == '\n'))
                     p1++;
             } else {
                 *p2 = *p1;
@@ -462,7 +458,7 @@ SEXP rd2md(SEXP txt) {
 
     // Delete trailing spaces
     p2--;
-    while (p2 && (*p2 == ' ' || *p2 == '\x14')) {
+    while (*p2 && (*p2 == ' ' || *p2 == '\x14')) {
         *p2 = 0;
         p2--;
     }
@@ -491,6 +487,7 @@ SEXP get_section(SEXP rtxt, SEXP rsec) {
 
     const char *str = CHAR(STRING_ELT(rtxt, 0));
     const char *sec = CHAR(STRING_ELT(rsec, 0));
+
     char *a = calloc(sizeof(char), (strlen(str) + 1));
     char *b = malloc(sizeof(char) * (strlen(str) + 1));
     strcpy(b, str);
