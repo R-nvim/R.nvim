@@ -222,7 +222,10 @@ start_OB = function()
     vim.o.switchbuf = "useopen,usetab"
 
     if ob_buf and vim.api.nvim_buf_is_loaded(ob_buf) then
-        local ob_tab = vim.api.nvim_win_get_tabpage(ob_win)
+        local ob_tab = nil
+        if vim.api.nvim_win_is_valid(ob_win) then
+            ob_tab = vim.api.nvim_win_get_tabpage(ob_win)
+        end
         vim.api.nvim_buf_delete(ob_buf, {})
         if ob_tab ~= vim.api.nvim_win_get_tabpage(0) then start_OB() end
     else
