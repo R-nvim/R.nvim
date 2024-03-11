@@ -1094,6 +1094,11 @@ void update_inst_libs(void) {
                     }
                     if (r)
                         continue;
+
+                    // Skip failed installations
+                    if (strstr(dir->d_name, "00LOCK"))
+                        continue;
+
                     snprintf(fname, 511, "%s/%s/DESCRIPTION", lp->path,
                              dir->d_name);
                     descr = read_file(fname, 1);
