@@ -182,7 +182,7 @@ M.is_running = function(job_name)
     return false
 end
 
-M.stop_nrs = function()
+M.stop_rns = function()
     for k, v in pairs(jobs) do
         if M.is_running(k) and k == "Server" then
             -- Avoid warning of exit status 141

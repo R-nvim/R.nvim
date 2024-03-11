@@ -164,7 +164,7 @@ end
 
 --- Register rnvimserver port in a environment variable
 ---@param p string
-M.set_nrs_port = function(p)
+M.set_rns_port = function(p)
     vim.g.R_Nvim_status = 5
     vim.env.RNVIM_PORT = p
 end

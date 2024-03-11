@@ -1,3 +1,5 @@
+libs <- libs[libs != ""]
+
 # R may break strings while sending them even if they are short
 out <- function(x) {
     # R.nvim will wait for more input if the string doesn't end with "\x14"
@@ -144,8 +146,7 @@ if (length(np) == 1) {
     nvimcom_info <- c(nd$Version, np, sub("R ([^;]*).*", "\\1", nd$Built))
     writeLines(nvimcom_info, paste0(Sys.getenv("RNVIM_COMPLDIR"), "/nvimcom_info"))
 
-    # Build objls_, fun_ and args_ files, if necessary
-    library("nvimcom", warn.conflicts = FALSE)
+    # Save lib names for rnvimserver
     hasl <- rep(FALSE, length(libs))
     lver <- rep("", length(libs))
     for (i in 1:length(libs))
@@ -157,8 +158,6 @@ if (length(np) == 1) {
     lver <- lver[hasl]
     cat(paste(libs, lver, collapse = '\n', sep = '_'),
         '\n', sep = '', file = paste0(Sys.getenv("RNVIM_TMPDIR"), "/libnames_", Sys.getenv("RNVIM_ID")))
-    if (nvimcom:::nvim.build.cmplls(libs) > 0)
-        out("ECHO:  ")
     quit(save = "no")
 }
 

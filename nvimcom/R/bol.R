@@ -1,5 +1,5 @@
 ###############################################################################
-# The code of the next four functions were copied from the gbRd package
+# The code of the next function was copied from the gbRd package
 # version 0.4-11 (released on 2012-01-04) and adapted to nvimcom.
 # The gbRd package was developed by Georgi N. Boshnakov.
 
@@ -12,38 +12,6 @@ gbRd.set_sectag <- function(s, sectag, eltag) {
     res <- list(s)
     attr(res, "Rd_tag") <- sectag
     res
-}
-
-#' Get Rd information on a function.
-#' @param x Function name.
-#' @param pkg Library name.
-gbRd.fun <- function(x, pkg) {
-    rdo <- NULL # prepare the "Rd" object rdo
-    x <- do.call(utils::help,
-                 list(x, pkg, help_type = "text", verbose = FALSE,
-                      try.all.packages = FALSE))
-    if (length(x) == 0)
-        return(NULL)
-
-    # If more matches are found will `paths' have length > 1?
-    f <- as.character(x[1]) # removes attributes of x.
-
-    path <- dirname(f)
-    dirpath <- dirname(path)
-    pkgname <- basename(dirpath)
-    RdDB <- file.path(path, pkgname)
-
-    if (file.exists(paste(RdDB, "rdx", sep = "."))) {
-        rdo <- tools:::fetchRdDB(RdDB, basename(f))
-    }
-    if (is.null(rdo))
-        return(NULL)
-
-    tags <- tools:::RdTags(rdo)
-    keep_tags <- c("\\title", "\\name", "\\arguments")
-    rdo[which(!(tags %in% keep_tags))] <-  NULL
-
-    rdo
 }
 
 #' Get information on function arguments from R documentation.
@@ -91,44 +59,60 @@ gbRd.get_args <- function(rdo, arg) {
     rdargs
 }
 
-#' Get and convert information from Rd data to plain text.
-#' @param pkg Library name.
-#' @param rdo Rd object.
-#' @param arglist List of arguments.
-gbRd.args2txt <- function(pkg = NULL, rdo, arglist) {
-    rdo <- gbRd.fun(rdo, pkg)
+get_item <- function(a, rdo) {
+    if (is.null(a) || is.na(a))
+        return(NA)
+    # Build a dummy documentation with only one item in the "arguments" section
+    x <- list()
+    class(x) <- "Rd"
+    x[[1]] <- gbRd.set_sectag("Dummy name", sectag = "\\name", eltag = "VERB")
+    x[[2]] <- gbRd.set_sectag("Dummy title", sectag = "\\title", eltag = "TEXT")
+    x[[3]] <- gbRd.get_args(rdo, a)
+    tags <- tools:::RdTags(x)
 
-    if (is.null(rdo))
-        return(list())
+    # We only need the section "arguments", but print(x) will result in
+    # nothing useful if either "title" or "name" section is missing
+    keep_tags <- c("\\title", "\\name", "\\arguments")
+    x[which(!(tags %in% keep_tags))] <-  NULL
 
-    get_items <- function(a, rdo) {
-        if (is.null(a) || is.na(a))
-            return(NA)
-        # Build a dummy documentation with only one item in the "arguments" section
-        x <- list()
-        class(x) <- "Rd"
-        x[[1]] <- gbRd.set_sectag("Dummy name", sectag = "\\name", eltag = "VERB")
-        x[[2]] <- gbRd.set_sectag("Dummy title", sectag = "\\title", eltag = "TEXT")
-        x[[3]] <- gbRd.get_args(rdo, a)
-        tags <- tools:::RdTags(x)
+    res <- paste0(x, collapse = "", sep = "")
 
-        # We only need the section "arguments", but print(x) will result in
-        # nothing useful if either "title" or "name" section is missing
-        keep_tags <- c("\\title", "\\name", "\\arguments")
-        x[which(!(tags %in% keep_tags))] <-  NULL
+    # The result is (example from utils::available.packages()):
+    # \name{Dummy name}\title{Dummy title}\arguments{\item{max_repo_cache_age}{any
+    # cached values older than this in seconds     will be ignored. See \sQuote{Details}.   }}
 
-        res <- paste0(x, collapse = "", sep = "")
-
-        # The result is (example from utils::available.packages()):
-        # \name{Dummy name}\title{Dummy title}\arguments{\item{max_repo_cache_age}{any
-        # cached values older than this in seconds     will be ignored. See \sQuote{Details}.   }}
-
-        .Call("get_section", res, "arguments", PACKAGE = "nvimcom")
-    }
-    argl <- lapply(arglist, get_items, rdo)
-    names(argl) <- arglist
-    argl
+    .Call("get_section", res, "arguments", PACKAGE = "nvimcom")
 }
+
+get_arg_doc_list <- function(fun, pkg) {
+    # FIXME: DELETE THIS BLOCK
+    # if (pkg == "#") {
+    #     f <- utils::help(fun, help_type = "text", verbose = FALSE)
+    #     if (length(f) == 0)
+    #         return(invisible(NULL))
+    #     fun <- basename(f[[1]])
+    #     path <- dirname(as.character(f))
+    #     dirpath <- dirname(path)
+    #     pkgname <- basename(dirpath)
+    #     RdDB <- file.path(path, pkgname)
+    # }
+
+    rdo <- NULL # prepare the "Rd" object rdo
+    try(rdo <- NvimcomEnv$pkgRdDB[[pkg]][[fun]], silent = FALSE)
+    if (is.null(rdo))
+        return(invisible(NULL))
+    tags <- tools:::RdTags(rdo)
+    rdo[which(!(tags %in% c("\\title", "\\name", "\\arguments")))] <-  NULL
+    if (length(rdo) != 3)
+        return(invisible(NULL))
+    items <- tools:::.Rd_get_item_tags(rdo[[3]])
+    doclist <- sapply(items, function(x)
+                      paste0(x, "\x05", get_item(x, rdo), "\x06"))
+    line <- paste0(fun, "\x06", paste0(doclist, collapse = ""))
+    line <- nvim.fix.string(line)
+    cat(line, sep = "", "\n")
+}
+
 
 ###############################################################################
 
@@ -240,6 +224,8 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass) {
         } else if (type == "language") {
             res <- append(res, paste0(field, "\x04",
                                       nvim.fix.string(deparse(frm[[field]])), "\x05"))
+        } else if (type == "list") {
+            res <- append(res, paste0(field, "\x04list()\x05"))
         } else {
             res <- append(res, paste0(field, "\x05"))
             warning(paste0("nvim.args: ", funcname, " [", field, "]", " (typeof = ", type, ")"))
@@ -283,6 +269,9 @@ nvim.grepl <- function(pattern, x) {
 #' @param printenv Library name
 #' @param x Object name
 nvim.getInfo <- function(printenv, x) {
+    if (is.null(NvimcomEnv$pkgdescr[[printenv]]))
+        return("\006\006")
+
     info <- NULL
     als <- NvimcomEnv$pkgdescr[[printenv]]$alias[NvimcomEnv$pkgdescr[[printenv]]$alias[, "name"] == x, "alias"]
     try(info <- NvimcomEnv$pkgdescr[[printenv]]$descr[[als]], silent = TRUE)
@@ -438,32 +427,25 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
 #' @param pkg Library name.
 GetFunDescription <- function(pkg) {
     # Code adapted from the gbRd package
-    pth <- attr(packageDescription(pkg), "file")
-    pth <- sub("Meta/package.rds", "", pth)
-    pth <- paste0(pth, "help/")
-    idx <- paste0(pth, "AnIndex")
+    pd <- packageDescription(pkg)
+    pth <- attr(pd, "file")
+    pth <- sub("Meta/package.rds", "help/", pth)
+    idx <- paste0(pth, "aliases.rds")
 
     # Development packages might not have any written documentation yet
     if (!file.exists(idx) || !file.info(idx)$size)
         return(NULL)
 
-    tab <- read.table(idx, sep = "\t", comment.char = "", quote = "", stringsAsFactors = FALSE)
-    als <- tab$V2
-    names(als) <- tab$V1
-    als <- list("name" = names(als), "alias" = unname(als))
-    als$name <- lapply(als$name, function(x) strsplit(x, ",")[[1]])
-    for (i in seq_along(als$alias))
-        als$name[[i]] <- cbind(als$alias[[i]], als$name[[i]])
-    als <- do.call("rbind", als$name)
-    if (nrow(als) > 1) {
-        als <- als[stats::complete.cases(als), ]
-        als <- als[!duplicated(als[, 2]), ]
-    }
+    als <- readRDS(idx)
+    als <- cbind(unname(als), names(als))
     colnames(als) <- c("alias", "name")
+    write.table(als, sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE,
+                file = paste0(Sys.getenv("RNVIM_COMPLDIR"), "/alias_", pkg))
 
     if (!file.exists(paste0(pth, pkg, ".rdx")))
         return(NULL)
-    pkgInfo <- tools:::fetchRdDB(paste0(pth, pkg))
+    pkgRdDB <- tools:::fetchRdDB(paste0(pth, pkg))
+    NvimcomEnv$pkgRdDB[[pkg]] <- pkgRdDB
 
     GetDescr <- function(x) {
         x <- paste0(x, collapse = "")
@@ -474,9 +456,7 @@ GetFunDescription <- function(pkg) {
         x <- paste0("\006", ttl, "\006", dsc)
         x
     }
-    write.table(als, sep = "\t", row.names = FALSE, quote = FALSE,
-                file = paste0(Sys.getenv("RNVIM_COMPLDIR"), "/alias_", pkg))
-    NvimcomEnv$pkgdescr[[pkg]] <- list("descr" = sapply(pkgInfo, GetDescr),
+    NvimcomEnv$pkgdescr[[pkg]] <- list("descr" = sapply(pkgRdDB, GetDescr),
                                        "alias" = als)
 }
 
@@ -490,46 +470,17 @@ filter.objlist <- function(x) {
 #' @param afile Full path of the `args_` file.
 #' @param pkg Library name.
 nvim.buildargs <- function(afile, pkg) {
-    ok <- try(require(pkg, warn.conflicts = FALSE,
-                      quietly = TRUE, character.only = TRUE))
-    if (!ok)
+    if (is.null(NvimcomEnv$pkgRdDB[[pkg]]))
         return(invisible(NULL))
 
-    pkgenv <- paste0("package:", pkg)
-    obj.list <- objects(pkgenv)
-    obj.list <- filter.objlist(obj.list)
-
+    nms <- names(NvimcomEnv$pkgRdDB[[pkg]])
     sink(afile)
-    for (obj in obj.list) {
-        x <- try(get(obj, pkgenv, mode = "any"), silent = TRUE)
-        if (!is.function(x))
-            next
-        if (inherits(x, "try-error")) {
-            warning(paste0("Error while generating item completion for: ",
-                           obj, " (", pkgenv, ").\n"))
-            next
-        }
-        if (length(x) != 1) # base::letters
-            next
-        if (is.primitive(x)) {
-            a <- args(x)
-            if (is.null(a))
-                next
-            frm <- formals(a)
-        } else {
-            frm <- formals(x)
-        }
-        arglist <- gbRd.args2txt(pkg, obj, names(frm))
-        arglist <- lapply(arglist, nvim.fix.string)
-        cat(obj, "\006",
-            paste(names(arglist), arglist, sep = "\005", collapse = "\006"),
-            "\006", sep = "", "\n")
-    }
+    sapply(nms, get_arg_doc_list, pkg)
     sink()
     return(invisible(NULL))
 }
 
-#' Build Omni List and list of functions for syntax highlighting in R.nvim's
+#' Build List of objects (for auto completion and for the Object Browser)
 #' cache directory.
 #' @param cmpllist Full path of `objls_` file to be built.
 #' @param libname Library name.
@@ -615,7 +566,17 @@ nvim.build.cmplls <- function(p) {
         cat(msg)
         flush(stdout())
         unlink(c(paste0(bdir, pbuilt), paste0(bdir, abuilt)))
+        t1 <- Sys.time()
         nvim.bol(paste0(bdir, "objls_", p, "_", pvi), p)
+        t2 <- Sys.time()
+        nvim.buildargs(paste0(bdir, "args_", p), p)
+        t3 <- Sys.time()
+        msg <- paste0("INFO: ", p, "=",
+                      round(as.numeric(t2 - t1), 5), " + ",
+                      round(as.numeric(t3 - t2), 5), "=Build time\x14")
+        cat(msg)
+        flush(stdout())
+
         return(invisible(1))
     }
     return(invisible(0))

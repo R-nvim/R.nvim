@@ -32,7 +32,6 @@ local config = {
     external_term       = false, -- might be a string
     has_X_tools         = false,
     help_w              = 46,
-    hi_fun_paren        = false,
     hl_term             = true,
     hook                = {
                               after_config = nil,
@@ -280,7 +279,7 @@ local do_common_global = function()
     -- Create or update the README (objls_ files will be regenerated if older than
     -- the README).
     local need_readme = false
-    local first_line = "Last change in this file: 2024-03-09"
+    local first_line = "Last change in this file: 2024-03-10"
     if
         vim.fn.filereadable(config.compldir .. "/README") == 0
         or vim.fn.readfile(config.compldir .. "/README")[1] ~= first_line
