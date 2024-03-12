@@ -1,121 +1,3 @@
-###############################################################################
-# The code of the next function was copied from the gbRd package
-# version 0.4-11 (released on 2012-01-04) and adapted to nvimcom.
-# The gbRd package was developed by Georgi N. Boshnakov.
-
-#' Get section of Rd data.
-#' @param s Section title.
-#' @param sectag Section.
-#' @param eltag Type of element.
-gbRd.set_sectag <- function(s, sectag, eltag) {
-    attr(s, "Rd_tag") <- eltag  # using `structure' would be more elegant...
-    res <- list(s)
-    attr(res, "Rd_tag") <- sectag
-    res
-}
-
-#' Get information on function arguments from R documentation.
-#' @param rdo Rd object.
-#' @param arg Argument.
-gbRd.get_args <- function(rdo, arg) {
-    tags <- tools:::RdTags(rdo)
-    wtags <- which(tags == "\\arguments")
-
-    if (length(wtags) != 1)
-        return(NULL)
-
-    rdargs <- rdo[[wtags]] # use of [[]] assumes only one element here
-    f <- function(x) {
-        wrk0 <- as.character(x[[1]])
-        for (w in wrk0)
-            if (w %in% arg)
-                return(TRUE)
-
-        wrk <- strsplit(wrk0, ",[ ]*")
-        if (!is.character(wrk[[1]])) {
-            warning("wrk[[1]] is not a character vector! ", wrk)
-            return(FALSE)
-        }
-        wrk <- any(wrk[[1]] %in% arg)
-        wrk
-    }
-    sel <- !sapply(rdargs, f)
-
-    ## deal with "..." arg
-    if ("..." %in% arg || "\\dots" %in% arg) {  # since formals() represents ... by "..."
-        f2 <- function(x) {
-            if (is.list(x[[1]]) && length(x[[1]]) > 0 &&
-               attr(x[[1]][[1]], "Rd_tag") == "\\dots") {
-                TRUE
-            } else {
-                FALSE
-            }
-        }
-        i2 <- sapply(rdargs, f2)
-        sel[i2] <- FALSE
-    }
-
-    rdargs[sel] <- NULL   # keeps attributes (even if 0 or 1 elem remain).
-    rdargs
-}
-
-get_item <- function(a, rdo) {
-    if (is.null(a) || is.na(a))
-        return(NA)
-    # Build a dummy documentation with only one item in the "arguments" section
-    x <- list()
-    class(x) <- "Rd"
-    x[[1]] <- gbRd.set_sectag("Dummy name", sectag = "\\name", eltag = "VERB")
-    x[[2]] <- gbRd.set_sectag("Dummy title", sectag = "\\title", eltag = "TEXT")
-    x[[3]] <- gbRd.get_args(rdo, a)
-    tags <- tools:::RdTags(x)
-
-    # We only need the section "arguments", but print(x) will result in
-    # nothing useful if either "title" or "name" section is missing
-    keep_tags <- c("\\title", "\\name", "\\arguments")
-    x[which(!(tags %in% keep_tags))] <-  NULL
-
-    res <- paste0(x, collapse = "", sep = "")
-
-    # The result is (example from utils::available.packages()):
-    # \name{Dummy name}\title{Dummy title}\arguments{\item{max_repo_cache_age}{any
-    # cached values older than this in seconds     will be ignored. See \sQuote{Details}.   }}
-
-    .Call("get_section", res, "arguments", PACKAGE = "nvimcom")
-}
-
-get_arg_doc_list <- function(fun, pkg) {
-    # FIXME: DELETE THIS BLOCK
-    # if (pkg == "#") {
-    #     f <- utils::help(fun, help_type = "text", verbose = FALSE)
-    #     if (length(f) == 0)
-    #         return(invisible(NULL))
-    #     fun <- basename(f[[1]])
-    #     path <- dirname(as.character(f))
-    #     dirpath <- dirname(path)
-    #     pkgname <- basename(dirpath)
-    #     RdDB <- file.path(path, pkgname)
-    # }
-
-    rdo <- NULL # prepare the "Rd" object rdo
-    try(rdo <- NvimcomEnv$pkgRdDB[[pkg]][[fun]], silent = FALSE)
-    if (is.null(rdo))
-        return(invisible(NULL))
-    tags <- tools:::RdTags(rdo)
-    rdo[which(!(tags %in% c("\\title", "\\name", "\\arguments")))] <-  NULL
-    if (length(rdo) != 3)
-        return(invisible(NULL))
-    items <- tools:::.Rd_get_item_tags(rdo[[3]])
-    doclist <- sapply(items, function(x)
-                      paste0(x, "\x05", get_item(x, rdo), "\x06"))
-    line <- paste0(fun, "\x06", paste0(doclist, collapse = ""))
-    line <- nvim.fix.string(line)
-    cat(line, sep = "", "\n")
-}
-
-
-###############################################################################
-
 
 # For building omnls files
 #' @param x
@@ -448,7 +330,9 @@ GetFunDescription <- function(pkg) {
     NvimcomEnv$pkgRdDB[[pkg]] <- pkgRdDB
 
     GetDescr <- function(x) {
-        x <- paste0(x, collapse = "")
+        tags <- tools:::RdTags(x)
+        x[which(!(tags %in% c(c("\\title", "\\name", "\\description"))))] <-  NULL
+        x <- paste0(x, collapse = "") # 93% of the time of GetDescr is spent at this command.
         ttl <- .Call("get_section", x, "title", PACKAGE = "nvimcom")
         dsc <- .Call("get_section", x, "description", PACKAGE = "nvimcom")
         ttl <- nvim.fix.string(ttl)
@@ -463,6 +347,25 @@ GetFunDescription <- function(pkg) {
 #' @param x
 filter.objlist <- function(x) {
     x[!grepl("^[\\[\\(\\{:-@%/=+\\$<>\\|~\\*&!\\^\\-]", x) & !grepl("^\\.__", x)]
+}
+
+get_arg_doc_list <- function(fun, pkg) {
+    rdo <- NULL # prepare the "Rd" object rdo
+    try(rdo <- NvimcomEnv$pkgRdDB[[pkg]][[fun]], silent = FALSE)
+    if (is.null(rdo))
+        return(invisible(NULL))
+
+    atbl <- tools:::.Rd_get_argument_table(rdo)
+    if (length(atbl) == 0)
+        return(invisible(NULL))
+
+    atbl[, 1] <- gsub("\\\\dots", "...", atbl[, 1])
+    args <- apply(atbl, 1,
+                  function(x)
+                      paste0(x[1], "\x05`", x[1], "`: ",
+                             .Call("rd2md", x[2], PACKAGE = "nvimcom"), "\x06"))
+    line <- nvim.fix.string(paste0(fun, "\x06", paste0(args, collapse = "")))
+    cat(line, sep = "", "\n")
 }
 
 #' Build in R.nvim's cache directory the `args_` file with arguments of
