@@ -308,7 +308,6 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
 #' environment.
 #' @param pkg Library name.
 GetFunDescription <- function(pkg) {
-    # Code adapted from the gbRd package
     pd <- packageDescription(pkg)
     pth <- attr(pd, "file")
     pth <- sub("Meta/package.rds", "help/", pth)
@@ -332,7 +331,7 @@ GetFunDescription <- function(pkg) {
     GetDescr <- function(x) {
         tags <- tools:::RdTags(x)
         x[which(!(tags %in% c(c("\\title", "\\name", "\\description"))))] <-  NULL
-        x <- paste0(x, collapse = "") # 93% of the time of GetDescr is spent at this command.
+        x <- paste0(x, collapse = "")
         ttl <- .Call("get_section", x, "title", PACKAGE = "nvimcom")
         dsc <- .Call("get_section", x, "description", PACKAGE = "nvimcom")
         ttl <- nvim.fix.string(ttl)
@@ -350,7 +349,7 @@ filter.objlist <- function(x) {
 }
 
 get_arg_doc_list <- function(fun, pkg) {
-    rdo <- NULL # prepare the "Rd" object rdo
+    rdo <- NULL
     try(rdo <- NvimcomEnv$pkgRdDB[[pkg]][[fun]], silent = FALSE)
     if (is.null(rdo))
         return(invisible(NULL))
