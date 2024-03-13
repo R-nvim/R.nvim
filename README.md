@@ -114,6 +114,10 @@ behave.
 The option `nvim_wd` was renamed as `setwd` and it now is a string and its
 default value is "no".
 
+The option `notmuxconf` was renamed as `config_tmux` to avoid the negation of
+the negation `notmuxconf=false` or the even more awkward confirmation of the
+negation `notmuxconf=true`. The default value of `config_tmux` is `true`.
+
 There are two new commands:
 
 - `:RMapsDesc` displays the list of key bindings followed by short

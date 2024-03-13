@@ -650,18 +650,18 @@ command:
 |objbr_allnames|      Display hidden objects in the Object Browser
 |nvimpager|           Use Neovim to see R documentation
 |open_example|        Use Neovim to display R examples
-|R_path|                Directory where R is
-|R_app|, |R_cmd|          Names of R applications
-|R_args|                Arguments to pass to R
-|R_start_libs|          Objects for auto completion and syntax highlight
-|Rout_more_colors|      More syntax highlighting in R output
+|R_path|              Directory where R is
+|R_app|, |R_cmd|        Names of R applications
+|R_args|              Arguments to pass to R
+|R_start_libs|        Objects for auto completion and syntax highlight
+|Rout_more_colors|    More syntax highlighting in R output
 |routnotab|           Show output of R CMD BATCH in new window
-|notmuxconf|          Don't use a specially built Tmux config file
+|config_tmux|         Don't use a specially built Tmux config file
 |rconsole_height|     Number of lines of R Console
 |rconsole_width|      Number of columns of R Console
 |min_editor_width|    Minimum number of columns of editor after R start
 |applescript|         Use osascript in Mac OS X to run R.app
-|RStudio_cmd|           Run RStudio instead of R.
+|RStudio_cmd|         Run RStudio instead of R.
 |listmethods|         Do `nvim.list.args()` instead of `args()`
 |specialplot|         Do `nvim.plot()` instead of `plot()`
 |paragraph_begin|     Send paragraph from its beginning
@@ -693,8 +693,8 @@ command:
 |tmpdir|              Where temporary files are created
 |compldir|            Where lists for auto completion are stored
 |remote_compldir|     Mount point of remote cache directory
-|R.nvim-df-view|        Options for visualizing a data.frame or matrix
-|R.nvim-SyncTeX|        Options for SyncTeX
+|R.nvim-df-view|      Options for visualizing a data.frame or matrix
+|R.nvim-SyncTeX|      Options for SyncTeX
 
 
 ------------------------------------------------------------------------------
