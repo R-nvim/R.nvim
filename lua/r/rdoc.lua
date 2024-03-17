@@ -59,8 +59,12 @@ M.fix_rdoc = function(txt)
     local i = 1
     local j = #lines
     while i < j do
-        -- Add a tab character before each section to mark its end.
-        if lines[i]:match("^[A-Z][a-z]+:") then lines[i - 1] = lines[i - 1] .. "\t" end
+        if lines[i]:match("^[A-Z][a-z]+:") then
+            -- Add a tab character before each section to mark its end.
+            lines[i - 1] = lines[i - 1] .. "\t"
+            -- Add an empty space to make the highlighting of the first argument work
+            if lines[i] == "Arguments:" then lines[i] = "Arguments: " end
+        end
         i = i + 1
     end
     return lines

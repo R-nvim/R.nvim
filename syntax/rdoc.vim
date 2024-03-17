@@ -36,8 +36,9 @@ syn region rdocPackage start="^[A-Za-z]\S*::" end="[\s\r]" contains=rdocPackName
 syn match rdocPackName "^[A-Za-z][A-Za-z0-9\.]*" contained
 syn match rdocFuncName "::[A-Za-z0-9\.\-_]*" contained
 
-syn region rdocArgReg matchgroup=rdocArgTitle start="^Arguments:" matchgroup=NONE end="\t$" contains=rdocArg,rdocArgTitle,rdocPackage,rdocFuncName,rdocStringS keepend transparent
-syn match rdocArg "^\s*\([A-Z]\|[a-z]\|[0-9]\|\.\|_\)*\ze:" contained extend
+syn region rdocArgReg matchgroup=rdocArgTitle start="^Arguments:\ze" matchgroup=NONE end="\t$" contains=rdocArgNameReg,rdocArgTitle,rdocPackage,rdocFuncName,rdocStringS keepend transparent
+syn region rdocArgNameReg start="\n\n" end=": " contained contains=rdocArg keepend transparent
+syn match rdocArg "[A-Za-z0-9\._]" contained
 
 syn include @rdocR syntax/r.vim
 syn region rdocExample matchgroup=rdocExTitle start="^Examples:$" matchgroup=rdocExEnd end='^###$' contains=@rdocR keepend
