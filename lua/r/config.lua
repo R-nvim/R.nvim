@@ -18,6 +18,7 @@ local config = {
     assign_map          = "<M-->",
     auto_scroll         = true,
     auto_start          = "no",
+    auto_quit           = false,
     bracketed_paste     = false,
     buffer_opts         = "winfixwidth winfixheight nobuflisted",
     clear_console       = true,
@@ -832,6 +833,10 @@ M.check_health = function()
 
     if not config.R_cmd == config.R_app and vim.fn.executable(config.R_cmd) == 0 then
         warn("R_cmd executable not found: '" .. config.R_cmd .. "'")
+    end
+
+    if type(config.external_term) == "boolean" and config.external_term == false then
+        config.auto_quit = false
     end
 
     if vim.fn.has("nvim-0.9.5") ~= 1 then warn("R.nvim requires Neovim >= 0.9.5") end

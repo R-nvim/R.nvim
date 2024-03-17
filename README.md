@@ -75,7 +75,7 @@ The complete list of options is in the documentation.
 
 ## Usage
 
-Please read the plugin's [documentation](https://github.com/jamespeapen/Nvim-R/wiki) for instructions on [usage](https://github.com/jamespeapen/Nvim-R/wiki/Use).
+Please read the plugin's [documentation](https://github.com/jamespeapen/Nvim-R/wiki) for instructions on usage. See also the output of `:RMapsDesc`.
 
 ## Transitioning from Nvim-R
 
@@ -128,6 +128,9 @@ There are two new commands:
 
 There is one new command to send the above-piped chain of commands. Its
 default key binding is `<LocalLeader>sc`.
+
+There is a new option: `auto_quit` (only used if running R in an external
+terminal emulator).
 
 If you have [colorout] installed, and if you are not loading it in your
 `~/.Rprofile`, it should be the development version. Reason: R.nvim calls the

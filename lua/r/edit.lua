@@ -49,6 +49,9 @@ M.add_for_deletion = function(fname)
 end
 
 M.vim_leave = function()
+    if vim.g.R_Nvim_status == 7 and config.auto_quit then
+        require("r.run").quit_R("nosave")
+    end
     require("r.job").stop_rns()
 
     for _, fn in pairs(del_list) do
