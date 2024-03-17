@@ -57,10 +57,14 @@ local external_term_config = function()
         return
     end
 
-    local vit = utils.value_in_table
-    if vit(term_name, { "foot", "gnome-terminal", "xfce4-terminal", "alacritty" }) then
+    if
+        vim.tbl_contains(
+            { "foot", "gnome-terminal", "xfce4-terminal", "alacritty" },
+            term_name
+        )
+    then
         term_cmd = term_name .. " --title R"
-    elseif vit(term_name, { "xterm", "uxterm", "lxterm" }) then
+    elseif vim.tbl_contains({ "xterm", "uxterm", "lxterm" }, term_name) then
         term_cmd = term_name .. " -title R"
     else
         term_cmd = term_name
@@ -71,7 +75,10 @@ local external_term_config = function()
     local wd = require("r.run").get_R_start_dir()
     if wd then
         if
-            vit(term_name, { "gnome-terminal", "xfce4-terminal", "lxterminal", "foot" })
+            vim.tbl_contains(
+                { "gnome-terminal", "xfce4-terminal", "lxterminal", "foot" },
+                term_name
+            )
         then
             term_cmd = term_cmd .. " --working-directory='" .. wd .. "'"
         elseif term_name == "konsole" then
@@ -83,7 +90,7 @@ local external_term_config = function()
 
     if term_name == "gnome-terminal" then
         term_cmd = term_cmd .. " --"
-    elseif vit(term_name, { "terminator", "xfce4-terminal" }) then
+    elseif vim.tbl_contains({ "terminator", "xfce4-terminal" }, term_name) then
         term_cmd = term_cmd .. " -x"
     else
         term_cmd = term_cmd .. " -e"

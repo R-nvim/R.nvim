@@ -67,17 +67,6 @@ function M.ensure_directory_exists(dir_path)
     return true
 end
 
---- Check if a table has a specific string value
----@param value string
----@param tbl string[]
----@return boolean
-function M.value_in_table(value, tbl)
-    for _, v in pairs(tbl) do
-        if v == value then return true end
-    end
-    return false
-end
-
 local get_fw_info_X = function()
     local config = require("r.config").get_config()
     local warn = require("r").warn
