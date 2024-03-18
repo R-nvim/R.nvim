@@ -177,7 +177,11 @@ local start_rnvimserver = function()
         on_exit = require("r.job").on_exit,
         env = rns_env,
     }
-    -- require("r.job").start("Server", { "valgrind", "--log-file=/tmp/rnvimserver_valgrind_log", rns_path }, rns_opts)
+    -- require("r.job").start( "Server", {
+    --         "valgrind",
+    --         "--leak-check=full",
+    --         "--log-file=/tmp/rnvimserver_valgrind_log",
+    --         rns_path, }, rns_opts)
     require("r.job").start("Server", { rns_path }, rns_opts)
     vim.g.R_Nvim_status = 2
 

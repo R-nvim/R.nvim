@@ -1,7 +1,7 @@
 CC ?= gcc
 CFLAGS = -pthread -std=gnu99 -O2 -Wall
 TARGET = rnvimserver
-SRCS = rnvimserver.c utilities.c data_structures.c logging.c ../common.c
+SRCS = complete.c data_structures.c logging.c rnvimserver.c obbr.c tcp.c utilities.c ../common.c
 
 all: $(TARGET)
 

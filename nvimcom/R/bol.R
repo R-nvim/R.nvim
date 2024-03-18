@@ -382,8 +382,11 @@ nvim.buildargs <- function(afile, pkg) {
     return(invisible(NULL))
 }
 
-#' Build List of objects (for auto completion and for the Object Browser)
-#' cache directory.
+#' Build data files for auto completion and for the Object Browser in the
+#' cache directory:
+#'   - `alias_` : for finding the appropriate function during auto completion.
+#'   - `objls_` : for auto completion and object browser
+#'   - `args_`  : for describing selected arguments during auto completion.
 #' @param cmpllist Full path of `objls_` file to be built.
 #' @param libname Library name.
 nvim.bol <- function(cmpllist, libname) {
@@ -424,8 +427,7 @@ nvim.bol <- function(cmpllist, libname) {
     return(invisible(NULL))
 }
 
-#' This function calls nvim.bol which writes two files in `~/.cache/R.nvim`:
-#'   - `objls_` : data for auto completion and object browser
+#' This function calls nvim.bol which writes three files in `~/.cache/R.nvim`:
 #' @param p Character vector with names of libraries.
 nvim.build.cmplls <- function(p) {
     if (length(p) > 1) {

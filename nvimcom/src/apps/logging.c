@@ -1,6 +1,8 @@
-#include "logging.h"
+#include <stdio.h>
 #include <stdarg.h> // For va_list
-#include <stdio.h>  // For vfprintf
+#include <time.h>
+
+#include "logging.h"
 
 /**
  * @brief Logs a formatted message to a specified log file.
@@ -29,3 +31,13 @@ __attribute__((format(printf, 1, 2))) void Log(const char *fmt, ...) {
     fclose(f);
 #endif
 }
+
+#ifdef Debug_NRS
+void init_logging(void) {
+    time_t t;
+    time(&t);
+    FILE *f = fopen("/dev/shm/rnvimserver_log", "w");
+    fprintf(f, "NSERVER LOG | %s\n\n", ctime(&t));
+    fclose(f);
+}
+#endif

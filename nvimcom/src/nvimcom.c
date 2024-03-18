@@ -1120,7 +1120,7 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
 #endif
         {
             if (len == 0)
-                REprintf("Connection with rnvimserver was lost\n");
+                REprintf("Connection with R.nvim was lost\n");
             if (buff[0] == EOF)
                 REprintf("client_loop_thread: buff[0] == EOF\n");
 #ifdef WIN32
@@ -1128,6 +1128,7 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
             WSACleanup();
 #else
             close(sfd);
+            sfd = -1;
 #endif
             break;
         }

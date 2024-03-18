@@ -25,18 +25,14 @@ typedef struct liststatus_ {
     struct liststatus_ *right; // Right node
 } ListStatus;
 
-ListStatus *new_ListStatus(const char *s, int stt);
-ListStatus *insert(ListStatus *root, const char *s, int stt);
-ListStatus *search(ListStatus *root, const char *s);
-
 // Structure for package data
 typedef struct pkg_data_ {
     char *name;    // The package name
     char *version; // The package version number
     char *fname;   // Objls_ file name in the compldir
     char *descr;   // The package short description
-    char *objls;  // A copy of the objls_ file
-    char *alias;  // A copy of the alias_ file
+    char *objls;   // A copy of the objls_ file
+    char *alias;   // A copy of the alias_ file
     char *args;    // A copy of the args file
     int nobjs;     // Number of objects in objls
     int loaded;    // Loaded flag in libnames_
@@ -45,4 +41,14 @@ typedef struct pkg_data_ {
     struct pkg_data_ *next; // Pointer to next package data
 } PkgData;
 
-#endif // !DATA_STRUCTURES_H
+int get_list_status(const char *s, int stt);
+void toggle_list_status(const char *s);
+void update_inst_libs(void);
+void update_pkg_list(char *libnms);  // Update package list
+void update_glblenv_buffer(char *g); // Update global environment buffer
+void build_objls(void);              // Build list of objects for completion
+void finished_building_objls(void);
+void init_ds_vars(void);
+void change_all(int stt);
+
+#endif
