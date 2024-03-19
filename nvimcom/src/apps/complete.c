@@ -190,8 +190,6 @@ void get_alias(char **pkg, char **fun) {
 
 void resolve_arg_item(char *pkg, char *fnm, char *itm) {
     Log("resolve_arg_item: %s, %s, %s", pkg, fnm, itm);
-    char item[128];
-    snprintf(item, 127, "%s\005", itm);
     PkgData *p = pkgList;
     while (p) {
         if (strcmp(p->name, pkg) == 0) {
@@ -201,18 +199,26 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
                     if (strcmp(s, fnm) == 0) {
                         while (*s)
                             s++;
-                        s++;
                         while (*s != '\n') {
-                            if (str_here(s, item)) {
-                                while (*s && *s != '\005')
-                                    s++;
+                            // Look for \0 or ' ' because some arguments share
+                            // the same documentation item. Example: lm()
+                            if (*s == 0 || *s == ' ') {
                                 s++;
-                                char *b = calloc(strlen(s) + 2, sizeof(char));
-                                format(s, b, ' ', '\x14');
-                                printf("lua %s('%s')\n", resolve_cb, b);
-                                fflush(stdout);
-                                free(b);
-                                return;
+                                if (str_here(s, itm)) {
+                                    s += strlen(itm);
+                                    if (*s == '\005' || *s == ',') {
+                                        while (*s && *s != '\005')
+                                            s++;
+                                        s++;
+                                        char *b =
+                                            calloc(strlen(s) + 2, sizeof(char));
+                                        format(s, b, ' ', '\x14');
+                                        printf("lua %s('%s')\n", resolve_cb, b);
+                                        fflush(stdout);
+                                        free(b);
+                                        return;
+                                    }
+                                }
                             }
                             s++;
                         }
