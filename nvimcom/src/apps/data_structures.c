@@ -26,10 +26,16 @@ static void change_all_stt(ListStatus *root, int stt) {
     }
 }
 
+/**
+ * @brief Change the status of all lists in the Object Browser.
+   This function is called after the user types `<LocalLeader>r-` or
+ `<LocalLeader>r=`.
+ * @param stt New status (1 = open; 2 = closed).
+ */
 void change_all(int stt) { change_all_stt(listTree, stt); }
 
 /**
- * @brief Copy a string, skiping consecutive spaces.
+ * @brief Copy a string, skipping consecutive spaces.
  *
  * This function takes an input string and produces an output string where
  * consecutive spaces are reduced to a single space. The output string is
@@ -150,6 +156,11 @@ static void parse_descr(char *descr, const char *fnm) {
     }
 }
 
+/**
+ * @brief Update the list of installed libraries.
+ * This function is called on rnvimserver startup and before completion of
+ * library names.
+ */
 void update_inst_libs(void) {
     Log("update_inst_libs()");
     DIR *d;
@@ -545,10 +556,11 @@ static ListStatus *insert(ListStatus *root, const char *s, int stt) {
 }
 
 /**
- * Description:
- * @param s:
- * @param stt:
- * @return
+ * @brief Get a list status (open or closed) in the Object Browser.
+ *
+ * @param s List name.
+ * @param stt Initial status if the list isn't inserted yet.
+ * @return The current status of the list.
  */
 int get_list_status(const char *s, int stt) {
     ListStatus *p = search(listTree, s);
@@ -719,6 +731,8 @@ static void finish_bol(void) {
     fflush(stdout);
 }
 
+// This function is called by lua/r/server.lua when R finishes building
+// the completion data files.
 void finished_building_objls(void) {
     finish_bol();
     building_objls = 0;
