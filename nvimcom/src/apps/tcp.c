@@ -23,10 +23,11 @@
 #include "tcp.h"
 
 #ifdef WIN32
-static int Tid; // Thread ID
+static HANDLE Tid; // Identifier of thread running TCP connection loop.
 #else
 static pthread_t Tid; // Thread ID
 #endif
+
 struct sockaddr_in servaddr;         // Server address structure
 static int sockfd;                   // socket file descriptor
 static int connfd;                   // Connection file descriptor
@@ -329,7 +330,7 @@ static void get_whole_msg(char *b) {
 
 #ifdef WIN32
 // Thread function to receive messages on Windows
-static void receive_msg(void *arg)
+static DWORD WINAPI receive_msg(__attribute__((unused)) void *arg)
 #else
 // Thread function to receive messages on Unix
 static void *receive_msg(void *v)
@@ -364,7 +365,9 @@ static void *receive_msg(void *v)
             break;
         }
     }
-#ifndef WIN32
+#ifdef WIN32
+    return 0;
+#else
     return NULL;
 #endif
 }
@@ -391,8 +394,24 @@ void start_server(void) {
 
     // Receive messages from TCP and output them to stdout
 #ifdef WIN32
-    Tid = _beginthread(receive_msg, 0, NULL);
+    DWORD ti;
+    Tid = CreateThread(NULL, 0, receive_msg, NULL, 0, &ti);
 #else
     pthread_create(&Tid, NULL, receive_msg, NULL);
+#endif
+}
+
+// Close the TCP connection and cancel the server thread.
+// Called during rnvimserver shutdown.
+void stop_server(void) {
+#ifdef WIN32
+    closesocket(sockfd);
+    WSACleanup();
+    TerminateThread(Tid, 0);
+    CloseHandle(Tid);
+#else
+    close(sockfd);
+    pthread_cancel(Tid);
+    pthread_join(Tid, NULL);
 #endif
 }

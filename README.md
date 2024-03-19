@@ -129,8 +129,7 @@ There are two new commands:
 There is one new command to send the above-piped chain of commands. Its
 default key binding is `<LocalLeader>sc`.
 
-There is a new option: `auto_quit` (only used if running R in an external
-terminal emulator).
+There is a new option: `auto_quit`.
 
 If you have [colorout] installed, and if you are not loading it in your
 `~/.Rprofile`, it should be the development version. Reason: R.nvim calls the

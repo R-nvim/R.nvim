@@ -243,6 +243,10 @@ To use the plugin, open a .R, .Rnw, .Rd, .Rmd or .qmd file with Neovim
 and type <LocalLeader>rf. Then, you will be able to use the plugin key
 bindings to send commands to R.
 
+The default key binding to quit R is <LocalLeader>rq, but if you quit Neovim
+with R still running in a Neovim's built-in terminal emulator, R.nvim will
+send to R the command `quit(save = "no")` (see the |auto_quit| option).
+
 This plugin has many key bindings. Not all key bindings are enabled in all
 file types supported by the plugin (r, rnoweb, rhelp, rmd, and quarto).
 To see the list of mappings, do in Normal mode:
@@ -872,6 +876,7 @@ put in your config:
 >lua
    silent_term = true
 <
+								   *auto_quit*
 When Neovim is closed, the R connection with Neovim is closed and cannot be
 reestablished. Thus, unless you usually keep working on the R Console after
 quitting Neovim, you will prefer that R quits automatically when you leave
@@ -879,8 +884,8 @@ Neovim. In this case, you have to put in your config:
 >lua
    auto_quit = true
 <
-This option is valid only when running R in an external terminal, and will
-always be set to `false` otherwise.
+The default value of `auto_quit` is `true` if R is running in a Neovim's
+built-in terminal emulator and `false` otherwise.
 
 
 ------------------------------------------------------------------------------

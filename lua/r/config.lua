@@ -690,6 +690,10 @@ local global_setup = function()
     -- values.
     set_editing_mode()
 
+    if type(config.external_term) == "boolean" and config.external_term == false then
+        config.auto_quit = true
+    end
+
     -- Load functions that were not converted to Lua yet
     -- Configure more values that depend on either system features or other
     -- config values.
@@ -833,10 +837,6 @@ M.check_health = function()
 
     if not config.R_cmd == config.R_app and vim.fn.executable(config.R_cmd) == 0 then
         warn("R_cmd executable not found: '" .. config.R_cmd .. "'")
-    end
-
-    if type(config.external_term) == "boolean" and config.external_term == false then
-        config.auto_quit = false
     end
 
     if vim.fn.has("nvim-0.9.5") ~= 1 then warn("R.nvim requires Neovim >= 0.9.5") end

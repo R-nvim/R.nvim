@@ -51,6 +51,11 @@ end
 M.vim_leave = function()
     if vim.g.R_Nvim_status == 7 and config.auto_quit then
         require("r.run").quit_R("nosave")
+        local i = 30
+        while i > 0 and vim.g.R_Nvim_status == 7 do
+            vim.wait(100)
+            i = i - 1
+        end
     end
     require("r.job").stop_rns()
 
