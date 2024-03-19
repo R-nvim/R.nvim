@@ -55,9 +55,9 @@ static char *send_ge_buf; // Temporary buffer used to store the list of
 static unsigned long lastglbnvbsz;         // Previous size of glbnvbuf2.
 static unsigned long glbnvbufsize = 32768; // Current size of glbnvbuf2.
 
-static unsigned long tcp_header_len; // Length of nvimsecr + 9. Stored in a
-                                     // variable to avoid repeatedly calling
-                                     // strlen().
+static size_t tcp_header_len; // Length of nvimsecr + 9. Stored in a
+                              // variable to avoid repeatedly calling
+                              // strlen().
 
 static int maxdepth = 6; // How many levels to parse in lists and S4 objects
 // when building list of objects for auto-completion. The value decreases if
@@ -92,9 +92,9 @@ static int flag_glbenv = 0; // Do we have to list objects from .GlobalEnv?
  * @typedef lib_info_
  * @brief Structure with name and version number of a library.
  *
- * The complete information of libraries is stored in its `objls_`, `alias_`, and
- * `args_` files in the R.nvim cache directory. The rnvimserver only needs the
- * name and version number of the library to read the corresponding files.
+ * The complete information of libraries is stored in its `objls_`, `alias_`,
+ * and `args_` files in the R.nvim cache directory. The rnvimserver only needs
+ * the name and version number of the library to read the corresponding files.
  *
  */
 typedef struct lib_info_ {
@@ -193,7 +193,11 @@ static void send_to_nvim(char *msg) {
 
     if (verbose > 2) {
         if (strlen(msg) < 128)
+#ifdef WIN32
+            REprintf("send_to_nvim [%lld] {%s}: %s\n", sfd, nvimsecr, msg);
+#else
             REprintf("send_to_nvim [%d] {%s}: %s\n", sfd, nvimsecr, msg);
+#endif
     }
 
     len = strlen(msg);
@@ -600,12 +604,12 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
                     if (newenv[strlen(newenv) - 1] == '$')
                         newenv[strlen(newenv) - 1] = 0; // Delete trailing '$'
                     for (int i = 0; i < len1; i++) {
-                        sprintf(ebuf, "[[%d]]", i + 1);
+                        snprintf(ebuf, 63, "[[%d]]", i + 1);
                         elmt = VECTOR_ELT(*x, i);
                         p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p,
                                                depth + 1);
                     }
-                    sprintf(ebuf, "[[%d]]", len1 + 1);
+                    snprintf(ebuf, 63, "[[%d]]", len1 + 1);
                     PROTECT(elmt = VECTOR_ELT(*x, len));
                     p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p, depth + 1);
                     UNPROTECT(1);
@@ -618,7 +622,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
                     ename = CHAR(eexp);
                     UNPROTECT(1);
                     if (ename[0] == 0) {
-                        sprintf(ebuf, "[[%d]]", i + 1);
+                        snprintf(ebuf, 63, "[[%d]]", i + 1);
                         ename = ebuf;
                     }
                     PROTECT(elmt = VECTOR_ELT(*x, i));
@@ -627,7 +631,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
                 }
                 ename = CHAR(STRING_ELT(listNames, len));
                 if (ename[0] == 0) {
-                    sprintf(ebuf, "[[%d]]", len + 1);
+                    snprintf(ebuf, 63, "[[%d]]", len + 1);
                     ename = ebuf;
                 }
                 PROTECT(elmt = VECTOR_ELT(*x, len));
@@ -722,7 +726,7 @@ static void nvimcom_globalenv_list(void) {
 
     double tmdiff = 1000 * ((double)clock() - tm) / CLOCKS_PER_SEC;
     if (verbose && tmdiff > 500.0)
-        REprintf("Time to build GlobalEnv cmplls [%lu bytes]: %f ms\n",
+        REprintf("Time to build GlobalEnv cmplls [%zu bytes]: %f ms\n",
                  strlen(glbnvbuf2), tmdiff);
 }
 
