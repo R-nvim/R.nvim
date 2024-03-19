@@ -177,7 +177,7 @@ local start_rnvimserver = function()
         on_exit = require("r.job").on_exit,
         env = rns_env,
     }
-    -- require("r.job").start( "Server", {
+    -- require("r.job").start("Server", {
     --         "valgrind",
     --         "--leak-check=full",
     --         "--log-file=/tmp/rnvimserver_valgrind_log",
@@ -267,7 +267,11 @@ local build_objls_exit = function()
         table.concat(o_err, "\n")
     )
     building_objls = false
-    job.stdin("Server", "41\n")
+    if vim.env.CMPR_DOC_WIDTH then
+        job.stdin("Server", "41" .. vim.env.CMPR_DOC_WIDTH .. "\n")
+    else
+        job.stdin("Server", "4158\n")
+    end
 end
 
 -- List R libraries from buffer

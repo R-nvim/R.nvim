@@ -154,6 +154,8 @@ void stdin_loop(void) {
             msg++;
             switch (*msg) {
             case '1':
+                msg++;
+                setenv("CMPR_DOC_WIDTH", msg, 1);
                 finished_building_objls();
                 break;
             case '2':
@@ -224,6 +226,7 @@ void stdin_loop(void) {
             break;
 #endif
         case '9': // Quit now
+            stop_server();
             exit(0);
             break;
         default:
