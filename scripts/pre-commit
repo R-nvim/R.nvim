@@ -4,35 +4,38 @@
 exec 1>&2
 
 function check_tool_installed {
-    local tool_name=$1
-    if ! [ -x "$(command -v "$tool_name")" ]; then
-        echo "$tool_name is not installed. Please install it and rerun"
+    if ! [ -x "$(command -v "$1")" ]; then
+        echo "$1 is not installed. Please install it and rerun."
         exit 1
     fi
 }
 
 function format_files {
-    local file_pattern=$1
-    local format_command=$2
-    local format_options=$3
-
-    for FILE in $(git diff --staged --name-only --diff-filter=ACMR "$file_pattern"); do
-        $format_command $format_options "$FILE"
-        git add "$FILE"
+    for FILE in $(git diff --staged --name-only --diff-filter=ACMR "$1"); do
+        OLD_MD5SUM=`md5sum $FILE`
+        if [ "$1" = "*.lua" ]; then
+            stylua --respect-ignores "$FILE"
+        else
+            clang-format --style="{BasedOnStyle: llvm, IndentWidth: 4, SortIncludes: Never}" -i "$FILE"
+        fi
+        NEW_MD5SUM=`md5sum $FILE`
+        if ! [ "$NEW_MD5SUM" = "$OLD_MD5SUM" ]; then
+            git add "$FILE"
+        fi
     done
 }
 
 # Check and format .c and .h files
 if git diff --staged --name-only --diff-filter=ACMR | grep -E '\.(c|h)$' > /dev/null; then
     check_tool_installed "clang-format"
-    format_files "*.c" "clang-format" "--style={BasedOnStyle: llvm, IndentWidth: 4, SortIncludes: Never}" "-i"
-    format_files "*.h" "clang-format" "--style={BasedOnStyle: llvm, IndentWidth: 4, SortIncludes: Never}" "-i"
+    format_files "*.c"
+    format_files "*.h"
 fi
 
 # Check and format .lua files
 if git diff --staged --name-only --diff-filter=ACMR | grep -E '\.lua$' > /dev/null; then
     check_tool_installed "stylua"
-    format_files "*.lua" "stylua" "--respect-ignores"
+    format_files "*.lua"
 fi
 
 # Now we can commit
