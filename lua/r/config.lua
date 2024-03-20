@@ -770,7 +770,7 @@ local global_setup = function()
         complete = function() return config_keys end,
     })
 
-    vim.fn.timer_start(1, require("r.server").check_nvimcom_version)
+    vim.schedule(function() require("r.server").check_nvimcom_version() end)
 end
 
 local M = {}

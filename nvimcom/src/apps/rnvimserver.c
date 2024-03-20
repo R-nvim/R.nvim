@@ -11,6 +11,7 @@
 #include "complete.h"
 #include "tcp.h"
 #include "obbr.h"
+#include "../common.h"
 
 /*
  * Global variables (declared in global_vars.h)
@@ -38,9 +39,9 @@ void print_listTree(ListStatus *root, FILE *f) {
 }
 
 static void send_rns_info(void) {
-    printf("lua require('r.server').echo_rns_info('CMPR_DOC_WIDTH: %s. Loaded "
+    printf("lua require('r.server').echo_rns_info('doc_width: %d. Loaded "
            "packages:",
-           getenv("CMPR_DOC_WIDTH"));
+           get_doc_width());
     PkgData *pkg = pkgList;
     while (pkg) {
         printf(" %s", pkg->name);
@@ -155,7 +156,8 @@ void stdin_loop(void) {
             switch (*msg) {
             case '1':
                 msg++;
-                setenv("CMPR_DOC_WIDTH", msg, 1);
+                if (*msg)
+                    set_doc_width(msg);
                 finished_building_objls();
                 break;
             case '2':
@@ -165,6 +167,10 @@ void stdin_loop(void) {
                 update_glblenv_buffer("");
                 if (auto_obbr)
                     compl2ob();
+                break;
+            case '5':
+                msg++;
+                set_doc_width(msg);
                 break;
             }
             break;

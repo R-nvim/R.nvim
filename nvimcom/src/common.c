@@ -4,6 +4,8 @@
 
 #include "common.h"
 
+static int doc_width = 58;
+
 /**
  * Checks if the string `b` is at the start of string `a`.
  * @param a The string to be checked.
@@ -48,9 +50,6 @@ char *str_cat(char *dest, const char *src) {
 void format(const char *orig, char *dest, char delim, char nl) {
     size_t sz = strlen(orig);
     size_t i = 0, n = 0, s = 0;
-    int doc_width = 58;
-    if (getenv("CMPR_DOC_WIDTH"))
-        doc_width = atoi(getenv("CMPR_DOC_WIDTH"));
     while (orig[i] && i < sz) {
         if (orig[i] == delim)
             s = i;
@@ -123,3 +122,11 @@ char *format_usage(const char *fnm, const char *args) {
     free(f);
     return b;
 }
+
+void set_doc_width(const char *width) {
+    int w = atoi(width);
+    if (w > 0)
+        doc_width = w;
+}
+
+int get_doc_width(void) { return doc_width; }

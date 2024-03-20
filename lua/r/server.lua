@@ -270,7 +270,7 @@ local build_objls_exit = function()
     if vim.env.CMPR_DOC_WIDTH then
         job.stdin("Server", "41" .. vim.env.CMPR_DOC_WIDTH .. "\n")
     else
-        job.stdin("Server", "4158\n")
+        job.stdin("Server", "41\n")
     end
 end
 

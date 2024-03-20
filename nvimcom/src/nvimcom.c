@@ -1190,6 +1190,8 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
     if (getenv("RNVIM_PORT"))
         strncpy(rns_port, getenv("RNVIM_PORT"), 15);
 
+    set_doc_width(getenv("CMPR_DOC_WIDTH"));
+
     if (verbose > 0)
         REprintf("nvimcom %s loaded\n", *nvv);
     if (verbose > 1) {
