@@ -124,6 +124,8 @@ char *format_usage(const char *fnm, const char *args) {
 }
 
 void set_doc_width(const char *width) {
+    if (!width)
+        return;
     int w = atoi(width);
     if (w > 0)
         doc_width = w;
