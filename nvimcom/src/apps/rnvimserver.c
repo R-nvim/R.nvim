@@ -39,12 +39,13 @@ void print_listTree(ListStatus *root, FILE *f) {
 }
 
 static void send_rns_info(void) {
-    printf("lua require('r.server').echo_rns_info('doc_width: %d. Loaded "
-           "packages:",
+    printf("lua require('r.server').echo_rns_info('doc_width: %d.\x14Loaded "
+           "packages:\x14",
            get_doc_width());
     PkgData *pkg = pkgList;
     while (pkg) {
-        printf(" %s", pkg->name);
+        printf(" [%d, %d, %d] %s-%s %s\x14", pkg->to_build, pkg->built,
+               pkg->loaded, pkg->name, pkg->version, pkg->descr);
         pkg = pkg->next;
     }
     printf("')\n");
