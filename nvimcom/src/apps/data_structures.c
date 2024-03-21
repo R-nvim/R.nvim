@@ -346,8 +346,8 @@ void update_pkg_list(char *libnms) {
         }
     } else {
         // Called during the initialization with libnames_ created by
-        // R/before_rns.R to highlight function from the `library()` and
-        // `require()` commands present in the file being edited.
+        // R/before_rns.R to enable completion for functions loaded with the
+        // `library()` and `require()` commands in the file being edited.
         char lbnm[128];
         Log("update_pkg_list == NULL");
 
@@ -705,10 +705,11 @@ static void finish_bol(void) {
     // Check if all files were really built before trying to load them.
     PkgData *pkg = pkgList;
     while (pkg) {
-        if (pkg->built == 0 && access(pkg->fname, F_OK) == 0)
+        if (pkg->built == 0 && access(pkg->fname, F_OK) == 0) {
             pkg->built = 1;
-        if (pkg->built && !pkg->objls)
-            load_pkg_data(pkg);
+            if (!pkg->objls)
+                load_pkg_data(pkg);
+        }
         pkg = pkg->next;
     }
 
