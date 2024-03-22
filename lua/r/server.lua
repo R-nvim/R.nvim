@@ -178,10 +178,11 @@ local start_rnvimserver = function()
         env = rns_env,
     }
     -- require("r.job").start("Server", {
-    --         "valgrind",
-    --         "--leak-check=full",
-    --         "--log-file=/tmp/rnvimserver_valgrind_log",
-    --         rns_path, }, rns_opts)
+    --     "valgrind",
+    --     "--leak-check=full",
+    --     "--log-file=/tmp/rnvimserver_valgrind_log",
+    --     rns_path,
+    -- }, rns_opts)
     require("r.job").start("Server", { rns_path }, rns_opts)
     vim.g.R_Nvim_status = 2
 
@@ -346,6 +347,15 @@ M.update_Rhelp_list = function()
         vim.fn.readfile(config.localtmpdir .. "/libs_in_rns_" .. vim.env.RNVIM_ID)
     for _, lib in ipairs(libs_in_rns) do
         add_to_Rhelp_list(lib)
+    end
+    if
+        vim.g.R_Nvim_status == 3
+        and (
+            config.auto_start:find("always")
+            or (config.auto_start:find("startup") and vim.api.nvim_get_current_buf() == 1)
+        )
+    then
+        require("r.run").start_R("R")
     end
 end
 

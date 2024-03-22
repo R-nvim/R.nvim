@@ -153,15 +153,6 @@ end
 ---@return string
 M.get_r_args = function() return r_args end
 
-M.auto_start_R = function()
-    if vim.g.R_Nvim_status > 3 then return end
-    if vim.v.vim_did_enter == 0 or vim.g.R_Nvim_status < 3 then
-        vim.fn.timer_start(100, M.auto_start_R)
-        return
-    end
-    M.start_R("R")
-end
-
 --- Register rnvimserver port in a environment variable
 ---@param p string
 M.set_rns_port = function(p)

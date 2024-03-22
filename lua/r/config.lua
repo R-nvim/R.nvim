@@ -806,13 +806,6 @@ M.real_setup = function()
 
     if not did_global_setup then global_setup() end
 
-    if
-        config.auto_start:find("always")
-        or (config.auto_start:find("startup") and vim.v.vim_did_enter == 0)
-    then
-        require("r.run").auto_start_R()
-    end
-
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
     if config.hook.after_config then config.hook.after_config() end

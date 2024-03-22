@@ -105,11 +105,11 @@ char *read_file(const char *fn, int verbose) {
     }
     fseek(f, 0L, SEEK_END);
     long sz = ftell(f);
-    rewind(f);
     if (sz == 0) {
         // List of objects is empty. Perhaps no object was created yet.
+        // The args_datasets files is empty
         fclose(f);
-        return NULL;
+        return calloc(1, sizeof(char));
     }
 
     char *buffer = calloc(1, sz + 1);
@@ -120,6 +120,7 @@ char *read_file(const char *fn, int verbose) {
         return NULL;
     }
 
+    rewind(f);
     if (1 != fread(buffer, sz, 1, f)) {
         fclose(f);
         free(buffer);

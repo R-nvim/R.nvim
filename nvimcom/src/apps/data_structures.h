@@ -33,11 +33,11 @@ typedef struct pkg_data_ {
     char *descr;   // The package short description
     char *objls;   // A copy of the objls_ file
     char *alias;   // A copy of the alias_ file
-    char *args;    // A copy of the args file
-    int nobjs;     // Number of objects in objls
-    int loaded;    // Loaded flag in libnames_
+    char *args;    // A copy of the args_ file
     int to_build;  // Flag to indicate if the name is sent to build list
     int built;     // Flag to indicate if objls_ found
+    int loaded;    // Loaded flag in libnames_
+    int nobjs;     // Number of objects in objls
     struct pkg_data_ *next; // Pointer to next package data
 } PkgData;
 

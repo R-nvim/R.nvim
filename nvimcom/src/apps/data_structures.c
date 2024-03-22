@@ -639,12 +639,11 @@ static void load_pkg_data(PkgData *pd) {
     int size;
     if (!pd->descr)
         pd->descr = get_pkg_descr(pd->name);
-    pd->objls = read_objls_file(pd->fname, &size);
     pd->alias = read_alias_file(pd->name);
     pd->args = read_args_file(pd->name);
-    pd->nobjs = 0;
-    if (pd->objls) {
-        pd->loaded = 1;
+    if (!pd->objls) {
+        pd->nobjs = 0;
+        pd->objls = read_objls_file(pd->fname, &size);
         if (size > 2)
             for (int i = 0; i < size; i++)
                 if (pd->objls[i] == '\n')
@@ -705,11 +704,10 @@ static void finish_bol(void) {
     // Check if all files were really built before trying to load them.
     PkgData *pkg = pkgList;
     while (pkg) {
-        if (pkg->built == 0 && access(pkg->fname, F_OK) == 0) {
+        if (pkg->built == 0 && access(pkg->fname, F_OK) == 0)
             pkg->built = 1;
-            if (!pkg->objls)
-                load_pkg_data(pkg);
-        }
+        if (pkg->built && !pkg->objls)
+            load_pkg_data(pkg);
         pkg = pkg->next;
     }
 
