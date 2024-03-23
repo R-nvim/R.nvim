@@ -72,10 +72,13 @@ More complex configuration (but not including `cmp`):
 ```
 
 The complete list of options is in the documentation.
+See also the [Wiki](https://github.com/R-nvim/R.nvim/wiki).
 
 ## Usage
 
-Please read the plugin's [documentation](https://github.com/jamespeapen/Nvim-R/wiki) for instructions on usage. See also the output of `:RMapsDesc`.
+Please read the plugin's
+[documentation](https://github.com/R-nvim/R.nvim/blob/main/doc/R.nvim.txt) for
+instructions on usage. See also the output of `:RMapsDesc`.
 
 ## Transitioning from Nvim-R
 
@@ -140,7 +143,7 @@ commit](https://github.com/jalvesaq/colorout/commit/1080187f9474b71f16c3c0be676d
 
 ## Screenshots and videos
 
-None yet. Tell us if published a video presenting R.nvim features.
+None yet. Tell us if you published a video presenting R.nvim features.
 
 ## The communication between Neovim and R
 
