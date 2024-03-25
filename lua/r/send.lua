@@ -501,18 +501,38 @@ M.line = function(m, lnum)
     local has_op = false
     local lines = {}
     if config.parenblock then
+        local chunkstart = nil
         local chunkend = nil
         if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
+            chunkstart = "```"
             chunkend = "```"
         elseif vim.o.filetype == "rnoweb" then
+            chunkstart = "<<"
             chunkend = "@"
         end
-        has_op = ends_with_operator(line)
+
+        -- Prepend any 'unfinished' preceding lines
         local rpd = paren_diff(line)
+        lines = { line }
+        local lnum_prev = lnum
+        while lnum_prev > 0 do
+            lnum_prev = lnum_prev - 1
+            local txt = vim.fn.getline(lnum_prev)
+            if chunkstart and txt:find("^" .. chunkstart) ~= nil then break end
+            has_op = ends_with_operator(txt)
+            if rpd > 0 or has_op then
+                rpd = rpd + paren_diff(txt)
+                table.insert(lines, 1, txt)
+            else
+                break
+            end
+        end
+
+        -- Append following lines if the current line is 'unfinished'
+        has_op = ends_with_operator(line)
         if rpd < 0 or has_op then
             lnum = lnum + 1
             local last_buf_line = vim.api.nvim_buf_line_count(0)
-            lines = { line }
             while lnum <= last_buf_line do
                 local txt = vim.fn.getline(lnum)
                 if chunkend and txt == chunkend then break end
