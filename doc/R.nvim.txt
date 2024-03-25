@@ -857,7 +857,7 @@ is not selected, you may define it in your config. Below are some examples of
 how to set the value of `external_term`:
 >lua
    external_term = true      -- Run R in an external terminal (or Rgui.exe)
-   external_term = "konsole" -- Run R in in konsole
+   external_term = "konsole" -- Run R in konsole
 <
 If you are not satisfied with the way your terminal emulator is called by the
 plugin, you may define in your config the variable `external_term` as the
