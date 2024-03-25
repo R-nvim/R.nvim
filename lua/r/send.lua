@@ -36,6 +36,11 @@ local paren_diff = function(str)
     return llen1 - llen2
 end
 
+--- Check if line is a comment
+---@param line string
+---@return boolean
+local is_comment = function(line) return line:find("^%s*#") ~= nil end
+
 local M = {}
 
 --- Change the pointer to the function used to send commands to R.
@@ -518,32 +523,40 @@ M.line = function(m, lnum)
         while lnum_prev > 0 do
             lnum_prev = lnum_prev - 1
             local txt = vim.fn.getline(lnum_prev)
-            if chunkstart and txt:find("^" .. chunkstart) ~= nil then break end
-            has_op = ends_with_operator(txt)
-            if rpd > 0 or has_op then
-                rpd = rpd + paren_diff(txt)
+            if is_comment(txt) then
                 table.insert(lines, 1, txt)
             else
-                break
+                if chunkstart and txt:find("^" .. chunkstart) ~= nil then break end
+                has_op = ends_with_operator(txt)
+                if rpd > 0 or has_op then
+                    rpd = rpd + paren_diff(txt)
+                    table.insert(lines, 1, txt)
+                else
+                    break
+                end
             end
         end
 
         -- Append following lines if the current line is 'unfinished'
         has_op = ends_with_operator(line)
-        if rpd < 0 or has_op then
+        if rpd < 0 or has_op or is_comment(line) then
             lnum = lnum + 1
             local last_buf_line = vim.api.nvim_buf_line_count(0)
             while lnum <= last_buf_line do
                 local txt = vim.fn.getline(lnum)
                 if chunkend and txt == chunkend then break end
                 table.insert(lines, txt)
-                rpd = rpd + paren_diff(txt)
-                has_op = ends_with_operator(txt)
-                if rpd < 0 or has_op then
+                if is_comment(txt) then
                     lnum = lnum + 1
                 else
-                    vim.api.nvim_win_set_cursor(0, { lnum, 0 })
-                    break
+                    rpd = rpd + paren_diff(txt)
+                    has_op = ends_with_operator(txt)
+                    if rpd < 0 or has_op then
+                        lnum = lnum + 1
+                    else
+                        vim.api.nvim_win_set_cursor(0, { lnum, 0 })
+                        break
+                    end
                 end
             end
         end
