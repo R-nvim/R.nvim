@@ -60,9 +60,24 @@ end
 local is_comment = function(line) return line:find("^%s*#") ~= nil end
 
 --- Check if a line is blank
---- @param line string
---- @return boolean
+---@param line string
+---@return boolean
 local is_blank = function(line) return line:find("^%s*$") ~= nil end
+
+--- Check if a line is blank or a comment
+---@param line string
+---@return boolean
+local is_insignificant = function(line) return is_comment(line) or is_blank(line) end
+
+--- Combine two tables
+---@param t1 table
+---@param t2 table
+local combine = function(t1, t2)
+    local out = {}
+    table.move(t1, 1, #t1, #out + 1, out)
+    table.move(t2, 1, #t2, #out + 1, out)
+    return out
+end
 
 local M = {}
 
@@ -464,10 +479,6 @@ end
 M.line = function(m, lnum)
     if not lnum then lnum = vim.api.nvim_win_get_cursor(0)[1] end
     local line = vim.fn.getline(lnum)
-    if #line == 0 then
-        if m == true then cursor.move_next_line() end
-        return
-    end
 
     if
         vim.o.filetype == "rnoweb"
@@ -524,10 +535,8 @@ M.line = function(m, lnum)
         return
     end
 
-    if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
-
-    local has_op = false
     local lines = {}
+
     if config.parenblock then
         local chunkstart = nil
         local chunkend = nil
@@ -539,42 +548,49 @@ M.line = function(m, lnum)
             chunkend = "@"
         end
 
-        -- Prepend any 'unfinished' preceding lines
         local rpd = paren_diff(line)
-        lines = { line }
-        local lnum_prev = lnum
-        while lnum_prev > 0 do
-            lnum_prev = lnum_prev - 1
+        local has_op = false
+
+        -- Prepend any 'unfinished' preceding lines
+        local prev_lines = {}
+        local lnum_prev = lnum - 1
+        while lnum_prev >= 0 do
             local txt = vim.fn.getline(lnum_prev)
-            if is_comment(txt) or is_blank(txt) then
-                table.insert(lines, 1, txt)
+            if chunkstart and txt:find("^" .. chunkstart) ~= nil then break end
+
+            if is_insignificant(txt) then
+                table.insert(prev_lines, 1, txt)
+                lnum_prev = lnum_prev - 1
             else
-                if chunkstart and txt:find("^" .. chunkstart) ~= nil then break end
                 has_op = ends_with_operator(txt)
                 if rpd > 0 or has_op then
+                    table.insert(prev_lines, 1, txt)
+                    lines = combine(prev_lines, lines)
+                    prev_lines = {}
                     rpd = rpd + paren_diff(txt)
-                    table.insert(lines, 1, txt)
+                    lnum_prev = lnum_prev - 1
                 else
                     break
                 end
             end
         end
 
+        if #lines > 0 or not is_blank(line) then table.insert(lines, line) end
+
         -- Append following lines if the current line is 'unfinished'
-        has_op = ends_with_operator(line)
-        if rpd < 0 or has_op or is_comment(line) then
+        if rpd < 0 or ends_with_operator(line) or is_insignificant(line) then
             lnum = lnum + 1
             local last_buf_line = vim.api.nvim_buf_line_count(0)
             while lnum <= last_buf_line do
                 local txt = vim.fn.getline(lnum)
                 if chunkend and txt == chunkend then break end
-                table.insert(lines, txt)
-                if is_comment(txt) or is_blank(txt) then
+                if is_insignificant(txt) then
+                    if is_comment(txt) or #lines > 0 then table.insert(lines, txt) end
                     lnum = lnum + 1
                 else
                     rpd = rpd + paren_diff(txt)
-                    has_op = ends_with_operator(txt)
-                    if rpd < 0 or has_op then
+                    table.insert(lines, txt)
+                    if rpd < 0 or ends_with_operator(txt) then
                         lnum = lnum + 1
                     else
                         vim.api.nvim_win_set_cursor(0, { lnum, 0 })
