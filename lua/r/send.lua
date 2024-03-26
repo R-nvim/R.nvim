@@ -5,20 +5,24 @@ local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 
+
 --- Check if line ends with operator symbol
 ---@param line string
 ---@return boolean
 local ends_with_operator = function(line)
-    local op_pattern = { "&", "|", "+", "-", "%*", "%/", "%=", "~", "%-", "%<", "%>" }
+    local op_patterns = {
+        "&", "|", "!", "+", "-", "%^", "%*", "%/", "%=", "~", "%-", "%<", "%>",
+        "%?", "%%", ":", "@", "%$", "%["
+    }
     local clnline = line:gsub("#.*", "")
-    local has_op = false
-    for _, v in pairs(op_pattern) do
+
+    for _, v in pairs(op_patterns) do
         if clnline:find(v .. "%s*$") then
-            has_op = true
-            break
+            return true
         end
     end
-    return has_op
+
+    return false
 end
 
 --- Check if the number of brackets are balanced
