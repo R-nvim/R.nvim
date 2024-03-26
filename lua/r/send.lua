@@ -5,21 +5,35 @@ local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 
-
 --- Check if line ends with operator symbol
 ---@param line string
 ---@return boolean
 local ends_with_operator = function(line)
     local op_patterns = {
-        "&", "|", "!", "+", "-", "%^", "%*", "%/", "%=", "~", "%-", "%<", "%>",
-        "%?", "%%", ":", "@", "%$", "%["
+        "&",
+        "|",
+        "!",
+        "+",
+        "-",
+        "%^",
+        "%*",
+        "%/",
+        "%=",
+        "~",
+        "%-",
+        "%<",
+        "%>",
+        "%?",
+        "%%",
+        ":",
+        "@",
+        "%$",
+        "%[",
     }
     local clnline = line:gsub("#.*", "")
 
     for _, v in pairs(op_patterns) do
-        if clnline:find(v .. "%s*$") then
-            return true
-        end
+        if clnline:find(v .. "%s*$") then return true end
     end
 
     return false
@@ -44,6 +58,11 @@ end
 ---@param line string
 ---@return boolean
 local is_comment = function(line) return line:find("^%s*#") ~= nil end
+
+--- Check if a line is blank
+--- @param line string
+--- @return boolean
+local is_blank = function(line) return line:find("^%s*$") ~= nil end
 
 local M = {}
 
@@ -527,7 +546,7 @@ M.line = function(m, lnum)
         while lnum_prev > 0 do
             lnum_prev = lnum_prev - 1
             local txt = vim.fn.getline(lnum_prev)
-            if is_comment(txt) then
+            if is_comment(txt) or is_blank(txt) then
                 table.insert(lines, 1, txt)
             else
                 if chunkstart and txt:find("^" .. chunkstart) ~= nil then break end
@@ -550,7 +569,7 @@ M.line = function(m, lnum)
                 local txt = vim.fn.getline(lnum)
                 if chunkend and txt == chunkend then break end
                 table.insert(lines, txt)
-                if is_comment(txt) then
+                if is_comment(txt) or is_blank(txt) then
                     lnum = lnum + 1
                 else
                     rpd = rpd + paren_diff(txt)
