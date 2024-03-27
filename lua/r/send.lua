@@ -578,7 +578,7 @@ M.line = function(m, lnum)
     if m == true then
         local last_line = vim.api.nvim_buf_line_count(0)
         -- Move to the last line of the sent expression
-        vim.api.nvim_win_set_cursor(0, { math.min(lnum + 2, last_line), 0 })
+        vim.api.nvim_win_set_cursor(0, { math.min(lnum + 1, last_line), 0 })
         -- Move to the start of the next expression
         -- Should this be changed to move you to the start of the next comment,
         -- now that sending from that location will also cause the next bit
