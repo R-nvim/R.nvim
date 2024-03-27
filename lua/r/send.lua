@@ -5,35 +5,105 @@ local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 
---- Check if line ends with operator symbol
+--- Check if line is a comment
 ---@param line string
 ---@return boolean
-local ends_with_operator = function(line)
-    local op_pattern = { "&", "|", "+", "-", "%*", "%/", "%=", "~", "%-", "%<", "%>" }
-    local clnline = line:gsub("#.*", "")
-    local has_op = false
-    for _, v in pairs(op_pattern) do
-        if clnline:find(v .. "%s*$") then
-            has_op = true
-            break
-        end
+local is_comment = function(line) return line:find("^%s*#") ~= nil end
+
+--- Check if a line is blank
+---@param line string
+---@return boolean
+local is_blank = function(line) return line:find("^%s*$") ~= nil end
+
+--- Check if a line is blank or a comment
+---@param line string
+---@return boolean
+local is_insignificant = function(line) return is_comment(line) or is_blank(line) end
+
+--- Manually set up an R parser for the current quarto/rmd/rnoweb chunk
+---@param txt string The text for the line the cursor is currently on
+---@param row number The row the cursor is currently on
+local ensure_ts_parser_exists = function(txt, row)
+    local chunk_start_pattern, chunk_end_pattern
+
+    if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
+        chunk_start_pattern = "^%s*```"
+        chunk_end_pattern = chunk_start_pattern
+    elseif vim.o.filetype == "rnoweb" then
+        chunk_start_pattern = "^<<"
+        chunk_end_pattern = "^@"
+    else
+        return
     end
-    return has_op
+
+    local chunk_start_row = row
+    local chunk_end_row = row
+    local chunk_txt = txt
+
+    while true do
+        chunk_txt = vim.fn.getline(chunk_start_row - 1)
+        if chunk_txt:find(chunk_start_pattern) ~= nil then break end
+        chunk_start_row = chunk_start_row - 1
+    end
+
+    while true do
+        chunk_txt = vim.fn.getline(chunk_end_row + 1)
+        if chunk_txt:find(chunk_end_pattern) ~= nil then break end
+        chunk_end_row = chunk_end_row + 1
+    end
+
+    vim.treesitter.get_parser(0, "r"):parse(chunk_start_row, chunk_end_row)
 end
 
---- Check if the number of brackets are balanced
----@param str string The line to check
----@return number
-local paren_diff = function(str)
-    local clnln = str
-    clnln = clnln:gsub('\\"', "")
-    clnln = clnln:gsub("\\'", "")
-    clnln = clnln:gsub('".-"', "")
-    clnln = clnln:gsub("'.-'", "")
-    clnln = clnln:gsub("#.*", "")
-    local llen1 = string.len(clnln:gsub("[%{%(%[]", ""))
-    local llen2 = string.len(clnln:gsub("[%}%)%]]", ""))
-    return llen1 - llen2
+--- Get the full expression the cursor is currently on
+---@param txt string The text for the line the cursor is currently on
+---@param row number The row the cursor is currently on
+---@return table, number
+local function get_code_to_send(txt, row)
+    if not config.parenblock then return {}, row end
+
+    local last_line = vim.api.nvim_buf_line_count(0)
+    local lines = {}
+    local send_insignificant_lines = false
+
+    -- Find the first non-blank row/column after the cursor ---------------
+    while is_insignificant(txt) do
+        if is_comment(txt) then send_insignificant_lines = true end
+        if send_insignificant_lines then table.insert(lines, txt) end
+        if row == last_line then return lines, row end
+        row = row + 1
+        txt = vim.fn.getline(row)
+    end
+
+    local col = txt:find("%S")
+
+    -- Find the 'root' node for the current expression --------------------
+    ensure_ts_parser_exists(txt, row)
+
+    local node = vim.treesitter.get_node({
+        bufnr = 0,
+        pos = { row - 1, col - 1 },
+        lang = "r",
+        -- Required for quarto/rmd/rnoweb where we need to inject a parser
+        ignore_injections = vim.o.filetype == "r",
+    })
+
+    local root_nodes = {
+        ["program"] = true,
+        ["brace_list"] = true,
+    }
+    local is_root = function(n) return root_nodes[n:type()] == true end
+
+    while true do
+        local parent = node:parent()
+        if is_root(parent) then break end
+        node = parent
+    end
+
+    row = node:end_()
+
+    table.insert(lines, vim.treesitter.get_node_text(node, 0))
+    return lines, row
 end
 
 local M = {}
@@ -436,10 +506,6 @@ end
 M.line = function(m, lnum)
     if not lnum then lnum = vim.api.nvim_win_get_cursor(0)[1] end
     local line = vim.fn.getline(lnum)
-    if #line == 0 then
-        if m == true then cursor.move_next_line() end
-        return
-    end
 
     if
         vim.o.filetype == "rnoweb"
@@ -496,38 +562,8 @@ M.line = function(m, lnum)
         return
     end
 
-    if vim.o.filetype == "r" then line = cursor.clean_oxygen_line(line) end
-
-    local has_op = false
-    local lines = {}
-    if config.parenblock then
-        local chunkend = nil
-        if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
-            chunkend = "```"
-        elseif vim.o.filetype == "rnoweb" then
-            chunkend = "@"
-        end
-        has_op = ends_with_operator(line)
-        local rpd = paren_diff(line)
-        if rpd < 0 or has_op then
-            lnum = lnum + 1
-            local last_buf_line = vim.api.nvim_buf_line_count(0)
-            lines = { line }
-            while lnum <= last_buf_line do
-                local txt = vim.fn.getline(lnum)
-                if chunkend and txt == chunkend then break end
-                table.insert(lines, txt)
-                rpd = rpd + paren_diff(txt)
-                has_op = ends_with_operator(txt)
-                if rpd < 0 or has_op then
-                    lnum = lnum + 1
-                else
-                    vim.api.nvim_win_set_cursor(0, { lnum, 0 })
-                    break
-                end
-            end
-        end
-    end
+    local lines
+    lines, lnum = get_code_to_send(line, lnum)
 
     if #lines > 0 then
         M.source_lines(lines, nil)
@@ -540,6 +576,13 @@ M.line = function(m, lnum)
     end
 
     if m == true then
+        local last_line = vim.api.nvim_buf_line_count(0)
+        -- Move to the last line of the sent expression
+        vim.api.nvim_win_set_cursor(0, { math.min(lnum + 1, last_line), 0 })
+        -- Move to the start of the next expression
+        -- Should this be changed to move you to the start of the next comment,
+        -- now that sending from that location will also cause the next bit
+        -- of significant code to be sent?
         cursor.move_next_line()
     elseif m == "newline" then
         vim.cmd("normal! o")
