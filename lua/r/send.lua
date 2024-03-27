@@ -5,55 +5,6 @@ local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 
---- Check if line ends with operator symbol
----@param line string
----@return boolean
-local ends_with_operator = function(line)
-    local op_patterns = {
-        "&",
-        "|",
-        "!",
-        "+",
-        "-",
-        "%^",
-        "%*",
-        "%/",
-        "%=",
-        "~",
-        "%-",
-        "%<",
-        "%>",
-        "%?",
-        "%%",
-        ":",
-        "@",
-        "%$",
-        "%[",
-    }
-    local clnline = line:gsub("#.*", "")
-
-    for _, v in pairs(op_patterns) do
-        if clnline:find(v .. "%s*$") then return true end
-    end
-
-    return false
-end
-
---- Check if the number of brackets are balanced
----@param str string The line to check
----@return number
-local paren_diff = function(str)
-    local clnln = str
-    clnln = clnln:gsub('\\"', "")
-    clnln = clnln:gsub("\\'", "")
-    clnln = clnln:gsub('".-"', "")
-    clnln = clnln:gsub("'.-'", "")
-    clnln = clnln:gsub("#.*", "")
-    local llen1 = string.len(clnln:gsub("[%{%(%[]", ""))
-    local llen2 = string.len(clnln:gsub("[%}%)%]]", ""))
-    return llen1 - llen2
-end
-
 --- Check if line is a comment
 ---@param line string
 ---@return boolean
@@ -69,14 +20,92 @@ local is_blank = function(line) return line:find("^%s*$") ~= nil end
 ---@return boolean
 local is_insignificant = function(line) return is_comment(line) or is_blank(line) end
 
---- Combine two tables
----@param t1 table
----@param t2 table
-local combine = function(t1, t2)
-    local out = {}
-    table.move(t1, 1, #t1, #out + 1, out)
-    table.move(t2, 1, #t2, #out + 1, out)
-    return out
+--- Manually set up an R parser for the current quarto/rmd/rnoweb chunk
+---@param txt string The text for the line the cursor is currently on
+---@param row number The row the cursor is currently on
+local ensure_ts_parser_exists = function(txt, row)
+    local chunk_start_pattern, chunk_end_pattern
+
+    if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
+        chunk_start_pattern = "^%s*```"
+        chunk_end_pattern = chunk_start_pattern
+    elseif vim.o.filetype == "rnoweb" then
+        chunk_start_pattern = "^<<"
+        chunk_end_pattern = "@"
+    else
+        return
+    end
+
+    local chunk_start_row = row
+    local chunk_end_row = row
+    local chunk_txt = txt
+
+    while true do
+        chunk_txt = vim.fn.getline(chunk_start_row - 1)
+        if chunk_txt:find(chunk_start_pattern) ~= nil then break end
+        chunk_start_row = chunk_start_row - 1
+    end
+
+    while true do
+        chunk_txt = vim.fn.getline(chunk_end_row + 1)
+        if chunk_txt:find(chunk_end_pattern) ~= nil then break end
+        chunk_end_row = chunk_end_row + 1
+    end
+
+    vim.treesitter.get_parser(0, "r"):parse(chunk_start_row, chunk_end_row)
+end
+
+--- Get the full expression the cursor is currently on
+---@param txt string The text for the line the cursor is currently on
+---@param row number The row the cursor is currently on
+---@return table, number
+local function get_code_to_send(txt, row)
+    if not config.parenblock then return {}, row end
+
+    local last_line = vim.api.nvim_buf_line_count(0)
+    local lines = {}
+    local send_insignificant_lines = false
+
+    -- Find the first non-blank row/column after the cursor ---------------
+    while is_insignificant(txt) do
+        if is_comment(txt) then send_insignificant_lines = true end
+        if send_insignificant_lines then table.insert(lines, txt) end
+        if row == last_line then return lines, row end
+        row = row + 1
+        txt = vim.fn.getline(row)
+    end
+
+    local col = txt:find("%S")
+
+    -- Find the 'root' node for the current expression --------------------
+    ensure_ts_parser_exists(txt, row)
+
+    local node = vim.treesitter.get_node({
+        bufnr = 0,
+        pos = { row - 1, col - 1 },
+        lang = "r",
+        -- Required for quart/rmd/rnoweb where we need to inject a parser
+        ignore_injections = vim.o.filetype == "r",
+    })
+
+    local is_root = function(n)
+        local terminating_nodes = {
+            ["program"] = true,
+            ["brace_list"] = true,
+        }
+        return terminating_nodes[n:type()] == true
+    end
+
+    while true do
+        local parent = node:parent()
+        if is_root(parent) then break end
+        node = parent
+    end
+
+    row = node:end_()
+
+    table.insert(lines, vim.treesitter.get_node_text(node, 0))
+    return lines, row
 end
 
 local M = {}
@@ -535,71 +564,8 @@ M.line = function(m, lnum)
         return
     end
 
-    local lines = {}
-
-    if config.parenblock then
-        local chunkstart = nil
-        local chunkend = nil
-        if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
-            chunkstart = "```"
-            chunkend = "```"
-        elseif vim.o.filetype == "rnoweb" then
-            chunkstart = "<<"
-            chunkend = "@"
-        end
-
-        local rpd = paren_diff(line)
-        local has_op = false
-
-        -- Prepend any 'unfinished' preceding lines
-        local prev_lines = {}
-        local lnum_prev = lnum - 1
-        while lnum_prev >= 0 do
-            local txt = vim.fn.getline(lnum_prev)
-            if chunkstart and txt:find("^" .. chunkstart) ~= nil then break end
-
-            if is_insignificant(txt) then
-                table.insert(prev_lines, 1, txt)
-                lnum_prev = lnum_prev - 1
-            else
-                has_op = ends_with_operator(txt)
-                if rpd > 0 or has_op then
-                    table.insert(prev_lines, 1, txt)
-                    lines = combine(prev_lines, lines)
-                    prev_lines = {}
-                    rpd = rpd + paren_diff(txt)
-                    lnum_prev = lnum_prev - 1
-                else
-                    break
-                end
-            end
-        end
-
-        if #lines > 0 or not is_blank(line) then table.insert(lines, line) end
-
-        -- Append following lines if the current line is 'unfinished'
-        if rpd < 0 or ends_with_operator(line) or is_insignificant(line) then
-            lnum = lnum + 1
-            local last_buf_line = vim.api.nvim_buf_line_count(0)
-            while lnum <= last_buf_line do
-                local txt = vim.fn.getline(lnum)
-                if chunkend and txt == chunkend then break end
-                if is_insignificant(txt) then
-                    if is_comment(txt) or #lines > 0 then table.insert(lines, txt) end
-                    lnum = lnum + 1
-                else
-                    rpd = rpd + paren_diff(txt)
-                    table.insert(lines, txt)
-                    if rpd < 0 or ends_with_operator(txt) then
-                        lnum = lnum + 1
-                    else
-                        vim.api.nvim_win_set_cursor(0, { lnum, 0 })
-                        break
-                    end
-                end
-            end
-        end
-    end
+    local lines
+    lines, lnum = get_code_to_send(line, lnum)
 
     if #lines > 0 then
         M.source_lines(lines, nil)
@@ -612,6 +578,13 @@ M.line = function(m, lnum)
     end
 
     if m == true then
+        local last_line = vim.api.nvim_buf_line_count(0)
+        -- Move to the last line of the sent expression
+        vim.api.nvim_win_set_cursor(0, { math.min(lnum + 2, last_line), 0 })
+        -- Move to the start of the next expression
+        -- Should this be changed to move you to the start of the next comment,
+        -- now that sending from that location will also cause the next bit
+        -- of significant code to be sent?
         cursor.move_next_line()
     elseif m == "newline" then
         vim.cmd("normal! o")
