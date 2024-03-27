@@ -31,7 +31,7 @@ local ensure_ts_parser_exists = function(txt, row)
         chunk_end_pattern = chunk_start_pattern
     elseif vim.o.filetype == "rnoweb" then
         chunk_start_pattern = "^<<"
-        chunk_end_pattern = "@"
+        chunk_end_pattern = "^@"
     else
         return
     end
@@ -84,16 +84,16 @@ local function get_code_to_send(txt, row)
         bufnr = 0,
         pos = { row - 1, col - 1 },
         lang = "r",
-        -- Required for quart/rmd/rnoweb where we need to inject a parser
+        -- Required for quarto/rmd/rnoweb where we need to inject a parser
         ignore_injections = vim.o.filetype == "r",
     })
 
+    local root_nodes = {
+        ["program"] = true,
+        ["brace_list"] = true,
+    }
     local is_root = function(n)
-        local terminating_nodes = {
-            ["program"] = true,
-            ["brace_list"] = true,
-        }
-        return terminating_nodes[n:type()] == true
+        return root_nodes[n:type()] == true
     end
 
     while true do
