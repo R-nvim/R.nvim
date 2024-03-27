@@ -92,9 +92,7 @@ local function get_code_to_send(txt, row)
         ["program"] = true,
         ["brace_list"] = true,
     }
-    local is_root = function(n)
-        return root_nodes[n:type()] == true
-    end
+    local is_root = function(n) return root_nodes[n:type()] == true end
 
     while true do
         local parent = node:parent()
