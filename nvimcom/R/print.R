@@ -15,7 +15,7 @@ nvim.print <- function(object, firstobj) {
     if (!exists(object, ns))
         warning("object '", object, "' not found")
     if (!missing(firstobj)) {
-        objclass <- nvimcom:::nvim.getclass(firstobj)
+        objclass <- nvim.getclass(firstobj)
         if (objclass[1] != "#E#" && objclass[1] != "") {
             saved.warn <- getOption("warn")
             options(warn = -1)
