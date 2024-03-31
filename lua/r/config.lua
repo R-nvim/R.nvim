@@ -96,7 +96,7 @@ local config = {
 local config_keys
 
 local user_opts = {}
-local did_global_setup = false
+local did_real_setup = false
 
 local show_config = function(tbl)
     local opt = tbl.args
@@ -677,7 +677,6 @@ local unix_config = function()
 end
 
 local global_setup = function()
-    did_global_setup = true
     validate_user_opts()
 
     -- Override default config values with user options for the first time.
@@ -795,6 +794,8 @@ end
 --- Set initial values of some internal variables.
 --- Set the default value of config variables that depend on system features.
 M.real_setup = function()
+    if did_real_setup then return end
+    did_real_setup = true
     local gtime = uv.hrtime()
 
     if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
@@ -804,7 +805,7 @@ M.real_setup = function()
         table.insert(config_keys, tostring(k))
     end
 
-    if not did_global_setup then global_setup() end
+    global_setup()
 
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
