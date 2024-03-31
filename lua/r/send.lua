@@ -52,7 +52,7 @@ local ensure_ts_parser_exists = function(txt, row)
         chunk_end_row = chunk_end_row + 1
     end
 
-    vim.treesitter.get_parser(0, "r"):parse(chunk_start_row, chunk_end_row)
+    vim.treesitter.get_parser(0, "r"):parse({ chunk_start_row, chunk_end_row })
 end
 
 --- Get the full expression the cursor is currently on
@@ -94,15 +94,19 @@ local function get_code_to_send(txt, row)
     }
     local is_root = function(n) return root_nodes[n:type()] == true end
 
-    while true do
-        local parent = node:parent()
-        if is_root(parent) then break end
-        node = parent
+    if node ~= nil then
+        while true do
+            local parent = node:parent()
+            if is_root(parent) then break end
+            node = parent
+        end
     end
 
-    row = node:end_()
+    if node then
+        row = node:end_()
+        table.insert(lines, vim.treesitter.get_node_text(node, 0))
+    end
 
-    table.insert(lines, vim.treesitter.get_node_text(node, 0))
     return lines, row
 end
 
