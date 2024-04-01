@@ -304,7 +304,9 @@ M.start = function(_)
     start_OB()
     running_objbr = false
 
-    if config.hook.after_ob_open then config.hook.after_ob_open() end
+    if config.hook.after_ob_open then
+        vim.schedule(function() config.hook.after_ob_open() end)
+    end
 end
 
 --- Return the active pane of the Object Browser

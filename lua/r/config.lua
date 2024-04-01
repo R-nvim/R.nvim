@@ -809,7 +809,9 @@ M.real_setup = function()
 
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
-    if config.hook.after_config then config.hook.after_config() end
+    if config.hook.after_config then
+        vim.schedule(function() config.hook.after_config() end)
+    end
 end
 
 --- Return the table with the final configure variables: the default values
