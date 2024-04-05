@@ -266,4 +266,119 @@ function M.system(cmd, opts)
     return setmetatable({ pid = state.pid, _state = state }, { __index = methods })
 end
 
+--- Read a Debian Control File (DFC)
+--- This format is commonly used in R, e.g. for package DESCRIPTION files,
+--- and by RStudio for .Rproj files.
+---
+--- This implementation is based on the Debian Policy Manual - see
+--- https://www.debian.org/doc/debian-policy/ch-controlfields.html for more
+--- information.
+---
+--- Also see ?read.dcf for the R implementation:
+--- https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/dcf
+---
+---@param x string The path to the file to be read
+---@return table # A table of dictionaries where each dictionary corresponds
+---  to a stanza, and each dictionary key/value to a field name/value
+function M.read_dcf(x)
+    local lines = vim.fn.readfile(x)
+
+    local stanzas = {}
+    local fields = {}
+    local cur_field_name = nil
+    local cur_field_val = ""
+
+    local has = function(string, pattern) return string:find(pattern) ~= nil end
+
+    -- stylua: ignore start
+    local valid_name_chrs = {
+        "!", '"', "#", "%$", "%%", "&", "'" ,"%(", "%)", "%*", "%+", ",", "%-",
+        "%.", "/",
+        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+        ";", "<", "=", ">", "%?", "@",
+        "A", "B", "C" , "D" , "E" , "F" , "G", "H" , "I" , "J", "K", "L" , "M",
+        "N", "O", "P" , "Q" , "R" , "S" , "T", "U" , "V" , "W", "X", "Y" , "Z",
+        "%[", "\\", "%]", "%^", "_", "`",
+        "a", "b", "c", "d", "e", "f" , "g" , "h" , "i" , "j" , "k" , "l" , "m",
+        "n", "o", "p", "q", "r", "s" , "t" , "u" , "v" , "w" , "x" , "y" , "z",
+        "{", "|", "}", "~"
+    }
+    local name_ptn = "[%" .. vim.fn.join(valid_name_chrs, "") .. "]+"
+    local is_valid_name         = function(string) return has(string, "^" .. name_ptn .. "$") end
+    local has_colon             = function(string) return has(string, "^[^%:]+:")             end
+    local is_continuation       = function(string) return has(string, "^%s+%S")               end
+    local is_valid_continuation = function(string) return has(string, "^%s+[^%s#%-]")         end
+    local is_newline            = function(string) return has(string, "^%s+%.")               end
+    local is_comment            = function(string) return has(string, "^#")                   end
+    local is_stanza_separator   = function(string) return has(string, "^%s*$")                end
+    local strip_whitespace      = function(string) return string:gsub("^%s+", "")             end
+    local split_definition_line = function(string)
+        local _, _, name, val = string:find("^([^:]+):%s*(.*)$")
+        name = name:gsub("%s+$", "")
+        val = val:gsub("%s+$", "")
+        return name, val
+    end
+    -- stylua: ignore end
+
+    local abort = function(msg) error("Malformed file `" .. x .. "`. " .. msg .. "?") end
+
+    local line_spacer = " "
+
+    for i, line in ipairs(lines) do
+        if not is_comment(line) then
+            -------------------------------------------------------------------
+            -- The current line is a stanza separator
+            -------------------------------------------------------------------
+            if is_stanza_separator(line) then
+                if cur_field_name ~= nil then fields[cur_field_name] = cur_field_val end
+                if vim.fn.len(fields) > 0 then
+                    table.insert(stanzas, fields)
+                    fields = {}
+                    cur_field_name = nil
+                    cur_field_val = ""
+                end
+
+            -------------------------------------------------------------------
+            -- The current line is a continuation of the previous field
+            -------------------------------------------------------------------
+            elseif is_continuation(line) then
+                if not is_valid_continuation(line) or cur_field_name == nil then
+                    abort("check line " .. tostring(i))
+                end
+                if is_newline(line) then
+                    cur_field_val = cur_field_val .. "\n"
+                    line_spacer = ""
+                else
+                    cur_field_val = cur_field_val .. line_spacer .. strip_whitespace(line)
+                    line_spacer = " "
+                end
+
+            -------------------------------------------------------------------
+            -- The current line is the start of a new field
+            -------------------------------------------------------------------
+            else
+                if not has_colon(line) then
+                    abort("Possible missing colon on line " .. tostring(i))
+                end
+                if cur_field_name ~= nil then fields[cur_field_name] = cur_field_val end
+                local name, val = split_definition_line(line)
+                if not is_valid_name(name) then
+                    abort("Possible invalid field name on line " .. tostring(i))
+                end
+                if vim.fn.len(fields) > 0 and vim.fn.has_key(fields, name) > 0 then
+                    abort("Possible duplicate field name on line " .. tostring(i))
+                end
+                cur_field_name, cur_field_val = name, val
+                line_spacer = " "
+            end
+        end
+    end
+
+    if cur_field_name ~= nil then fields[cur_field_name] = cur_field_val end
+
+    if vim.fn.len(fields) > 0 then table.insert(stanzas, fields) end
+
+    return stanzas
+end
+
 return M
