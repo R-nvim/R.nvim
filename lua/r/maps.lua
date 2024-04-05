@@ -137,6 +137,9 @@ local control = function(file_type)
     create_maps("v",   "RViewDF",           "rv", "<Cmd>lua require('r.run').action('viewobj', 'v')")
     create_maps("v",   "RDputObj",          "td", "<Cmd>lua require('r.run').action('dputtab', 'v')")
 
+    create_maps("nvi", "RSplitPathPaste",    "sp", "<Cmd>lua require('r.path').split_path('paste')")
+    create_maps("nvi", "RSplitPathHere",    "sh", "<Cmd>lua require('r.path').split_path('here')")
+
     if type(config.csv_app) == "function" or config.csv_app == "" then
         create_maps("ni",  "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"split\"')")
         create_maps("ni",  "RViewDFv",          "vv", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"vsplit\"')")
