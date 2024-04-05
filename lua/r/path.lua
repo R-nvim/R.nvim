@@ -21,7 +21,7 @@ local unquote_and_split_file_path = function(file_path)
     return result
 end
 
-local function replace_string(node, formatted_path)
+local function replace_path(node, formatted_path)
     local bufnr = vim.api.nvim_get_current_buf()
     local start_row, start_col, end_row, end_col = node:range()
 
@@ -42,7 +42,12 @@ M.split_path = function(prefix)
         local path = vim.treesitter.get_node_text(node, 0)
 
         -- Check if the path is a URL or doesn't contain slashes
-        if path:match("https?://") or path:match("ftp://") or not path:match("/") then
+        if
+            path:match("https?://")
+            or path:match("ftp://")
+            or path:match("s3://")
+            or not path:match("/")
+        then
             return
         end
 
@@ -67,7 +72,7 @@ M.split_path = function(prefix)
             formatted_path = 'here("' .. formatted_path .. '")'
         end
 
-        replace_string(node, formatted_path)
+        replace_path(node, formatted_path)
     end
 end
 
