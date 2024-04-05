@@ -364,42 +364,51 @@ char *complete_args(char *p, char *funcnm) {
             s = pd->objls;
             while (*s != 0) {
                 if (strcmp(s, funcnm) == 0) {
-                    i = 4;
-                    while (i) {
+                    while (*s)
                         s++;
-                        if (*s == 0)
-                            i--;
-                    }
                     s++;
-                    while (*s) {
-                        i = 0;
-                        p = str_cat(p, "{label = '");
-                        while (*s != '\x05' && i < 63) {
-                            if (*s == '\x04') {
-                                a[i] = ' ';
-                                i++;
-                                a[i] = '=';
-                                i++;
-                                a[i] = ' ';
-                                i++;
-                                while (*s != '\x05')
-                                    s++;
-                            } else {
-                                a[i] = *s;
-                                i++;
-                                s++;
-                            }
+                    if (*s == '(') { // Check if it's a function
+                        i = 3;
+                        while (i) {
+                            s++;
+                            if (*s == 0)
+                                i--;
                         }
-                        a[i] = 0;
-                        p = str_cat(p, a);
-                        p = str_cat(p, "', cls = 'a', env='");
-                        p = str_cat(p, pd->name);
-                        p = str_cat(p, "\x02");
-                        p = str_cat(p, funcnm);
-                        p = str_cat(p, "'},");
+                        s++;
+                        while (*s) {
+                            i = 0;
+                            p = str_cat(p, "{label = '");
+                            while (*s != '\x05' && i < 63) {
+                                if (*s == '\x04') {
+                                    a[i] = ' ';
+                                    i++;
+                                    a[i] = '=';
+                                    i++;
+                                    a[i] = ' ';
+                                    i++;
+                                    while (*s != '\x05')
+                                        s++;
+                                } else {
+                                    a[i] = *s;
+                                    i++;
+                                    s++;
+                                }
+                            }
+                            a[i] = 0;
+                            p = str_cat(p, a);
+                            p = str_cat(p, "', cls = 'a', env='");
+                            p = str_cat(p, pd->name);
+                            p = str_cat(p, "\x02");
+                            p = str_cat(p, funcnm);
+                            p = str_cat(p, "'},");
+                            s++;
+                        }
+                        break;
+                    } else {
+                        while (*s != '\n')
+                            s++;
                         s++;
                     }
-                    break;
                 } else {
                     while (*s != '\n')
                         s++;

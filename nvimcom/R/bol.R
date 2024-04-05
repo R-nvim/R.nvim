@@ -172,6 +172,10 @@ nvim.getInfo <- function(printenv, x) {
 #' @param maxlevel Maximum number of levels in lists and S4 objects to parse,
 #' with 0 meanin no limit.
 nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
+    # No support for names with apostrophes, such as magrittr::`n'est pas`
+    if (nvim.grepl("'", x))
+        return(invisible(NULL))
+
     if (curlevel == 0) {
         xx <- try(get(x, envir), silent = TRUE)
         if (inherits(xx, "try-error"))
