@@ -58,6 +58,8 @@ local map_desc = {
     RSetwd              = { m = "", k = "", c = "Command",  d = "Send to R setwd(<directory of current document>)" },
     RObjectStr          = { m = "", k = "", c = "Command",  d = "Send to R: str(<cword>)" },
     RSummary            = { m = "", k = "", c = "Command",  d = "Send to R: summary(<cword>)" },
+    RSplitPathPaste     = { m = "", k = "", c = "Command",  d = "Split the path of the file under the cursor and paste it using the paste() prefix function" },
+    RSplitPathHere      = { m = "", k = "", c = "Command",  d = "Split the path of the file under the cursor and open it using the here() prefix function" },
     RKnitRmCache        = { m = "", k = "", c = "Weave",    d = "Delete files from knitr cache" },
     RMakePDFKb          = { m = "", k = "", c = "Weave",    d = "Knit the current document and generate a beamer presentation" },
     RMakeAll            = { m = "", k = "", c = "Weave",    d = "Knit the current document and generate all formats in the header" },
