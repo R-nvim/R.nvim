@@ -42,7 +42,9 @@ M.split_path = function(prefix)
         local path = vim.treesitter.get_node_text(node, 0)
 
         -- Check if the path is a URL or doesn't contain slashes
-        if path:match("^(https?|ftp)://") or not path:match("/") then return end
+        if path:match("https?://") or path:match("ftp://") or not path:match("/") then
+            return
+        end
 
         -- Traverse up the syntax tree until we find a call_expression node
         local parent = node:parent()
