@@ -82,7 +82,6 @@ instructions on usage. See also the output of `:RMapsDesc`.
 
 ## Transitioning from Nvim-R
 
-
 During the conversion of VimScript to Lua, we decided to end support for features
 that were useful in the past but no longer sufficiently valuable to be worth
 the effort of conversion. We removed support for `Rrst` (it seems that not
@@ -92,7 +91,7 @@ legacy omni-completion (auto completion with
 functions from .GlobalEnv (difficult to make compatible with tree-sitter + LSP
 highlighting).
 
-We changed the default key binding to insert the assignment operator (` <- `) from an
+We changed the default key binding to insert the assignment operator (`<-`) from an
 underscore (which was familiar to Emacs-ESS users) to `Alt+-` which is more
 convenient (but does not work on Vim). See the option `assign_map`.
 
@@ -140,6 +139,20 @@ function `colorout::isColorOut()` which unduly enables the colorizing of
 output in the released version of [colorout]. This bug was fixed in [this
 commit](https://github.com/jalvesaq/colorout/commit/1080187f9474b71f16c3c0be676de4c54863d1e7).
 
+There are two new commands available to separate a file path into its different
+components.
+
+The first command, <localleader>sp, will take the file path under
+the cursor and break it down into its components, then surround it with the
+`paste()` function.
+
+The second command, <localleader>sh, will also break down
+the file path under the cursor into its components, but instead surround it
+with the `here()` function.
+
+It's important to note that both functions require
+the [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
+plugin to be installed.
 
 ## Screenshots and videos
 
@@ -192,7 +205,6 @@ but temporary files are used in a few cases.
 - [languageserver](https://cran.r-project.org/web/packages/languageserver/index.html): a language server for R.
 
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's output.
-
 
 [cmp-r]: https://github.com/R-nvim/cmp-r
 [Neovim]: https://github.com/neovim/neovim

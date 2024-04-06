@@ -35,7 +35,7 @@ local function replace_path(node, formatted_path)
     )
 end
 
-M.split_path = function(prefix)
+M.separate = function(prefix)
     local node = vim.treesitter.get_node()
 
     if node and node:type() == "string" then
