@@ -154,6 +154,18 @@ It's important to note that both functions require
 the [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
 plugin to be installed.
 
+For example, if you have the following file path under the cursor:
+
+```r
+read.csv("/home/user/Documents/file.csv")
+```
+
+Running the <localleader>sp command will transform it into:
+
+```r
+read.csv(paste("/home", "user", "Documents", "file.csv", sep = "/"))
+```
+
 ## Screenshots and videos
 
 None yet. Tell us if you published a video presenting R.nvim features.
