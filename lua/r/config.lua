@@ -826,6 +826,8 @@ end
 M.get_config = function() return config end
 
 M.check_health = function()
+    local htime = uv.hrtime()
+
     -- Check if either Vim-R-plugin or Nvim-R is installed
     if vim.fn.exists("*WaitVimComStart") ~= 0 then
         warn("Please, uninstall Vim-R-plugin before using R.nvim.")
@@ -842,6 +844,37 @@ M.check_health = function()
     end
 
     if vim.fn.has("nvim-0.9.5") ~= 1 then warn("R.nvim requires Neovim >= 0.9.5") end
+
+    -- Check if treesitter is available
+    local has_treesitter, _ = pcall(require, "nvim-treesitter")
+    if not has_treesitter then
+        warn(
+            'R.nvim requires nvim-treesitter. Please install it and the parsers for "r", "markdown", and "rnoweb".'
+        )
+    else
+        -- Check if required treesitter parsers are available
+        local parsers = vim.api.nvim_get_runtime_file("parser/*.*", true)
+        local has_r_parser = false
+        local has_markdown_parser = false
+        local has_rnoweb_parser = false
+        for _, v in pairs(parsers) do
+            if v:find("parser/r.", 1, true) then
+                has_r_parser = true
+            elseif v:find("parser/markdown.", 1, true) then
+                has_markdown_parser = true
+            elseif v:find("parser/rnoweb.", 1, true) then
+                has_rnoweb_parser = true
+            end
+        end
+        if not has_r_parser or not has_rnoweb_parser or not has_markdown_parser then
+            warn(
+                'R.nvim requires treesitter parsers for "r", "markdown" and "rnoweb". Please, install them.'
+            )
+        end
+    end
+
+    htime = (uv.hrtime() - htime) / 1000000000
+    require("r.edit").add_to_debug_info("check health (async)", htime, "Time")
 end
 
 return M

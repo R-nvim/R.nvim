@@ -66,7 +66,7 @@ M.setup = function()
     require("r.utils").get_focused_win_info()
 
     ptime = (uv.hrtime() - ptime) / 1000000000
-    require("r.edit").add_to_debug_info("pdf setup", ptime, "Time")
+    require("r.edit").add_to_debug_info("pdf setup (async)", ptime, "Time")
 end
 
 --- Call the appropriate function to open a PDF document.

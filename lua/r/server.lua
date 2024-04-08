@@ -257,7 +257,7 @@ local init_exit = function(_, data, _)
     end
     if cnv_again == 0 then
         b_time = (uv.hrtime() - b_time) / 1000000000
-        edit.add_to_debug_info("before_rns.R", b_time, "Time")
+        edit.add_to_debug_info("before_rns.R (async)", b_time, "Time")
     end
 end
 

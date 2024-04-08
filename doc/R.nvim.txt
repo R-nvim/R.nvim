@@ -85,6 +85,9 @@ Main dependencies:
       https://github.com/neovim/neovim/releases
       See also: https://github.com/neovim/neovim/wiki/Installing-Neovim
 
+   nvim-treesitter + parsers for `r`, `markdown` and `rnoweb`:
+      https://github.com/nvim-treesitter/nvim-treesitter
+
    cmp-r (for auto-completion):
       https://github.com/R-nvim/cmp-r
 

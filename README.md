@@ -19,6 +19,15 @@ Minimal configuration:
     "R-nvim/R.nvim",
     lazy = false
   },
+  {
+    "nvim-treesitter/nvim-treesitter",
+    run = ":TSUpdate",
+    config = function ()
+      require("nvim-treesitter.configs").setup({
+        ensure_installed = { "markdown", "markdown_inline", "r", "rnoweb" },
+      })
+    end
+  },
   "R-nvim/cmp-r",
   {
     "hrsh7th/nvim-cmp",
@@ -29,7 +38,7 @@ Minimal configuration:
   },
 ```
 
-More complex configuration (but not including `cmp`):
+More complex configuration (for `R.nvim` only):
 
 ```lua
     {
@@ -82,6 +91,8 @@ instructions on usage. See also the output of `:RMapsDesc`.
 
 ## Transitioning from Nvim-R
 
+### Changes
+
 During the conversion of VimScript to Lua, we decided to end support for features
 that were useful in the past but no longer sufficiently valuable to be worth
 the effort of conversion. We removed support for `Rrst` (it seems that not
@@ -95,9 +106,9 @@ We changed the default key binding to insert the assignment operator (`<-`) from
 underscore (which was familiar to Emacs-ESS users) to `Alt+-` which is more
 convenient (but does not work on Vim). See the option `assign_map`.
 
-We replaced the options `R_source` and `after_R_start` with `hook` and we can
-insert other hooks for Lua functions at other parts of the code under user
-request.
+We replaced the options `R_source` and `after_R_start` with some more specific
+`hook`s and we can insert other hooks for Lua functions at other parts of the
+code under user request.
 
 We removed the `"echo"` parameters from the functions that send code to R
 Console. Users can still set the value of `source_args` to define the
@@ -119,6 +130,8 @@ default value is "no".
 The option `notmuxconf` was renamed as `config_tmux` to avoid the negation of
 the negation `notmuxconf=false` or the even more awkward confirmation of the
 negation `notmuxconf=true`. The default value of `config_tmux` is `true`.
+
+### New features
 
 There are two new commands:
 
