@@ -35,6 +35,7 @@ local config = {
     help_w              = 46,
     hl_term             = true,
     hook                = {
+                              on_filetype = nil,
                               after_config = nil,
                               after_R_start = nil,
                               after_ob_open = nil
@@ -676,47 +677,7 @@ local unix_config = function()
     require("r.edit").add_to_debug_info("unix setup", utime, "Time")
 end
 
-local global_setup = function()
-    validate_user_opts()
-
-    -- Override default config values with user options for the first time.
-    -- Some config options depend on others to have their default values set.
-    for k, v in pairs(user_opts) do
-        config[k] = v
-    end
-
-    -- Config values that depend on either system features or other config
-    -- values.
-    set_editing_mode()
-
-    if type(config.external_term) == "boolean" and config.external_term == false then
-        config.auto_quit = true
-    end
-
-    -- Load functions that were not converted to Lua yet
-    -- Configure more values that depend on either system features or other
-    -- config values.
-    -- Fix some invalid values
-    -- Calls to system() and executable() must run
-    -- asynchronously to avoid slow startup on macOS.
-    -- See https://github.com/jalvesaq/Nvim-R/issues/625
-    do_common_global()
-    if config.is_windows then
-        windows_config()
-    else
-        unix_config()
-    end
-    set_pdf_viewer()
-
-    -- Override default config values with user options for the second time.
-    for k, v in pairs(user_opts) do
-        config[k] = v
-    end
-
-    vim.fn.timer_start(1, require("r.config").check_health)
-
-    -- Commands:
-    -- See: :help lua-guide-commands-create
+local create_user_commands = function()
     vim.api.nvim_create_user_command(
         "RStop",
         function(_) require("r.run").signal_to_R("SIGINT") end,
@@ -768,8 +729,64 @@ local global_setup = function()
         nargs = "?",
         complete = function() return config_keys end,
     })
+end
 
+local global_setup = function()
+    local gtime = uv.hrtime()
+
+    if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
+
+    config_keys = {}
+    for k, _ in pairs(config) do
+        table.insert(config_keys, tostring(k))
+    end
+
+    validate_user_opts()
+
+    -- Override default config values with user options for the first time.
+    -- Some config options depend on others to have their default values set.
+    for k, v in pairs(user_opts) do
+        config[k] = v
+    end
+
+    -- Config values that depend on either system features or other config
+    -- values.
+    set_editing_mode()
+
+    if type(config.external_term) == "boolean" and config.external_term == false then
+        config.auto_quit = true
+    end
+
+    -- Load functions that were not converted to Lua yet
+    -- Configure more values that depend on either system features or other
+    -- config values.
+    -- Fix some invalid values
+    -- Calls to system() and executable() must run
+    -- asynchronously to avoid slow startup on macOS.
+    -- See https://github.com/jalvesaq/Nvim-R/issues/625
+    do_common_global()
+    if config.is_windows then
+        windows_config()
+    else
+        unix_config()
+    end
+    set_pdf_viewer()
+
+    -- Override default config values with user options for the second time.
+    for k, v in pairs(user_opts) do
+        config[k] = v
+    end
+
+    create_user_commands()
+    vim.fn.timer_start(1, require("r.config").check_health)
     vim.schedule(function() require("r.server").check_nvimcom_version() end)
+
+    if config.hook.after_config then
+        vim.schedule(function() config.hook.after_config() end)
+    end
+
+    gtime = (uv.hrtime() - gtime) / 1000000000
+    require("r.edit").add_to_debug_info("global setup", gtime, "Time")
 end
 
 local M = {}
@@ -794,23 +811,12 @@ end
 --- Set initial values of some internal variables.
 --- Set the default value of config variables that depend on system features.
 M.real_setup = function()
-    if did_real_setup then return end
-    did_real_setup = true
-    local gtime = uv.hrtime()
-
-    if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
-
-    config_keys = {}
-    for k, _ in pairs(config) do
-        table.insert(config_keys, tostring(k))
+    if not did_real_setup then
+        did_real_setup = true
+        global_setup()
     end
-
-    global_setup()
-
-    gtime = (uv.hrtime() - gtime) / 1000000000
-    require("r.edit").add_to_debug_info("global setup", gtime, "Time")
-    if config.hook.after_config then
-        vim.schedule(function() config.hook.after_config() end)
+    if config.hook.on_filetype then
+        vim.schedule(function() config.hook.on_filetype() end)
     end
 end
 

@@ -1451,7 +1451,8 @@ Zathura on Linux, but you can change the values of `synctex` and `pdfviewer`
 in your config if you don't need SyncTeX support. Example:
 >lua
    synctex = false
-   pdfviewer = "evince"
+   pdfviewer = "open"     -- Default PDF viewer on macOS or Windows
+   pdfviewer = "xdg-open" -- Default PDF viewer on Linux
 <
 If editing an Rmd file, you can produce the html result with <LocalLeader>kr
 or <LocalLeader>kh (it may also work with other file types). The html file
@@ -1555,14 +1556,15 @@ The default value of `setwd` is "no". See also 'autochdir'.
 
 
 ------------------------------------------------------------------------------
-6.28. Commands to be executed after either R startup or Object Browser opening
-                                                                        *hook*
+6.28. Custom Lua functions to be executed on specific moments           *hook*
 
 If you want the execution of a Lua function just after the configuration is
-finished for each buffer, R startup or the Object Browser opening, set the
-`hook` config option, as in the example below:
+finished for each buffer, after the global plugin configuration, R startup or
+the Object Browser opening, set the `hook` config option, as in the example
+below:
 >lua
    hook = {
+       on_filetype =  function() vim.notify("R.nvim FileType event") end,
        after_config = function() vim.notify("R.nvim is configured") end,
        after_R_start = function() vim.notify("R was launched") end,
        after_ob_open = nil,
@@ -1738,18 +1740,15 @@ and passes them to R as a command. For example, if your cursor is over the
 object called "gender" and you call the `action` function, with the argument
 "levels", Neovim will pass the command `levels(gender)` to R. To make it even
 easier to use this and other functions, you could write custom key bindings
-insinde the function passed to `hook.after_config` as in the examples below
+insinde the function passed to `hook.on_filetype` as in the examples below
 (see |hook|):
 >lua
    hook = {
-       after_config = function()
+       on_filetype = function()
            -- Creating maps to "<Plug>RDSendLine" and "<Plug>RSendSelection"
            -- will prevent R.nvim of creating its default maps to them.
-           if vim.o.syntax ~= "rbrowser" then
-               -- Don't map "<Enter>" in the Object Browser
-               vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
-               vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
-           end
+           vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
+           vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
 
            vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>L", "<Cmd>lua require('r.run').action('levels')<CR>", {})
 
