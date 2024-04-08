@@ -20,41 +20,6 @@ local is_blank = function(line) return line:find("^%s*$") ~= nil end
 ---@return boolean
 local is_insignificant = function(line) return is_comment(line) or is_blank(line) end
 
---- Manually set up an R parser for the current quarto/rmd/rnoweb chunk
----@param txt string The text for the line the cursor is currently on
----@param row number The row the cursor is currently on
-local ensure_ts_parser_exists = function(txt, row)
-    local chunk_start_pattern, chunk_end_pattern
-
-    if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
-        chunk_start_pattern = "^%s*```"
-        chunk_end_pattern = chunk_start_pattern
-    elseif vim.o.filetype == "rnoweb" then
-        chunk_start_pattern = "^<<"
-        chunk_end_pattern = "^@"
-    else
-        return
-    end
-
-    local chunk_start_row = row
-    local chunk_end_row = row
-    local chunk_txt = txt
-
-    while true do
-        chunk_txt = vim.fn.getline(chunk_start_row - 1)
-        if chunk_txt:find(chunk_start_pattern) ~= nil then break end
-        chunk_start_row = chunk_start_row - 1
-    end
-
-    while true do
-        chunk_txt = vim.fn.getline(chunk_end_row + 1)
-        if chunk_txt:find(chunk_end_pattern) ~= nil then break end
-        chunk_end_row = chunk_end_row + 1
-    end
-
-    vim.treesitter.get_parser(0, "r"):parse({ chunk_start_row, chunk_end_row })
-end
-
 --- Get the full expression the cursor is currently on
 ---@param txt string The text for the line the cursor is currently on
 ---@param row number The row the cursor is currently on
@@ -78,28 +43,21 @@ local function get_code_to_send(txt, row)
     local col = txt:find("%S")
 
     -- Find the 'root' node for the current expression --------------------
-    ensure_ts_parser_exists(txt, row)
-
+    local n_lang = vim.o.filetype == "rnoweb" and "r" or nil
     local node = vim.treesitter.get_node({
         bufnr = 0,
         pos = { row - 1, col - 1 },
-        lang = "r",
-        -- Required for quarto/rmd/rnoweb where we need to inject a parser
-        ignore_injections = vim.o.filetype == "r",
+        lang = n_lang,
+        -- Required for quarto/rmd/rnoweb; harmless for r.
+        ignore_injections = false,
     })
 
-    local root_nodes = {
-        ["program"] = true,
-        ["brace_list"] = true,
-    }
-    local is_root = function(n) return root_nodes[n:type()] == true end
-
-    if node ~= nil then
-        while true do
-            local parent = node:parent()
-            if is_root(parent) then break end
-            node = parent
+    while node do
+        local parent = node:parent()
+        if parent and (parent:type() == "program" or parent:type() == "brace_list") then
+            break
         end
+        node = parent
     end
 
     if node then
@@ -551,16 +509,7 @@ M.line = function(m, lnum)
         end
     end
 
-    if vim.o.syntax == "rdoc" then
-        local line1 = vim.api.nvim_get_current_line()
-        if line1:find("^The topic") then
-            local topic = line:gsub(".*::", "")
-            local package = line:gsub("::.*", "")
-            require("r.rdoc").ask_R_doc(topic, package, true)
-            return
-        end
-        if not require("r.rdoc").is_in_R_code(true) then return end
-    end
+    if vim.o.syntax == "rdoc" and not require("r.rdoc").is_in_R_code(true) then return end
 
     if vim.o.filetype == "rhelp" and not require("r.rhelp").is_in_R_code(true) then
         return
