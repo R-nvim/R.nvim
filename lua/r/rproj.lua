@@ -95,17 +95,19 @@ end
 
 --- Apply configuration from a .Rproj file to R.nvim's config
 ---
+--- Currently only does anything with 'UseNativePipeOperator'
+---
 ---@param config table I.e. `require("r.config").config`
 ---@param force? boolean Apply the .Rproj settings, regardless of
----  require("r.config").config.rproj_config
+---  require("r.config").config.rproj_prioritise
 ---@param file? string The .Rproj file to use
 function M.apply_settings(config, force, file)
     local fields = M.parse(file)
     if not fields then return end
-    if not config.rproj_config then return end
+    if not config.rproj_prioritise then return end
 
     local to_update = function(x)
-        for i, val in ipairs(config.rproj_config) do
+        for i, val in ipairs(config.rproj_prioritise) do
             if val == x then return true end
         end
         return false

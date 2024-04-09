@@ -16,6 +16,9 @@ local config = {
     arrange_windows     = true,
     assign              = true,
     assign_map          = "<M-->",
+    pipe                = true,
+    pipe_map            = "<localleader>m",
+    use_native_pipe     = true,
     auto_scroll         = true,
     auto_start          = "no",
     auto_quit           = false,
@@ -75,6 +78,9 @@ local config = {
     rnowebchunk         = true,
     rnvim_home          = "",
     routnotab           = false,
+    rproj_prioiritise   = {
+                               "use_native_pipe"
+                          },
     save_win_pos        = true,
     set_home_env        = true,
     setwidth            = 2,
@@ -818,6 +824,14 @@ M.real_setup = function()
     if config.hook.on_filetype then
         vim.schedule(function() config.hook.on_filetype() end)
     end
+end
+
+--- Apply config from a .Rproj file to the config
+---@param force? boolean Apply the .Rproj settings, regardless of
+---  require("r.config").config.rproj_prioiritise
+---@param file? string The .Rproj file to use
+M.rproj_setup = function(force, file)
+    require("r.rproj").apply_settings(config, force, file)
 end
 
 --- Return the table with the final configure variables: the default values

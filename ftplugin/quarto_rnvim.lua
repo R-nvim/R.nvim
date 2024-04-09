@@ -7,4 +7,5 @@ then
 end
 
 require("r.config").real_setup()
+require("r.config").rproj_setup()
 require("r.rmd").setup()

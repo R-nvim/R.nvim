@@ -7,6 +7,7 @@ then
 end
 
 require("r.config").real_setup()
+require("r.config").rproj_setup()
 
 local config = require("r.config").get_config()
 
