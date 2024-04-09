@@ -8,18 +8,36 @@ local M = {}
 -- number.
 ---@return number, number
 M.get_current = function()
-    local current_line = vim.api.nvim_win_get_cursor(0)[1]
-    local start_line = current_line
-    local end_line = current_line
+    local start_line = vim.api.nvim_win_get_cursor(0)[1]
+    local end_line = start_line
 
     -- Find the start of the paragraph
-    while start_line > 1 and vim.fn.trim(vim.fn.getline(start_line - 1)) ~= "" do
+    while start_line > 1 do
+        local line = vim.fn.trim(vim.fn.getline(start_line - 1))
+        if
+            line == ""
+            or (vim.o.filetype == "rnoweb" and line:find("^<<"))
+            or (
+                (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
+                and line:find("^```%{")
+            )
+        then
+            break
+        end
         start_line = start_line - 1
     end
 
     -- Find the end of the paragraph
     local last_line = vim.api.nvim_buf_line_count(0)
-    while end_line < last_line and vim.fn.trim(vim.fn.getline(end_line + 1)) ~= "" do
+    while end_line < last_line do
+        local line = vim.fn.trim(vim.fn.getline(end_line + 1))
+        if
+            line == ""
+            or (vim.o.filetype == "rnoweb" and line == "@")
+            or ((vim.o.filetype == "rmd" or vim.o.filetype == "quarto") and line == "```")
+        then
+            break
+        end
         end_line = end_line + 1
     end
 
