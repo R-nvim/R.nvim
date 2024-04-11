@@ -70,7 +70,7 @@ M.move_next_line = function()
         if filetype == "rnoweb" and string.sub(curline, 1, 1) == "@" then
             require("r.rnw").next_chunk()
             return
-        elseif (filetype == "rmd" or filetype == "quarto") and curline:find("^```$") ~= nil then
+        elseif (filetype == "rmd" or filetype == "quarto") and curline:find("^```$") then
             require("r.rmd").next_chunk()
             return
         end

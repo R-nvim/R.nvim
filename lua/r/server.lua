@@ -315,7 +315,7 @@ local add_to_Rhelp_list = function(lib)
     -- List of objects for :Rhelp completion
     for _, xx in ipairs(olist) do
         local xxx = vim.fn.split(xx, "\006")
-        if #xxx > 0 and not string.match(xxx[1], "\\$") then
+        if #xxx > 0 and not string.match(xxx[1], "%$") then
             table.insert(rhelp_list, xxx[1])
         end
     end

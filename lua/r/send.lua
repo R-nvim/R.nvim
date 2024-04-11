@@ -240,9 +240,8 @@ end
 ---@param line string The chunk header.
 ---@param m boolean True if should move to the next chunk.
 local knit_child = function(line, m)
-    local nline = line:gsub(".*child *= *", "")
-    local cfile = nline:gsub(nline:sub(1, 1), "")
-    cfile = cfile:gsub(nline:sub(1, 1) .. ".*", "")
+    local nline = line:gsub(".*child *[:=] *['\"]", "")
+    local cfile = nline:gsub("['\"].*", "")
     if vim.fn.filereadable(cfile) == 1 then
         M.cmd("require(knitr); knit('" .. cfile .. "', output=NULL)")
         if m then
@@ -267,7 +266,7 @@ M.chunks_up_to_here = function()
         local begchk, endchk, chdchk
 
         if filetype == "rnoweb" then
-            begchk = "^<<.*>>=\\$"
+            begchk = "^<<.*>>=$"
             endchk = "^@"
             chdchk = "^<<.*child *= *"
         elseif filetype == "rmd" or filetype == "quarto" then
@@ -281,8 +280,7 @@ M.chunks_up_to_here = function()
         end
 
         if
-            curbuf[idx + 1]:match(begchk)
-            and not curbuf[idx + 1]:match("\\<eval\\s*=\\s*F")
+            curbuf[idx + 1]:find(begchk) and not curbuf[idx + 1]:find("[<, ]eval *= *F")
         then
             -- Child R chunk
             if curbuf[idx + 1]:match(chdchk) then
@@ -295,9 +293,25 @@ M.chunks_up_to_here = function()
                 idx = idx + 1
             else
                 idx = idx + 1
+                local i = idx + 1
+                local j = idx + 1
                 while not curbuf[idx + 1]:match(endchk) and idx < here do
-                    table.insert(codelines, curbuf[idx + 1])
+                    -- skip chunk if `eval: false` and `child: *`
+                    if curbuf[j]:find("^#| *eval: *false") then
+                        j = i - 1
+                        break
+                    elseif curbuf[j]:find("^#| *child: ") then
+                        M.source_lines(codelines, "chunk")
+                        codelines = {}
+                        knit_child(curbuf[j], false)
+                        j = i - 1
+                        break
+                    end
                     idx = idx + 1
+                    j = idx
+                end
+                for k = i, j, 1 do
+                    table.insert(codelines, curbuf[k])
                 end
             end
         else
