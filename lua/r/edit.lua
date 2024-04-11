@@ -25,16 +25,19 @@ M.assign = function()
 end
 
 M.pipe = function()
-    local pipe_symbol
-    if config.use_native_pipe then
-        pipe_symbol = " |> "
-    else
-        pipe_symbol = " %>% "
-    end
+    local pipe_opts = {
+        native = " |> ",
+        ["|>"] = " |> ",
+        magrittr = " %>% ",
+        ["%>%"] = " %>% ",
+    }
+
+    local pipe_symbol = pipe_opts[config.pipe.version]
+
     if vim.b.IsInRCode(false) then
         vim.fn.feedkeys(pipe_symbol, "n")
     else
-        vim.fn.feedkeys(config.assign_pipe, "n")
+        vim.fn.feedkeys(config.pipe.keymap, "n")
     end
 end
 

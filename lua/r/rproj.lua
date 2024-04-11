@@ -98,26 +98,23 @@ end
 --- Currently only does anything with 'UseNativePipeOperator'
 ---
 ---@param config table I.e. `require("r.config").config`
+---@param file? string The .Rproj file to use
 ---@param force? boolean Apply the .Rproj settings, regardless of
 ---  require("r.config").config.rproj_prioritise
----@param file? string The .Rproj file to use
-function M.apply_settings(config, force, file)
+function M.apply_settings(config, file, force)
     local fields = M.parse(file)
     if not fields then return end
     if not config.rproj_prioritise then return end
 
-    local to_update = function(x)
-        for i, val in ipairs(config.rproj_prioritise) do
-            if val == x then return true end
-        end
-        return false
-    end
+    local to_update = function(x) return vim.fn.index(config.rproj_prioritise, x) >= 0 end
 
     for name, val in pairs(fields) do
-        if
-            name == "UseNativePipeOperator" and (to_update("use_native_pipe") or force)
-        then
-            config.use_native_pipe = val
+        if name == "UseNativePipeOperator" and (to_update("pipe_version") or force) then
+            if val then
+                config.pipe.version = "native"
+            else
+                config.pipe.version = "magrittr"
+            end
         end
     end
 end

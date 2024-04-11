@@ -16,9 +16,11 @@ local config = {
     arrange_windows     = true,
     assign              = true,
     assign_map          = "<M-->",
-    pipe                = true,
-    pipe_map            = "<localleader>m",
-    use_native_pipe     = true,
+    pipe                = {
+                              create_keymap = true,
+                              keymap = "<localleader>m",
+                              version = "native",
+                          },
     auto_scroll         = true,
     auto_start          = "no",
     auto_quit           = false,
@@ -38,10 +40,10 @@ local config = {
     help_w              = 46,
     hl_term             = true,
     hook                = {
-                              on_filetype = nil,
-                              after_config = nil,
-                              after_R_start = nil,
-                              after_ob_open = nil
+                              on_filetype = function() end,
+                              after_config = function() end,
+                              after_R_start = function() end,
+                              after_ob_open = function() end,
                           },
     insert_mode_cmds    = false,
     latexcmd            = { "default" },
@@ -78,8 +80,8 @@ local config = {
     rnowebchunk         = true,
     rnvim_home          = "",
     routnotab           = false,
-    rproj_prioiritise   = {
-                               "use_native_pipe"
+    rproj_prioritise    = {
+                               "pipe_version"
                           },
     save_win_pos        = true,
     set_home_env        = true,
@@ -146,33 +148,19 @@ local set_pdf_viewer = function()
     end
 end
 
-local compare_types = function(k)
-    if k == "external_term" then
-        if not (type(user_opts[k]) == "string" or type(user_opts[k]) == "boolean") then
-            warn("Option `external_term` should be either boolean or string.")
-        end
-    elseif k == "rmdchunk" then
-        if not (type(user_opts[k]) == "string" or type(user_opts[k]) == "number") then
-            warn("Option `rmdchunk` should be either number or string.")
-        end
-    elseif k == "csv_app" then
-        if not (type(config[k]) == "string" or type(config[k]) == "function") then
-            warn("Option `csv_app` should be either string or function.")
-        end
-    elseif type(config[k]) ~= "nil" and (type(user_opts[k]) ~= type(config[k])) then
-        warn(
-            "Option `"
-                .. k
-                .. "` should be "
-                .. type(config[k])
-                .. ", not "
-                .. type(user_opts[k])
-                .. "."
-        )
-    end
-end
+--- Edit the module config to include options set by the user
+---
+--- This happens recursively through sub-tables. I.e. if the global config
+--- is config = { a = 1, b = { c = 2, d = 3 } }, and we have
+--- user_config = { b = { d = 4 } }, the end result will be
+--- final_config = { a = 1, b = { c = 2, d = 4 } }.
+---
+--- The key names, types and values of user options are all checked before
+--- being applied. If a check fails, a warning is show, and the default option
+--- is used instead.
+local apply_user_opts = function()
+    local utils = require("r.utils")
 
-local validate_user_opts = function()
     -- Ensure that some config options will be in lower case
     for _, v in pairs({
         "auto_start",
@@ -185,38 +173,113 @@ local validate_user_opts = function()
         if user_opts[v] then user_opts[v] = string.lower(user_opts[v]) end
     end
 
-    -- We don't use vim.validate() because its error message has traceback details not helpful for users.
-    for k, _ in pairs(user_opts) do
-        local has_key = false
-        for _, v in pairs(config_keys) do
-            if v == k then
-                has_key = true
+    -- stylua: ignore start
+    -- If an option can be multiple types, you can specify those types here.
+    -- Otherwise, the user option is checked against the type of the default
+    -- value.
+    local valid_types = {
+        external_types   = { "boolean", "string" },
+        rmdchunk         = { "number", "string" },
+        csv_app          = { "string", "function" },
+    }
+
+    -- If an option is an enum, you can define the possible values here:
+    local valid_values = {
+        auto_start       = { "no", "on startup", "always" },
+        editing_mode     = { "vi", "emacs" },
+        nvimpager        = { "no", "tab", "split_h", "split_v", "float" },
+        open_html        = { "no", "open", "open and focus" },
+        open_pdf         = { "no", "open", "open and focus" },
+        setwd            = { "no", "file", "nvim" },
+        ["pipe.version"] = { "native", "magrittr" }
+    }
+    -- stylua: ignore end
+
+    ---@param user_opt any An option or table of options supplied by the user
+    ---@param key table The position of `user_opt` in `config`. E.g. if
+    --- `user_opt` is `pipe.version` then `key` will be `{ "pipe", "version" }`
+    local function apply(user_opt, key)
+        local key_name = table.concat(key, ".")
+
+        -- Get the default value for the option (might be in a nested table)
+        local default_val = config
+        local config_chunk = config
+        for _, k in pairs(key) do
+            config_chunk = default_val
+            if type(default_val) == "table" then
+                default_val = default_val[k]
+            else
+                default_val = nil
                 break
             end
         end
-        if not has_key then
-            warn("Unrecognized option `" .. k .. "`.")
-        else
-            compare_types(k)
-        end
-    end
 
-    local validate_string = function(opt, valid_values)
-        if user_opts[opt] then
-            for _, v in pairs(valid_values) do
-                if user_opts[opt] == v then return end
+        -----------------------------------------------------------------------
+        -- 1. Check the option exists
+        -----------------------------------------------------------------------
+        if default_val == nil then
+            warn("Invalid option `" .. key_name .. "`.")
+            return
+        end
+
+        -----------------------------------------------------------------------
+        -- 2. Check the option has one of the expected types
+        -----------------------------------------------------------------------
+        local expected_types = valid_types[key_name] or { type(default_val) }
+        if vim.fn.index(expected_types, type(user_opt)) == -1 then
+            warn(
+                "Invalid option type for `"
+                    .. key_name
+                    .. "`. Type should be "
+                    .. utils.msg_join(expected_types, ", ", ", or ", "")
+                    .. ", not "
+                    .. type(user_opt)
+                    .. "."
+            )
+            return
+        end
+
+        -----------------------------------------------------------------------
+        -- 3. Check the option has one of the expected values
+        -----------------------------------------------------------------------
+        local expected_values = valid_values[key_name]
+        if expected_values and vim.fn.index(expected_values, user_opt) == -1 then
+            warn(
+                "Invalid option value for `"
+                    .. key_name
+                    .. "`. Value should be "
+                    .. utils.msg_join(expected_values, ", ", ", or ")
+                    .. ', not "'
+                    .. user_opt
+                    .. '".'
+            )
+            return
+        end
+
+        -----------------------------------------------------------------------
+        -- 4. If the option is a dictionary, check each value individually
+        -----------------------------------------------------------------------
+        if type(user_opt) == "table" then
+            for k, v in pairs(user_opt) do
+                if type(k) == "string" then
+                    local next_key = {}
+                    for _, kk in pairs(key) do
+                        table.insert(next_key, kk)
+                    end
+                    table.insert(next_key, k)
+                    apply(v, next_key)
+                end
             end
-            local vv = ' "' .. table.concat(valid_values, '", "') .. '".'
-            warn("Valid values for `" .. opt .. "` are:" .. vv)
+            return
         end
+
+        -----------------------------------------------------------------------
+        -- 5. Update the value in the module `config`
+        -----------------------------------------------------------------------
+        config_chunk[key[#key]] = user_opt
     end
 
-    validate_string("auto_start", { "no", "on startup", "always" })
-    validate_string("editing_mode", { "vi", "emacs" })
-    validate_string("nvimpager", { "no", "tab", "split_h", "split_v", "float" })
-    validate_string("open_html", { "no", "open", "open and focus" })
-    validate_string("open_pdf", { "no", "open", "open and focus" })
-    validate_string("setwd", { "no", "file", "nvim" })
+    apply(user_opts, {})
 end
 
 local do_common_global = function()
@@ -738,6 +801,7 @@ local create_user_commands = function()
 end
 
 local global_setup = function()
+    local utils = require("r.utils")
     local gtime = uv.hrtime()
 
     if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
@@ -747,13 +811,7 @@ local global_setup = function()
         table.insert(config_keys, tostring(k))
     end
 
-    validate_user_opts()
-
-    -- Override default config values with user options for the first time.
-    -- Some config options depend on others to have their default values set.
-    for k, v in pairs(user_opts) do
-        config[k] = v
-    end
+    apply_user_opts()
 
     -- Config values that depend on either system features or other config
     -- values.

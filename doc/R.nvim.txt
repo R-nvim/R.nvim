@@ -647,8 +647,11 @@ command:
 |save_win_pos|        Save position of Rgui window (Windows only)
 |arrange_windows|     Restore position of R window (Windows only)
 |assign_map|          Choose what to convert into ' <- '
+|pipe|                Choose what to convert into ' |> ' (or ' %>% ')
+|use_native_pipe|     Choose whether to use ' |> ' or ' %>% ' with pipe_map
 |rnowebchunk|         Convert '<' into '<<>>=\n@' in Rnoweb files
 |rmdchunk|            Convert grave accent chunk into delimiters
+|rproj_prioritise|    Config to override with a .Rproj file, if one is present
 |objbr_place|         Placement of Object Browser
 |objbr_w|             Initial width of Object Browser window
 |objbr_h|             Initial height of Object Browser window
