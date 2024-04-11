@@ -76,13 +76,14 @@ M.show = function(rkeyword, txt)
     if
         not config.nvimpager:find("tab")
         and not config.nvimpager:find("split")
+        and not config.nvimpager:find("vertical")
         and not config.nvimpager:find("float")
         and not config.nvimpager:find("no")
     then
         warn(
             'Invalid `nvimpager` value: "'
                 .. config.nvimpager
-                .. '". Valid values are: "tab", "split", "float", and "no".'
+                .. '". Valid values are: "tab", "split", "vertical", "float", and "no".'
         )
         return
     end
@@ -124,12 +125,16 @@ M.show = function(rkeyword, txt)
         if vpager == "tab" or vpager == "float" then
             vim.cmd("tabnew R_doc")
         else
-            if vim.fn.winwidth(0) < 80 then
-                vim.cmd("topleft split R_doc")
+            if vpager == "vertical" then
+                vim.cmd("vsplit R_doc")
             else
-                vim.cmd("split R_doc")
+                if vim.fn.winwidth(0) < 80 then
+                    vim.cmd("topleft split R_doc")
+                else
+                    vim.cmd("split R_doc")
+                end
+                if vim.fn.winheight(0) < 20 then vim.cmd("resize 20") end
             end
-            if vim.fn.winheight(0) < 20 then vim.cmd("resize 20") end
         end
     end
 

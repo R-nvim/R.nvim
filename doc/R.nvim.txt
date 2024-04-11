@@ -1043,6 +1043,7 @@ The valid values of `nvimpager` are:
    "split"     : Split the window horizontally, as `:help` does. That is,
                  display R documentation above the editor window or at the
                  very top of the screen.
+   "vertical"  : Split the window vertically.
    "float"     : Not implemented yet.
    "no"        : Do not show R documentation in Neovim.
 

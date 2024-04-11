@@ -207,7 +207,7 @@ local validate_user_opts = function()
 
     validate_string("auto_start", { "no", "on startup", "always" })
     validate_string("editing_mode", { "vi", "emacs" })
-    validate_string("nvimpager", { "no", "tab", "split", "float" })
+    validate_string("nvimpager", { "no", "tab", "split", "float", "vertical" })
     validate_string("open_html", { "no", "open", "open and focus" })
     validate_string("open_pdf", { "no", "open", "open and focus" })
     validate_string("setwd", { "no", "file", "nvim" })
