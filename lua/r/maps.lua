@@ -357,9 +357,19 @@ M.show_map_desc = function()
                 { string.format("  %-0" .. lw .. "s", v[1]), "Identifier" }
             )
             table.insert(map_key_desc, { string.format("  %-04s", v[2]), "Type" })
+            local keymap = v[3] or " "
+            for _, d in pairs(config.disable_cmds) do
+                if d == v[1] then
+                    keymap = "disabled"
+                    break
+                end
+            end
             table.insert(
                 map_key_desc,
-                { string.format("%-0" .. kw .. "s", v[3] or " "), "Special" }
+                {
+                    string.format("%-0" .. kw .. "s", keymap),
+                    keymap == "disabled" and "Comment" or "Special",
+                }
             )
             table.insert(map_key_desc, { v[4] .. "\n" })
         end
