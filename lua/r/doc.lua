@@ -73,26 +73,12 @@ end
 ---@param rkeyword string The topic
 ---@param txt string The text to display
 M.show = function(rkeyword, txt)
-    if
-        not config.nvimpager:find("tab")
-        and not config.nvimpager:find("split")
-        and not config.nvimpager:find("float")
-        and not config.nvimpager:find("no")
-    then
-        warn(
-            'Invalid `nvimpager` value: "'
-                .. config.nvimpager
-                .. '". Valid values are: "tab", "split", "float", and "no".'
-        )
-        return
-    end
-
     -- Check if `nvimpager` is "no" because the user might have set the pager
     -- in the .Rprofile.
     local vpager
     if config.nvimpager == "no" then
         if type(config.external_term) == "boolean" and not config.external_term then
-            vpager = "split"
+            vpager = "split_h"
         else
             vpager = "tab"
         end
@@ -123,6 +109,8 @@ M.show = function(rkeyword, txt)
     else
         if vpager == "tab" or vpager == "float" then
             vim.cmd("tabnew R_doc")
+        elseif vpager == "split_v" then
+            vim.cmd("vsplit R_doc")
         else
             if vim.fn.winwidth(0) < 80 then
                 vim.cmd("topleft split R_doc")

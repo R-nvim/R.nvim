@@ -1040,9 +1040,11 @@ The valid values of `nvimpager` are:
    "tab"       : Show the help document in a new tab. If there is already a
                  tab with an R help document tab, use it.
                  This is the default if `external_term` = `true`.
-   "split"     : Split the window horizontally, as `:help` does. That is,
+   "split_h"   : Split the window horizontally, as `:help` does. That is,
                  display R documentation above the editor window or at the
                  very top of the screen.
+   "split_v"   : Split the window vertically. Display R documentation to
+                 the right of the editor window.
    "float"     : Not implemented yet.
    "no"        : Do not show R documentation in Neovim.
 

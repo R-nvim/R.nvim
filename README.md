@@ -117,8 +117,8 @@ arguments that will be passed to `base::source()` and include the argument
 directly to the R Console without saving the code in a temporary file to be
 sourced (`max_lines_to_paste`).
 
-We reduced the number of options on how to display R documentation to: `"split"`,
-`"tab"`, `"float"` (not implemented yet), and `"no"`.
+The options for displaying R documentation (`nvimpager`) are now: `"split_h"`,
+`"split_v"`, `"tab"`, `"float"` (not implemented yet), and `"no"`.
 
 The options `openpdf` and `openhtml` were renamed as `open_pdf` and
 `open_html`, they now are strings and there with a minor change in how they
@@ -232,6 +232,6 @@ but temporary files are used in a few cases.
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's output.
 
 [cmp-r]: https://github.com/R-nvim/cmp-r
-[Neovim]: https://github.com/neovim/neovim
+[neovim]: https://github.com/neovim/neovim
 [southernlights]: https://github.com/jalvesaq/southernlights
 [colorout]: https://github.com/jalvesaq/colorout
