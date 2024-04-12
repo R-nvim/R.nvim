@@ -109,7 +109,7 @@ M.show = function(rkeyword, txt)
     else
         if vpager == "tab" or vpager == "float" then
             vim.cmd("tabnew R_doc")
-        elseif vpager == "vertical" then
+        elseif vpager == "split_v" then
             vim.cmd("vsplit R_doc")
         else
             if vim.fn.winwidth(0) < 80 then
