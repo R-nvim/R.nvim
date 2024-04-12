@@ -48,7 +48,7 @@ local config = {
     min_editor_width    = 80,
     non_r_compl         = true,
     setwd               = "no",
-    nvimpager           = "split",
+    nvimpager           = "split_h",
     objbr_allnames      = false,
     objbr_auto_start    = false,
     objbr_h             = 10,
@@ -207,7 +207,7 @@ local validate_user_opts = function()
 
     validate_string("auto_start", { "no", "on startup", "always" })
     validate_string("editing_mode", { "vi", "emacs" })
-    validate_string("nvimpager", { "no", "tab", "split", "float", "vertical" })
+    validate_string("nvimpager", { "no", "tab", "split_h", "split_v", "float" })
     validate_string("open_html", { "no", "open", "open and focus" })
     validate_string("open_pdf", { "no", "open", "open and focus" })
     validate_string("setwd", { "no", "file", "nvim" })
@@ -417,7 +417,7 @@ local do_common_global = function()
     end
 
     if type(config.external_term) == "boolean" and config.external_term == false then
-        config.nvimpager = "split"
+        config.nvimpager = "split_h"
         config.save_win_pos = false
         config.arrange_windows = false
     else

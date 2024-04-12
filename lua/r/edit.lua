@@ -256,13 +256,13 @@ M.open_example = function()
         vim.cmd("tabnew " .. config.tmpdir:gsub(" ", "\\ ") .. "/example.R")
     else
         local nvimpager = config.nvimpager
-        if config.nvimpager == "vertical" then
+        if config.nvimpager == "split_v" then
             local wwidth = vim.fn.winwidth(0)
             local min_e = (config.editor_w > 78) and config.editor_w or 78
             local min_h = (config.help_w > 78) and config.help_w or 78
-            if wwidth < (min_e + min_h) then nvimpager = "horizontal" end
+            if wwidth < (min_e + min_h) then nvimpager = "split_h" end
         end
-        if nvimpager == "vertical" then
+        if nvimpager == "split_v" then
             vim.cmd(
                 "belowright vsplit " .. config.tmpdir:gsub(" ", "\\ ") .. "/example.R"
             )
