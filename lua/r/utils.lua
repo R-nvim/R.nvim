@@ -381,4 +381,35 @@ function M.read_dcf(x)
     return stanzas
 end
 
+--- Collapse a table into a human readable string
+---
+--- E.g:
+--- > msg_join({ "foo", "bar", "baz" }, "; ", "; or ", "`")
+--- > "`foo`; `bar`; or `baz`"
+---
+---@param x table A table of strings to collaps
+---@param sep? string The separator to use for the collapsed strings
+---@param last? string The separator to use between the last 2 strings
+---@param quote? string A quote character to use for individual elements
+---@return string
+function M.msg_join(x, sep, last, quote)
+    sep = sep or ", "
+    last = last or ", and "
+    quote = quote or '"'
+
+    local msg = ""
+
+    for i, v in ipairs(x) do
+        local sep_i = sep
+        if i == 1 then
+            sep_i = ""
+        elseif i == #x then
+            sep_i = last
+        end
+        msg = msg .. sep_i .. quote .. v .. quote
+    end
+
+    return msg
+end
+
 return M
