@@ -803,7 +803,6 @@ local create_user_commands = function()
 end
 
 local global_setup = function()
-    local utils = require("r.utils")
     local gtime = uv.hrtime()
 
     if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
