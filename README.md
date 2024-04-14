@@ -110,6 +110,15 @@ We replaced the options `R_source` and `after_R_start` with some more specific
 `hook`s and we can insert other hooks for Lua functions at other parts of the
 code under user request.
 
+We added a keybinding for the pipe operator (`|>`). This defaults to 
+`<localleader>m` and is configurable with the option `pipe.keymap`.
+
+We added awareness of `.Rproj` files (the project-level configuration
+files used by RStudio). This may, for example, change whether `pipe.keymap`
+inserts `|>` or `%>%` for a particular project. See the option `proj_prioritise`
+for a full list of the behaviours which may be affected by `.Rproj` files,
+or to change whether they should affect things at all.
+
 We removed the `"echo"` parameters from the functions that send code to R
 Console. Users can still set the value of `source_args` to define the
 arguments that will be passed to `base::source()` and include the argument
