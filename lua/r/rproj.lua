@@ -10,7 +10,9 @@ function M.find()
     -- so need to check for that case manually
     local x = vim.fn.glob("*.[Rr]proj", true, true)
     local y = vim.fn.glob(".[Rr]proj", true, true)
-    table.move(y, 1, #y, #x + 1, x)
+    for _, f in pairs(y) do
+        table.insert(x, f)
+    end
     return x[1]
 end
 
@@ -24,7 +26,7 @@ end
 ---@return table
 local squash_dcf_results = function(x)
     local out = {}
-    for stanza, fields in ipairs(x) do
+    for _, fields in ipairs(x) do
         for name, val in pairs(fields) do
             out[name] = val
         end
