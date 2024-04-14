@@ -14,8 +14,10 @@ local config = {
     active_window_warn  = true,
     applescript         = false,
     arrange_windows     = true,
-    assign              = true,
-    assign_map          = "<M-->",
+    assign              = {
+                              create_keymap = true,
+                              keymap = "<M-->",
+                          },
     pipe                = {
                               create_keymap = true,
                               keymap = "<localleader>m",

@@ -104,7 +104,7 @@ highlighting).
 
 We changed the default key binding to insert the assignment operator (`<-`) from an
 underscore (which was familiar to Emacs-ESS users) to `Alt+-` which is more
-convenient (but does not work on Vim). See the option `assign_map`.
+convenient (but does not work on Vim). See the option `assign.keymap`.
 
 We replaced the options `R_source` and `after_R_start` with some more specific
 `hook`s and we can insert other hooks for Lua functions at other parts of the

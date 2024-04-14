@@ -8,7 +8,7 @@ local M = {}
 
 M.assign = function()
     if vim.b.IsInRCode(false) then
-        if config.assign_map == "_" then
+        if config.assign.keymap == "_" then
             local line = vim.api.nvim_get_current_line()
             local pos = vim.api.nvim_win_get_cursor(0)
             if line:len() > 4 and line:sub(pos[2] - 3, pos[2]) == " <- " then
@@ -20,7 +20,7 @@ M.assign = function()
         end
         vim.fn.feedkeys(" <- ", "n")
     else
-        vim.fn.feedkeys(config.assign_map, "n")
+        vim.fn.feedkeys(config.assign.keymap, "n")
     end
 end
 
