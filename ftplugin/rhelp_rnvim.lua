@@ -9,9 +9,6 @@ end
 -- Override default values with user variable options and set internal variables.
 require("r.config").real_setup()
 
--- Override default values with .Rproj variable options
-require("r.config").rproj_setup()
-
 -- Key bindings and menu items
 require("r.maps").create("rhelp")
 

@@ -875,6 +875,7 @@ end
 --- Real setup function.
 --- Set initial values of some internal variables.
 --- Set the default value of config variables that depend on system features.
+--- Apply any settings defined in a .Rproj file
 M.real_setup = function()
     if not did_real_setup then
         did_real_setup = true
@@ -883,13 +884,6 @@ M.real_setup = function()
     if config.hook.on_filetype then
         vim.schedule(function() config.hook.on_filetype() end)
     end
-end
-
---- Apply config from a .Rproj file to the config
----@param force? boolean Apply the .Rproj settings, regardless of
----  require("r.config").config.rproj_prioiritise
----@param file? string The .Rproj file to use
-M.rproj_setup = function(force, file)
     require("r.rproj").apply_settings(config, force, file)
 end
 
