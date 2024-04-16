@@ -884,7 +884,7 @@ M.real_setup = function()
     if config.hook.on_filetype then
         vim.schedule(function() config.hook.on_filetype() end)
     end
-    require("r.rproj").apply_settings(config, force, file)
+    require("r.rproj").apply_settings(config)
 end
 
 --- Return the table with the final configure variables: the default values
