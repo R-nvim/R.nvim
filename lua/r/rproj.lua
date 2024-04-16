@@ -113,9 +113,9 @@ function M.apply_settings(config, file, force)
     for name, val in pairs(fields) do
         if name == "UseNativePipeOperator" and (to_update("pipe_version") or force) then
             if val then
-                config.pipe.version = "native"
+                config.pipe_version = "native"
             else
-                config.pipe.version = "magrittr"
+                config.pipe_version = "magrittr"
             end
         end
     end

@@ -109,10 +109,10 @@ We replaced the options `R_source` and `after_R_start` with some more specific
 code under user request.
 
 We added a keybinding for the pipe operator (`|>`). This defaults to 
-`<localleader>m` and is configurable with the option `pipe.keymap`.
+`<localleader>m` and is configurable with the option `pipe_keymap`.
 
 We added awareness of `.Rproj` files (the project-level configuration
-files used by RStudio). This may, for example, change whether `pipe.keymap`
+files used by RStudio). This may, for example, change whether `pipe_keymap`
 inserts `|>` or `%>%` for a particular project. See the option `proj_prioritise`
 for a full list of the behaviours which may be affected by `.Rproj` files,
 or to change whether they should affect things at all.

@@ -15,11 +15,8 @@ local config = {
     applescript         = false,
     arrange_windows     = true,
     assignment_keymap   = "<M-->",
-    pipe                = {
-                              create_keymap = true,
-                              keymap = "<localleader>m",
-                              version = "native",
-                          },
+    pipe_keymap         = "<localleader>m",
+    pipe_version        = "native",
     auto_scroll         = true,
     auto_start          = "no",
     auto_quit           = false,
@@ -190,13 +187,13 @@ local apply_user_opts = function()
         open_html        = { "no", "open", "open and focus" },
         open_pdf         = { "no", "open", "open and focus" },
         setwd            = { "no", "file", "nvim" },
-        ["pipe.version"] = { "native", "magrittr" }
+        pipe_version     = { "native", "magrittr" }
     }
     -- stylua: ignore end
 
     ---@param user_opt any An option or table of options supplied by the user
     ---@param key table The position of `user_opt` in `config`. E.g. if
-    --- `user_opt` is `pipe.version` then `key` will be `{ "pipe", "version" }`
+    --- `user_opt` is `hook.on_filetype` then `key` will be `{ "hook", "on_filetype" }`
     local function apply(user_opt, key)
         local key_name = table.concat(key, ".")
 

@@ -32,12 +32,12 @@ M.pipe = function()
         ["%>%"] = " %>% ",
     }
 
-    local pipe_symbol = pipe_opts[config.pipe.version]
+    local pipe_symbol = pipe_opts[config.pipe_version]
 
     if vim.b.IsInRCode(false) then
         vim.fn.feedkeys(pipe_symbol, "n")
     else
-        vim.fn.feedkeys(config.pipe.keymap, "n")
+        vim.fn.feedkeys(config.pipe_keymap, "n")
     end
 end
 
