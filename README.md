@@ -48,14 +48,12 @@ More complex configuration (for `R.nvim` only):
             local opts = {
                 R_args = {"--quiet", "--no-save"},
                 hook = {
-                    after_config = function ()
+                    on_filetype = function ()
                         -- This function will be called at the FileType event
                         -- of files supported by R.nvim. This is an
                         -- opportunity to create mappings local to buffers.
-                        if vim.o.syntax ~= "rbrowser" then
-                            vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
-                            vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
-                        end
+                        vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
+                        vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
                     end
                 },
                 min_editor_width = 72,
@@ -104,7 +102,7 @@ highlighting).
 
 We changed the default key binding to insert the assignment operator (`<-`) from an
 underscore (which was familiar to Emacs-ESS users) to `Alt+-` which is more
-convenient (but does not work on Vim). See the option `assign.keymap`.
+convenient (but does not work on Vim). See the option `assignment_keymap`.
 
 We replaced the options `R_source` and `after_R_start` with some more specific
 `hook`s and we can insert other hooks for Lua functions at other parts of the

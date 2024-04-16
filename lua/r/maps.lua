@@ -8,7 +8,7 @@ local map_desc = {
     RSaveClose          = { m = "", k = "", c = "Start",    d = "Quit R, saving the workspace" },
     RClose              = { m = "", k = "", c = "Start",    d = "Send to R: quit(save = 'no')" },
     RStart              = { m = "", k = "", c = "Start",    d = "Start R with default configuration or reopen terminal window" },
-    RAssign             = { m = "", k = "", c = "Edit",     d = "Replace `config.assign.keymap` with ` <- `" },
+    RAssign             = { m = "", k = "", c = "Edit",     d = "Replace `config.assignment_keymap` with ` <- `" },
     RPipe               = { m = "", k = "", c = "Edit",     d = "Replace `config.pipe.keymap` with ` |>` (or ` %>%`)" },
     ROpenPDF            = { m = "", k = "", c = "Edit",     d = "Open the PDF generated from the current document" },
     RDputObj            = { m = "", k = "", c = "Edit",     d = "Run dput(<cword>) and show the output in a new tab" },
@@ -203,9 +203,9 @@ local edit = function()
     -- Replace <M--> with ' <- '
     -- Must be here because it's the only one that doesn't have <LocalLeader>
     local opts = { silent = true, noremap = true, expr = false }
-    if config.assign.create_keymap then
+    if config.assignment_keymap ~= "" then
         vim.api.nvim_buf_set_keymap(0, "i", "<Plug>RAssign", '<Cmd>lua require("r.edit").assign()<CR>', opts)
-        vim.api.nvim_buf_set_keymap(0, "i", config.assign.keymap, "<Plug>RAssign", opts)
+        vim.api.nvim_buf_set_keymap(0, "i", config.assignment_keymap, "<Plug>RAssign", opts)
     end
     if config.pipe.create_keymap then
         vim.api.nvim_buf_set_keymap(0, "i", "<Plug>RPipe", '<Cmd>lua require("r.edit").pipe()<CR>', opts)

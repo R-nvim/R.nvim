@@ -317,8 +317,8 @@ window. Note: The command <LocalLeader>ao, silently writes the current buffer
 to its file if it was modified and deletes the .Rout file if it exists.
 
 R syntax uses " <- " to assign values to variables which is inconvenient to
-type. In insert mode, typing <M--> will write " <- " (see |assign| if you want
-to change this feature).
+type. In insert mode, typing <M--> will write " <- " (see |assignment_keymap|
+if you want to change this feature).
 
 When you press <LocalLeader>rh, the plugin shows the help for the function
 under the cursor. The plugin also checks the class of the first object passed
@@ -646,7 +646,7 @@ command:
 |set_home_env|        Set the value of $HOME for R (Windows only)
 |save_win_pos|        Save position of Rgui window (Windows only)
 |arrange_windows|     Restore position of R window (Windows only)
-|assign|              Choose what to convert into ' <- '
+|assignment_keymap|   Choose what to convert into ' <- '
 |pipe|                Choose what to convert into ' |> ' (or ' %>% ')
 |use_native_pipe|     Choose whether to use ' |> ' or ' %>% ' with pipe_map
 |rnowebchunk|         Convert '<' into '<<>>=\n@' in Rnoweb files
@@ -929,8 +929,7 @@ by R, you will want to put in your config:
 ------------------------------------------------------------------------------
 6.5. Assignment operator and Rnoweb completion of code block     *rnowebchunk*
                                                                  *rmdchunk*
-                                                                 *assign.keymap*
-                                                                 *assign*
+                                                           *assignment_keymap*
 
 In Rnoweb files, a `<` is replaced with `<<>>=\n@`. To disable this feature,
 put in your config:
@@ -955,14 +954,13 @@ cursor is not at the beginning of the line.
 While editing R code, <M--> is replaced with `<-`. To disable this feature,
 put in your config:
 >lua
-   assign = { create_keymap = false }
+   assignment_keymap = ""
 <
 If you want to bind other keys to be replaced by `<-`, set the value of
-|assign.keymap| in your config, as in the examples below which emulate,
-respectively, RStudio and Emacs+ESS behavior:
+|assignment_keymap| in your config, as in the example below which emulates,
+Emacs+ESS behavior:
 >lua
-   assign = { keymap = "<M-->" }
-   assign = { keymap = "_" }
+   assignment_keymap = "_"
 <
 Note: You can't map <C-=> because in Neovim only alphabetic letters can be
 mapped in combination with the CTRL key.
