@@ -1,6 +1,11 @@
 #include <stdio.h>  // Standard input/output definitions
 #include <stdlib.h> // Standard library
 #include <string.h> // String handling functions
+
+#ifdef __FreeBSD__
+#include <netinet/in.h> // BSD network library
+#endif
+
 #include <unistd.h> // POSIX operating system API
 #ifdef WIN32
 #include <inttypes.h>
