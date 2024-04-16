@@ -180,7 +180,7 @@ local apply_user_opts = function()
     -- Otherwise, the user option is checked against the type of the default
     -- value.
     local valid_types = {
-        external_types   = { "boolean", "string" },
+        external_term    = { "boolean", "string" },
         rmdchunk         = { "number", "string" },
         csv_app          = { "string", "function" },
     }
