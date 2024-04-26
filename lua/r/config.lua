@@ -82,6 +82,7 @@ local config = {
     skim_app_path       = "",
     source_args         = "",
     specialplot         = false,
+    start_libs          = "base,stats,graphics,grDevices,utils,methods",
     synctex             = true,
     term_pid            = 0,
     term_title          = "term",
