@@ -572,7 +572,18 @@ end of
 
 
 ------------------------------------------------------------------------------
-5.2. R's source() issues
+5.2. Cannot raise window (web browser or PDF viewer)
+
+When you generate an HTML or PDF document from a Quarto, Rmd, or Rnoweb
+document, R.nvim can raise (focus) the web browser or PDF viewer if you are
+using Xorg or Sway (both on Linux). The necessary code was not written yet for
+other systems (macOS, Windows, and most Wayland compositors on Linux). Please,
+see the function `utils.get_focused_win_info()` if you want to fix the issue
+on your system.
+
+
+------------------------------------------------------------------------------
+5.3. R's source() issues
 
 The R's `source()` function of the base package prints an extra new line
 between commands if the option `echo = TRUE`, and error and warning messages
@@ -583,7 +594,7 @@ difficult to find errors in the code sent to R. Details:
 
 
 ------------------------------------------------------------------------------
-5.3. Wrong message that "R is busy" (Windows only)
+5.4. Wrong message that "R is busy" (Windows only)
 
 On Windows, when code is sent from Neovim to R Console, the nvimcom library
 sets the value of the internal variable `r_is_busy` to 1. The value is set
@@ -598,7 +609,7 @@ as expected again after any valid code is executed in the R Console.
 
 
 ------------------------------------------------------------------------------
-5.4. Error if there is no package installed (on Windows only)
+5.5. Error if there is no package installed (on Windows only)
 
 On Windows, Neovim may fail to recognize that a directory is not writable, and
 this is required by R.nvim to detect if it is necessary to create the
@@ -610,7 +621,7 @@ command before using R.nvim.
 
 
 ------------------------------------------------------------------------------
-5.5. ~/.Rprofile should not output anything (Windows only)
+5.6. ~/.Rprofile should not output anything (Windows only)
 
 The compilation of `nvimcom` during R startup will fail on Windows if your
 `~/.Rprofile` outputs anything. Example of how to replicate the bug:
@@ -619,7 +630,7 @@ The compilation of `nvimcom` during R startup will fail on Windows if your
 <
 
 ------------------------------------------------------------------------------
-5.6 You can't put `syntax enable` in your `init.vim` (OS X only)
+5.7 You can't put `syntax enable` in your `init.vim` (OS X only)
 
 It seems that if you put the command `syntax enable` in your `init.vim` on OS
 X, file type plugins are immediately sourced. Consequently, all R.nvim

@@ -11,7 +11,6 @@ local config = {
     R_cmd               = "R",
     R_path              = "",
     Rout_more_colors    = false,
-    active_window_warn  = true,
     applescript         = false,
     arrange_windows     = true,
     assign              = true,

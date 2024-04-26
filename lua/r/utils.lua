@@ -146,23 +146,12 @@ end
 --- This function call the appropriate function for each system.
 function M.get_focused_win_info()
     local config = require("r.config").get_config()
-    local warn = require("r").warn
     if config.has_X_tools then
         get_fw_info_X()
     elseif
         vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
     then
         get_fw_info_Sway()
-    elseif
-        config.synctex
-        and (config.is_windows or config.is_darwin or vim.env.WAYLAND_DISPLAY)
-        and config.active_window_warn
-    then
-        warn(
-            "Cannot get active window info on your system.\n"
-                .. "Please, do a pull request fixing the problem.\n"
-                .. "See: R.nvim/lua/r/utils.lua"
-        )
     end
 end
 
