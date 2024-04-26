@@ -432,7 +432,7 @@ If `cmp-r` (a source for `nvim-cmp`) is installed, Neovim can
 automatically complete the names of R objects as you type them.
 
 R.nvim does not complete the names of all functions of all installed packages
-(see |R_start_libs|); only of loaded libraries.
+(see |start_libs|); only of loaded libraries.
 
 For both `library()` and `require()`, when completing the first argument, the
 popup list shows the names of installed packages.
@@ -660,7 +660,7 @@ command:
 |R_path|              Directory where R is
 |R_app|, |R_cmd|        Names of R applications
 |R_args|              Arguments to pass to R
-|R_start_libs|        Objects for auto completion and syntax highlight
+|start_libs|          Objects for auto completion and syntax highlight
 |Rout_more_colors|    More syntax highlighting in R output
 |routnotab|           Show output of R CMD BATCH in new window
 |config_tmux|         Don't use a specially built Tmux config file
