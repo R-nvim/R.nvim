@@ -32,7 +32,13 @@ M.pipe = function()
         ["%>%"] = " %>% ",
     }
 
-    local pipe_symbol = pipe_opts[config.pipe_version]
+    local var_exists, buf_pipe_version = pcall(
+        function() vim.api.nvim_buf_get_var(0, "rnvim_pipe_version") end
+    )
+    if not var_exists then buf_pipe_version = nil end
+
+    local pipe_version = buf_pipe_version or config.pipe_version
+    local pipe_symbol = pipe_opts[pipe_version]
 
     if vim.b.IsInRCode(false) then
         vim.fn.feedkeys(pipe_symbol, "n")

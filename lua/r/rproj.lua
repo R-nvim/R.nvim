@@ -3,17 +3,21 @@ local warn = require("r.init").warn
 
 local M = {}
 
---- Find a file ending with .Rproj in the current directory
+--- Find a file ending with .Rproj in the same directory, or in an enclosing
+--- directory, of the current buffer.
 ---@return string|nil
 function M.find()
-    -- Supposedly `*` will match 0 chars... In practice doesn't seem to be true,
-    -- so need to check for that case manually
-    local x = vim.fn.glob("*.[Rr]proj", true, true)
-    local y = vim.fn.glob(".[Rr]proj", true, true)
-    for _, f in pairs(y) do
-        table.insert(x, f)
+    local search_dir = vim.fs.dirname(vim.api.nvim_buf_get_name(0))
+
+    local rproj
+    while rproj == nil do
+        local prev_dir = search_dir
+        rproj = vim.fn.glob(search_dir .. "/*.[Rr]proj", true, true)[1]
+        search_dir = vim.fs.dirname(search_dir)
+        if search_dir == prev_dir then break end
     end
-    return x[1]
+
+    return rproj
 end
 
 --- Combine a table of dictionaries into a single dictionary.
@@ -58,7 +62,7 @@ function M.parse(file)
     -- NB, there are other fields that RStudio will add automatically, but
     -- this is the only one it will complain about if not present.
     if not vim.fn.has_key(fields, "Version") and fields.Version == "1.0" then
-        warn("WARNING: Missing line 'Version: 1.0' in " .. file .. "'")
+        warn("WARNING: Missing line 'Version: 1.0' in '" .. file .. "'")
     end
 
     -- Fields that, if they exist, should either be 'Yes' or 'No'
@@ -95,9 +99,15 @@ function M.parse(file)
     return fields
 end
 
---- Apply configuration from a .Rproj file to R.nvim's config
+--- Apply configuration from a .Rproj file to R.nvim's config.
 ---
---- Currently only does anything with 'UseNativePipeOperator'
+--- The effect of calling this function is that, when a R.nvim buffer (e.g. an
+--- R script) is first opened, certain buffer-specific variables may be set
+--- which will reflect the settings in the relevant .Rproj file. These
+--- variables can be accessed using vim.api.nvim_buf_get_var(). The advantage
+--- of this approach is that a user can jump between R projects that may
+--- have different settings and the behaviour of R.nvim will continue to be
+--- appropriate for each script.
 ---
 ---@param config table I.e. `require("r.config").config`
 ---@param file? string The .Rproj file to use
@@ -113,9 +123,9 @@ function M.apply_settings(config, file, force)
     for name, val in pairs(fields) do
         if name == "UseNativePipeOperator" and (to_update("pipe_version") or force) then
             if val then
-                config.pipe_version = "native"
+                vim.api.nvim_buf_set_var(0, "rnvim_pipe_version", "native")
             else
-                config.pipe_version = "magrittr"
+                vim.api.nvim_buf_set_var(0, "rnvim_pipe_version", "magrittr")
             end
         end
     end
