@@ -74,7 +74,6 @@ M.pipe = function()
         vim.api.nvim_create_autocmd({ "TextChangedI", "CursorMovedI", "InsertLeave" }, {
             once = true,
             callback = function()
-                print(vim.inspect("Removing keymap"))
                 for _, key in pairs(temp_remaps) do
                     pcall(vim.keymap.del, "i", key, { buffer = 0 })
                 end
