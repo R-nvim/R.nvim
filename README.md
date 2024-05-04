@@ -108,8 +108,8 @@ We replaced the options `R_source` and `after_R_start` with some more specific
 `hook`s and we can insert other hooks for Lua functions at other parts of the
 code under user request.
 
-We added a keybinding for the pipe operator (`|>`). This defaults to 
-`<localleader>m` and is configurable with the option `pipe_keymap`.
+We added a keybinding for the pipe operator (`|>`). This defaults to
+`<LocalLeader>,` and is configurable with the option `pipe_keymap`.
 
 We added awareness of `.Rproj` files (the project-level configuration
 files used by RStudio). This may, for example, change whether `pipe_keymap`
