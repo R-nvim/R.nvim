@@ -12,5 +12,5 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
     group = "rft",
     pattern = "*.Rproj",
-    callback = function() vim.api.nvim_set_option_value("syntax", "yaml", {}) end,
+    callback = function() vim.api.nvim_set_option_value("syntax", "dcf", {}) end,
 })

@@ -8,7 +8,7 @@ local M = {}
 
 M.assign = function()
     if vim.b.IsInRCode(false) then
-        if config.assign_map == "_" then
+        if config.assignment_keymap == "_" then
             local line = vim.api.nvim_get_current_line()
             local pos = vim.api.nvim_win_get_cursor(0)
             if line:len() > 4 and line:sub(pos[2] - 3, pos[2]) == " <- " then
@@ -20,8 +20,66 @@ M.assign = function()
         end
         vim.fn.feedkeys(" <- ", "n")
     else
-        vim.fn.feedkeys(config.assign_map, "n")
+        vim.fn.feedkeys(config.assignment_keymap, "n")
     end
+end
+
+M.pipe = function()
+    local pipe_opts = {
+        native = " |> ",
+        ["|>"] = " |> ",
+        magrittr = " %>% ",
+        ["%>%"] = " %>% ",
+    }
+
+    local var_exists, buf_pipe_version = pcall(
+        function() vim.api.nvim_buf_get_var(0, "rnvim_pipe_version") end
+    )
+    if not var_exists then buf_pipe_version = nil end
+
+    local pipe_version = buf_pipe_version or config.pipe_version
+    local pipe_symbol = pipe_opts[pipe_version]
+
+    if vim.b.IsInRCode(false) then
+        vim.fn.feedkeys(pipe_symbol, "n")
+    else
+        vim.fn.feedkeys(config.pipe_keymap, "n")
+    end
+
+    ---------------------------------------------------------------------------
+    -- The next bit is something fancy to delete trailing whitespace if the
+    -- user goes to a new line directly after inserting a pipe
+    ---------------------------------------------------------------------------
+
+    -- Remap a linebreak to delete a single trailing space before moving the
+    -- cursor down. NB, there are several ways to insert a linebreak in insert
+    -- mode.
+    local temp_remaps = { "<CR>", "<C-j>" }
+
+    for _, key in pairs(temp_remaps) do
+        vim.keymap.set("i", key, function()
+            local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+            -- Delete the trailing whitespace
+            vim.api.nvim_buf_set_text(0, row - 1, col - 1, row - 1, col, {})
+            -- Delete this keymapping so whitespace stripping doesn't happen again
+            vim.keymap.del("i", key, { buffer = 0 })
+            -- Insert the newline
+            vim.api.nvim_input(key)
+        end, { buffer = 0 })
+    end
+
+    -- Set a single-use autocommand so that if the user changes the text, i.e.
+    -- keeps typing after inserting the pipe, the above keymappings are removed
+    vim.schedule(function()
+        vim.api.nvim_create_autocmd({ "TextChangedI", "CursorMovedI", "InsertLeave" }, {
+            once = true,
+            callback = function()
+                for _, key in pairs(temp_remaps) do
+                    pcall(vim.keymap.del, "i", key, { buffer = 0 })
+                end
+            end,
+        })
+    end)
 end
 
 M.buf_enter = function()

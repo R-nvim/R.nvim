@@ -8,7 +8,8 @@ local map_desc = {
     RSaveClose          = { m = "", k = "", c = "Start",    d = "Quit R, saving the workspace" },
     RClose              = { m = "", k = "", c = "Start",    d = "Send to R: quit(save = 'no')" },
     RStart              = { m = "", k = "", c = "Start",    d = "Start R with default configuration or reopen terminal window" },
-    RAssign             = { m = "", k = "", c = "Edit",     d = "Replace `config.assign_map` with ` <- `" },
+    RAssign             = { m = "", k = "", c = "Edit",     d = "Replace `config.assignment_keymap` with ` <- `" },
+    RPipe               = { m = "", k = "", c = "Edit",     d = "Replace `config.pipe_keymap` with ` |>` (or ` %>%`)" },
     ROpenPDF            = { m = "", k = "", c = "Edit",     d = "Open the PDF generated from the current document" },
     RDputObj            = { m = "", k = "", c = "Edit",     d = "Run dput(<cword>) and show the output in a new tab" },
     RViewDF             = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a new tab" },
@@ -201,10 +202,14 @@ end
 local edit = function()
     -- Replace <M--> with ' <- '
     -- Must be here because it's the only one that doesn't have <LocalLeader>
-    if config.assign then
-        local opts = { silent = true, noremap = true, expr = false }
+    local opts = { silent = true, noremap = true, expr = false }
+    if config.assignment_keymap ~= "" then
         vim.api.nvim_buf_set_keymap(0, "i", "<Plug>RAssign", '<Cmd>lua require("r.edit").assign()<CR>', opts)
-        vim.api.nvim_buf_set_keymap(0, "i", config.assign_map, "<Plug>RAssign", opts)
+        vim.api.nvim_buf_set_keymap(0, "i", config.assignment_keymap, "<Plug>RAssign", opts)
+    end
+    if config.pipe_keymap ~= "" then
+        vim.api.nvim_buf_set_keymap(0, "i", "<Plug>RPipe", '<Cmd>lua require("r.edit").pipe()<CR>', opts)
+        vim.api.nvim_buf_set_keymap(0, "i", config.pipe_keymap, "<Plug>RPipe", opts)
     end
     create_maps("nvi", "RSetwd", "rd", "<Cmd>lua require('r.run').setwd()")
 end
