@@ -84,6 +84,9 @@ function M.parse(file)
                 fields[name] = true
             elseif val == "No" or val == "no" then
                 fields[name] = false
+            elseif val == "Default" or val == "default" then
+                -- In this case, the normal R.nvim config will be used
+                fields[name] = nil
             else
                 warn(
                     "WARNING: Unexpected configuration in "
