@@ -61,6 +61,9 @@ M.pipe = function()
             local row, col = unpack(vim.api.nvim_win_get_cursor(0))
             -- Delete the trailing whitespace
             vim.api.nvim_buf_set_text(0, row - 1, col - 1, row - 1, col, {})
+            -- Move the cursor back one column. This only makes a difference if
+            -- a pipe has been inserted mid-line
+            vim.api.nvim_win_set_cursor(0, { row, col - 1 })
             -- Delete this keymapping so whitespace stripping doesn't happen again
             vim.keymap.del("i", key, { buffer = 0 })
             -- Insert the newline
