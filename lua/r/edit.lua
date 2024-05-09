@@ -33,7 +33,7 @@ M.pipe = function()
     }
 
     local var_exists, buf_pipe_version = pcall(
-        function() vim.api.nvim_buf_get_var(0, "rnvim_pipe_version") end
+        function() return vim.api.nvim_buf_get_var(0, "rnvim_pipe_version") end
     )
     if not var_exists then buf_pipe_version = nil end
 
