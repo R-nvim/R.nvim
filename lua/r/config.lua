@@ -907,7 +907,7 @@ M.check_health = function()
     if vim.fn.has("nvim-0.9.5") ~= 1 then warn("R.nvim requires Neovim >= 0.9.5") end
 
     -- Check if treesitter is available
-    function check_parsers(parser_name, parsers)
+    local function check_parsers(parser_name, parsers)
         local path = "parser" .. (config.is_windows and "\\" or "/") .. parser_name .. "."
         for _, v in pairs(parsers) do
             if v:find(path, 1, true) then return true end
@@ -925,9 +925,9 @@ M.check_health = function()
             "parser" .. (config.is_windows and "\\" or "/") .. "*.*",
             true
         )
-        local has_r_parser = check_parser_exists("r", parsers)
-        local has_markdown_parser = check_parser_exists("markdown", parsers)
-        local has_rnoweb_parser = check_parser_exists("rnoweb", parsers)
+        local has_r_parser = check_parsers("r", parsers)
+        local has_markdown_parser = check_parsers("markdown", parsers)
+        local has_rnoweb_parser = check_parsers("rnoweb", parsers)
         if not has_r_parser or not has_rnoweb_parser or not has_markdown_parser then
             warn(
                 'R.nvim requires treesitter parsers for "r", "markdown" and "rnoweb". Please, install them.'
