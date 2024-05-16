@@ -907,6 +907,13 @@ M.check_health = function()
     if vim.fn.has("nvim-0.9.5") ~= 1 then warn("R.nvim requires Neovim >= 0.9.5") end
 
     -- Check if treesitter is available
+    function check_parsers(parser_name, parsers)
+        local path = "parser" .. (config.is_windows and "\\" or "/") .. parser_name .. "."
+        for _, v in pairs(parsers) do
+            if v:find(path, 1, true) then return true end
+        end
+        return false
+    end
     local has_treesitter, _ = pcall(require, "nvim-treesitter")
     if not has_treesitter then
         warn(
@@ -914,19 +921,13 @@ M.check_health = function()
         )
     else
         -- Check if required treesitter parsers are available
-        local parsers = vim.api.nvim_get_runtime_file("parser/*.*", true)
-        local has_r_parser = false
-        local has_markdown_parser = false
-        local has_rnoweb_parser = false
-        for _, v in pairs(parsers) do
-            if v:find("parser/r.", 1, true) then
-                has_r_parser = true
-            elseif v:find("parser/markdown.", 1, true) then
-                has_markdown_parser = true
-            elseif v:find("parser/rnoweb.", 1, true) then
-                has_rnoweb_parser = true
-            end
-        end
+        local parsers = vim.api.nvim_get_runtime_file(
+            "parser" .. (config.is_windows and "\\" or "/") .. "*.*",
+            true
+        )
+        local has_r_parser = check_parser_exists("r", parsers)
+        local has_markdown_parser = check_parser_exists("markdown", parsers)
+        local has_rnoweb_parser = check_parser_exists("rnoweb", parsers)
         if not has_r_parser or not has_rnoweb_parser or not has_markdown_parser then
             warn(
                 'R.nvim requires treesitter parsers for "r", "markdown" and "rnoweb". Please, install them.'
