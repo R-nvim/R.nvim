@@ -154,8 +154,6 @@ local set_buf_options = function()
     })
 
     vim.api.nvim_buf_set_lines(0, 0, 1, false, { ".GlobalEnv | Libraries" })
-
-    require("r.config").real_setup()
     require("r.maps").create("rbrowser")
 end
 
