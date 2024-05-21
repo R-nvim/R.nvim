@@ -88,9 +88,10 @@ local map_desc = {
 ---@param plug string The "<Plug>" name.
 ---@param combo string Key combination.
 ---@param target string The command or function to be called.
-local create_maps = function(mode, plug, combo, target)
+---@param nocr boolean Don't append "<CR>" to target.
+local create_maps = function(mode, plug, combo, target, nocr)
     if vim.fn.index(config.disable_cmds, plug) > -1 then return end
-    local tgt = target .. "<CR>"
+    local tgt = nocr and target or target .. "<CR>"
     local plg = "<Plug>" .. plug
     local cmd = "<LocalLeader>" .. combo
     local opts = { silent = true, noremap = true, expr = false }
@@ -241,7 +242,7 @@ local send = function(file_type)
     create_maps("ni",  "RInsertLineOutput",   "o",        "<Cmd>lua require('r.run').insert_commented()")
     create_maps("v",   "RInsertLineOutput",   "o",        "<Cmd>lua require('r').warn('This command does not work over a selection of lines.')")
     create_maps("i",   "RSendLAndOpenNewOne", "q",        "<Cmd>lua require('r.send').line('newline')")
-    create_maps("ni.", "RSendMotion",         "m",        "<Cmd>set opfunc=v:lua.require('r.send').motion<CR>g@")
+    create_maps("ni.", "RSendMotion",         "m",        "<Cmd>set opfunc=v:lua.require'r.send'.motion<CR>g@", true)
     create_maps("n",   "RNLeftPart",          "r<left>",  "<Cmd>lua require('r.send').line_part('left',  false)")
     create_maps("n",   "RNRightPart",         "r<right>", "<Cmd>lua require('r.send').line_part('right', false)")
     create_maps("i",   "RILeftPart",          "r<left>",  "<Cmd>lua require('r.send').line_part('left',  true)")
