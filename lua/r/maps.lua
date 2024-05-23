@@ -88,7 +88,7 @@ local map_desc = {
 ---@param plug string The "<Plug>" name.
 ---@param combo string Key combination.
 ---@param target string The command or function to be called.
----@param nocr boolean Don't append "<CR>" to target.
+---@param nocr boolean? Don't append "<CR>" to target.
 local create_maps = function(mode, plug, combo, target, nocr)
     if vim.fn.index(config.disable_cmds, plug) > -1 then return end
     local tgt = nocr and target or target .. "<CR>"
