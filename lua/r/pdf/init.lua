@@ -5,7 +5,7 @@ local job = require("r.job")
 local uv = vim.loop
 
 local check_installed = function()
-    if vim.fn.executable(config.pdfviewer) == 0 then
+    if (vim.fn.executable(config.pdfviewer) == 0) and (config.pdfviewer ~= "") then
         warn(
             "R.nvim: Please, set the value of `pdfviewer`. The application `"
                 .. config.pdfviewer
@@ -61,6 +61,9 @@ end
 ---@param fullpath string The path to the PDF file.
 M.open = function(fullpath)
     if config.open_pdf == "no" then return end
+
+    -- If pdfviewer is blank, just call vim.ui.open (opens with the os default for ANY file type)
+    if config.pdfviewer == "" then vim.ui.open(fullpath) return end
 
     if fullpath == "Get Master" then
         local fpath = require("r.rnw").SyncTeX_get_master() .. ".pdf"
