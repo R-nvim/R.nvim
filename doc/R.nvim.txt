@@ -1485,8 +1485,9 @@ Zathura on Linux, but you can change the values of `synctex` and `pdfviewer`
 in your config if you don't need SyncTeX support. Example:
 >lua
    synctex = false
-   pdfviewer = "open"     -- Default PDF viewer on macOS or Windows
-   pdfviewer = "xdg-open" -- Default PDF viewer on Linux
+   pdfviewer = "open"     -- Default PDF viewer (macOS or Windows)
+   pdfviewer = "xdg-open" -- Default PDF viewer (Linux)
+   pdfviewer = ""         -- Default PDF viewer (Any) [Requires Neovim v0.10+]
 <
 If editing an Rmd file, you can produce the html result with <LocalLeader>kr
 or <LocalLeader>kh (it may also work with other file types). The html file

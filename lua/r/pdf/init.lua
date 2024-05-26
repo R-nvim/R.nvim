@@ -5,6 +5,12 @@ local job = require("r.job")
 local uv = vim.loop
 
 local check_installed = function()
+    if ((vim.fn.has("nvim-0.10") == 0) and (config.pdfviewer == "")) then
+        warn(
+            "R.nvim: Having a `pdfviewer` value of `\"\"` is only supported for Neovim 0.10+."
+        )
+    end
+
     if (vim.fn.executable(config.pdfviewer) == 0) and (config.pdfviewer ~= "") then
         warn(
             "R.nvim: Please, set the value of `pdfviewer`. The application `"
