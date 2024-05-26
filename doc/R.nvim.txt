@@ -1482,7 +1482,9 @@ Wayland windows managers other than Sway.
 
 R.nvim will call Sumatra to open the PDF on Windows, Skim on Mac OS X, and
 Zathura on Linux, but you can change the values of `synctex` and `pdfviewer`
-in your config if you don't need SyncTeX support. Example:
+in your config if you don't need SyncTeX support. For systems using 
+Neovim v10.0+, setting `pdfviewer` to an empty string will open the PDF with 
+the OS default application. Example:
 >lua
    synctex = false
    pdfviewer = "open"     -- Default PDF viewer (macOS or Windows)
