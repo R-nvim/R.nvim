@@ -27,9 +27,7 @@ M.setup = function()
         end
     end
 
-    if config.pdfviewer ~= "" then
-        check_installed()
-    end
+    if config.pdfviewer ~= "" then check_installed() end
 
     if config.pdfviewer == "zathura" then
         M.open2 = require("r.pdf.zathura").open
