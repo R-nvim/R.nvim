@@ -5,13 +5,7 @@ local job = require("r.job")
 local uv = vim.loop
 
 local check_installed = function()
-    if ((vim.fn.has("nvim-0.10") == 0) and (config.pdfviewer == "")) then
-        warn(
-            "R.nvim: Having a `pdfviewer` value of `\"\"` is only supported for Neovim 0.10+."
-        )
-    end
-
-    if (vim.fn.executable(config.pdfviewer) == 0) and (config.pdfviewer ~= "") then
+    if vim.fn.executable(config.pdfviewer) == 0 then
         warn(
             "R.nvim: Please, set the value of `pdfviewer`. The application `"
                 .. config.pdfviewer
@@ -24,7 +18,18 @@ local M = {}
 
 M.setup = function()
     local ptime = uv.hrtime()
-    check_installed()
+
+    if config.pdfviewer == "" and vim.fn.has("nvim-0.10") == 0 then
+        if config.is_windows or config.is_darwin then
+            config.pdfviewer = "open"
+        else
+            config.pdfviewer = "xdg-open"
+        end
+    end
+
+    if config.pdfviewer ~= "" then
+        check_installed()
+    end
 
     if config.pdfviewer == "zathura" then
         M.open2 = require("r.pdf.zathura").open
@@ -67,9 +72,6 @@ end
 ---@param fullpath string The path to the PDF file.
 M.open = function(fullpath)
     if config.open_pdf == "no" then return end
-
-    -- If pdfviewer is blank, just call vim.ui.open (opens with the os default for ANY file type)
-    if config.pdfviewer == "" then vim.ui.open(fullpath) return end
 
     if fullpath == "Get Master" then
         local fpath = require("r.rnw").SyncTeX_get_master() .. ".pdf"
