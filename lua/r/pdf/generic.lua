@@ -5,6 +5,11 @@ local job = require("r.job")
 local M = {}
 
 M.open = function(fullpath)
+    if config.pdfviewer == "" then
+        vim.ui.open(fullpath)
+        return
+    end
+
     local opts = {
         on_exit = require("r.job").on_exit,
         detach = true,

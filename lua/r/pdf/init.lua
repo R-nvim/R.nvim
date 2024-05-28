@@ -18,7 +18,16 @@ local M = {}
 
 M.setup = function()
     local ptime = uv.hrtime()
-    check_installed()
+
+    if config.pdfviewer == "" and vim.fn.has("nvim-0.10") == 0 then
+        if config.is_windows or config.is_darwin then
+            config.pdfviewer = "open"
+        else
+            config.pdfviewer = "xdg-open"
+        end
+    end
+
+    if config.pdfviewer ~= "" then check_installed() end
 
     if config.pdfviewer == "zathura" then
         M.open2 = require("r.pdf.zathura").open
