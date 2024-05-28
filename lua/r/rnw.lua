@@ -441,6 +441,11 @@ M.SyncTeX_forward = function(gotobuf)
     local rnwf = vim.fn.expand("%:t")
     local basedir
 
+    if config.pdfviewer == "" then
+        warn("R.nvim has no support for SyncTeX when 'pdfviewer' is an empty string.")
+        return
+    end
+
     if vim.fn.filereadable(vim.fn.expand("%:p:r") .. "-concordance.tex") == 1 then
         lnum = vim.api.nvim_win_get_cursor(0)[1]
     else
