@@ -33,6 +33,8 @@ local config = {
     },
     config_tmux         = true,
     csv_app             = "",
+    debug_center        = false,
+    debug_jump          = true,
     disable_cmds        = { "" },
     editing_mode        = "",
     esc_term            = true,

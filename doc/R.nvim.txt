@@ -59,6 +59,7 @@ Git pull requests are welcome.
       - Syntax highlighting of the Object Browser.
   * SyncTeX support for Rnoweb.
   * Special highlighting for R output (.Rout files).
+  * Limited support for debugging R functions.
   * Most of the plugin's behavior is customizable.
 
 
@@ -549,6 +550,78 @@ put in your `init.lua`:
    vim.g.rout_follow_colorscheme = true
 <
 
+------------------------------------------------------------------------------
+4.7. Debugging R functions (Unix only)                     *debug-R-functions*
+
+The R-Nvim-Plugin has limited debugging facilities available on Unix systems
+(not available on Windows). To debug a function with R-Nvim you have to do the
+following:
+
+   1. Source the R script where the function is with the `source()` function
+      of the `base` package.
+
+   2. In the R Console, run either `debug(funcname)` or `debugonce(funcname)`
+      where `funcname` is the name of the function (not quoted). R-Nvim will
+      send this command to R Console if you press <LocalLeader>db in Normal
+      mode with the cursor over the function name.
+
+   3. Call the function.
+
+See `:Rh browser` for available commands in debugging mode.
+
+For example, if you have a file named `my_function.R` with the following
+contents:
+>r
+   add.one <- function(x){
+       y <- x + 1
+       print(y)
+       return(invisible(NULL))
+   }
+<
+You could debug the `add.one()` function from another script such as:
+>r
+   source("path/to/my_function.R")
+   debug(add.one)
+   add.one(7)
+<
+If you do not want to start debugging the function from its first line,
+instead of calling `debug(funcname)` before calling the function, you should
+add the line `browser()` to the function at the line where the debugging
+session should start. Example:
+>r
+   add.one <- function(x){
+       y <- x + 1
+       browser()
+       print(y)
+       return(invisible(NULL))
+   }
+<
+If you want a conditional breakpoint, you should call the `browser()` command
+only if a condition is satisfied. Example:
+>r
+   add.one <- function(x){
+       y <- x + 1
+       if(x > 9)
+           browser()
+       print(y)
+       return(invisible(NULL))
+   }
+<
+One limitation is that R-Nvim also does not help you setting breakpoints.
+You have to set them manually as explained above.
+
+Another limitation of R-Nvim is that it might be unable to jump to the line in
+the source code that is being evaluated if either you have sent the function
+directly to the R Console or the function has been sent by the `knitr`
+package, without calling the function `source()`. In either case, R-Nvim will
+try to find the pattern `funcname <- function(` in the buffer being edited. If
+the pattern is found, the cursor will jump to its position.
+
+The highlighting group used to highlight the line being debugged is the
+QuickFixLine (see |hl-QuickFixLine|). Its foreground and background colors are
+defined by your colorscheme.
+
+
 ==============================================================================
 5. Known bugs and workarounds                              *R.nvim-known-bugs*
 
@@ -710,6 +783,7 @@ command:
 |wait_reply|          Time to wait for R reply
 |setwd|               Directory where to start R
 |hook|                Lua functions to call after certain events
+|debug|             Support for debugging functions
 |user_maps_only|      Only user specified key bindings
 |disable_cmds|        List of commands to be disabled
 |tmpdir|              Where temporary files are created
@@ -1809,7 +1883,7 @@ configuration:
 `R.nvim` also also convert the subsetting operator `$` to `[[`. For example,
 `x$a` will be converted to `x[["a"]]` and `x$a$b$c$d` will be converted to
 `x[["a"]][["b"]][["c"]][["d"]]`. The default key binding for this is
-`<LocalLeader>cs` (change subsetting). 
+`<LocalLeader>cs` (change subsetting).
 
 
 ------------------------------------------------------------------------------
@@ -1821,6 +1895,27 @@ used in the current buffer that are not installed as missing. These missing
 packages can be automatically installed using the `<LocalLeader>ip` (install
 packages) key binding.
 
+
+------------------------------------------------------------------------------
+6.38. Support for debugging functions                                *debug*
+
+Put the line below in your config if do not want that the cursor jumps to the
+line being debugged (when `browser()` is run). Highlighting of the line being
+debugged will also be disabled.
+>lua
+   debug = false
+<
+R-Nvim puts the cursor in the R Console when the debugging starts. If you do
+not want this, put in your config:
+>lua
+   dbg_jump = false
+<
+The highlighted debugged line incrementally moves down the buffer with code
+execution and, with long scripts, it may stay at the bottom of the window as you
+debug. You can hold the highlighted line in the middle of the window with
+>lua
+    debug_center = true
+<
 
 ==============================================================================
 7. Custom key bindings                                   *R.nvim-key-bindings*

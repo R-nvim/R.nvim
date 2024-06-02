@@ -24,6 +24,7 @@ NvimcomEnv$pkgRdDB <- list()
         options(nvimcom.texerrs = TRUE)
         options(nvimcom.setwidth = TRUE)
         options(nvimcom.autoglbenv = 0)
+        options(nvimcom.debug_r = TRUE)
         options(nvimcom.nvimpager = TRUE)
         options(nvimcom.max_depth = 12)
         options(nvimcom.max_size = 1000000)
@@ -57,6 +58,7 @@ NvimcomEnv$pkgRdDB <- list()
            as.integer(getOption("nvimcom.max_depth")),
            as.integer(getOption("nvimcom.max_size")),
            as.integer(getOption("nvimcom.max_time")),
+           as.integer(getOption("nvimcom.debug_r")),
            NvimcomEnv$info[1],
            NvimcomEnv$info[2],
            PACKAGE = "nvimcom")

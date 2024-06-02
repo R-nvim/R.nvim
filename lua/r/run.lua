@@ -64,6 +64,11 @@ start_R2 = function()
         start_options,
         "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")"
     )
+    if config.debug then
+        table.insert(start_options, "options(nvimcom.debug_r = TRUE)")
+    else
+        table.insert(start_options, "options(nvimcom.debug_r = FALSE)")
+    end
     if config.objbr_allnames then
         table.insert(start_options, "options(nvimcom.allnames = TRUE)")
     else
@@ -81,6 +86,8 @@ start_R2 = function()
     else
         table.insert(start_options, "options(nvimcom.autoglbenv = 0)")
     end
+    -- Force debugging while developing plugin option
+    table.insert(start_options, "options(nvimcom.debug_r = TRUE)")
     if config.setwidth and config.setwidth == 2 then
         table.insert(start_options, "options(nvimcom.setwidth = TRUE)")
     else

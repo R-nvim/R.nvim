@@ -55,6 +55,8 @@ local map_desc = {
     RShowRout           = { m = "", k = "", c = "Command",  d = "R CMD BATCH the current document and show the output in a new tab" },
     RSPlot              = { m = "", k = "", c = "Command",  d = "Send to R command to run summary and plot with <cword> as argument" },
     RClearConsole       = { m = "", k = "", c = "Command",  d = "Send to R: <Ctrl-L>" },
+    RDebug              = { m = "", k = "", c = "Command",  d = "Send to R: debug" },
+    RUndebug            = { m = "", k = "", c = "Command",  d = "Send to R: undebug" },
     RListSpace          = { m = "", k = "", c = "Command",  d = "Send to R: ls()" },
     RShowArgs           = { m = "", k = "", c = "Command",  d = "Send to R: nvim.args(<cword>)" },
     RObjectNames        = { m = "", k = "", c = "Command",  d = "Send to R: nvim.names(<cword>)" },
@@ -164,10 +166,14 @@ local control = function(file_type)
     create_maps("ni",  "RSummary",          "rs", "<Cmd>lua require('r.run').action('summary')")
     create_maps("ni",  "RPlot",             "rg", "<Cmd>lua require('r.run').action('plot')")
     create_maps("ni",  "RSPlot",            "rb", "<Cmd>lua require('r.run').action('plotsumm')")
+    create_maps("ni",  "RDebug",            "bg", "<Cmd>lua require('r.run').action('debug')")
+    create_maps("ni",  "RUndebug",          "ud", "<Cmd>lua require('r.run').action('undebug')")
 
     create_maps("v",   "RSummary",          "rs", "<Cmd>lua require('r.run').action('summary', 'v')")
     create_maps("v",   "RPlot",             "rg", "<Cmd>lua require('r.run').action('plot', 'v')")
     create_maps("v",   "RSPlot",            "rb", "<Cmd>lua require('r.run').action('plotsumm', 'v')")
+    create_maps("v",   "RDebug",            "bg", "<Cmd>lua require('r.run').action('debug', 'v')")
+    create_maps("v",   "RUndebug",          "ud", "<Cmd>lua require('r.run').action('undebug', 'v')")
 
     -- Object Browser
     create_maps("nvi", "ROBToggle",         "ro", "<Cmd>lua require('r.browser').start()")
