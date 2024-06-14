@@ -605,19 +605,22 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
             if (len == 0) { /* Empty list? */
                 int len1 = length(*x);
                 if (len1 > 0) { /* List without names */
-                    len1 -= 1;
-                    if (newenv[strlen(newenv) - 1] == '$')
-                        newenv[strlen(newenv) - 1] = 0; // Delete trailing '$'
-                    for (int i = 0; i < len1; i++) {
-                        snprintf(ebuf, 63, "[[%d]]", i + 1);
-                        elmt = VECTOR_ELT(*x, i);
-                        p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p,
-                                               depth + 1);
-                    }
-                    snprintf(ebuf, 63, "[[%d]]", len1 + 1);
-                    PROTECT(elmt = VECTOR_ELT(*x, len));
-                    p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p, depth + 1);
-                    UNPROTECT(1);
+                    // len1 -= 1;
+                    // if (newenv[strlen(newenv) - 1] == '$')
+                    //     newenv[strlen(newenv) - 1] = 0; // Delete trailing '$'
+                    // double tm1 = clock();
+                    // for (int i = 0; i < len1; i++) {
+                    //     snprintf(ebuf, 63, "[[%d]]", i + 1);
+                    //     elmt = VECTOR_ELT(*x, i);
+                    //     p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p,
+                    //                            depth + 1);
+                    // }
+                    // double tmdiff2 = 1000 * ((double)clock() - tm1) / CLOCKS_PER_SEC;
+                    // REprintf("LOOP TIME: %g (%s)\n", tmdiff2, newenv);
+                    // snprintf(ebuf, 63, "[[%d]]", len1 + 1);
+                    // PROTECT(elmt = VECTOR_ELT(*x, len));
+                    // p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p, depth + 1);
+                    // UNPROTECT(1);
                 }
             } else { /* Named list */
                 SEXP eexp;
