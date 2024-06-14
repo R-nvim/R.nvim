@@ -64,7 +64,10 @@ static size_t tcp_header_len; // Length of nvimsecr + 9. Stored in a
                               // variable to avoid repeatedly calling
                               // strlen().
 
-static int maxdepth = 6; // How many levels to parse in lists and S4 objects
+static double timelimit = 100.0; // Maximum acceptable time to build list of .GlobalEnv objects
+static int sizelimit = 1000000; // Maximum acceptable size of string representing
+                                // .GlobalEnv (list of objects)
+static int maxdepth = 12; // How many levels to parse in lists and S4 objects
 // when building list of objects for auto-completion. The value decreases if
 // the listing is too slow and increases if there are more levels to be parsed
 // and the listing is fast enough.
@@ -74,7 +77,6 @@ static int autoglbenv = 0; // Should the list of objects in .GlobalEnv be
 // automatically updated after each top level command is executed? It will
 // always be 2 if cmp-r is installed; otherwise, it will be 1 if the Object
 // Browser is open.
-static clock_t tm; // Time when the listing of objects from .GlobalEnv started.
 
 static char tmpdir[512]; // The environment variable RNVIM_TMPDIR.
 static int setwidth = 0; // Set the option width after each command is executed
@@ -571,21 +573,6 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
         char newenv[576];
         SEXP elmt = R_NilValue;
         const char *ename;
-        double tmdiff = 1000 * ((double)clock() - tm) / CLOCKS_PER_SEC;
-        if (tmdiff > 300.0) {
-            maxdepth = curdepth;
-            if (verbose > 3)
-                REprintf("nvimcom: slow at building list of objects (%g ms); "
-                         "maxdepth = %d\n",
-                         tmdiff, maxdepth);
-            return p;
-        } else if (tmdiff < 100.0 && maxdepth <= curdepth) {
-            maxdepth++;
-            if (verbose > 3)
-                REprintf("nvimcom: increased maxdepth to %d (time to build "
-                         "completion data = %g)\n",
-                         maxdepth, tmdiff);
-        }
 
         if (xgroup == 4) {
             snprintf(newenv, 575, "%s%s@", curenv, xname);
@@ -605,22 +592,18 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
             if (len == 0) { /* Empty list? */
                 int len1 = length(*x);
                 if (len1 > 0) { /* List without names */
-                    // len1 -= 1;
-                    // if (newenv[strlen(newenv) - 1] == '$')
-                    //     newenv[strlen(newenv) - 1] = 0; // Delete trailing '$'
-                    // double tm1 = clock();
-                    // for (int i = 0; i < len1; i++) {
-                    //     snprintf(ebuf, 63, "[[%d]]", i + 1);
-                    //     elmt = VECTOR_ELT(*x, i);
-                    //     p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p,
-                    //                            depth + 1);
-                    // }
-                    // double tmdiff2 = 1000 * ((double)clock() - tm1) / CLOCKS_PER_SEC;
-                    // REprintf("LOOP TIME: %g (%s)\n", tmdiff2, newenv);
-                    // snprintf(ebuf, 63, "[[%d]]", len1 + 1);
-                    // PROTECT(elmt = VECTOR_ELT(*x, len));
-                    // p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p, depth + 1);
-                    // UNPROTECT(1);
+                    len1 -= 1;
+                    if (newenv[strlen(newenv) - 1] == '$')
+                        newenv[strlen(newenv) - 1] = 0; // Delete trailing '$'
+                    for (int i = 0; i < len1; i++) {
+                        snprintf(ebuf, 63, "[[%d]]", i + 1);
+                        elmt = VECTOR_ELT(*x, i);
+                        p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p, depth + 1);
+                    }
+                    snprintf(ebuf, 63, "[[%d]]", len1 + 1);
+                    PROTECT(elmt = VECTOR_ELT(*x, len));
+                    p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p, depth + 1);
+                    UNPROTECT(1);
                 }
             } else { /* Named list */
                 SEXP eexp;
@@ -688,7 +671,7 @@ static void nvimcom_globalenv_list(void) {
     if (tmpdir[0] == 0)
         return;
 
-    tm = clock();
+    double tm = clock();
 
     memset(glbnvbuf2, 0, glbnvbufsize);
     char *p = glbnvbuf2;
@@ -733,9 +716,15 @@ static void nvimcom_globalenv_list(void) {
         send_glb_env();
 
     double tmdiff = 1000 * ((double)clock() - tm) / CLOCKS_PER_SEC;
-    if (verbose && tmdiff > 500.0)
-        REprintf("Time to build GlobalEnv cmplls [%zu bytes]: %f ms\n",
-                 strlen(glbnvbuf2), tmdiff);
+    if (tmdiff > timelimit || strlen(glbnvbuf1) > sizelimit) {
+        maxdepth = curdepth - 1;
+        if (verbose)
+            REprintf("nvimcom:\n"
+                    "    Time to buiild list of objects: %g ms (max_time = %g ms)\n"
+                    "    List size: %zu bytes (max_size = %d bytes)\n"
+                    "    New max_depth: %d\n",
+                    tmdiff, timelimit, strlen(glbnvbuf1), sizelimit, maxdepth);
+    }
 }
 
 /**
@@ -1173,12 +1162,16 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
  *
  * @param rinfo Information on R to be passed to nvim.
  */
-void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, char **nvv,
-                   char **rinfo) {
+void nvimcom_Start(int *vrb, int *anm, int *swd, int *age,
+        int *imd, int *szl, int *tml, char **nvv, char **rinfo) {
     verbose = *vrb;
     allnames = *anm;
     setwidth = *swd;
     autoglbenv = *age;
+
+    maxdepth = *imd;
+    sizelimit = *szl;
+    timelimit = (double)*tml;
 
     if (getenv("RNVIM_TMPDIR")) {
         strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 500);

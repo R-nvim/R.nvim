@@ -52,6 +52,20 @@ start_R2 = function()
         'Sys.setenv("R_DEFAULT_PACKAGES" = "' .. rdp .. '")',
     }
 
+    table.insert(
+        start_options,
+        "options(nvimcom.max_depth = "
+            .. tostring(config.compl_data.max_depth)
+            .. ")"
+    )
+    table.insert(
+        start_options,
+        "options(nvimcom.max_size = " .. tostring(config.compl_data.max_size) .. ")"
+    )
+    table.insert(
+        start_options,
+        "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")"
+    )
     if config.objbr_allnames then
         table.insert(start_options, "options(nvimcom.allnames = TRUE)")
     else

@@ -669,6 +669,7 @@ command:
 |objbr_opendf|        Display data.frames open in the Object Browser
 |objbr_openlist|      Display lists open in the Object Browser
 |objbr_allnames|      Display hidden objects in the Object Browser
+|compl_data|          Limits of completion data (avoid R slowdown)
 |nvimpager|           Use Neovim to see R documentation
 |open_example|        Use Neovim to display R examples
 |R_path|              Directory where R is
@@ -995,13 +996,13 @@ cursor is not at the beginning of the line.
 
 
 ------------------------------------------------------------------------------
-6.7. Object Browser options                                   *objbr_w*
+6.7. Object Browser and completion options                    *objbr_w*
                                                               *objbr_h*
                                                               *objbr_place*
                                                               *objbr_opendf*
                                                               *objbr_openlist*
                                                               *objbr_allnames*
-
+                                                              *compl_data*
 By default, the Object Browser will be created at the right of the script
 window, and with 40 columns. Valid values for the Object Browser placement are
 the combination of either "script" or "console" and "right", "left", "above",
@@ -1041,6 +1042,40 @@ only if it is explicitly opened. The options `objbr_opendf` and
 `objbr_openlist` control the initial status (either opened or closed) of,
 respectively, `data.frames` and `lists`. The options are ignored for
 `data.frames` and `lists` of libraries which are always started closed.
+
+When building the list of objects for auto completion and for the Object
+Browser, `nvimcom` inspects lists only as deep as 12 levels. When the time to
+build the completion data is higher than 100 ms `nvimcom` decreases the number
+of levels it inspects in lists. Even if `nvimcom` can build the completion
+data in less than 100 ms, it also decrease the maximum level of list
+inspection if the resulting completion data is bigger than 1,000,000 bytes
+because big data may take a noticeably long time to be transmitted through the
+TCP connection. When `nvimcom` automatically decreases the depth of list
+inspection, if `nvimcom.verbose` is > 1, it outputs information like the
+following on R Console:
+
+   nvimcom:
+       Time to buiild list of objects: 7.582 ms (max_time = 100 ms)
+       List size: 1611734 bytes (max_size = 1000000 bytes)
+       New max_depth: 9
+
+You can set different values for `time_limit`, `size_limit`, and `max_depth`
+in the Lua table `compl_data` in your `R.nvim` config. Below are the default
+values:
+>lua
+    compl_data = {
+        max_depth = 12,
+        max_size = 1000000,
+        max_time = 100,
+    },
+<
+You should increase the value of `max_depth` if you want to complete or see in
+the Object Browser more than 12 levels from lists. You should increase either
+`max_size` or `max_time` if `nvimcom` needs more space or more time to build
+the completion data with the desired list depth. You should decrease the
+values if you notice any delay when R is running commands. In this case,
+please, put `options(nvimcom.verbose = 1)` in your `~/.Rprofile` and use the
+information output by `nvimcom` to decide what parameter to change.
 
 
 ------------------------------------------------------------------------------
