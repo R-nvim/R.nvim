@@ -54,9 +54,7 @@ start_R2 = function()
 
     table.insert(
         start_options,
-        "options(nvimcom.max_depth = "
-            .. tostring(config.compl_data.max_depth)
-            .. ")"
+        "options(nvimcom.max_depth = " .. tostring(config.compl_data.max_depth) .. ")"
     )
     table.insert(
         start_options,
