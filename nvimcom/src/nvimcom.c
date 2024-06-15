@@ -69,8 +69,7 @@ static int sizelimit = 1000000; // Maximum acceptable size of string representin
                                 // .GlobalEnv (list of objects)
 static int maxdepth = 12; // How many levels to parse in lists and S4 objects
 // when building list of objects for auto-completion. The value decreases if
-// the listing is too slow and increases if there are more levels to be parsed
-// and the listing is fast enough.
+// the listing is too slow.
 static int curdepth = 0; // Current level of the list or S4 object being parsed
                          // for auto-completion.
 static int autoglbenv = 0; // Should the list of objects in .GlobalEnv be
@@ -601,7 +600,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
                         p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p, depth + 1);
                     }
                     snprintf(ebuf, 63, "[[%d]]", len1 + 1);
-                    PROTECT(elmt = VECTOR_ELT(*x, len));
+                    PROTECT(elmt = VECTOR_ELT(*x, len1));
                     p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p, depth + 1);
                     UNPROTECT(1);
                 }
