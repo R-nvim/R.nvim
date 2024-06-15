@@ -75,6 +75,7 @@ static void init_global_vars(void) {
     } else {
         strncpy(localtmpdir, getenv("RNVIM_TMPDIR"), 255);
     }
+    set_max_depth(atoi(getenv("RNVIM_MAX_DEPTH")));
 
     compl_buffer = calloc(compl_buffer_size, sizeof(char));
 }

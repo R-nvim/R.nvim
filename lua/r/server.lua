@@ -166,6 +166,7 @@ local start_rnvimserver = function()
     if config.objbr_allnames then rns_env["RNVIM_OBJBR_ALLNAMES"] = "TRUE" end
     rns_env["RNVIM_RPATH"] = config.R_cmd
     rns_env["RNVIM_LOCAL_TMPDIR"] = config.localtmpdir
+    rns_env["RNVIM_MAX_DEPTH"] = tostring(config.compl_data.max_depth)
 
     -- We have to set R's home directory on Windows because rnvimserver will
     -- run R to build the list for auto completion.
