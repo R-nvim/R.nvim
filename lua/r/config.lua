@@ -26,7 +26,7 @@ local config = {
     close_term          = true,
     compldir            = "",
     compl_data          = {
-        max_depth = 12,
+        max_depth = 3,
         max_size = 1000000,
         max_time = 100,
     },
