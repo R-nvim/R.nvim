@@ -1044,7 +1044,7 @@ respectively, `data.frames` and `lists`. The options are ignored for
 `data.frames` and `lists` of libraries which are always started closed.
 
 When building the list of objects for auto completion and for the Object
-Browser, `nvimcom` inspects lists only as deep as 12 levels. When the time to
+Browser, `nvimcom` inspects lists only as deep as 3 levels. When the time to
 build the completion data is higher than 100 ms `nvimcom` decreases the number
 of levels it inspects in lists. Even if `nvimcom` can build the completion
 data in less than 100 ms, it also decrease the maximum level of list
@@ -1059,18 +1059,22 @@ following on R Console:
        List size: 1611734 bytes (max_size = 1000000 bytes)
        New max_depth: 9
 
+The value of `max_depth` will automatically increase if necessary when you try
+to open a list in the Object Browser. However, it will not increase if you try
+to complete deep elements in the list.
+
 You can set different values for `time_limit`, `size_limit`, and `max_depth`
 in the Lua table `compl_data` in your `R.nvim` config. Below are the default
 values:
 >lua
     compl_data = {
-        max_depth = 12,
+        max_depth = 3,
         max_size = 1000000,
         max_time = 100,
     },
 <
 You should increase the value of `max_depth` if you want to complete or see in
-the Object Browser more than 12 levels from lists. You should increase either
+the Object Browser more than 3 list levels. You should increase either
 `max_size` or `max_time` if `nvimcom` needs more space or more time to build
 the completion data with the desired list depth. You should decrease the
 values if you notice any delay when R is running commands. In this case,

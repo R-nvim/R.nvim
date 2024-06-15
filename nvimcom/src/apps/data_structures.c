@@ -9,12 +9,18 @@
 #include "../common.h"
 #include "logging.h"
 #include "data_structures.h"
+#include "tcp.h"
 
 static int building_objls;     // Flag for building compl lists
 static int more_to_build;      // Flag for more lists to build
 static LibPath *libpaths;      // Pointer to first library path
 static size_t glbnv_buffer_sz; // Global environment buffer size
 static ListStatus *listTree;   // Root node of the list status tree
+static int max_depth = 2;      // Max list depth in nvimcom
+
+void set_max_depth(int m) {
+    max_depth = m;
+}
 
 static void change_all_stt(ListStatus *root, int stt) {
     if (root != NULL) {
@@ -574,10 +580,27 @@ int get_list_status(const char *s, int stt) {
  * Description:
  * @param s:
  */
-void toggle_list_status(const char *s) {
+void toggle_list_status(char *s) {
     ListStatus *p = search(listTree, s);
-    if (p)
+    if (p) {
+
+        // Check if max_depth in nvimcom is enough
+        char *t = s;
+        int n = 0;
+        while(*t) {
+            if (*t == '$' || *t == '@')
+                n++;
+            t++;
+        }
+        if (p->status == 0 && n >= max_depth) {
+            max_depth++;
+            char b[16];
+            snprintf(b, 15, "D%d", n + 1);
+            send_to_nvimcom(b);
+        }
+
         p->status = !p->status;
+    }
 }
 
 /**

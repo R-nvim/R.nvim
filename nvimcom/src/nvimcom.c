@@ -717,6 +717,9 @@ static void nvimcom_globalenv_list(void) {
     double tmdiff = 1000 * ((double)clock() - tm) / CLOCKS_PER_SEC;
     if (tmdiff > timelimit || strlen(glbnvbuf1) > sizelimit) {
         maxdepth = curdepth - 1;
+        char b[16];
+        snprintf(b, 15, "+D%d", maxdepth);
+        send_to_nvim(b);
         if (verbose)
             REprintf("nvimcom:\n"
                     "    Time to buiild list of objects: %g ms (max_time = %g ms)\n"
@@ -1084,6 +1087,15 @@ static void nvimcom_parse_received_msg(char *buf) {
         } else {
             REprintf("\nvimcom: received invalid RNVIM_ID.\n");
         }
+        break;
+    case 'D':
+        p = buf;
+        p++;
+        maxdepth = atoi(p);
+        if (verbose > 3)
+            REprintf("New max_depth: %d\n", maxdepth);
+        flag_glbenv = 1;
+        nvimcom_fire();
         break;
     default: // do nothing
         REprintf("\nError [nvimcom]: Invalid message received: %s\n", buf);
