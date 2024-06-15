@@ -96,6 +96,10 @@ static void ParseMsg(char *b) {
             else
                 complete(id, base, fnm, dtfrm, NULL);
             break;
+        case 'D': // set max_depth of lists in the completion data
+            b++;
+            set_max_depth(atoi(b));
+            break;
         case 'F': // strtok doesn't work here because "base" might be empty.
             b++;
             char *args;

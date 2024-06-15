@@ -41,8 +41,9 @@ typedef struct pkg_data_ {
     struct pkg_data_ *next; // Pointer to next package data
 } PkgData;
 
+void set_max_depth(int m);
 int get_list_status(const char *s, int stt);
-void toggle_list_status(const char *s);
+void toggle_list_status(char *s);
 void update_inst_libs(void);
 void update_pkg_list(char *libnms);  // Update package list
 void update_glblenv_buffer(char *g); // Update global environment buffer

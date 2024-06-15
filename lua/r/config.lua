@@ -25,6 +25,11 @@ local config = {
     clear_line          = false,
     close_term          = true,
     compldir            = "",
+    compl_data          = {
+        max_depth = 3,
+        max_size = 1000000,
+        max_time = 100,
+    },
     config_tmux         = true,
     csv_app             = "",
     disable_cmds        = { "" },
