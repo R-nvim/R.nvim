@@ -173,9 +173,8 @@ static const char *write_ob_line(const char *p, const char *bs, char *prfx,
             return p;
         }
 
-        if (str_here(p, base1) == 0 && str_here(p, base2) == 0) {
+        if (str_here(p, base1) == 0 && str_here(p, base2) == 0)
             return p;
-        }
 
         int len = strlen(prfx);
         if (nvimcom_is_utf8) {

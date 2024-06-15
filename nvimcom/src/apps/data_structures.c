@@ -582,7 +582,7 @@ void toggle_list_status(char *s) {
     ListStatus *p = search(listTree, s);
     if (p) {
 
-        // Check if max_depth in nvimcom is enough
+        // Count list levels
         char *t = s;
         int n = 0;
         while (*t) {
@@ -590,6 +590,7 @@ void toggle_list_status(char *s) {
                 n++;
             t++;
         }
+        // Check if the value of max_depth is high enough
         if (p->status == 0 && n >= max_depth) {
             max_depth++;
             char b[16];
