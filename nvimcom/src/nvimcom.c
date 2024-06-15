@@ -64,9 +64,10 @@ static size_t tcp_header_len; // Length of nvimsecr + 9. Stored in a
                               // variable to avoid repeatedly calling
                               // strlen().
 
-static double timelimit = 100.0; // Maximum acceptable time to build list of .GlobalEnv objects
-static int sizelimit = 1000000; // Maximum acceptable size of string representing
-                                // .GlobalEnv (list of objects)
+static double timelimit =
+    100.0; // Maximum acceptable time to build list of .GlobalEnv objects
+static int sizelimit = 1000000; // Maximum acceptable size of string
+                                // representing .GlobalEnv (list of objects)
 static int maxdepth = 12; // How many levels to parse in lists and S4 objects
 // when building list of objects for auto-completion. The value decreases if
 // the listing is too slow.
@@ -597,7 +598,8 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
                     for (int i = 0; i < len1; i++) {
                         snprintf(ebuf, 63, "[[%d]]", i + 1);
                         elmt = VECTOR_ELT(*x, i);
-                        p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p, depth + 1);
+                        p = nvimcom_glbnv_line(&elmt, ebuf, newenv, p,
+                                               depth + 1);
                     }
                     snprintf(ebuf, 63, "[[%d]]", len1 + 1);
                     PROTECT(elmt = VECTOR_ELT(*x, len1));
@@ -721,11 +723,12 @@ static void nvimcom_globalenv_list(void) {
         snprintf(b, 15, "+D%d", maxdepth);
         send_to_nvim(b);
         if (verbose)
-            REprintf("nvimcom:\n"
-                    "    Time to buiild list of objects: %g ms (max_time = %g ms)\n"
-                    "    List size: %zu bytes (max_size = %d bytes)\n"
-                    "    New max_depth: %d\n",
-                    tmdiff, timelimit, strlen(glbnvbuf1), sizelimit, maxdepth);
+            REprintf(
+                "nvimcom:\n"
+                "    Time to buiild list of objects: %g ms (max_time = %g ms)\n"
+                "    List size: %zu bytes (max_size = %d bytes)\n"
+                "    New max_depth: %d\n",
+                tmdiff, timelimit, strlen(glbnvbuf1), sizelimit, maxdepth);
     }
 }
 
@@ -1173,8 +1176,8 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
  *
  * @param rinfo Information on R to be passed to nvim.
  */
-void nvimcom_Start(int *vrb, int *anm, int *swd, int *age,
-        int *imd, int *szl, int *tml, char **nvv, char **rinfo) {
+void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, int *imd, int *szl,
+                   int *tml, char **nvv, char **rinfo) {
     verbose = *vrb;
     allnames = *anm;
     setwidth = *swd;

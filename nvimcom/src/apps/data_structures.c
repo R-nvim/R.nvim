@@ -18,9 +18,7 @@ static size_t glbnv_buffer_sz; // Global environment buffer size
 static ListStatus *listTree;   // Root node of the list status tree
 static int max_depth = 2;      // Max list depth in nvimcom
 
-void set_max_depth(int m) {
-    max_depth = m;
-}
+void set_max_depth(int m) { max_depth = m; }
 
 static void change_all_stt(ListStatus *root, int stt) {
     if (root != NULL) {
@@ -587,7 +585,7 @@ void toggle_list_status(char *s) {
         // Check if max_depth in nvimcom is enough
         char *t = s;
         int n = 0;
-        while(*t) {
+        while (*t) {
             if (*t == '$' || *t == '@')
                 n++;
             t++;
