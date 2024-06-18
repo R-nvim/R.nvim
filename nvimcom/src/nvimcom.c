@@ -1097,8 +1097,13 @@ static void nvimcom_parse_received_msg(char *buf) {
         maxdepth = atoi(p);
         if (verbose > 3)
             REprintf("New max_depth: %d\n", maxdepth);
+#ifdef WIN32
+        if (!r_is_busy)
+            nvimcom_globalenv_list();
+#else
         flag_glbenv = 1;
         nvimcom_fire();
+#endif
         break;
     default: // do nothing
         REprintf("\nError [nvimcom]: Invalid message received: %s\n", buf);
