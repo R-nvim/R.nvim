@@ -128,7 +128,8 @@ Suggestions for Unix (Linux, OS X, etc.):
 
    Tmux >= 3.0:  http://tmux.sourceforge.net
                  Tmux is required only if you want to run R in an external
-                 terminal emulator (see |external_term|).
+		 terminal emulator or in a Tmux split panel
+		 (see |external_term|).
 
    colorout:     https://github.com/jalvesaq/colorout/releases
                  Colorizes the R output in terminal emulators.
@@ -889,6 +890,11 @@ complete command to run the terminal. Examples:
 Please, look at the manual of your terminal emulator to know how to call it.
 The last argument must be the one which precedes the command to be executed.
 
+Although the option is intended to allow running R in an external terminal
+emulator, it can also be used to run R in a Tmux split panel. Example:
+>lua
+   external_term = "tmux split-window -vf "
+<
 The terminal error messages, if any, are shown as warning messages, unless you
 put in your config:
 >lua
