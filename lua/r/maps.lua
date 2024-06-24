@@ -18,6 +18,7 @@ local map_desc = {
     RViewDFa            = { m = "", k = "", c = "Edit",     d = "View the head of a data.frame or matrix under cursor in a split window" },
     RShowEx             = { m = "", k = "", c = "Edit",     d = "Extract the Examples section and paste it in a split window" },
     RSeparatePathPaste  = { m = "", k = "", c = "Edit",     d = "Split the path of the file under the cursor and paste it using the paste() prefix function" },
+    RFormatNum          = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers to explicitly indicate them as integers." },
     RSeparatePathHere   = { m = "", k = "", c = "Edit",     d = "Split the path of the file under the cursor and open it using the here() prefix function" },
     RNextRChunk         = { m = "", k = "", c = "Navigate", d = "Go to the next chunk of R code" },
     RGoToTeX            = { m = "", k = "", c = "Navigate", d = "Go the corresponding line in the generated LaTeX document" },
@@ -141,9 +142,6 @@ local control = function(file_type)
     create_maps("v",   "RViewDF",           "rv", "<Cmd>lua require('r.run').action('viewobj', 'v')")
     create_maps("v",   "RDputObj",          "td", "<Cmd>lua require('r.run').action('dputtab', 'v')")
 
-    create_maps("nvi", "RSeparatePathPaste",    "sp", "<Cmd>lua require('r.path').separate('paste')")
-    create_maps("nvi", "RSeparatePathHere",    "sh", "<Cmd>lua require('r.path').separate('here')")
-
     if type(config.csv_app) == "function" or config.csv_app == "" then
         create_maps("ni",  "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"split\"')")
         create_maps("ni",  "RViewDFv",          "vv", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"vsplit\"')")
@@ -213,6 +211,12 @@ local edit = function()
         vim.api.nvim_buf_set_keymap(0, "i", config.pipe_keymap, "<Plug>RPipe", opts)
     end
     create_maps("nvi", "RSetwd", "rd", "<Cmd>lua require('r.run').setwd()")
+
+    create_maps("nvi", "RSeparatePathPaste",    "sp", "<Cmd>lua require('r.path').separate('paste')")
+    create_maps("nvi", "RSeparatePathHere",    "sh", "<Cmd>lua require('r.path').separate('here')")
+
+    -- Format functions
+    create_maps("nvi", "RFormatNum",    "cn", "<Cmd>lua require('r.format').formatnum()")
 end
 
 local send = function(file_type)
@@ -370,13 +374,10 @@ M.show_map_desc = function()
                     break
                 end
             end
-            table.insert(
-                map_key_desc,
-                {
-                    string.format("%-0" .. kw .. "s", keymap),
-                    keymap == "disabled" and "Comment" or "Special",
-                }
-            )
+            table.insert(map_key_desc, {
+                string.format("%-0" .. kw .. "s", keymap),
+                keymap == "disabled" and "Comment" or "Special",
+            })
             table.insert(map_key_desc, { v[4] .. "\n" })
         end
     end

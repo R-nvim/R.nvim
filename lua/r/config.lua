@@ -24,6 +24,7 @@ local config = {
     clear_console       = true,
     clear_line          = false,
     close_term          = true,
+    convert_range_int   = false,
     compldir            = "",
     compl_data          = {
         max_depth = 3,

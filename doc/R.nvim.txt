@@ -1788,7 +1788,18 @@ override the default `R.nvim` options. Currently, it has only one valid
 option:
 >lua
   rproj_prioritise = { "pipe_version" }
-<
+
+------------------------------------------------------------------------------
+6.36. Converting numbers to explicit integers              convert_range_int
+
+It is good practice to use the `L` suffix when referring to integers in R
+(e.g. `1L`). If you want to convert all numbers to explicit integers in the
+current buffer, you can use `<LocalLeader>cn` (change number). By default,
+this will not change numbers in a range (e.g. `1:10`). To allow changing
+numbers in a range (`1:10` -> `1L:10L`), put the following in your
+configuration:
+>lua
+  convert_range_int = true
 
 ==============================================================================
 7. Custom key bindings                                   *R.nvim-key-bindings*
