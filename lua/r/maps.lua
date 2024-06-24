@@ -18,7 +18,7 @@ local map_desc = {
     RViewDFa            = { m = "", k = "", c = "Edit",     d = "View the head of a data.frame or matrix under cursor in a split window" },
     RShowEx             = { m = "", k = "", c = "Edit",     d = "Extract the Examples section and paste it in a split window" },
     RSeparatePathPaste  = { m = "", k = "", c = "Edit",     d = "Split the path of the file under the cursor and paste it using the paste() prefix function" },
-    RNumFormat          = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers to explicitly indicate them as integers." },
+    RFormatNum          = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers to explicitly indicate them as integers." },
     RSeparatePathHere   = { m = "", k = "", c = "Edit",     d = "Split the path of the file under the cursor and open it using the here() prefix function" },
     RNextRChunk         = { m = "", k = "", c = "Navigate", d = "Go to the next chunk of R code" },
     RGoToTeX            = { m = "", k = "", c = "Navigate", d = "Go the corresponding line in the generated LaTeX document" },
@@ -215,7 +215,8 @@ local edit = function()
     create_maps("nvi", "RSeparatePathPaste",    "sp", "<Cmd>lua require('r.path').separate('paste')")
     create_maps("nvi", "RSeparatePathHere",    "sh", "<Cmd>lua require('r.path').separate('here')")
 
-    create_maps("nvi", "RNumFormat",    "cn", "<Cmd>lua require('r.numformat').numformat()")
+    -- Format functions
+    create_maps("nvi", "RFormatNum",    "cn", "<Cmd>lua require('r.format').formatnum()")
 end
 
 local send = function(file_type)

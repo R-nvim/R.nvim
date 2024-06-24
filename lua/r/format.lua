@@ -27,7 +27,7 @@ local function is_adjacent_char_colon(bufnr, start_row, start_col, end_row, end_
     return prev_char == ":" or next_char == ":"
 end
 
-M.numformat = function(bufnr)
+M.formatnum = function(bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
     local lang = parsers.get_buf_lang(bufnr)
 
