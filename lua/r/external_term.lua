@@ -17,8 +17,6 @@ local external_term_config = function()
 
     tmuxsname = "Rnvim-" .. tostring(vim.fn.localtime()):gsub(".*(...)", "%1")
 
-    if config.is_darwin then return end
-
     if type(config.external_term) == "string" then
         -- User defined terminal
         term_name = string.gsub(tostring(config.external_term), " .*", "")
@@ -28,6 +26,8 @@ local external_term_config = function()
             return
         end
     end
+
+    if config.is_darwin then return end
 
     local etime = uv.hrtime()
     if type(config.external_term) == "boolean" then
@@ -154,7 +154,7 @@ M.start_extern_term = function()
         .. " "
         .. rcmd
 
-    if config.is_darwin then
+    if config.is_darwin and term_name ~= "tmux" then
         open_cmd = string.format(
             "tmux -L Rnvim -2 %s new-session -s %s '%s'",
             tmuxcnf,

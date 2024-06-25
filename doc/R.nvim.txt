@@ -891,7 +891,8 @@ Please, look at the manual of your terminal emulator to know how to call it.
 The last argument must be the one which precedes the command to be executed.
 
 Although the option is intended to allow running R in an external terminal
-emulator, it can also be used to run R in a Tmux split panel. Example:
+emulator, if you are running Neovim within Tmux, it can also be used to run R
+in a Tmux split panel. Example:
 >lua
    external_term = "tmux split-window -vf "
 <
