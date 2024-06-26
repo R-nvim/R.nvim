@@ -18,8 +18,8 @@ end
 
 --- Installs missing R packages based on diagnostics from the linter
 --- Prompts the user for confirmation before proceeding with the installation
-M.install_missing_packages = function()
-    local bufnr = vim.api.nvim_get_current_buf()
+M.install_missing_packages = function(bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
     local diagnostics = vim.diagnostic.get(bufnr)
 
     if vim.tbl_isempty(diagnostics) then
