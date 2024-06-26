@@ -15,7 +15,10 @@ local query = [[
 ) @expression
 ]]
 
--- Function to traverse nodes and build the replacement string
+--- Build a replacement string for a given node by traversing its child nodes
+---@param node userdata: The Treesitter node to traverse
+---@param bufnr number: The buffer number
+---@return string: The constructed replacement string
 local function build_replacement(node, bufnr)
     local identifiers = {}
 
@@ -44,6 +47,10 @@ local function build_replacement(node, bufnr)
     return replacement
 end
 
+--- Formats subsetting expressions in the current buffer using Treesitter and
+--- parses the buffer to find and replace specific patterns defined in a
+--- Treesitter query
+---@param bufnr number: (optional) The buffer number to operate on; defaults to the current buffer if not provided
 M.formatsubsetting = function(bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
     local lang = parsers.get_buf_lang(bufnr)
