@@ -1,17 +1,23 @@
 local M = {}
 local S = require("r.send")
 
+---@param message string: The message containing the package name.
+---@return string: The extracted package name or a default message if not found.
 local function extract_package_name(message)
     local package_name = message:match("Package '([^']+)'")
     return package_name or "Package name not found"
 end
 
--- Function to format packages as 'c("package1", "package2")'
+--- Formats a list of package names into a string suitable for R's install.packages function
+---@param package_list table: A list of package names to format
+---@return string: A formatted string of package names
 local function format_packages_list(package_list)
     local formatted_string = 'c("' .. table.concat(package_list, '", "') .. '")'
     return formatted_string
 end
 
+--- Installs missing R packages based on diagnostics from the linter
+--- Prompts the user for confirmation before proceeding with the installation
 M.install_missing_packages = function()
     local bufnr = vim.api.nvim_get_current_buf()
     local diagnostics = vim.diagnostic.get(bufnr)
