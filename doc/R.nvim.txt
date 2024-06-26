@@ -1791,7 +1791,11 @@ option:
   rproj_prioritise = { "pipe_version" }
 
 ------------------------------------------------------------------------------
-6.36. Converting numbers to explicit integers              convert_range_int
+6.36. lintr code formatters                                convert_range_int
+
+The `lintr` package (https://lintr.r-lib.org/https://lintr.r-lib.org/)
+provides a way to check R code for common style issues. This section describes
+how "R.nvim" helps you use `lintr` in your code to improve its readability.
 
 It is good practice to use the `L` suffix when referring to integers in R
 (e.g. `1L`). If you want to convert all numbers to explicit integers in the
@@ -1801,6 +1805,11 @@ numbers in a range (`1:10` -> `1L:10L`), put the following in your
 configuration:
 >lua
   convert_range_int = true
+
+`R.nvim` also also convert the subsetting operator `$` to `[[`. For example,
+`x$a` will be converted to `x[["a"]]` and `x$a$b$c$d` will be converted to
+`x[["a"]][["b"]][["c"]][["d"]]`. The default key binding for this is
+`<LocalLeader>cs` (change subsetting). 
 
 ==============================================================================
 7. Custom key bindings                                   *R.nvim-key-bindings*
