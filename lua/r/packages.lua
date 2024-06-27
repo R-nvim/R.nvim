@@ -4,8 +4,10 @@ local S = require("r.send")
 ---@param message string: The message containing the package name.
 ---@return string: The extracted package name or a default message if not found.
 local function extract_package_name(message)
-    local package_name = message:match("Package '([^']+)'")
-    return package_name or "Package name not found"
+    if message:find("is not installed") then
+        local package_name = message:match("Package '([^']+)'")
+        return package_name
+    end
 end
 
 --- Formats a list of package names into a string suitable for R's install.packages function
