@@ -1811,6 +1811,15 @@ configuration:
 `x[["a"]][["b"]][["c"]][["d"]]`. The default key binding for this is
 `<LocalLeader>cs` (change subsetting). 
 
+------------------------------------------------------------------------------
+6.37. Installing missing R packages in the current buffer     install_missing
+
+If the `lintr` package is installed and properly configured
+(https://github.com/R-nvim/R.nvim/wiki/lintr), it will mark any R packages
+used in the current buffer that are not installed as missing. These missing
+packages can be automatically installed using the `<LocalLeader>ip` (install
+packages) key binding.
+
 ==============================================================================
 7. Custom key bindings                                   *R.nvim-key-bindings*
 

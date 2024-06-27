@@ -5,6 +5,7 @@ local warn = require("r").warn
 
 local map_desc = {
     RCustomStart        = { m = "", k = "", c = "Start",    d = "Ask user to enter parameters to start R" },
+    RPackages           = { m = "", k = "", c = "Start",    d = "Install missing package" },
     RSaveClose          = { m = "", k = "", c = "Start",    d = "Quit R, saving the workspace" },
     RClose              = { m = "", k = "", c = "Start",    d = "Send to R: quit(save = 'no')" },
     RStart              = { m = "", k = "", c = "Start",    d = "Start R with default configuration or reopen terminal window" },
@@ -142,6 +143,8 @@ local control = function(file_type)
     create_maps("v",   "RObjectStr",        "rt", "<Cmd>lua require('r.run').action('str', 'v')")
     create_maps("v",   "RViewDF",           "rv", "<Cmd>lua require('r.run').action('viewobj', 'v')")
     create_maps("v",   "RDputObj",          "td", "<Cmd>lua require('r.run').action('dputtab', 'v')")
+
+    create_maps("ni", "RPackages",          "ip", "<Cmd>lua require('r.packages').install_missing_packages()")
 
     if type(config.csv_app) == "function" or config.csv_app == "" then
         create_maps("ni",  "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"split\"')")
