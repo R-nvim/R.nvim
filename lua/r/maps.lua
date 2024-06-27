@@ -144,7 +144,7 @@ local control = function(file_type)
     create_maps("v",   "RViewDF",           "rv", "<Cmd>lua require('r.run').action('viewobj', 'v')")
     create_maps("v",   "RDputObj",          "td", "<Cmd>lua require('r.run').action('dputtab', 'v')")
 
-    create_maps("nvi", "RPackages",        "ip", "<Cmd>lua require('r.packages').install_missing_packages()")
+    create_maps("ni", "RPackages",          "ip", "<Cmd>lua require('r.packages').install_missing_packages()")
 
     if type(config.csv_app) == "function" or config.csv_app == "" then
         create_maps("ni",  "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"split\"')")
