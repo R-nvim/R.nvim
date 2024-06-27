@@ -91,15 +91,17 @@ Main dependencies:
    cmp-r (for auto-completion):
       https://github.com/R-nvim/cmp-r
 
-
    R >= 4.0.0:
       http://www.r-project.org/
 
-   Notes about the R package `nvimcom`:
+   Make and C compiler
+      GNU `make` and a C compiler (e.g. `gcc` or `clang`) must be installed to
+      build the the R package `nvimcom` which is included in R.nvim and is
+      automatically installed and updated whenever necessary.
+      On Windows, you have to install Rtools to be able to build `nvimcom`:
+      https://cran.r-project.org/bin/windows/Rtools/
 
-     - The R package `nvimcom` is included in R.nvim and is automatically
-       installed and updated whenever necessary. The package requires
-       compilation by a C compiler (e.g. `gcc` or `clang`).
+   Note about the R package `nvimcom`:
 
      - You do not need to load nvimcom in your .Rprofile because the R.nvim
        plugin sets the environment variable `R_DEFAULT_PACKAGES`, including
@@ -107,9 +109,6 @@ Main dependencies:
        if you set the option `defaultPackages` in a .Rprofile, you should
        include "nvimcom" among the packages to be loaded (see
        |nvimcom-not-loaded|).
-
-     - On Windows, you have to install Rtools to be able to build the
-       package: https://cran.r-project.org/bin/windows/Rtools/
 
 
 Additional dependencies for editing Rnoweb documents:
@@ -1790,8 +1789,9 @@ option:
 >lua
   rproj_prioritise = { "pipe_version" }
 
+
 ------------------------------------------------------------------------------
-6.36. lintr code formatters                                convert_range_int
+6.36. lintr code formatters                                *convert_range_int*
 
 The `lintr` package (https://lintr.r-lib.org/https://lintr.r-lib.org/)
 provides a way to check R code for common style issues. This section describes
@@ -1811,14 +1811,16 @@ configuration:
 `x[["a"]][["b"]][["c"]][["d"]]`. The default key binding for this is
 `<LocalLeader>cs` (change subsetting). 
 
+
 ------------------------------------------------------------------------------
-6.37. Installing missing R packages in the current buffer     install_missing
+6.37. Installing missing R packages in the current buffer    *install_missing*
 
 If the `lintr` package is installed and properly configured
 (https://github.com/R-nvim/R.nvim/wiki/lintr), it will mark any R packages
 used in the current buffer that are not installed as missing. These missing
 packages can be automatically installed using the `<LocalLeader>ip` (install
 packages) key binding.
+
 
 ==============================================================================
 7. Custom key bindings                                   *R.nvim-key-bindings*
