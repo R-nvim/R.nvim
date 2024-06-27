@@ -27,8 +27,13 @@ M.install_missing_packages = function(bufnr)
         return
     end
 
+    local target_codes = {
+        ["missing_package_linter"] = true,
+        ["namespace_linter"] = true,
+    }
+
     local missing_package_diagnostics = vim.tbl_filter(
-        function(diagnostic) return diagnostic.code == "missing_package_linter" end,
+        function(diagnostic) return target_codes[diagnostic.code] end,
         diagnostics
     )
 
@@ -44,12 +49,12 @@ M.install_missing_packages = function(bufnr)
 
     local msg = "Packages: "
         .. table.concat(missing_packages, ", ")
-        .. " are missing. Would you like to install them? (y/n)"
+        .. " are missing. Would you like to install them? (y/n): "
     vim.ui.input({ prompt = msg }, function(input)
         if input == "y" then
             S.cmd(rcmd)
         else
-            print("Not installing packages")
+            print("\nNot installing packages")
         end
     end)
 end
