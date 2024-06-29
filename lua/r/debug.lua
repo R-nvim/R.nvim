@@ -81,7 +81,6 @@ M.find_debug_func = function(srcref)
     isnormal = vim.fn.mode() == "n"
     if isnormal then vim.cmd("stopinsert") end
 
-    sbopt = vim.o.switchbuf
     vim.o.switchbuf = sbopt
 end
 
@@ -113,11 +112,7 @@ M.r_debug_jump = function(fnm, lnum)
         and fname ~= vim.fn.expand("%")
         and fname ~= vim.fn.expand("%:p")
     then
-        if vim.fn.filereadable(fname) == 1 then
-            vim.cmd("sb " .. vim.fn.luaeval('require("r.edit").get_rscript_name()'))
-            if vim.bo.modified then vim.cmd("split") end
-            vim.cmd("edit " .. fname)
-        elseif vim.fn.glob("*") == fname then
+        if vim.fn.filereadable(fname) == 1 or vim.fn.glob("*") == fname then
             vim.cmd("sb " .. vim.fn.luaeval('require("r.edit").get_rscript_name()'))
             if vim.bo.modified then vim.cmd("split") end
             vim.cmd("edit " .. fname)
