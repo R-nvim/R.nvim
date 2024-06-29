@@ -557,13 +557,18 @@ put in your `init.lua`:
 available on Windows). To debug a function with R.nvim you have to do the
 following:
 
-   1. Source the R script where the function is with the `source()` function
-      of the `base` package.
+   1. Load the functions into R either by a) sourcing the R script where the
+      function is with the `source()` function of the `base` package or b)
+      loading all desired functions with `devtools::load_all(<relevant path>)`.
 
-   2. In the R Console, run either `debug(funcname)` or `debugonce(funcname)`
+   2. Flag a function or line of code within a function to use the debugger.
+      This can be done by using the `debug` functions or setting a breakpoint
+      with the `browser` functions from the `base` package. To use `debug`,
+      in the R Console, run either `debug(funcname)` or `debugonce(funcname)`
       where `funcname` is the name of the function (not quoted). R.nvim will
       send this command to R Console if you press <LocalLeader>db in Normal
-      mode with the cursor over the function name.
+      mode with the cursor over the function name. An example of using
+      `browser` is shown later in the documentation.
 
    3. Call the function.
 
