@@ -86,8 +86,6 @@ start_R2 = function()
     else
         table.insert(start_options, "options(nvimcom.autoglbenv = 0)")
     end
-    -- Force debugging while developing plugin option
-    table.insert(start_options, "options(nvimcom.debug_r = TRUE)")
     if config.setwidth and config.setwidth == 2 then
         table.insert(start_options, "options(nvimcom.setwidth = TRUE)")
     else
