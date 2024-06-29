@@ -553,21 +553,21 @@ put in your `init.lua`:
 ------------------------------------------------------------------------------
 4.7. Debugging R functions (Unix only)                     *debug-R-functions*
 
-The R-Nvim-Plugin has limited debugging facilities available on Unix systems
-(not available on Windows). To debug a function with R-Nvim you have to do the
+`R.nvim` has limited debugging facilities available on Unix systems (not
+available on Windows). To debug a function with R.nvim you have to do the
 following:
 
    1. Source the R script where the function is with the `source()` function
       of the `base` package.
 
    2. In the R Console, run either `debug(funcname)` or `debugonce(funcname)`
-      where `funcname` is the name of the function (not quoted). R-Nvim will
+      where `funcname` is the name of the function (not quoted). R.nvim will
       send this command to R Console if you press <LocalLeader>db in Normal
       mode with the cursor over the function name.
 
    3. Call the function.
 
-See `:Rh browser` for available commands in debugging mode.
+See `:RHelp browser` for available commands in debugging mode.
 
 For example, if you have a file named `my_function.R` with the following
 contents:
@@ -607,13 +607,13 @@ only if a condition is satisfied. Example:
        return(invisible(NULL))
    }
 <
-One limitation is that R-Nvim also does not help you setting breakpoints.
+One limitation is that R.nvim also does not help you setting breakpoints.
 You have to set them manually as explained above.
 
-Another limitation of R-Nvim is that it might be unable to jump to the line in
+Another limitation of R.nvim is that it might be unable to jump to the line in
 the source code that is being evaluated if either you have sent the function
 directly to the R Console or the function has been sent by the `knitr`
-package, without calling the function `source()`. In either case, R-Nvim will
+package, without calling the function `source()`. In either case, R.nvim will
 try to find the pattern `funcname <- function(` in the buffer being edited. If
 the pattern is found, the cursor will jump to its position.
 
@@ -1905,7 +1905,7 @@ debugged will also be disabled.
 >lua
    debug = false
 <
-R-Nvim puts the cursor in the R Console when the debugging starts. If you do
+R.nvim puts the cursor in the R Console when the debugging starts. If you do
 not want this, put in your config:
 >lua
    dbg_jump = false

@@ -1001,7 +1001,7 @@ static void nvimcom_fire(void) {
 static void SrcrefInfo(void) {
     // Adapted from SrcrefPrompt(), at src/main/eval.c
     if (debugging == 0) {
-        send_to_nvim("lua require('r.debug').stop_r_debugging()");
+        send_to_nvim("lua require('r.debug').stop()");
         return;
     }
     /* If we have a valid R_Srcref, use it */
@@ -1013,13 +1013,13 @@ static void SrcrefInfo(void) {
             SEXP filename = findVar(install("filename"), srcfile);
             if (isString(filename) && length(filename)) {
                 size_t slen = strlen(CHAR(STRING_ELT(filename, 0)));
-                char *buf = calloc(sizeof(char), (2 * slen + 32));
-                char *buf2 = calloc(sizeof(char), (2 * slen + 32));
+                char *buf = calloc(sizeof(char), (2 * slen + 56));
+                char *buf2 = calloc(sizeof(char), (2 * slen + 56));
                 snprintf(buf, 2 * slen + 1, "%s",
                          CHAR(STRING_ELT(filename, 0)));
                 nvimcom_squo(buf, buf2, 2 * slen + 32);
-                snprintf(buf, 2 * slen + 31,
-                         "lua require('r.debug').r_debug_jump('%s', %d)", buf2,
+                snprintf(buf, 2 * slen + 55,
+                         "lua require('r.debug').jump('%s', %d)", buf2,
                          asInteger(R_Srcref));
                 send_to_nvim(buf);
                 free(buf);

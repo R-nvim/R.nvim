@@ -24,16 +24,10 @@ local s = {
     rdebugging = 0
 }
 
-M.stop_r_debugging = function()
-    vim.fn.sign_unplace("rnvim_dbgline", { id = 1 })
-    s.func_offset = -2
-    s.rdebugging = 0
-end
-
-M.find_debug_func = function(srcref)
+local find_func = function(srcref)
     local rlines
-    local can_debug = type(config.external_term) == "boolean" and not config.external_term
-    if not can_debug then return end
+    -- local can_debug = type(config.external_term) == "boolean" and not config.external_term
+    -- if not can_debug then return end
 
     s.func_offset = -1 -- Not found
     local sbopt = vim.o.switchbuf
@@ -43,9 +37,9 @@ M.find_debug_func = function(srcref)
     local curwin = vim.fn.winnr()
     r_bufnr = vim.api.nvim_get_current_buf()
     vim.cmd("sb " .. r_bufnr)
-    vim.fn.sleep(30) -- Time to fill the buffer lines
+    -- vim.fn.sleep(30) -- Time to fill the buffer lines
     rlines = vim.fn.getline(1, "$")
-    vim.cmd("sb " .. vim.fn.luaeval('require("r.edit").get_rscript_name()'))
+    vim.cmd("sb " .. vim.fn.bufname(require("r.edit").get_rscript_buf()))
 
     local idx = #rlines - 1
     while idx > 0 do
@@ -84,36 +78,43 @@ M.find_debug_func = function(srcref)
     vim.o.switchbuf = sbopt
 end
 
-M.r_debug_jump = function(fnm, lnum)
+M.stop = function()
+    vim.fn.sign_unplace("rnvim_dbgline", { id = 1 })
+    s.func_offset = -2
+    s.rdebugging = 0
+end
+
+--- Jump to line being evaluated
+---@param fnm string The file name
+---@param lnum number The line number
+M.jump = function(fnm, lnum)
     local saved_so = vim.o.scrolloff
     if config.debug_center then vim.o.scrolloff = 999 end
 
     if fnm == "" or fnm == "<text>" then
         --- Functions sent directly to R Console have no associated source file
         --- and functions sourced by knitr have '<text>' as source reference.
-        if s.func_offset == -2 then M.find_debug_func(fnm) end
+        if s.func_offset == -2 then find_func(fnm) end
         if s.func_offset < 0 then return end
     end
 
     local flnum, fname
     if s.func_offset >= 0 then
         flnum = lnum + s.func_offset
-        fname = vim.fn.luaeval('require("r.edit").get_rscript_name()')
+        fname = vim.fn.bufname(require("r.edit").get_rscript_buf())
     else
         flnum = lnum
         fname = vim.fn.expand(fnm)
     end
 
-    local bname = vim.fn.bufname("%")
-
     if
-        not vim.fn.bufloaded(fname)
-        and fname ~= vim.fn.luaeval('require("r.edit").get_rscript_name()')
+        vim.fn.bufloaded(fname) == 0
+        and fname ~= vim.fn.bufname(require("r.edit").get_rscript_buf())
         and fname ~= vim.fn.expand("%")
         and fname ~= vim.fn.expand("%:p")
     then
         if vim.fn.filereadable(fname) == 1 or vim.fn.glob("*") == fname then
-            vim.cmd("sb " .. vim.fn.luaeval('require("r.edit").get_rscript_name()'))
+            vim.cmd("sb " .. vim.fn.bufname(require("r.edit").get_rscript_buf()))
             if vim.bo.modified then vim.cmd("split") end
             vim.cmd("edit " .. fname)
         else
@@ -125,6 +126,8 @@ M.r_debug_jump = function(fnm, lnum)
         if fname ~= vim.fn.expand("%") then vim.cmd("sb " .. fname) end
         vim.cmd(":" .. flnum)
     end
+
+    local bname = vim.fn.bufname("%")
 
     r_bufnr = vim.api.nvim_get_current_buf()
     vim.fn.sign_unplace("rnvim_dbgline", { id = 1 })
