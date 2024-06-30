@@ -1004,27 +1004,23 @@ static void SrcrefInfo(void) {
         send_to_nvim("lua require('r.debug').stop()");
         return;
     }
+
     /* If we have a valid R_Srcref, use it */
     if (R_Srcref && R_Srcref != R_NilValue) {
-        if (TYPEOF(R_Srcref) == VECSXP)
-            R_Srcref = VECTOR_ELT(R_Srcref, 0);
-        SEXP srcfile = getAttrib(R_Srcref, R_SrcfileSymbol);
-        if (TYPEOF(srcfile) == ENVSXP) {
-            SEXP filename = findVar(install("filename"), srcfile);
-            if (isString(filename) && length(filename)) {
-                size_t slen = strlen(CHAR(STRING_ELT(filename, 0)));
-                char *buf = calloc(sizeof(char), (2 * slen + 56));
-                char *buf2 = calloc(sizeof(char), (2 * slen + 56));
-                snprintf(buf, 2 * slen + 1, "%s",
-                         CHAR(STRING_ELT(filename, 0)));
-                nvimcom_squo(buf, buf2, 2 * slen + 32);
-                snprintf(buf, 2 * slen + 55,
-                         "lua require('r.debug').jump('%s', %d)", buf2,
-                         asInteger(R_Srcref));
-                send_to_nvim(buf);
-                free(buf);
-                free(buf2);
-            }
+        SEXP filename = R_GetSrcFilename(R_Srcref);
+        if (isString(filename) && length(filename)) {
+            size_t slen = strlen(CHAR(STRING_ELT(filename, 0)));
+            char *buf = calloc(sizeof(char), (2 * slen + 56));
+            char *buf2 = calloc(sizeof(char), (2 * slen + 56));
+            snprintf(buf, 2 * slen + 1, "%s",
+                    CHAR(STRING_ELT(filename, 0)));
+            nvimcom_squo(buf, buf2, 2 * slen + 32);
+            snprintf(buf, 2 * slen + 55,
+                    "lua require('r.debug').jump('%s', %d)", buf2,
+                    asInteger(R_Srcref));
+            send_to_nvim(buf);
+            free(buf);
+            free(buf2);
         }
     }
 }

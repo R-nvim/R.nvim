@@ -91,14 +91,13 @@ instructions on usage. See also the output of `:RMapsDesc`.
 
 ### Changes
 
-During the conversion of VimScript to Lua, we decided to end support for features
-that were useful in the past but no longer sufficiently valuable to be worth
-the effort of conversion. We removed support for `Rrst` (it seems that not
-many people use it anymore), debugging code (a debug adapter would be better),
-legacy omni-completion (auto completion with
-[nvim-cmp](https://github.com/hrsh7th/nvim-cmp) is better), and highlighting
-functions from .GlobalEnv (difficult to make compatible with tree-sitter + LSP
-highlighting).
+During the conversion of VimScript to Lua, we decided to end support for
+features that were useful in the past but no longer sufficiently valuable to
+be worth the effort of conversion. We removed support for `Rrst` (it seems
+that not many people use it anymore), legacy omni-completion (auto completion
+with [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) is better), and
+highlighting functions from .GlobalEnv (difficult to make compatible with
+tree-sitter + LSP highlighting).
 
 We changed the default key binding to insert the assignment operator (`<-`) from an
 underscore (which was familiar to Emacs-ESS users) to `Alt+-` which is more
@@ -127,9 +126,8 @@ sourced (`max_lines_to_paste`).
 The options for displaying R documentation (`nvimpager`) are now: `"split_h"`,
 `"split_v"`, `"tab"`, `"float"` (not implemented yet), and `"no"`.
 
-The options `openpdf` and `openhtml` were renamed as `open_pdf` and
-`open_html`, they now are strings and there with a minor change in how they
-behave.
+The options `openpdf` and `openhtml` were renamed as `open_pdf` and `open_html`,
+they now are strings and there was with a minor change in how they behave.
 
 The option `nvim_wd` was renamed as `setwd` and it now is a string and its
 default value is "no".

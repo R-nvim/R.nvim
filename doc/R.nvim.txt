@@ -1913,7 +1913,7 @@ debugged will also be disabled.
 R.nvim puts the cursor in the R Console when the debugging starts. If you do
 not want this, put in your config:
 >lua
-   dbg_jump = false
+   debug_jump = false
 <
 The highlighted debugged line incrementally moves down the buffer with code
 execution and, with long scripts, it may stay at the bottom of the window as you
