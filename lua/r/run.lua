@@ -54,6 +54,10 @@ start_R2 = function()
 
     table.insert(
         start_options,
+        ' Sys.setenv(RNVIM_RSLV_CB = "' .. vim.env.RNVIM_RSLV_CB .. '")'
+    )
+    table.insert(
+        start_options,
         "options(nvimcom.max_depth = " .. tostring(config.compl_data.max_depth) .. ")"
     )
     table.insert(
