@@ -23,6 +23,7 @@ local s = {
     bufnr = -1,
     winnr = -1,
     func_offset = -2, -- Did not seek yet
+    fnm = ""
 }
 
 local find_func = function(srcref)
@@ -79,6 +80,7 @@ M.stop = function()
         debugging = false,
         bufnr = -1,
         func_offset = -2, -- Did not seek yet
+        fnm = ""
     }
 end
 
@@ -86,8 +88,9 @@ end
 ---@param fnm string The file name
 ---@param lnum number The line number
 M.jump = function(fnm, lnum)
-    -- Open the R script where the function is if not open yet
-    if not s.debugging then
+    -- Open function's script is if not open yet
+    if not s.debugging or s.fnm ~= fnm then
+        s.fnm = fnm
         if fnm == "" or fnm == "<text>" then
             --- Functions sent directly to R Console have no associated source file
             --- and functions sourced by knitr have '<text>' as source reference.
