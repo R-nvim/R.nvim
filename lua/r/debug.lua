@@ -74,6 +74,14 @@ local find_func = function(srcref)
     end
 end
 
+local switch_buf = function(fnm)
+    vim.cmd("sb " .. vim.fn.bufname(require("r.edit").get_rscript_buf()))
+    if vim.bo.modified then vim.cmd("split") end
+    vim.cmd("edit " .. fnm)
+    s.bufnr = vim.api.nvim_get_current_buf()
+    s.winnr = vim.api.nvim_get_current_win()
+end
+
 M.stop = function()
     vim.fn.sign_unplace("rnvim_dbgline", { id = 1 })
     s = {
@@ -100,18 +108,12 @@ M.jump = function(fnm, lnum)
             local fname = vim.fn.expand(fnm)
             if vim.fn.bufloaded(fname) == 0 then
                 if vim.fn.filereadable(fname) == 1 or vim.fn.glob("*") == fname then
-                    vim.cmd("sb " .. vim.fn.bufname(require("r.edit").get_rscript_buf()))
-                    if vim.bo.modified then vim.cmd("split") end
-                    vim.cmd("edit " .. fname)
-                    s.bufnr = vim.api.nvim_get_current_buf()
-                    s.winnr = vim.api.nvim_get_current_win()
+                    switch_buf(fname)
                 else
                     return
                 end
             else
-                vim.cmd("sb " .. fname)
-                s.bufnr = vim.api.nvim_get_current_buf()
-                s.winnr = vim.api.nvim_get_current_win()
+                switch_buf(fname)
             end
         end
     end
