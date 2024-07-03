@@ -185,6 +185,15 @@ M.start_R = function(whatr)
         return
     end
 
+    if
+        type(config.external_term) == "string"
+        and config.external_term:find("tmux split%-window")
+        and not vim.env.TMUX_PANE
+    then
+        warn("Neovim must be running within Tmux to run `tmux split-window`.")
+        return
+    end
+
     -- R already started
     if vim.g.R_Nvim_status == 6 then return end
 
@@ -273,6 +282,8 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     config.R_continue_str = r_info.continue:gsub(" $", "")
 
     if not r_info.has_color and config.hl_term then require("r.term").highlight_term() end
+
+    config.R_Tmux_pane = r_info.tmux_pane
 
     if job.is_running("Server") then
         if config.is_windows then
