@@ -75,7 +75,9 @@ local find_func = function(srcref)
 end
 
 local switch_buf = function(fnm)
-    vim.cmd("sb " .. vim.fn.bufname(require("r.edit").get_rscript_buf()))
+    if vim.api.nvim_get_current_buf() ~= require("r.edit").get_rscript_buf() then
+        vim.cmd("sb " .. tostring(require("r.edit").get_rscript_buf()))
+    end
     if vim.bo.modified then vim.cmd("split") end
     vim.cmd("edit " .. fnm)
     s.bufnr = vim.api.nvim_get_current_buf()
