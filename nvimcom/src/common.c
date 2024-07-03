@@ -76,7 +76,7 @@ char *format_usage(const char *fnm, const char *args) {
     size_t sz = strlen(fnm) + 64 + (3 * strlen(args));
     char *b = calloc(sz, sizeof(char));
     char *f = calloc(sz, sizeof(char));
-    sprintf(b, "%s(", fnm);
+    snprintf(b, sz - 1, "%s(", fnm);
     size_t i = strlen(b);
     size_t j = 0;
     while (args[j]) {
