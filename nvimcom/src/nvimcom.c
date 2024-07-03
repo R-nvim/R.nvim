@@ -1262,7 +1262,7 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
  * @param rinfo Information on R to be passed to nvim.
  */
 void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, int *imd, int *szl,
-                   int *tml, char **nvv, int *dbg, char **rinfo) {
+                   int *tml, int *dbg, char **nvv, char **rinfo) {
     verbose = *vrb;
     allnames = *anm;
     setwidth = *swd;
