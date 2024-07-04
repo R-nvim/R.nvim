@@ -36,10 +36,16 @@ local function replace_path(node, formatted_path)
 end
 
 M.separate = function(prefix)
+    local path
     local node = vim.treesitter.get_node()
 
-    if node and node:type() == "string" then
-        local path = vim.treesitter.get_node_text(node, 0)
+    if node and node:type() == "string_content" then
+        local parent_node = node:parent()
+        if parent_node then
+            path = vim.treesitter.get_node_text(parent_node, 0)
+        else
+            return
+        end
 
         -- Check if the path is a URL or doesn't contain slashes
         if
@@ -72,7 +78,7 @@ M.separate = function(prefix)
             formatted_path = 'here("' .. formatted_path .. '")'
         end
 
-        replace_path(node, formatted_path)
+        replace_path(node:parent(), formatted_path)
     end
 end
 
