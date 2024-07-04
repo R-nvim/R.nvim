@@ -49,8 +49,12 @@ local find_func = function(srcref)
 
     local idx = #rlines - 1
     while idx > 0 do
-        if string.match(rlines[idx], "^debugging in: ") then
+        if
+            string.find(rlines[idx], "^debugging in: ")
+            or string.find(rlines[idx], "^Called from: ")
+        then
             local func_name = string.gsub(rlines[idx], "debugging in: ", "")
+            func_name = func_name:gsub("Called from: ", "")
             func_name = string.gsub(func_name, "%(.*", "")
             s.func_offset =
                 vim.fn.search(".*\\<" .. func_name .. "\\s*<-\\s*function\\s*(", "b")
