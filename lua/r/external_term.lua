@@ -6,7 +6,6 @@ local warn = require("r").warn
 local term_name = nil
 local term_cmd = nil
 local tmuxsname = nil
-local base_pane = nil
 
 -- local global_option_value = TmuxOption("some_option", "global")
 -- local window_option_value = TmuxOption("some_option", "")
@@ -154,7 +153,9 @@ M.start_extern_term = function()
         .. " "
         .. rcmd
 
-    if config.is_darwin and term_name ~= "tmux" then
+    if term_cmd:find("tmux split%-window") then
+        open_cmd = string.format('%s "%s"', term_cmd, cmd)
+    elseif config.is_darwin and term_name ~= "tmux" then
         open_cmd = string.format(
             "tmux -L Rnvim -2 %s new-session -s %s '%s'",
             tmuxcnf,
@@ -227,18 +228,13 @@ M.send_cmd_to_external_term = function(command)
     -- Send the command to R running in an external terminal emulator
     if cmd:find("^-") then cmd = " " .. cmd end
 
-    if not base_pane then
-        local obj = utils
-            .system(
-                { "tmux", "-L", "Rnvim show-options", "-gv", "pane-base-index" },
-                { text = true }
-            )
-            :wait()
-        base_pane = obj.stdout:gsub("\n+$", "")
-    end
     local scmd
 
-    scmd = { "tmux", "-L", "Rnvim", "set-buffer", cmd .. "\n" }
+    if term_cmd:find("tmux split%-window") then
+        scmd = { "tmux", "set-buffer", cmd .. "\n" }
+    else
+        scmd = { "tmux", "-L", "Rnvim", "set-buffer", cmd .. "\n" }
+    end
     local obj = utils.system(scmd):wait()
     if obj.code ~= 0 then
         warn(obj.stderr)
@@ -246,7 +242,18 @@ M.send_cmd_to_external_term = function(command)
         return false
     end
 
-    scmd = { "tmux", "-L", "Rnvim", "paste-buffer", "-t", tmuxsname .. "." .. base_pane }
+    if term_cmd:find("tmux split%-window") then
+        scmd = { "tmux", "paste-buffer", "-t", config.R_Tmux_pane }
+    else
+        scmd = {
+            "tmux",
+            "-L",
+            "Rnvim",
+            "paste-buffer",
+            "-t",
+            tmuxsname .. "." .. config.R_Tmux_pane,
+        }
+    end
     obj = utils.system(scmd):wait()
     if obj.code ~= 0 then
         warn(obj.stderr)
