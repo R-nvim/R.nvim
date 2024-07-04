@@ -23,7 +23,7 @@ local s = {
     bufnr = -1,
     winnr = -1,
     func_offset = -2, -- Did not seek yet
-    fnm = ""
+    fnm = "",
 }
 
 local find_func = function(srcref)
@@ -34,7 +34,15 @@ local find_func = function(srcref)
     if type(config.external_term) == "boolean" and not config.external_term then
         rlines = vim.api.nvim_buf_get_lines(require("r.term").get_buf_nr(), 0, -1, false)
     else
-        local run_cmd = { "tmux", "-L", "Rnvim", "capture-pane", "-p", "-t", require("r.external_term").get_tmuxsname() }
+        local run_cmd = {
+            "tmux",
+            "-L",
+            "Rnvim",
+            "capture-pane",
+            "-p",
+            "-t",
+            require("r.external_term").get_tmuxsname(),
+        }
         local resp = require("r.utils").system(run_cmd, { text = true }):wait()
         rlines = vim.split(resp.stdout, "\n")
     end
@@ -51,10 +59,8 @@ local find_func = function(srcref)
                     vim.fn.search(".*\\<" .. func_name .. "\\s*=\\s*function\\s*(", "b")
             end
             if s.func_offset < 1 then
-                s.func_offset = vim.fn.search(
-                    ".*\\<" .. func_name .. "\\s*<<-\\s*function\\s*(",
-                    "b"
-                )
+                s.func_offset =
+                    vim.fn.search(".*\\<" .. func_name .. "\\s*<<-\\s*function\\s*(", "b")
             end
             if s.func_offset > 0 then
                 s.bufnr = vim.api.nvim_get_current_buf()
@@ -90,7 +96,7 @@ M.stop = function()
         debugging = false,
         bufnr = -1,
         func_offset = -2, -- Did not seek yet
-        fnm = ""
+        fnm = "",
     }
 end
 
@@ -130,26 +136,23 @@ M.jump = function(fnm, lnum)
         end
 
         local saved_so = vim.o.scrolloff
-        if config.debug_center then
-            vim.o.scrolloff = 999
-        end
+        if config.debug_center then vim.o.scrolloff = 999 end
         vim.api.nvim_win_set_cursor(s.winnr, { flnum, 0 })
-        if config.debug_center then
-            vim.o.scrolloff = saved_so
-        end
+        if config.debug_center then vim.o.scrolloff = saved_so end
 
         vim.fn.sign_unplace("rnvim_dbgline", { id = 1 })
         vim.fn.sign_place(1, "rnvim_dbgline", "dbgline", s.bufnr, { lnum = flnum })
     end
 
-    if config.debug_jump
+    if
+        config.debug_jump
         and type(config.external_term) == "boolean"
         and not config.external_term
         and vim.api.nvim_get_current_buf() ~= require("r.term").get_buf_nr()
-        then
-            vim.cmd("sb " .. tostring(require("r.term").get_buf_nr()))
-            vim.cmd("startinsert")
-        end
+    then
+        vim.cmd("sb " .. tostring(require("r.term").get_buf_nr()))
+        vim.cmd("startinsert")
+    end
 
     s.debugging = true
 end
