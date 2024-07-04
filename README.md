@@ -128,7 +128,7 @@ The options for displaying R documentation (`nvimpager`) are now: `"split_h"`,
 `"split_v"`, `"tab"`, `"float"` (not implemented yet), and `"no"`.
 
 The options `openpdf` and `openhtml` were renamed as `open_pdf` and
-`open_html`, they now are strings and there with a minor change in how they
+`open_html`, they now are strings and there is a minor change in how they
 behave.
 
 The option `nvim_wd` was renamed as `setwd` and it now is a string and its
@@ -154,10 +154,9 @@ default key binding is `<LocalLeader>sc`.
 There is a new option: `auto_quit`.
 
 If you have [colorout] installed, and if you are not loading it in your
-`~/.Rprofile`, it should be the development version. Reason: R.nvim calls the
-function `colorout::isColorOut()` which unduly enables the colorizing of
-output in the released version of [colorout]. This bug was fixed in [this
-commit](https://github.com/jalvesaq/colorout/commit/1080187f9474b71f16c3c0be676de4c54863d1e7).
+`~/.Rprofile`, it should be version `1.3-1` or higher. Reason: R.nvim calls
+the function `colorout::isColorOut()` which in previous `colorout` versions
+were unduly enabling the output colorizing.
 
 There are two new commands available to separate a file path into its different
 components.

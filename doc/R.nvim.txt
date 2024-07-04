@@ -130,7 +130,8 @@ Suggestions for Unix (Linux, OS X, etc.):
 		 terminal emulator or in a Tmux split panel
 		 (see |external_term|).
 
-   colorout:     https://github.com/jalvesaq/colorout/releases
+   colorout >= 1.3-1:
+                 https://github.com/jalvesaq/colorout/releases
                  Colorizes the R output in terminal emulators.
                  (Mostly useful if running R in an external terminal emulator.
                  See |external_term|). You should put in your Rprofile:
