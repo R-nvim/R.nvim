@@ -1261,7 +1261,7 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
 #ifdef WIN32
                 DWORD ti;
                 tid = CreateThread(NULL, 0, client_loop_thread, NULL, 0, &ti);
-                nvimcom_send_running_info(CHAR(STRING_ELT(nvv, 0)), CHAR(STRING_ELT(nvv, 0)));
+                nvimcom_send_running_info(CHAR(STRING_ELT(rinfo, 0)), CHAR(STRING_ELT(nvv, 0)));
 #else
                 pthread_create(&tid, NULL, client_loop_thread, NULL);
                 snprintf(flag_eval, 510, "nvimcom:::send_nvimcom_info('%d')",
