@@ -660,10 +660,10 @@ M.funs = function(bufnr, capture_all, move_down)
     local r_fun_query = vim.treesitter.query.parse(
         "r",
         [[
-    (left_assignment
+    (binary_operator
       (function_definition)) @rfun
 
-    (equals_assignment
+    (binary_operator
       (function_definition)) @rfun
     ]]
     )
