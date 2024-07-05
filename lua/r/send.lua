@@ -662,9 +662,6 @@ M.funs = function(bufnr, capture_all, move_down)
         [[
     (binary_operator
       (function_definition)) @rfun
-
-    (binary_operator
-      (function_definition)) @rfun
     ]]
     )
 
