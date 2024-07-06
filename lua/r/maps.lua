@@ -24,7 +24,6 @@ local map_desc = {
     RSeparatePathHere   = { m = "", k = "", c = "Edit",     d = "Split the path of the file under the cursor and open it using the here() prefix function" },
     RNextRChunk         = { m = "", k = "", c = "Navigate", d = "Go to the next chunk of R code" },
     RGoToTeX            = { m = "", k = "", c = "Navigate", d = "Go the corresponding line in the generated LaTeX document" },
-    RDocExSection       = { m = "", k = "", c = "Navigate", d = "Go to Examples section of R documentation" },
     RPreviousRChunk     = { m = "", k = "", c = "Navigate", d = "Go to the previous chunk of R code" },
     RSyncFor            = { m = "", k = "", c = "Navigate", d = "SyncTeX forward (move from Rnoweb to the corresponding line in the PDF)" },
     RInsertLineOutput   = { m = "", k = "", c = "Send",     d = "Ask R to evaluate the line and insert the output" },
@@ -297,7 +296,6 @@ local send = function(file_type)
         create_maps("n", "RPreviousRChunk", "gN", "<Cmd>lua require('r.rnw').previous_chunk()")
     end
     if file_type == "rdoc" then
-        create_maps("n", "RDocExSection", "ge", "<Cmd>lua require('r.rdoc').go_to_ex_section()")
         vim.api.nvim_buf_set_keymap(0, "n", "q", "<Cmd>quit<CR>",
             { silent = true, noremap = true, expr = false, desc = "Close this window" })
     end
