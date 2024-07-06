@@ -507,9 +507,7 @@ end
 M.action = function(rcmd, mode, args)
     local rkeyword
 
-    if vim.o.syntax == "rdoc" then
-        rkeyword = vim.fn.expand("<cword>")
-    elseif vim.o.syntax == "rbrowser" then
+    if vim.o.syntax == "rbrowser" then
         local lnum = vim.api.nvim_win_get_cursor(0)[1]
         local line = vim.fn.getline(lnum)
         rkeyword = require("r.browser").get_name(lnum, line)

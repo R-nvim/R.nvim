@@ -322,14 +322,14 @@ type. In insert mode, typing <M--> will write " <- " (see |assignment_keymap|
 if you want to change this feature).
 
 When you press <LocalLeader>rh, the plugin shows the help for the function
-under the cursor. The plugin also checks the class of the first object passed
-as argument to the function to try to figure out whether the function is a
-generic one and whether it is more appropriate to show a specific method. The
-same procedure is followed with <LocalLeader>rp, that is, while printing an
-object. For example, if you run the code below and, then, press
-<LocalLeader>rh and <LocalLeader>rp over the two occurrences of `summary`, the
-plugin will show different help documents and print different function methods
-in each case:
+under the cursor formatted as a `rmd` file. The plugin also checks the class
+of the first object passed as argument to the function to try to figure out
+whether the function is a generic one and whether it is more appropriate to
+show a specific method. The same procedure is followed with <LocalLeader>rp,
+that is, while printing an object. For example, if you run the code below and,
+then, press <LocalLeader>rh and <LocalLeader>rp over the two occurrences of
+`summary`, the plugin will show different help documents and print different
+function methods in each case:
 >r
    y <- rnorm(100)
    x <- rnorm(100)
@@ -343,8 +343,9 @@ To get help on an R topic, you can also type in Neovim (Normal mode):
 <
 You may close the R documentation buffer by simply pressing `q`. R
 documentation is open in a 'modifiable' buffer to allow you to edit the
-code in the "Examples" section. Press `<LocalLeader>`ge to go to the
-"Examples" section and use R.nvim key bindings to send code to R Console.
+code in the "Examples" section. Press `<LocalLeader>`gn to jump to the
+next section of R code ("Usage" or "Examples" section) and use R.nvim
+key bindings to send code to the R Console.
 
 The command <LocalLeader>td will run `dput()` with the object under cursor as
 argument and insert the output in a new tab. The command <LocalLeader>rv will
