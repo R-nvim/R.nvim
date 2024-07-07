@@ -68,53 +68,28 @@ static void ParseMsg(char *b) {
             if (auto_obbr)
                 lib2ob();
             break;
-        case 'A': // strtok doesn't work here because "base" might be empty.
+        case 'C': // strtok doesn't work here because "base" might be empty.
             b++;
-            char *dtfrm;
             char *id = b;
             char *base = id;
+            char *fnm;
+            char *dtfrm;
+            char *args;
             while (*base != ';')
                 base++;
             *base = 0;
             base++;
-            char *fnm = base;
+            fnm = base;
             while (*fnm != ';')
                 fnm++;
             *fnm = 0;
             fnm++;
             dtfrm = fnm;
-            while (*dtfrm != 0 && *dtfrm != ';')
+            while (*dtfrm != ';')
                 dtfrm++;
             *dtfrm = 0;
             dtfrm++;
-            b = dtfrm;
-            while (*b != 0 && *b != '\n')
-                b++;
-            *b = 0;
-            if (*dtfrm == '#')
-                complete(id, base, fnm, NULL, NULL);
-            else
-                complete(id, base, fnm, dtfrm, NULL);
-            break;
-        case 'D': // set max_depth of lists in the completion data
-            b++;
-            set_max_depth(atoi(b));
-            break;
-        case 'F': // strtok doesn't work here because "base" might be empty.
-            b++;
-            char *args;
-            char *cid = b;
-            char *bse = cid;
-            while (*bse != ';')
-                bse++;
-            *bse = 0;
-            bse++;
-            char *fun = bse;
-            while (*fun != ';')
-                fun++;
-            *fun = 0;
-            fun++;
-            args = fun;
+            args = dtfrm;
             while (*args != 0 && *args != ';')
                 args++;
             *args = 0;
@@ -123,7 +98,12 @@ static void ParseMsg(char *b) {
             while (*b != 0 && *b != '\n')
                 b++;
             *b = 0;
-            complete(cid, bse, fun, NULL, args);
+            complete(id, base, *fnm ? fnm : NULL, *dtfrm ? dtfrm : NULL,
+                     *args ? args : NULL);
+            break;
+        case 'D': // set max_depth of lists in the completion data
+            b++;
+            set_max_depth(atoi(b));
             break;
         }
         return;
