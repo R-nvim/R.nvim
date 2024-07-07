@@ -523,8 +523,6 @@ M.line = function(m, lnum)
         end
     end
 
-    if vim.o.syntax == "rdoc" and not require("r.rdoc").is_in_R_code(true) then return end
-
     if vim.o.filetype == "rhelp" and not require("r.rhelp").is_in_R_code(true) then
         return
     end

@@ -1,8 +1,7 @@
 #include <R.h> /* to include Rconfig.h */
-#include <R_ext/Callbacks.h>
-#include <R_ext/Parse.h>
 #include <Rdefines.h>
 #include <Rinternals.h>
+#include <R_ext/Parse.h>
 #ifndef WIN32
 #define HAVE_SYS_SELECT_H
 #include <R_ext/eventloop.h>
@@ -885,24 +884,8 @@ static void nvimcom_checklibs(void) {
 /**
  * @brief Function registered to be called by R after completing each top-level
  * task. See R documentation on addTaskCallback.
- *
- * We don't use any of the parameters passed by R. We only use this task
- * callback to avoid doing anything while R is busy executing commands sent to
- * its console. R would crash if we executed any function that runs the PROTECT
- * macro while it was busy executing top level commands.
- *
- * @param unused Unused parameter.
- * @param unused Unused parameter.
- * @param unused Unused parameter.
- * @param unused Unused parameter.
- * @param unused Unused parameter.
- * @return Aways return TRUE.
  */
-static Rboolean nvimcom_task(__attribute__((unused)) SEXP expr,
-                             __attribute__((unused)) SEXP value,
-                             __attribute__((unused)) Rboolean succeeded,
-                             __attribute__((unused)) Rboolean visible,
-                             __attribute__((unused)) void *userData) {
+void nvimcom_task(void) {
     if (verbose > 4)
         REprintf("nvimcom_task()\n");
 #ifdef WIN32
@@ -933,7 +916,6 @@ static Rboolean nvimcom_task(__attribute__((unused)) SEXP expr,
                 Rprintf("nvimcom: width = %d columns\n", columns);
         }
     }
-    return (TRUE);
 }
 
 #ifndef WIN32
@@ -1261,17 +1243,16 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
  *
  * @param rinfo Information on R to be passed to nvim.
  */
-void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, int *imd, int *szl,
-                   int *tml, int *dbg, char **nvv, char **rinfo) {
-    verbose = *vrb;
-    allnames = *anm;
-    setwidth = *swd;
-    autoglbenv = *age;
-    debug_r = *dbg;
-
-    maxdepth = *imd;
-    sizelimit = *szl;
-    timelimit = (double)*tml;
+SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
+                   SEXP tml, SEXP dbg, SEXP nvv, SEXP rinfo) {
+    verbose = *INTEGER(vrb);
+    allnames = *INTEGER(anm);
+    setwidth = *INTEGER(swd);
+    autoglbenv = *INTEGER(age);
+    maxdepth = *INTEGER(imd);
+    sizelimit = *INTEGER(szl);
+    timelimit = (double)*INTEGER(tml);
+    debug_r = *INTEGER(dbg);
 
     if (getenv("RNVIM_TMPDIR")) {
         strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 500);
@@ -1285,7 +1266,11 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, int *imd, int *szl,
             REprintf("nvimcom: It seems that R was not started by Neovim. The "
                      "communication with R.nvim will not work.\n");
         tmpdir[0] = 0;
-        return;
+        SEXP ans;
+        PROTECT(ans = NEW_LOGICAL(1));
+        SET_LOGICAL_ELT(ans, 0, 0);
+        UNPROTECT(1);
+        return ans;
     }
 
     if (getenv("RNVIM_PORT"))
@@ -1294,7 +1279,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, int *imd, int *szl,
     set_doc_width(getenv("CMPR_DOC_WIDTH"));
 
     if (verbose > 0)
-        REprintf("nvimcom %s loaded\n", *nvv);
+        REprintf("nvimcom %s loaded\n", CHAR(STRING_ELT(nvv, 0)));
     if (verbose > 1) {
         if (getenv("NVIM_IP_ADDRESS")) {
             REprintf("  NVIM_IP_ADDRESS: %s\n", getenv("NVIM_IP_ADDRESS"));
@@ -1304,7 +1289,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, int *imd, int *szl,
         REprintf("  RNVIM_ID: %s\n", getenv("RNVIM_ID"));
         REprintf("  RNVIM_TMPDIR: %s\n", tmpdir);
         REprintf("  RNVIM_COMPLDIR: %s\n", getenv("RNVIM_COMPLDIR"));
-        REprintf("  R info: %s\n\n", *rinfo);
+        REprintf("  R info: %s\n\n", CHAR(STRING_ELT(rinfo, 0)));
     }
 
     tcp_header_len = strlen(nvimsecr) + 9;
@@ -1357,7 +1342,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, int *imd, int *szl,
 #ifdef WIN32
                 DWORD ti;
                 tid = CreateThread(NULL, 0, client_loop_thread, NULL, 0, &ti);
-                nvimcom_send_running_info(*rinfo, *nvv);
+                nvimcom_send_running_info(CHAR(STRING_ELT(rinfo, 0)), CHAR(STRING_ELT(nvv, 0)));
 #else
                 pthread_create(&tid, NULL, client_loop_thread, NULL);
                 snprintf(flag_eval, 510, "nvimcom:::send_nvimcom_info('%d')",
@@ -1376,10 +1361,7 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, int *imd, int *szl,
     }
 
     if (failure == 0) {
-        Rf_addTaskCallback(nvimcom_task, NULL, free, "NVimComHandler", NULL);
-
         initialized = 1;
-
 #ifdef WIN32
         r_is_busy = 0;
 #else
@@ -1390,6 +1372,16 @@ void nvimcom_Start(int *vrb, int *anm, int *swd, int *age, int *imd, int *szl,
 #endif
         nvimcom_checklibs();
     }
+
+    SEXP ans;
+    PROTECT(ans = NEW_LOGICAL(1));
+    if (initialized) {
+        SET_LOGICAL_ELT(ans, 0, 1);
+    } else {
+        SET_LOGICAL_ELT(ans, 0, 0);
+    }
+    UNPROTECT(1);
+    return ans;
 }
 
 /**
@@ -1406,7 +1398,6 @@ void nvimcom_Stop(void) {
 #endif
 
     if (initialized) {
-        Rf_removeTaskCallbackByName("NVimComHandler");
 #ifdef WIN32
         closesocket(sfd);
         WSACleanup();

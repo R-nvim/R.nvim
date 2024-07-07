@@ -1,6 +1,7 @@
 NvimcomEnv <- new.env()
 NvimcomEnv$pkgdescr <- list()
 NvimcomEnv$pkgRdDB <- list()
+NvimcomEnv$tcb <- FALSE
 
 #' Function called by R when nvimcom is being loaded.
 #' R.nvim creates environment variables and the start_options.R file to set
@@ -50,7 +51,7 @@ NvimcomEnv$pkgRdDB <- list()
 
     if (interactive() && termenv != "" && termenv != "dumb" && Sys.getenv("RNVIM_COMPLDIR") != "") {
         dir.create(Sys.getenv("RNVIM_COMPLDIR"), showWarnings = FALSE)
-        .C("nvimcom_Start",
+        ok <- .Call("nvimcom_Start",
            as.integer(getOption("nvimcom.verbose")),
            as.integer(getOption("nvimcom.allnames")),
            as.integer(getOption("nvimcom.setwidth")),
@@ -62,6 +63,8 @@ NvimcomEnv$pkgRdDB <- list()
            NvimcomEnv$info[1],
            NvimcomEnv$info[2],
            PACKAGE = "nvimcom")
+        if (ok)
+            add_tcb()
     }
     if (!is.na(utils::localeToCharset()[1]) &&
         utils::localeToCharset()[1] == "UTF-8" && version$os != "cygwin") {
@@ -76,6 +79,7 @@ NvimcomEnv$pkgRdDB <- list()
 #' This function is called by the command:
 #' detach("package:nvimcom", unload = TRUE)
 .onUnload <- function(libpath) {
+    NvimcomEnv$tcb <- FALSE
     if (is.loaded("nvimcom_Stop", PACKAGE = "nvimcom")) {
         .C("nvimcom_Stop", PACKAGE = "nvimcom")
         if (Sys.getenv("RNVIM_TMPDIR") != "" && .Platform$OS.type == "windows") {
@@ -87,6 +91,18 @@ NvimcomEnv$pkgRdDB <- list()
     }
 }
 
+run_tcb <- function(...) {
+    if (!NvimcomEnv$tcb)
+        return(invisible(FALSE))
+    .C("nvimcom_task", PACKAGE = "nvimcom")
+    return(invisible(TRUE))
+}
+
+add_tcb <- function() {
+    NvimcomEnv$tcb <- TRUE
+    addTaskCallback(run_tcb)
+}
+
 set_running_info <- function() {
     pd <- utils::packageDescription("nvimcom")
     hascolor <- FALSE
@@ -96,7 +112,8 @@ set_running_info <- function() {
                   "', OutDec = '", getOption("OutDec"),
                   "', prompt = '", gsub("\n", "#N#", getOption("prompt")),
                   "', continue = '", getOption("continue"),
-                  "', has_color = ", ifelse(hascolor, "true", "false"), "}")
+                  "', has_color = ", ifelse(hascolor, "true", "false"),
+                  ", tmux_pane = '", Sys.getenv("TMUX_PANE"), "'}")
     NvimcomEnv$info <- c(pd$Version, info)
     return(invisible(NULL))
 }

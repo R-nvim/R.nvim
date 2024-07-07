@@ -64,15 +64,16 @@ M.write_chunk = function()
             -- inline R code within markdown text
             if config.rmdchunk == 2 then
                 local pos = vim.api.nvim_win_get_cursor(0)
-                local next_char = vim.api.nvim_get_current_line():sub(pos[2] + 1, pos[2] + 1)
+                local next_char =
+                    vim.api.nvim_get_current_line():sub(pos[2] + 1, pos[2] + 1)
                 if next_char == "`" then
-                      vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 1 })
+                    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 1 })
                 elseif vim.fn.col(".") == vim.fn.col("$") then
-                      vim.cmd([[normal! a`r `]])
-                      vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 3 })
+                    vim.cmd([[normal! a`r `]])
+                    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 3 })
                 else
-                      vim.cmd([[normal! i`r `]])
-                      vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 3 })
+                    vim.cmd([[normal! i`r `]])
+                    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 3 })
                 end
                 return
             end

@@ -54,6 +54,10 @@ start_R2 = function()
 
     table.insert(
         start_options,
+        ' Sys.setenv(RNVIM_RSLV_CB = "' .. vim.env.RNVIM_RSLV_CB .. '")'
+    )
+    table.insert(
+        start_options,
         "options(nvimcom.max_depth = " .. tostring(config.compl_data.max_depth) .. ")"
     )
     table.insert(
@@ -186,6 +190,15 @@ M.start_R = function(whatr)
         return
     end
 
+    if
+        type(config.external_term) == "string"
+        and config.external_term:find("tmux split%-window")
+        and not vim.env.TMUX_PANE
+    then
+        warn("Neovim must be running within Tmux to run `tmux split-window`.")
+        return
+    end
+
     -- R already started
     if vim.g.R_Nvim_status == 6 then return end
 
@@ -274,6 +287,8 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     config.R_continue_str = r_info.continue:gsub(" $", "")
 
     if not r_info.has_color and config.hl_term then require("r.term").highlight_term() end
+
+    config.R_Tmux_pane = r_info.tmux_pane
 
     if job.is_running("Server") then
         if config.is_windows then
@@ -497,9 +512,7 @@ end
 M.action = function(rcmd, mode, args)
     local rkeyword
 
-    if vim.o.syntax == "rdoc" then
-        rkeyword = vim.fn.expand("<cword>")
-    elseif vim.o.syntax == "rbrowser" then
+    if vim.o.syntax == "rbrowser" then
         local lnum = vim.api.nvim_win_get_cursor(0)[1]
         local line = vim.fn.getline(lnum)
         rkeyword = require("r.browser").get_name(lnum, line)

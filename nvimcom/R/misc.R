@@ -446,7 +446,7 @@ nvim.getmethod <- function(fname, objclass) {
                     clpstr <- paste0( "', cls = 'a', env = '", env, "'}, {label = '")
                     luastr <- paste0(names(luatbl), unname(luatbl),
                                      collapse = clpstr)
-                    luastr <- paste0("{{label = '", luastr, "', cls = 'a', env = '", env, "'}}")
+                    luastr <- paste0("{label = '", luastr, "', cls = 'a', env = '", env, "'}")
                     return(luastr)
                 }
             }
@@ -476,9 +476,8 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
                        paste(argsl,
                              collapse = "', cls = 'a', env = '.GlobalEnv'}, {label = '"),
                        "', cls = 'a', env = '.GlobalEnv'}")
-        .C("nvimcom_msg_to_nvim",
-           paste0("+F", id, ";", argkey, ";", rkeyword, ";", args),
-           PACKAGE = "nvimcom")
+        msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";;", args)
+        .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
         return(invisible(NULL))
     }
 
@@ -486,9 +485,9 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
         # Completion of columns of data.frame
         if (ldf && is.data.frame(get(firstobj))) {
             if (is.null(lib)) {
-                msg <- paste0("+A", id, ";", argkey, ";", rkeyword, ";", firstobj)
+                msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";", firstobj, ";")
             } else {
-                msg <- paste0("+A", id, ";", argkey, ";", lib, "::", rkeyword, ";", firstobj)
+                msg <- paste0("+C", id, ";", argkey, ";", lib, "::", rkeyword, ";", firstobj, ";")
             }
             .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
             return(invisible(NULL))
@@ -499,9 +498,8 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
         if (objclass[1] != "#E#" && objclass[1] != "") {
             mthd <- nvim.getmethod(rkeyword, objclass)
             if (mthd != rkeyword) {
-                .C("nvimcom_msg_to_nvim",
-                   paste0("lua ", Sys.getenv("RNVIM_COMPL_CB"), "(", id, ", ", mthd, ")"),
-                   PACKAGE = "nvimcom")
+                msg <- paste0("+C", id, ";", argkey, ";;;", mthd, ", ")
+                .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
                 return(invisible(NULL))
             }
         }
@@ -509,9 +507,9 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
 
     # Normal completion of arguments
     if (is.null(lib)) {
-        msg <- paste0("+A", id, ";", argkey, ";", rkeyword, ";#")
+        msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";;")
     } else {
-        msg <- paste0("+A", id, ";", argkey, ";", lib, "::", rkeyword, ";#")
+        msg <- paste0("+C", id, ";", argkey, ";", lib, "::", rkeyword, ";;")
     }
     .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
     return(invisible(NULL))

@@ -378,24 +378,26 @@ char *complete_args(char *p, char *funcnm) {
                         while (*s) {
                             i = 0;
                             p = str_cat(p, "{label = '");
-                            while (*s != '\x05' && i < 63) {
-                                if (*s == '\x04') {
-                                    a[i] = ' ';
-                                    i++;
-                                    a[i] = '=';
-                                    i++;
-                                    a[i] = ' ';
-                                    i++;
-                                    while (*s != '\x05')
-                                        s++;
-                                } else {
+                            while (*s != '\x05' && *s != '\x04' && i < 63) {
+                                a[i] = *s;
+                                i++;
+                                s++;
+                            }
+                            a[i] = 0;
+                            p = str_cat(p, a);
+                            p = str_cat(p, " = ");
+                            if (*s == '\x04') {
+                                p = str_cat(p, "', def = '");
+                                i = 0;
+                                s++;
+                                while (*s != '\x05' && i < 63) {
                                     a[i] = *s;
                                     i++;
                                     s++;
                                 }
+                                a[i] = 0;
+                                p = str_cat(p, a);
                             }
-                            a[i] = 0;
-                            p = str_cat(p, a);
                             p = str_cat(p, "', cls = 'a', env='");
                             p = str_cat(p, pd->name);
                             p = str_cat(p, "\x02");
