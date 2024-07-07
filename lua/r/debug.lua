@@ -26,6 +26,16 @@ local s = {
     fnm = "",
 }
 
+local switch_buf = function(fnm)
+    if vim.api.nvim_get_current_buf() ~= require("r.edit").get_rscript_buf() then
+        vim.cmd("sb " .. tostring(require("r.edit").get_rscript_buf()))
+    end
+    if vim.bo.modified then vim.cmd("split") end
+    vim.cmd("edit " .. fnm)
+    s.bufnr = vim.api.nvim_get_current_buf()
+    s.winnr = vim.api.nvim_get_current_win()
+end
+
 local find_func = function(srcref)
     local rlines
     s.func_offset = -1 -- Not found
@@ -53,9 +63,12 @@ local find_func = function(srcref)
             string.find(rlines[idx], "^debugging in: ")
             or string.find(rlines[idx], "^Called from: ")
         then
+            -- Get the function name
             local func_name = string.gsub(rlines[idx], "debugging in: ", "")
             func_name = func_name:gsub("Called from: ", "")
             func_name = string.gsub(func_name, "%(.*", "")
+
+            -- Seek the function in the current buffer
             s.func_offset =
                 vim.fn.search(".*\\<" .. func_name .. "\\s*<-\\s*function\\s*(", "b")
             if s.func_offset < 1 then
@@ -77,21 +90,43 @@ local find_func = function(srcref)
                         s.func_offset = vim.fn.search("^<<", "nb")
                     end
                 end
+            else
+                -- Function not found in the current buffer. Get it from RConsole.
+                idx = idx + 1
+                if string.find(rlines[idx], "%{$") then
+                    local func_lines = {}
+                    table.insert(func_lines, func_name .. " <- function() " .. "{")
+                    idx = idx + 1
+                    while rlines[idx] ~= "}" and idx < #rlines do
+                        table.insert(func_lines, rlines[idx])
+                        idx = idx + 1
+                    end
+                    table.insert(func_lines, "}")
+                    if vim.fn.filereadable("__" .. func_name .. ".R") then
+                        switch_buf("__" .. func_name .. ".R")
+                        vim.api.nvim_set_option_value(
+                            "swapfile",
+                            false,
+                            { scope = "local" }
+                        )
+                        vim.api.nvim_set_option_value(
+                            "bufhidden",
+                            "wipe",
+                            { scope = "local" }
+                        )
+                        vim.api.nvim_set_option_value(
+                            "buftype",
+                            "nofile",
+                            { scope = "local" }
+                        )
+                        vim.api.nvim_buf_set_lines(0, 0, -1, true, func_lines)
+                    end
+                end
             end
             break
         end
         idx = idx - 1
     end
-end
-
-local switch_buf = function(fnm)
-    if vim.api.nvim_get_current_buf() ~= require("r.edit").get_rscript_buf() then
-        vim.cmd("sb " .. tostring(require("r.edit").get_rscript_buf()))
-    end
-    if vim.bo.modified then vim.cmd("split") end
-    vim.cmd("edit " .. fnm)
-    s.bufnr = vim.api.nvim_get_current_buf()
-    s.winnr = vim.api.nvim_get_current_win()
 end
 
 M.stop = function()
