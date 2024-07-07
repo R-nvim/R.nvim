@@ -61,8 +61,14 @@ local function get_code_to_send(txt, row)
     end
 
     if node then
-        row = node:end_()
-        table.insert(lines, vim.treesitter.get_node_text(node, 0))
+        local start_row, start_col, end_row, end_col = node:range()
+        for i = start_row, end_row do
+            local line_txt = vim.fn.getline(i + 1)
+            for part in string.gmatch(line_txt, "([^;]+)") do
+                table.insert(lines, vim.trim(part))
+            end
+        end
+        row = end_row + 1
     end
 
     return lines, row
