@@ -61,7 +61,7 @@ local function get_code_to_send(txt, row)
     end
 
     if node then
-        local start_row, start_col, end_row, end_col = node:range()
+        local start_row, _, end_row, _ = node:range()
         for i = start_row, end_row do
             local line_txt = vim.fn.getline(i + 1)
             for part in string.gmatch(line_txt, "([^;]+)") do
