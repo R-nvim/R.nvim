@@ -1,64 +1,29 @@
 local warn = require("r").warn
 local config = require("r.config").get_config()
 local send = require("r.send")
+local get_lang = require("r.utils").get_lang
 local uv = vim.loop
 
 local M = {}
-
---- Checks if the cursor is currently positioned inside a code block within a document for a specified language.
--- This function searches backwards for the start of a code chunk indicated by ```{language
--- and forwards for the end of any code chunk indicated by ```. It then compares these positions
--- to determine if the cursor is inside a code block of the specified language.
----@param language string The programming language to check for (e.g., 'r', 'python').
----@param verbose boolean If true, it will display a warning message when the cursor is not inside a code chunk of the specified language.
----@return boolean Returns true if inside a code chunk of the specified language, false otherwise.
-M.is_in_code_chunk = function(language, verbose)
-    local chunkStartPattern = "^[ \t]*```[ ]*{" .. language
-    -- bncW: search backwards, don't move cursor, also match at cursor, no wrap around the end of the buffer
-    local chunkline = vim.fn.search(chunkStartPattern, "bncW") -- Search for chunk start
-    local docline = vim.fn.search("^[ \t]*```$", "bncW") -- Search for any code chunk end
-    if chunkline > docline and chunkline ~= vim.api.nvim_win_get_cursor(0)[1] then
-        return true
-    else
-        if verbose then warn("Not inside a " .. language .. " code chunk.") end -- Warn if not in chunk and verbose is true
-        return false
-    end
-end
-
---- Checks if the cursor is currently positioned inside a R code block within a document.
--- This function is now a wrapper around the generalized `is_in_code_chunk` function.
----@param vrb boolean If true, it will display a warning message when the cursor is not inside an R code chunk.
----@return boolean Returns true if inside an R code chunk, false otherwise.
-M.is_in_R_code = function(vrb) return M.is_in_code_chunk("r", vrb) end
 
 --- Writes a new R code chunk at the current cursor position
 -- This function checks if the cursor is in an empty line and not in an R code chunk
 -- it then inserts a new R code chunk template.
 -- Different templates are used based on the file type (e.g., Quarto).
 M.write_chunk = function()
-    if not M.is_in_code_chunk("r", false) then -- Check if cursor is inside an R code chunk
-        if vim.api.nvim_get_current_line():find("^%s*$") then -- Check if cursor is in an empty line
+    local lang = get_lang()
+    if lang == "markdown" then
+        if vim.api.nvim_get_current_line() == "" then -- Check if cursor is in an empty line
             local curline = vim.api.nvim_win_get_cursor(0)[1]
-            -- Insert new R code chunk template based on filetype
-            if vim.o.filetype == "quarto" then -- Quarto
-                vim.api.nvim_buf_set_lines(
-                    0,
-                    curline - 1,
-                    curline - 1,
-                    true,
-                    { "```{r}", "", "```", "" }
-                )
-                vim.api.nvim_win_set_cursor(0, { curline + 1, 1 })
-            else -- not Quarto (R Markdown)
-                vim.api.nvim_buf_set_lines(
-                    0,
-                    curline - 1,
-                    curline - 1,
-                    true,
-                    { "```{r}", "```", "" }
-                )
-                vim.api.nvim_win_set_cursor(0, { curline, 5 })
-            end
+            -- Insert new R code chunk template
+            vim.api.nvim_buf_set_lines(
+                0,
+                curline - 1,
+                curline - 1,
+                true,
+                { "```{r}", "", "```", "" }
+            )
+            vim.api.nvim_win_set_cursor(0, { curline + 1, 1 })
             return
         else
             -- inline R code within markdown text
@@ -79,7 +44,8 @@ M.write_chunk = function()
             end
         end
     end
-    -- R code: just insert the backtick
+
+    -- Just insert the backtick
     if vim.fn.col(".") == 1 then
         vim.cmd("normal! i`")
     else
@@ -111,8 +77,9 @@ M.send_R_chunk = function(m)
         vim.api.nvim_win_set_cursor(0, { lnum + 1, 0 })
     end
     -- Check for R code chunk; if not, check for Python code chunk
-    if not M.is_in_code_chunk("r", false) then
-        if not M.is_in_code_chunk("python", false) then
+    local lang = get_lang()
+    if lang ~= "r" then
+        if lang ~= "python" then
             warn("Not inside an R code chunk.")
         else
             send_py_chunk(m)
@@ -134,7 +101,8 @@ end
 ---@return boolean
 local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
-    if M.is_in_code_chunk("r", false) or M.is_in_code_chunk("python", false) then
+    local lang = get_lang()
+    if lang == "r" or lang == "python" then
         local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- search for chunk start
         if i ~= 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end -- if found, move cursor at chunk
     end
@@ -206,10 +174,6 @@ M.setup = function()
 
     vim.api.nvim_buf_set_var(0, "rplugin_knitr_pattern", "^``` *{.*}$")
 
-    -- Pointer to function called by generic functions
-    -- TODO: replace with M.is_in_code_chunk then remove is_in_R_code definition
-    vim.api.nvim_buf_set_var(0, "IsInRCode", M.is_in_R_code)
-
     -- Key bindings
     require("r.maps").create(vim.o.filetype)
     -- Only .Rmd and .qmd files use these functions:
@@ -217,14 +181,6 @@ M.setup = function()
     -- Schedule additional setup tasks for PDF viewing and undo functionality
     vim.schedule(function() require("r.pdf").setup() end)
 
-    vim.schedule(function()
-        if vim.b.undo_ftplugin then
-            vim.b.undo_ftplugin = vim.b.undo_ftplugin
-                .. " | unlet! b:IsInRCode b:rplugin_knitr_pattern"
-        else
-            vim.b.undo_ftplugin = "unlet! b:IsInRCode b:rplugin_knitr_pattern"
-        end
-    end)
     -- Record setup time for debugging
     rmdtime = (uv.hrtime() - rmdtime) / 1000000000
     require("r.edit").add_to_debug_info("rmd setup", rmdtime, "Time")

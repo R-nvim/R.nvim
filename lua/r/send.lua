@@ -1,6 +1,7 @@
 local config = require("r.config").get_config()
 local warn = require("r").warn
 local utils = require("r.utils")
+local get_lang = require("r.utils").get_lang
 local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
@@ -19,6 +20,64 @@ local is_blank = function(line) return line:find("^%s*$") ~= nil end
 ---@param line string
 ---@return boolean
 local is_insignificant = function(line) return is_comment(line) or is_blank(line) end
+
+--- Check if line ends with operator symbol
+---@param line string
+---@return boolean
+local ends_with_operator = function(line)
+    local op_pattern = { "&", "|", "+", "-", "%*", "%/", "%=", "~", "%-", "%<", "%>" }
+    local clnline = line:gsub("#.*", "")
+    local has_op = false
+    for _, v in pairs(op_pattern) do
+        if clnline:find(v .. "%s*$") then
+            has_op = true
+            break
+        end
+    end
+    return has_op
+end
+
+--- Check if the number of brackets are balanced
+---@param str string The line to check
+---@return number
+local paren_diff = function(str)
+    local clnln = str
+    clnln = clnln:gsub('\\"', "")
+    clnln = clnln:gsub("\\'", "")
+    clnln = clnln:gsub('".-"', "")
+    clnln = clnln:gsub("'.-'", "")
+    clnln = clnln:gsub("#.*", "")
+    local llen1 = string.len(clnln:gsub("[%{%(%[]", ""))
+    local llen2 = string.len(clnln:gsub("[%}%)%]]", ""))
+    return llen1 - llen2
+end
+
+--- Dumb function to send code without treesitter
+---@param txt string The text for the line the cursor is currently on
+---@param row number The row the cursor is currently on
+---@return table, number
+local function get_rhelp_code_to_send(txt, row)
+    local lines = { txt }
+    local has_op = ends_with_operator(txt)
+    local rpd = paren_diff(txt)
+    if rpd < 0 or has_op then
+        row = row + 1
+        local last_buf_line = vim.api.nvim_buf_line_count(0)
+        while row <= last_buf_line do
+            local line = vim.fn.getline(row)
+            table.insert(lines, line)
+            rpd = rpd + paren_diff(line)
+            has_op = ends_with_operator(line)
+            if rpd < 0 or has_op then
+                row = row + 1
+            else
+                vim.api.nvim_win_set_cursor(0, { row, 0 })
+                break
+            end
+        end
+    end
+    return lines, row - 1
+end
 
 --- Get the full expression the cursor is currently on
 ---@param txt string The text for the line the cursor is currently on
@@ -41,6 +100,8 @@ local function get_code_to_send(txt, row)
     end
 
     local col = txt:find("%S")
+
+    if vim.o.filetype == "rhelp" then return get_rhelp_code_to_send(txt, row) end
 
     -- Find the 'root' node for the current expression --------------------
     local n_lang = vim.o.filetype == "rnoweb" and "r" or nil
@@ -135,7 +196,7 @@ M.source_lines = function(lines, what)
         rcmd = table.concat(lines, "\n")
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_code_chunk("python", false)
+            and get_lang() == "python"
         then
             rcmd = rcmd:gsub('"', '\\"')
             rcmd = 'reticulate::py_run_string("' .. rcmd .. '")'
@@ -357,7 +418,10 @@ end
 -- Function to get the marks which the cursor is between
 ---@param m boolean True if should move to the next line.
 M.marked_block = function(m)
-    if not vim.b.IsInRCode(true) then return end
+    if get_lang() ~= "r" then
+        warn("Not in R code.")
+        return
+    end
 
     local last_line = vim.api.nvim_buf_line_count(0)
 
@@ -401,26 +465,16 @@ end
 --- Send to R Console the selected lines
 ---@param m boolean True if should move to the next line.
 M.selection = function(m)
-    local ispy = false
+    local lang = get_lang()
 
-    if vim.o.filetype ~= "r" then
-        if
-            (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_code_chunk("python", false)
-        then
-            ispy = true
-        elseif not vim.b.IsInRCode(false) then
-            local cline = vim.api.nvim_get_current_line()
-            if
-                (vim.o.filetype == "rnoweb" and not cline:find("\\Sexpr{"))
-                or (
-                    (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-                    and not cline:find("`r ")
-                )
-            then
-                warn("Not inside an R code chunk.")
-                return
-            end
+    if
+        vim.o.filetype == "rnoweb"
+        or vim.o.filetype == "rmd"
+        or vim.o.filetype == "quarto"
+    then
+        if lang ~= "r" and lang ~= "python" then
+            warn("Not inside R or Python code chunk.")
+            return
         end
     end
 
@@ -462,7 +516,7 @@ M.selection = function(m)
     end
 
     local ok
-    if ispy then
+    if lang == "python" then
         ok = M.source_lines(lines, "PythonCode")
     else
         ok = M.source_lines(lines, "selection")
@@ -498,12 +552,17 @@ M.line = function(m, lnum)
         end
     end
 
+    local lang = get_lang()
+
     if vim.o.filetype == "rnoweb" then
         if line == "@" then
             if m == true then cursor.move_next_line() end
             return
         end
-        if not require("r.rnw").is_in_R_code(true) then return end
+        if lang ~= "r" and lang ~= "python" then
+            warn("Not inside R or Python code chunk.")
+            return
+        end
     end
 
     if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
@@ -511,19 +570,20 @@ M.line = function(m, lnum)
             if m == true then cursor.move_next_line() end
             return
         end
-        if not require("r.rmd").is_in_code_chunk("r", false) then
-            if not require("r.rmd").is_in_code_chunk("python", false) then
-                warn("Not inside either R or Python code chunk.")
-            else
+        if lang ~= "r" then
+            if lang == "python" then
                 line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
                 M.cmd(line)
                 if m == true then cursor.move_next_line() end
+                return
             end
+            warn("Not inside R or Python code chunk.")
             return
         end
     end
 
-    if vim.o.filetype == "rhelp" and not require("r.rhelp").is_in_R_code(true) then
+    if vim.o.filetype == "rhelp" and get_lang() ~= "r" then
+        warn("Not inside an R section.")
         return
     end
 
