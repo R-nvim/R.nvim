@@ -28,34 +28,37 @@ describe("rmd module", function()
 
     after_each(function() vim.fn.jobstop(nvim) end)
 
-    describe("is_in_code_chunk(language, verbose) Unit Tests", function()
-        it("returns true if in R chunk", function()
-            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 13, 0 })
-            local result =
-                send_lua_via_rpc([[return require('r.rmd').is_in_code_chunk('r', false)]])
-            assert.is_true(result)
-        end)
-        it("returns false if outside R chunk", function()
+    describe("get_lang() Unit Tests", function()
+        it("returns the correct language at cursor position", function()
             rpcrequest(nvim, "nvim_win_set_cursor", 0, { 1, 0 })
-            local result =
-                send_lua_via_rpc([[return require('r.rmd').is_in_code_chunk('r', false)]])
-            assert.is_false(result)
-        end)
-        it("returns true if in Python chunk", function()
-            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 19, 0 })
-            local result = send_lua_via_rpc(
-                [[return require('r.rmd').is_in_code_chunk('python', false)]]
-            )
+            local result = send_lua_via_rpc([[return require('r.utils').get_lang()]])
+                == "markdown"
             assert.is_true(result)
         end)
-        it("returns false if not in Python chunk", function()
-            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 13, 0 })
-            local result = send_lua_via_rpc(
-                [[return require('r.rmd').is_in_code_chunk('python', false)]]
-            )
-            assert.is_false(result)
+        it("returns the correct language at cursor position", function()
+            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 3, 0 })
+            local result = send_lua_via_rpc([[return require('r.utils').get_lang()]])
+                == "yaml"
+            assert.is_true(result)
         end)
-        it("test verbosity", function() pending("test verbosity") end)
+        it("returns the correct language at cursor position", function()
+            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 10, 0 })
+            local result = send_lua_via_rpc([[return require('r.utils').get_lang()]])
+                == "markdown"
+            assert.is_true(result)
+        end)
+        it("returns the correct language at cursor position", function()
+            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 13, 0 })
+            local result = send_lua_via_rpc([[return require('r.utils').get_lang()]])
+                == "r"
+            assert.is_true(result)
+        end)
+        it("returns the correct language at cursor position", function()
+            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 19, 0 })
+            local result = send_lua_via_rpc([[return require('r.utils').get_lang()]])
+                == "python"
+            assert.is_true(result)
+        end)
         it(
             "returns true if inside code chunk (filetype-agnostic)",
             function() pending("test filetype-agnostic code chunk detection") end
@@ -94,6 +97,5 @@ describe("rmd module", function()
             "Does not insert an R code chunk in a code chunk in Quarto",
             function() pending("Not implemented") end
         )
-
     end)
 end)
