@@ -1,6 +1,7 @@
 local config = require("r.config").get_config()
 local warn = require("r").warn
 local utils = require("r.utils")
+local get_lang = require("r.utils").get_lang
 local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
@@ -135,7 +136,7 @@ M.source_lines = function(lines, what)
         rcmd = table.concat(lines, "\n")
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_code_chunk("python", false)
+            and get_lang() == "python"
         then
             rcmd = rcmd:gsub('"', '\\"')
             rcmd = 'reticulate::py_run_string("' .. rcmd .. '")'
@@ -357,7 +358,10 @@ end
 -- Function to get the marks which the cursor is between
 ---@param m boolean True if should move to the next line.
 M.marked_block = function(m)
-    if not vim.b.IsInRCode(true) then return end
+    if get_lang() ~= "r" then
+        warn("Not in R code.")
+        return
+    end
 
     local last_line = vim.api.nvim_buf_line_count(0)
 
@@ -401,26 +405,16 @@ end
 --- Send to R Console the selected lines
 ---@param m boolean True if should move to the next line.
 M.selection = function(m)
-    local ispy = false
+    local lang = get_lang()
 
-    if vim.o.filetype ~= "r" then
-        if
-            (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_code_chunk("python", false)
-        then
-            ispy = true
-        elseif not vim.b.IsInRCode(false) then
-            local cline = vim.api.nvim_get_current_line()
-            if
-                (vim.o.filetype == "rnoweb" and not cline:find("\\Sexpr{"))
-                or (
-                    (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-                    and not cline:find("`r ")
-                )
-            then
-                warn("Not inside an R code chunk.")
-                return
-            end
+    if
+        vim.o.filetype == "rnoweb"
+        or vim.o.filetype == "rmd"
+        or vim.o.filetype == "quarto"
+    then
+        if lang ~= "r" and lang ~= "python" then
+            warn("Not inside R or Python code chunk.")
+            return
         end
     end
 
@@ -462,7 +456,7 @@ M.selection = function(m)
     end
 
     local ok
-    if ispy then
+    if lang == "python" then
         ok = M.source_lines(lines, "PythonCode")
     else
         ok = M.source_lines(lines, "selection")
@@ -498,12 +492,17 @@ M.line = function(m, lnum)
         end
     end
 
+    local lang = get_lang()
+
     if vim.o.filetype == "rnoweb" then
         if line == "@" then
             if m == true then cursor.move_next_line() end
             return
         end
-        if not require("r.rnw").is_in_R_code(true) then return end
+        if lang ~= "r" and lang ~= "python" then
+            warn("Not inside R or Python code chunk.")
+            return
+        end
     end
 
     if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
@@ -511,14 +510,14 @@ M.line = function(m, lnum)
             if m == true then cursor.move_next_line() end
             return
         end
-        if not require("r.rmd").is_in_code_chunk("r", false) then
-            if not require("r.rmd").is_in_code_chunk("python", false) then
-                warn("Not inside either R or Python code chunk.")
-            else
+        if lang ~= "r" then
+            if lang == "python" then
                 line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
                 M.cmd(line)
                 if m == true then cursor.move_next_line() end
+                return
             end
+            warn("Not inside R or Python code chunk.")
             return
         end
     end

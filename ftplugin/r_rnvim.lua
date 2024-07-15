@@ -54,16 +54,5 @@ require("r").show_R_out = function()
     require("r.job").start("R_CMD", rcmd, { on_exit = get_R_output })
 end
 
--- Default IsInRCode function when the plugin is used as a global plugin
-vim.b.IsInRCode = function(_) return true end
-
 -- Key bindings
 require("r.maps").create("r")
-
-vim.schedule(function()
-    if vim.b.undo_ftplugin then
-        vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
-    else
-        vim.b.undo_ftplugin = "unlet! b:IsInRCode"
-    end
-end)

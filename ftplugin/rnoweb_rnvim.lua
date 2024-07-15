@@ -21,10 +21,6 @@ if config.rnowebchunk then
     )
 end
 
--- Pointers to function whose purpose is the same in rnoweb, rmd,
--- rhelp and rdoc.
-vim.b.IsInRCode = require("r.rnw").is_in_R_code
-
 vim.api.nvim_buf_set_var(0, "rplugin_knitr_pattern", "^<<.*>>=$")
 
 -- Key bindings
@@ -33,12 +29,4 @@ require("r.maps").create("rnoweb")
 vim.schedule(function()
     require("r.pdf").setup()
     require("r.rnw").set_pdf_dir()
-end)
-
-vim.schedule(function()
-    if vim.b.undo_ftplugin then
-        vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
-    else
-        vim.b.undo_ftplugin = "unlet! b:IsInRCode"
-    end
 end)

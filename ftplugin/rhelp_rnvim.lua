@@ -11,11 +11,3 @@ require("r.config").real_setup()
 
 -- Key bindings and menu items
 require("r.maps").create("rhelp")
-
-vim.schedule(function()
-    if vim.b.undo_ftplugin then
-        vim.b.undo_ftplugin = vim.b.undo_ftplugin .. " | unlet! b:IsInRCode"
-    else
-        vim.b.undo_ftplugin = "unlet! b:IsInRCode"
-    end
-end)

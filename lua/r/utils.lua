@@ -1,5 +1,13 @@
 local M = {}
 
+function M.get_lang()
+    local c = vim.api.nvim_win_get_cursor(0)
+    local p = vim.treesitter.get_parser()
+    local lang = p:language_for_range({ c[1], c[2] - 1, c[1], c[2] - 1 }):lang()
+    vim.notify("The lang is: " .. lang)
+    return lang
+end
+
 --- Request the windows manager to focus a window.
 --- Currently, has support only for Xorg.
 ---@param wttl string Part of the window title.
