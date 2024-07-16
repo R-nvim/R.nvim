@@ -21,11 +21,63 @@ local is_blank = function(line) return line:find("^%s*$") ~= nil end
 ---@return boolean
 local is_insignificant = function(line) return is_comment(line) or is_blank(line) end
 
+--- Check if line ends with operator symbol
+---@param line string
+---@return boolean
+local ends_with_operator = function(line)
+    local op_pattern = { "&", "|", "+", "-", "%*", "%/", "%=", "~", "%-", "%<", "%>" }
+    local clnline = line:gsub("#.*", "")
+    local has_op = false
+    for _, v in pairs(op_pattern) do
+        if clnline:find(v .. "%s*$") then
+            has_op = true
+            break
+        end
+    end
+    return has_op
+end
+
+--- Check if the number of brackets are balanced
+---@param str string The line to check
+---@return number
+local paren_diff = function(str)
+    local clnln = str
+    clnln = clnln:gsub('\\"', "")
+    clnln = clnln:gsub("\\'", "")
+    clnln = clnln:gsub('".-"', "")
+    clnln = clnln:gsub("'.-'", "")
+    clnln = clnln:gsub("#.*", "")
+    local llen1 = string.len(clnln:gsub("[%{%(%[]", ""))
+    local llen2 = string.len(clnln:gsub("[%}%)%]]", ""))
+    return llen1 - llen2
+end
+
 --- Dumb function to send code without treesitter
 ---@param txt string The text for the line the cursor is currently on
 ---@param row number The row the cursor is currently on
 ---@return table, number
-local function get_rhelp_code_to_send(txt, row) return { txt }, row - 1 end
+local function get_rhelp_code_to_send(txt, row)
+    local lines = { txt }
+    local has_op = ends_with_operator(txt)
+    local rpd = paren_diff(txt)
+    if rpd < 0 or has_op then
+        row = row + 1
+        local last_buf_line = vim.api.nvim_buf_line_count(0)
+        while row <= last_buf_line do
+            local line = vim.fn.getline(row)
+            table.insert(lines, line)
+            rpd = rpd + paren_diff(line)
+            has_op = ends_with_operator(line)
+            if rpd < 0 or has_op then
+                row = row + 1
+            else
+                vim.api.nvim_win_set_cursor(0, { row, 0 })
+                break
+            end
+        end
+    end
+    return lines, row - 1
+end
 
 --- Get the full expression the cursor is currently on
 ---@param txt string The text for the line the cursor is currently on
