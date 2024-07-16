@@ -21,6 +21,12 @@ local is_blank = function(line) return line:find("^%s*$") ~= nil end
 ---@return boolean
 local is_insignificant = function(line) return is_comment(line) or is_blank(line) end
 
+--- Dumb function to send code without treesitter
+---@param txt string The text for the line the cursor is currently on
+---@param row number The row the cursor is currently on
+---@return table, number
+local function get_rhelp_code_to_send(txt, row) return { txt }, row - 1 end
+
 --- Get the full expression the cursor is currently on
 ---@param txt string The text for the line the cursor is currently on
 ---@param row number The row the cursor is currently on
@@ -42,6 +48,8 @@ local function get_code_to_send(txt, row)
     end
 
     local col = txt:find("%S")
+
+    if vim.o.filetype == "rhelp" then return get_rhelp_code_to_send(txt, row) end
 
     -- Find the 'root' node for the current expression --------------------
     local n_lang = vim.o.filetype == "rnoweb" and "r" or nil
@@ -522,7 +530,8 @@ M.line = function(m, lnum)
         end
     end
 
-    if vim.o.filetype == "rhelp" and not require("r.rhelp").is_in_R_code(true) then
+    if vim.o.filetype == "rhelp" and get_lang() ~= "r" then
+        warn("Not inside an R section.")
         return
     end
 
