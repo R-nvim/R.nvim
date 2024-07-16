@@ -1,6 +1,7 @@
 local warn = require("r").warn
 local send = require("r.send")
 local utils = require("r.utils")
+local get_lang = require("r.utils").get_lang
 local job = require("r.job")
 local config = require("r.config").get_config()
 local check_latexcmd = true
@@ -151,9 +152,8 @@ end
 local M = {}
 
 M.write_chunk = function()
-    if vim.api.nvim_get_current_line() ~= "" and not M.is_in_R_code(false) then
-        vim.fn.feedkeys("<", "n")
-    else
+    local lang = get_lang()
+    if vim.api.nvim_get_current_line() == "" and lang == "rnoweb" then
         local curline = vim.api.nvim_win_get_cursor(0)[1]
         vim.api.nvim_buf_set_lines(
             0,
@@ -163,20 +163,8 @@ M.write_chunk = function()
             { "<<>>=", "@", "" }
         )
         vim.api.nvim_win_set_cursor(0, { curline, 2 })
-    end
-end
-
---- Check if cursor is within a R block of code
----@param vrb boolean
----@return boolean
-M.is_in_R_code = function(vrb)
-    local chunkline = vim.fn.search("^<<", "bncW")
-    local docline = vim.fn.search("^@", "bncW")
-    if chunkline ~= vim.api.nvim_win_get_cursor(0)[1] and chunkline > docline then
-        return true
     else
-        if vrb then warn("Not inside an R code chunk.") end
-        return false
+        vim.fn.feedkeys("<", "n")
     end
 end
 
@@ -184,7 +172,8 @@ end
 ---@return boolean
 local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
-    if M.is_in_R_code(false) then
+    local lang = get_lang()
+    if lang ~= "r" and lang ~= "python" then
         local i = vim.fn.search("^<<.*$", "bnW")
         if i ~= 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end
     end
@@ -319,8 +308,9 @@ end
 M.send_chunk = function(m)
     if vim.api.nvim_get_current_line():find("^<<") then
         vim.api.nvim_win_set_cursor(0, { vim.api.nvim_win_get_cursor(0)[1] + 1, 1 })
-    elseif not M.is_in_R_code(false) then
-        return
+    else
+        local lang = get_lang()
+        if lang ~= "r" and lang ~= "python" then return end
     end
 
     local chunkline = vim.fn.search("^<<", "bncW") + 1
