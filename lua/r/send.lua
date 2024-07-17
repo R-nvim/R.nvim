@@ -115,15 +115,22 @@ local function get_code_to_send(txt, row)
 
     while node do
         local parent = node:parent()
-        if parent and (parent:type() == "program" or parent:type() == "brace_list") then
+        if
+            parent
+            and (parent:type() == "program" or parent:type() == "braced_expression")
+        then
             break
         end
         node = parent
     end
 
     if node then
-        row = node:end_()
-        table.insert(lines, vim.treesitter.get_node_text(node, 0))
+        local start_row, _, end_row, _ = node:range()
+        for i = start_row, end_row do
+            local line_txt = vim.fn.getline(i + 1)
+            table.insert(lines, line_txt)
+        end
+        row = end_row
     end
 
     return lines, row
