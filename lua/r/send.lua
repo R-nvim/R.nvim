@@ -718,10 +718,7 @@ M.funs = function(bufnr, capture_all, move_down)
     local r_fun_query = vim.treesitter.query.parse(
         "r",
         [[
-    (left_assignment
-      (function_definition)) @rfun
-
-    (equals_assignment
+    (binary_operator
       (function_definition)) @rfun
     ]]
     )
@@ -746,17 +743,12 @@ M.funs = function(bufnr, capture_all, move_down)
     for id, node in r_fun_query:iter_captures(root_node, bufnr, 0, -1) do
         local name = r_fun_query.captures[id]
 
-        -- Kinda hacky, but it works. Check if the parent of the function is
-        -- the root node, if so, it's a top level function
-        local s, _, _, _ = node:parent():range()
-
-        if name == "rfun" and s == 0 then
+        if name == "rfun" and node:parent() == root_node then
             local start_row, _, end_row, _ = node:range()
 
             if
                 capture_all or (cursor_pos >= start_row + 1 and cursor_pos <= end_row + 1)
             then
-                M.source_lines(lines, nil)
                 lines = vim.fn.extend(
                     lines,
                     vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
@@ -768,6 +760,7 @@ M.funs = function(bufnr, capture_all, move_down)
             end
         end
     end
+
     if #lines then M.source_lines(lines) end
 end
 
