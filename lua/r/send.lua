@@ -54,7 +54,10 @@ local function get_code_to_send(txt, row)
 
     while node do
         local parent = node:parent()
-        if parent and (parent:type() == "program" or parent:type() == "brace_list") then
+        if
+            parent
+            and (parent:type() == "program" or parent:type() == "braced_expression")
+        then
             break
         end
         node = parent
