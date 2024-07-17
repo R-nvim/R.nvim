@@ -860,8 +860,8 @@ emulator or the complete command to run the terminal emulator. On Windows,
 only boolean values are valid; if `true` R.nvim will run `Rgui.exe`, and not
 really a terminal emulator.
 
-On Linux, the complete command for running the terminal is predefined for the
-following options:
+On Linux, a command for running the terminal is predefined for the following
+options:
 
     1. foot
     2. kitty
@@ -871,6 +871,7 @@ following options:
     6. alacritty
     7. xterm
 
+
 If the value of `external_term` is `true`, the plugin runs the first terminal
 emulator that it finds from the above list. If your favorite terminal emulator
 is not selected, you may define it in your config. Below are some examples of
@@ -879,9 +880,11 @@ how to set the value of `external_term`:
    external_term = true      -- Run R in an external terminal (or Rgui.exe)
    external_term = "konsole" -- Run R in konsole
 <
-If you are not satisfied with the way your terminal emulator is called by the
-plugin, you may define in your config the variable `external_term` as the
-complete command to run the terminal. Examples:
+If `external_term` is just the name of one of the above terminal emulators,
+R.nvim will start it with the arguments for setting the title and the
+working directory. If you need more than this, you may define in your config
+variable `external_term` as the complete command to run the terminal.
+Examples (see also https://github.com/R-nvim/R.nvim/wiki/External-Terminals):
 >lua
    external_term = "xterm -title R -e"
    external_term = "tilix -a session-add-right -e"

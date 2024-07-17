@@ -58,7 +58,7 @@ local external_term_config = function()
 
     if
         vim.tbl_contains(
-            { "foot", "gnome-terminal", "xfce4-terminal", "alacritty" },
+            { "foot", "gnome-terminal", "kitty", "xfce4-terminal", "alacritty" },
             term_name
         )
     then
@@ -82,7 +82,7 @@ local external_term_config = function()
             term_cmd = term_cmd .. " --working-directory='" .. wd .. "'"
         elseif term_name == "konsole" then
             term_cmd = term_cmd .. " -p tabtitle=R --workdir '" .. wd .. "'"
-        elseif term_name == "roxterm" then
+        elseif term_name == "roxterm" or term_name == "kitty" then
             term_cmd = term_cmd .. " --directory='" .. wd .. "'"
         end
     end
