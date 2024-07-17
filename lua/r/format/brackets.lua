@@ -4,11 +4,11 @@ local parsers = require("nvim-treesitter.parsers")
 
 -- Define the Treesitter query for capturing nodes
 local query = [[
-(dollar
+(extract_operator
     (identifier)
-    (dollar
+    (extract_operator
         (identifier)
-        (dollar
+        (extract_operator
             (identifier)
         )*
     )*
