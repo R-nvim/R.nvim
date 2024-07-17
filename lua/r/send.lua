@@ -66,7 +66,7 @@ local function get_code_to_send(txt, row)
             local line_txt = vim.fn.getline(i + 1)
             table.insert(lines, line_txt)
         end
-        row = end_row + 1
+        row = end_row
     end
 
     return lines, row
