@@ -543,53 +543,43 @@ end
 M.line = function(m, lnum)
     if not lnum then lnum = vim.api.nvim_win_get_cursor(0)[1] end
     local line = vim.fn.getline(lnum)
+    local lang = get_lang()
+    if lang == "chunk_child" then
+        if type(m) == "boolean" and m then
+            knit_child(line, true)
+        else
+            knit_child(line, false)
+        end
+        return
+    elseif lang == "chunk_end" then
+        if m == true then
+            if vim.bo.filetype == "rnoweb" then
+                require("r.rnw").next_chunk()
+            else
+                require("r.rmd").next_chunk()
+            end
+        end
+        return
+    end
 
     if
-        vim.o.filetype == "rnoweb"
-        or vim.o.filetype == "rmd"
-        or vim.o.filetype == "quarto"
+        vim.bo.filetype == "rnoweb"
+        or vim.bo.filetype == "rmd"
+        or vim.bo.filetype == "quarto"
     then
-        if line:find("^<<.*child *= *") or line:find("^```.*child *= *") then
-            if type(m) == "boolean" and m then
-                knit_child(line, true)
-            else
-                knit_child(line, false)
-            end
-            return
-        end
-    end
-
-    local lang = get_lang()
-
-    if vim.o.filetype == "rnoweb" then
-        if line == "@" then
-            if m == true then cursor.move_next_line() end
-            return
-        end
-        if lang ~= "r" and lang ~= "python" then
-            warn("Not inside R or Python code chunk.")
-            return
-        end
-    end
-
-    if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
-        if line == "```" then
+        if lang == "python" then
+            line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
+            M.cmd(line)
             if m == true then cursor.move_next_line() end
             return
         end
         if lang ~= "r" then
-            if lang == "python" then
-                line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
-                M.cmd(line)
-                if m == true then cursor.move_next_line() end
-                return
-            end
             warn("Not inside R or Python code chunk.")
             return
         end
     end
 
-    if vim.o.filetype == "rhelp" and get_lang() ~= "r" then
+    if vim.bo.filetype == "rhelp" and lang ~= "r" then
         warn("Not inside an R section.")
         return
     end

@@ -25,6 +25,14 @@ end
 --- Get language at current cursor position of rnoweb buffer
 ---@return string
 local get_rnw_lang = function()
+    local cline = vim.api.nvim_get_current_line()
+    if cline:find("^<<.*child *= *") then
+        return "chunk_child"
+    elseif cline:find("^<<") then
+        return "chunk_header"
+    elseif cline:find("^@$") then
+        return "chunk_end"
+    end
     local chunkline = vim.fn.search("^<<", "bncW")
     local docline = vim.fn.search("^@", "bncW")
     if chunkline ~= vim.api.nvim_win_get_cursor(0)[1] and chunkline > docline then
@@ -43,14 +51,22 @@ function M.get_lang()
     -- No treesitter parser for rhelp
     if vim.bo.filetype == "rhelp" then return get_rhelp_lang() end
 
-    local c = vim.api.nvim_win_get_cursor(0)
     local p
     if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
+        local cline = vim.api.nvim_get_current_line()
+        if cline:find("^```.*child *= *") then
+            return "chunk_child"
+        elseif cline:find("^```%{") then
+            return "chunk_header"
+        elseif cline:find("^```$") then
+            return "chunk_end"
+        end
         p = vim.treesitter.get_parser(vim.api.nvim_get_current_buf(), "markdown")
     else
         p = vim.treesitter.get_parser()
     end
-    local lang = p:language_for_range({ c[1] - 1, c[2] - 1, c[1] - 1, c[2] - 1 }):lang()
+    local c = vim.api.nvim_win_get_cursor(0)
+    local lang = p:language_for_range({ c[1] - 1, c[2], c[1] - 1, c[2] }):lang()
     return lang
 end
 
