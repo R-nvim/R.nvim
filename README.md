@@ -44,18 +44,11 @@ More complex configuration (for `R.nvim` only):
     {
         "R-nvim/R.nvim",
         config = function ()
+            vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
+            vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
             -- Create a table with the options to be passed to setup()
             local opts = {
                 R_args = {"--quiet", "--no-save"},
-                hook = {
-                    on_filetype = function ()
-                        -- This function will be called at the FileType event
-                        -- of files supported by R.nvim. This is an
-                        -- opportunity to create mappings local to buffers.
-                        vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
-                        vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
-                    end
-                },
                 min_editor_width = 72,
                 rconsole_width = 78,
                 disable_cmds = {
@@ -151,6 +144,9 @@ There are two new commands:
 There is one new command to send the above-piped chain of commands. Its
 default key binding is `<LocalLeader>sc`.
 
+There is a new command to install missing packages detected by the
+[languageserver]: `<LocalLeader>ip`.
+
 There is a new option: `auto_quit`.
 
 If you have [colorout] installed, and if you are not loading it in your
@@ -161,11 +157,11 @@ were unduly enabling the output colorizing.
 There are two new commands available to separate a file path into its different
 components.
 
-The first command, <localleader>sp, will take the file path under
+The first command, `<LocalLeader>sp`, will take the file path under
 the cursor and break it down into its components, then surround it with the
 `paste()` function.
 
-The second command, <localleader>sh, will also break down
+The second command, `<LocalLeader>sh`, will also break down
 the file path under the cursor into its components, but instead surround it
 with the `here()` function.
 
@@ -179,7 +175,7 @@ For example, if you have the following file path under the cursor:
 read.csv("/home/user/Documents/file.csv")
 ```
 
-Running the <localleader>sp command will transform it into:
+Running the `<LocalLeader>sp` command will transform it into:
 
 ```r
 read.csv(paste("/home", "user", "Documents", "file.csv", sep = "/"))
@@ -231,13 +227,15 @@ but temporary files are used in a few cases.
 
 ## See also:
 
-- [cmp-r]: [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) source using R.nvim as backend.
+- [cmp-r]: [nvim-cmp] source using R.nvim as backend.
 
-- [languageserver](https://cran.r-project.org/web/packages/languageserver/index.html): a language server for R.
+- [languageserver]: a language server for R.
 
-- [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's output.
+- [colorout]: a package to colorize R's output.
 
 [cmp-r]: https://github.com/R-nvim/cmp-r
 [neovim]: https://github.com/neovim/neovim
 [southernlights]: https://github.com/jalvesaq/southernlights
 [colorout]: https://github.com/jalvesaq/colorout
+[languageserver]: https://cran.r-project.org/web/packages/languageserver/index.html
+[nvim-cmp]: https://github.com/hrsh7th/nvim-cmp

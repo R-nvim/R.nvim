@@ -1855,11 +1855,6 @@ insinde the function passed to `hook.on_filetype` as in the examples below
 >lua
    hook = {
        on_filetype = function()
-           -- Creating maps to "<Plug>RDSendLine" and "<Plug>RSendSelection"
-           -- will prevent R.nvim of creating its default maps to them.
-           vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
-           vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
-
            vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>L", "<Cmd>lua require('r.run').action('levels')<CR>", {})
 
            -- If you want an action over an selection, then the second
