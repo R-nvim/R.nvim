@@ -18,10 +18,9 @@ local map_desc = {
     RViewDFv            = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a vertically split window" },
     RViewDFa            = { m = "", k = "", c = "Edit",     d = "View the head of a data.frame or matrix under cursor in a split window" },
     RShowEx             = { m = "", k = "", c = "Edit",     d = "Extract the Examples section and paste it in a split window" },
-    RSeparatePathPaste  = { m = "", k = "", c = "Edit",     d = "Split the path of the file under the cursor and paste it using the paste() prefix function" },
+    RSeparatePath       = { m = "", k = "", c = "Edit",     d = "Split the file path or the url under the cursor" },
     RFormatNumbers      = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers to explicitly indicate them as integers." },
     RFormatSubsetting   = { m = "", k = "", c = "Edit",     d = "Replace all the `$` subsetting operators with `[[` in the current buffer." },
-    RSeparatePathHere   = { m = "", k = "", c = "Edit",     d = "Split the path of the file under the cursor and open it using the here() prefix function" },
     RNextRChunk         = { m = "", k = "", c = "Navigate", d = "Go to the next chunk of R code" },
     RGoToTeX            = { m = "", k = "", c = "Navigate", d = "Go the corresponding line in the generated LaTeX document" },
     RPreviousRChunk     = { m = "", k = "", c = "Navigate", d = "Go to the previous chunk of R code" },
@@ -215,8 +214,7 @@ local edit = function()
     end
     create_maps("nvi", "RSetwd", "rd", "<Cmd>lua require('r.run').setwd()")
 
-    create_maps("nvi", "RSeparatePathPaste",    "sp", "<Cmd>lua require('r.path').separate('paste')")
-    create_maps("nvi", "RSeparatePathHere",    "sh", "<Cmd>lua require('r.path').separate('here')")
+    create_maps("nvi", "RSeparatePath",    "sp", "<Cmd>lua require('r.path').separate()")
 
     -- Format functions
     create_maps("nvi", "RFormatNumbers",    "cn", "<Cmd>lua require('r.format.numbers').formatnum()")

@@ -1827,6 +1827,22 @@ used in the current buffer that are not installed as missing. These missing
 packages can be automatically installed using the `<LocalLeader>ip` (install
 packages) key binding.
 
+------------------------------------------------------------------------------
+6.38. Split file paths and URLs                                   *split_path
+
+You can split the path of the current file, directory, or a URL under the
+cursor into its components (e.g., directory, file name, extension) using the
+`<LocalLeader>sp` key binding. If the target string is detected as a file or a
+path, it will be split using the `/` character (e.g., Unix-like paths) and
+processed using a specified function designed to handle paths safely. By
+default, the `split_path_fun` is set to `file.path`. To use a different
+function, you can configure the `split_path_fun` value in your settings.
+Current available functions are:
+>lua
+  path_split_fun   = { "here::here", "here", "file.path", "fs::path", "path" }
+
+If the target string is detected as a URL, it will be split using the '/' character.
+will be handled using the `paste0()` function.
 
 ==============================================================================
 7. Custom key bindings                                   *R.nvim-key-bindings*
