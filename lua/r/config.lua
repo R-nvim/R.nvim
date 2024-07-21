@@ -67,6 +67,7 @@ local config = {
     open_pdf            = "open and focus",
     paragraph_begin     = true,
     parenblock          = true,
+    path_split_fun      = "file.path",
     pdfviewer           = "",
     quarto_preview_args = "",
     quarto_render_args  = "",
@@ -193,7 +194,8 @@ local apply_user_opts = function()
         open_html        = { "no", "open", "open and focus" },
         open_pdf         = { "no", "open", "open and focus" },
         setwd            = { "no", "file", "nvim" },
-        pipe_version     = { "native", "magrittr" }
+        pipe_version     = { "native", "magrittr" },
+        path_split_fun   = { "here::here", "here", "file.path", "fs::path", "path" },
     }
     -- stylua: ignore end
 
