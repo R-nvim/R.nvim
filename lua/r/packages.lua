@@ -1,5 +1,43 @@
 local M = {}
 local S = require("r.send")
+local inform = require("r").inform
+
+--- Removes duplicate entries from a table of packages.
+--- Each package is represented by a table with a 'message' field.
+---@param diagnostics table: The table containing package entries.
+---@return table: A new table with duplicate packages removed.
+-- Lua
+local function remove_duplicates(diagnostics)
+    local seen_messages = {}
+    local unique_diagnostics = {}
+
+    for _, diagnostic in ipairs(diagnostics) do
+        if not seen_messages[diagnostic.message] then
+            table.insert(unique_diagnostics, diagnostic)
+            seen_messages[diagnostic.message] = true
+        end
+    end
+
+    return unique_diagnostics
+end
+
+--- Creates a message prompting the user to install missing packages.
+--- The message is pluralized based on the number of missing packages.
+---@param missing_packages table: A table containing the names of missing packages.
+---@return string: A message indicating the missing packages and asking if they should be installed.
+local function create_message(missing_packages)
+    local msg
+    if #missing_packages == 1 then
+        msg = "Package: "
+            .. missing_packages[1]
+            .. " is missing. Would you like to install it? (y/n): "
+    else
+        msg = "Packages: "
+            .. table.concat(missing_packages, ", ")
+            .. " are missing. Would you like to install them? (y/n): "
+    end
+    return msg
+end
 
 ---@param message string: The message containing the package name.
 ---@return string|nil: The extracted package name or a default message if not found.
@@ -25,11 +63,6 @@ M.install_missing_packages = function(bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
     local diagnostics = vim.diagnostic.get(bufnr)
 
-    if vim.tbl_isempty(diagnostics) then
-        print("No diagnostics found under cursor")
-        return
-    end
-
     local target_codes = {
         ["missing_package_linter"] = true,
         ["namespace_linter"] = true,
@@ -40,22 +73,25 @@ M.install_missing_packages = function(bufnr)
         diagnostics
     )
 
+    missing_package_diagnostics = remove_duplicates(missing_package_diagnostics)
+
     local missing_packages = vim.tbl_map(
         function(diagnostic) return extract_package_name(diagnostic.message) end,
         missing_package_diagnostics
     )
 
-    if vim.tbl_isempty(missing_packages) then return end
+    if vim.tbl_isempty(missing_packages) then
+        inform("No missing packages found in the current buffer.")
+        return
+    end
 
     local formatted_packages_string = format_packages_list(missing_packages)
     local rcmd = "install.packages(" .. formatted_packages_string .. ")"
 
-    local msg = "Packages: "
-        .. table.concat(missing_packages, ", ")
-        .. " are missing. Would you like to install them? (y/n): "
+    local msg = create_message(missing_packages)
     vim.ui.input({ prompt = msg }, function(input)
         if input == "y" then
-            S.cmd(rcmd)
+            S.cmd(rcmd) -- Replace `S.cmd(rcmd)` with your command
         else
             print("\nNot installing packages")
         end
