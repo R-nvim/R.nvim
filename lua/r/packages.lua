@@ -62,11 +62,6 @@ M.install_missing_packages = function(bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
     local diagnostics = vim.diagnostic.get(bufnr)
 
-    if vim.tbl_isempty(diagnostics) then
-        print("No missing packages found in the current buffer.")
-        return
-    end
-
     local target_codes = {
         ["missing_package_linter"] = true,
         ["namespace_linter"] = true,
@@ -84,7 +79,15 @@ M.install_missing_packages = function(bufnr)
         missing_package_diagnostics
     )
 
-    if vim.tbl_isempty(missing_packages) then return end
+    if vim.tbl_isempty(missing_packages) then
+        vim.notify(
+            "No missing packages found in the current buffer.",
+            vim.log.levels.INFO,
+            { title = "R.nvim" }
+        )
+
+        return
+    end
 
     local formatted_packages_string = format_packages_list(missing_packages)
     local rcmd = "install.packages(" .. formatted_packages_string .. ")"
