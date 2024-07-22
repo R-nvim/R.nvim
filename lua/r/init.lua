@@ -8,6 +8,14 @@ M.warn = function(msg)
     )
 end
 
+--- Call vim.notify() with to inform a message
+---@param msg string
+M.inform = function(msg)
+    vim.schedule(
+        function() vim.notify(msg, vim.log.levels.INFO, { title = "R.nvim" }) end
+    )
+end
+
 --- Quick setup: simply store user options
 ---@param opts table | nil
 M.setup = function(opts)
