@@ -1,5 +1,6 @@
 local M = {}
 local S = require("r.send")
+local inform = require("r").inform
 
 --- Removes duplicate entries from a table of packages.
 --- Each package is represented by a table with a 'message' field.
@@ -80,12 +81,7 @@ M.install_missing_packages = function(bufnr)
     )
 
     if vim.tbl_isempty(missing_packages) then
-        vim.notify(
-            "No missing packages found in the current buffer.",
-            vim.log.levels.INFO,
-            { title = "R.nvim" }
-        )
-
+        inform("No missing packages found in the current buffer.")
         return
     end
 
