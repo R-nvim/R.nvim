@@ -119,9 +119,7 @@ local show_config = function(tbl)
     else
         table.insert(out, { vim.inspect(config) })
     end
-    vim.schedule(function ()
-        vim.api.nvim_echo(out, false, {})
-    end)
+    vim.schedule(function() vim.api.nvim_echo(out, false, {}) end)
 end
 
 local set_editing_mode = function()

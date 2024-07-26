@@ -459,9 +459,7 @@ M.echo_rns_info = function(info)
     for _, v in pairs(lines) do
         table.insert(tbl, { v .. "\n" })
     end
-    vim.schedule(function()
-        vim.api.nvim_echo(tbl, false, {})
-    end)
+    vim.schedule(function() vim.api.nvim_echo(tbl, false, {}) end)
 end
 
 return M
