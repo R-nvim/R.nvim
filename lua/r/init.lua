@@ -12,7 +12,13 @@ end
 ---@param msg string
 M.inform = function(msg)
     vim.schedule(
-        function() vim.notify(msg, vim.log.levels.INFO, { title = "R.nvim" }) end
+        function()
+            vim.notify(
+                msg,
+                vim.log.levels.INFO,
+                { title = "R.nvim", hide_from_history = true }
+            )
+        end
     )
 end
 

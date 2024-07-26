@@ -1,3 +1,5 @@
+local warn = require("r").warn
+
 local M = {}
 
 --- Get language at current cursor position of rhelp buffer
@@ -128,7 +130,7 @@ function M.ensure_directory_exists(dir_path)
     -- Check if pcall caught an error
     if not status then
         -- Log the error
-        print("Error creating directory: " .. err)
+        warn("Error creating directory: " .. err)
         -- return false to indicate failure
         return false
     end

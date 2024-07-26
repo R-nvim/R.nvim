@@ -454,12 +454,12 @@ end
 
 -- Callback function
 M.echo_rns_info = function(info)
+    local lines = vim.split(info, "\020")
+    local tbl = {}
+    for _, v in pairs(lines) do
+        table.insert(tbl, { v .. "\n" })
+    end
     vim.schedule(function()
-        local lines = vim.split(info, "\020")
-        local tbl = {}
-        for _, v in pairs(lines) do
-            table.insert(tbl, { v .. "\n" })
-        end
         vim.api.nvim_echo(tbl, false, {})
     end)
 end

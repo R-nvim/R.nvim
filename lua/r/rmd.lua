@@ -1,4 +1,4 @@
-local warn = require("r").warn
+local inform = require("r").inform
 local config = require("r.config").get_config()
 local send = require("r.send")
 local get_lang = require("r.utils").get_lang
@@ -80,7 +80,7 @@ M.send_R_chunk = function(m)
     local lang = get_lang()
     if lang ~= "r" then
         if lang ~= "python" then
-            warn("Not inside an R code chunk.")
+            inform("Not inside an R code chunk.")
         else
             send_py_chunk(m)
         end
@@ -109,7 +109,7 @@ local go_to_previous = function()
     local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- Search again for chunk start
     if i == 0 then
         vim.api.nvim_win_set_cursor(0, { curline, 0 })
-        warn("There is no previous R code chunk to go.")
+        inform("There is no previous R code chunk to go.")
         return false
     end
     vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the chunk
@@ -131,7 +131,7 @@ end
 local go_to_next = function()
     local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "nW") -- Search for the next chunk start
     if i == 0 then
-        warn("There is no next R code chunk to go.")
+        inform("There is no next R code chunk to go.")
         return false
     end
     vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the next chunk
