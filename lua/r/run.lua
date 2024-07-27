@@ -68,6 +68,11 @@ start_R2 = function()
         start_options,
         "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")"
     )
+    if config.debug then
+        table.insert(start_options, "options(nvimcom.debug_r = TRUE)")
+    else
+        table.insert(start_options, "options(nvimcom.debug_r = FALSE)")
+    end
     if config.objbr_allnames then
         table.insert(start_options, "options(nvimcom.allnames = TRUE)")
     else
