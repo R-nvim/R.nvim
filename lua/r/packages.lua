@@ -1,3 +1,5 @@
+local warn = require("r").warn
+
 local M = {}
 local S = require("r.send")
 local inform = require("r").inform
@@ -93,7 +95,7 @@ M.install_missing_packages = function(bufnr)
         if input == "y" then
             S.cmd(rcmd) -- Replace `S.cmd(rcmd)` with your command
         else
-            print("\nNot installing packages")
+            warn("Not installing packages")
         end
     end)
 end

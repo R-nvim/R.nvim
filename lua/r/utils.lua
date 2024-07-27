@@ -1,3 +1,5 @@
+local warn = require("r").warn
+
 local M = {}
 
 --- Get language at current cursor position of rhelp buffer
@@ -128,7 +130,7 @@ function M.ensure_directory_exists(dir_path)
     -- Check if pcall caught an error
     if not status then
         -- Log the error
-        print("Error creating directory: " .. err)
+        warn("Error creating directory: " .. err)
         -- return false to indicate failure
         return false
     end
@@ -139,7 +141,6 @@ end
 
 local get_fw_info_X = function()
     local config = require("r.config").get_config()
-    local warn = require("r").warn
     local obj = M.system({ "xprop", "-root" }, { text = true }):wait()
     if obj.code ~= 0 then
         warn("Failed to run `xprop -root`")

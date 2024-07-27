@@ -1,4 +1,5 @@
 local warn = require("r").warn
+local inform = require("r").inform
 local send = require("r.send")
 local utils = require("r.utils")
 local get_lang = require("r.utils").get_lang
@@ -180,7 +181,7 @@ local go_to_previous = function()
     local i = vim.fn.search("^<<.*$", "bnW")
     if i == 0 then
         vim.api.nvim_win_set_cursor(0, { curline, 0 })
-        warn("There is no previous R code chunk to go.")
+        inform("There is no previous R code chunk to go.")
         return false
     end
     vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
@@ -201,7 +202,7 @@ end
 local go_to_next = function()
     local i = vim.fn.search("^<<.*$", "nW")
     if i == 0 then
-        warn("There is no next R code chunk to go.")
+        inform("There is no next R code chunk to go.")
         return false
     end
     vim.api.nvim_win_set_cursor(0, { i + 1, 0 })

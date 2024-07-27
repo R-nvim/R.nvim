@@ -1,5 +1,6 @@
 local config = require("r.config").get_config()
 local warn = require("r").warn
+local inform = require("r").inform
 local utils = require("r.utils")
 local get_lang = require("r.utils").get_lang
 local edit = require("r.edit")
@@ -426,7 +427,7 @@ end
 ---@param m boolean True if should move to the next line.
 M.marked_block = function(m)
     if get_lang() ~= "r" then
-        warn("Not in R code.")
+        inform("Not in R code.")
         return
     end
 
@@ -452,7 +453,7 @@ M.marked_block = function(m)
     end
 
     if lineA == 1 and lineB == last_line then
-        warn("The file has no mark!")
+        inform("The file has no mark!")
         return
     end
 
@@ -480,7 +481,7 @@ M.selection = function(m)
         or vim.o.filetype == "quarto"
     then
         if lang ~= "r" and lang ~= "python" then
-            warn("Not inside R or Python code chunk.")
+            inform("Not inside R or Python code chunk.")
             return
         end
     end
@@ -574,13 +575,13 @@ M.line = function(m, lnum)
             return
         end
         if lang ~= "r" then
-            warn("Not inside R or Python code chunk.")
+            inform("Not inside R or Python code chunk.")
             return
         end
     end
 
     if vim.bo.filetype == "rhelp" and lang ~= "r" then
-        warn("Not inside an R section.")
+        inform("Not inside an R section.")
         return
     end
 
