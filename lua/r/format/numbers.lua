@@ -1,4 +1,6 @@
 local config = require("r.config").get_config()
+
+local warn = require("r").warn
 local M = {}
 
 -- We check if treesitter is available in the check_parsers() function of the
@@ -29,6 +31,12 @@ end
 
 M.formatnum = function(bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+    if vim.bo[bufnr].filetype ~= "r" then
+        warn("This function is only available for R files.")
+        return
+    end
+
     local lang = parsers.get_buf_lang(bufnr)
 
     if not lang then return end

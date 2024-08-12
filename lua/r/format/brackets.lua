@@ -4,6 +4,7 @@
 -- Second case, when using the [ operator: vec[1] -> vec[[1]]
 -- It supports multiple subsetting and nested expressions: df$var[1] -> df[["var"]][[1]]
 
+local warn = require("r").warn
 local M = {}
 
 local parsers = require("nvim-treesitter.parsers")
@@ -65,6 +66,12 @@ end
 ---@param bufnr number: (optional) The buffer number to operate on; defaults to the current buffer if not provided
 M.formatsubsetting = function(bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+    if vim.bo[bufnr].filetype ~= "r" then
+        warn("This function is only available for R files.")
+        return
+    end
+
     local lang = parsers.get_buf_lang(bufnr)
 
     if not lang then return end
