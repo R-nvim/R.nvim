@@ -32,7 +32,7 @@ local query = [[
 ---@param node userdata: The Treesitter node to traverse
 ---@param bufnr number: The buffer number
 ---@return string: The constructed replacement string
-local function build_extract_oprator_replacement(node, bufnr)
+local function build_extract_operator_replacement(node, bufnr)
     local identifiers = {}
 
     -- Function to recursively collect identifier text
@@ -87,14 +87,19 @@ M.formatsubsetting = function(bufnr)
         local replacement
 
         if query_obj.captures[id] == "dollar_operator" then
-            replacement = build_extract_oprator_replacement(node, bufnr)
+            replacement = build_extract_operator_replacement(node, bufnr)
         elseif query_obj.captures[id] == "single_bracket" then
             local value_node = node:named_child(0) -- Assuming the first child is the value
 
             if not value_node then return end
 
-            local value = vim.treesitter.get_node_text(value_node, bufnr)
-            replacement = string.format("[[%s]]", value)
+            -- Process only if the value is not a comma. This prevents
+            -- processing when the brackets are used for subsetting a matrix.
+            -- We can verify this by checking if the node has a single child.
+            if node:named_child_count() == 1 then
+                local value = vim.treesitter.get_node_text(value_node, bufnr)
+                replacement = string.format("[[%s]]", value)
+            end
         end
 
         -- Replace the node with the constructed replacement
