@@ -1,3 +1,9 @@
+-- There are two types of subsetting expressions in R: $ and [.
+-- These functions are used to replace the subsetting expressions in R.
+-- First case, when using the $ operator: df$var -> df[["var"]]
+-- Second case, when using the [ operator: vec[1] -> vec[[1]]
+-- It supports multiple subsetting and nested expressions: df$var[1] -> df[["var"]][[1]]
+
 local M = {}
 
 local parsers = require("nvim-treesitter.parsers")
@@ -12,14 +18,20 @@ local query = [[
             (identifier)
         )*
     )*
-) @expression
+) @dollar_operator
+
+(subset
+    (identifier)*
+    (arguments
+      (argument
+        (_) )) @single_bracket)
 ]]
 
 --- Build a replacement string for a given node by traversing its child nodes
 ---@param node userdata: The Treesitter node to traverse
 ---@param bufnr number: The buffer number
 ---@return string: The constructed replacement string
-local function build_replacement(node, bufnr)
+local function build_extract_oprator_replacement(node, bufnr)
     local identifiers = {}
 
     -- Function to recursively collect identifier text
@@ -64,17 +76,32 @@ M.formatsubsetting = function(bufnr)
     -- Parse the query
     local query_obj = vim.treesitter.query.parse(lang, query)
 
-    for _, node, _ in query_obj:iter_captures(root, bufnr, 0, -1) do
-        local replacement = build_replacement(node, bufnr)
-        local range = { node:range() }
-        vim.api.nvim_buf_set_text(
-            bufnr,
-            range[1],
-            range[2],
-            range[3],
-            range[4],
-            { replacement }
-        )
+    for id, node, _ in query_obj:iter_captures(root, bufnr, 0, -1) do
+        local replacement
+
+        if query_obj.captures[id] == "dollar_operator" then
+            replacement = build_extract_oprator_replacement(node, bufnr)
+        elseif query_obj.captures[id] == "single_bracket" then
+            local value_node = node:named_child(0) -- Assuming the first child is the value
+
+            if not value_node then return end
+
+            local value = vim.treesitter.get_node_text(value_node, bufnr)
+            replacement = string.format("[[%s]]", value)
+        end
+
+        -- Replace the node with the constructed replacement
+        if replacement then
+            local range = { node:range() }
+            vim.api.nvim_buf_set_text(
+                bufnr,
+                range[1],
+                range[2],
+                range[3],
+                range[4],
+                { replacement }
+            )
+        end
     end
 end
 
