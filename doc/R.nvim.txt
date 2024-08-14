@@ -643,6 +643,33 @@ details, please, access:
    https://github.com/jalvesaq/Nvim-R/issues/668
 
 
+------------------------------------------------------------------------------
+5.8 R code block not recognized within HTML tags
+
+An R code block in a Markdown document is not recognized when within an HTML
+tag unless there is an extra empty line between the tag and the beginning of
+the block. So, for example, instead of:
+>
+ <div>
+ ```{r}
+ runif(3) # not recognized as R code
+ ```
+ </div>
+<
+We need:
+>
+ <div>
+ 
+ ```{r}
+ runif(3) # recognized as R code
+ ```
+ </div>
+<
+This happens because tree-sitter-markdown follows the CommonMark
+specification, which treats anything that follows an HTML tag as verbatim
+until an empty line is found.
+
+
 ==============================================================================
 6. Options                                                    *R.nvim-options*
 
