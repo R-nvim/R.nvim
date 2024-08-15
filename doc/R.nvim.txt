@@ -670,6 +670,14 @@ specification, which treats anything that follows an HTML tag as verbatim
 until an empty line is found.
 
 
+------------------------------------------------------------------------------
+5.9 Completion issue with new lines in list names
+
+New lines in list names (which includes column names in data frames and
+matrixes) are replaced with blank spaces in the data used by `cmp-r` and the
+Object Browser.
+
+
 ==============================================================================
 6. Options                                                    *R.nvim-options*
 

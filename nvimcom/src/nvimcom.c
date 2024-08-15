@@ -128,6 +128,18 @@ static int sfd = -1;  // File descriptor of socket used in the TCP connection
 static pthread_t tid; // Identifier of thread running TCP connection loop.
 #endif
 
+static void escape_str(char *s) {
+    while (*s) {
+        if (*s == '\n') // It would prematurely send the string
+            *s = ' ';
+        if (*s == '\x5c') // Backslash is misinterpreted by Lua
+            *s = '\x12';
+        if (*s == '\'') // Single quote prematurely finishes strings
+            *s = '\x13';
+        s++;
+    }
+}
+
 SEXP fmt_txt(SEXP txt, SEXP delim, SEXP nl) {
     const char *s = CHAR(STRING_ELT(txt, 0));
     const char *d = CHAR(STRING_ELT(delim, 0));
@@ -455,6 +467,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
 
     p = str_cat(p, curenv);
     snprintf(ebuf, 63, "%s", xname);
+    escape_str(ebuf);
     p = str_cat(p, ebuf);
 
     if (Rf_isLogical(*x)) {
@@ -510,18 +523,8 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
     PROTECT(txt = getAttrib(*x, lablab));
     if (length(txt) > 0) {
         if (Rf_isValidString(txt)) {
-            char *ptr;
             snprintf(buf, 159, "\006\006%s", CHAR(STRING_ELT(txt, 0)));
-            ptr = buf;
-            while (*ptr) {
-                if (*ptr == '\n') // It would prematurely send the string
-                    *ptr = ' ';
-                if (*ptr == '\x5c') // Backslash is misinterpreted by Lua
-                    *ptr = '\x12';
-                if (*ptr == '\'') // Single quote prematurely finishes strings
-                    *ptr = '\x13';
-                ptr++;
-            }
+            escape_str(buf);
             p = str_cat(p, buf);
         } else {
             p = str_cat(p, "\006\006Error: label is not a valid string.");

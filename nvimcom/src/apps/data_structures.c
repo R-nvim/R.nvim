@@ -431,25 +431,27 @@ static char *count_sep(char *b1, int *size) {
     if (*size == 1)
         return b1;
 
-    char *s = b1;
+    char *s0 = b1;
+    char *s1 = b1;
     int n = 0;
-    while (*s) {
-        if (*s == '\006')
+    while (*s1) {
+        if (*s1 == '\006')
             n++;
-        if (*s == '\n') {
+        if (*s1 == '\n') {
             if (n == 7) {
                 n = 0;
+                s0 = s1;
+                s0++;
             } else {
                 char b[64];
-                s++;
-                strncpy(b, s, 16);
+                strncpy(b, s0, 63);
                 fprintf(stderr, "Number of separators: %d (%s)\n", n, b);
                 fflush(stderr);
                 free(b1);
                 return NULL;
             }
         }
-        s++;
+        s1++;
     }
     return b1;
 }
@@ -505,21 +507,28 @@ static void *check_omils_buffer(char *buffer, int *size) {
  */
 void update_glblenv_buffer(char *g) {
     Log("update_glblenv_buffer()");
-    int glbnv_size;
+    int glbnv_size = strlen(g);
 
     if (glbnv_buffer) {
-        if (strlen(g) > glbnv_buffer_sz) {
+        if ((glbnv_size + 2) > glbnv_buffer_sz) {
             free(glbnv_buffer);
-            glbnv_buffer_sz = strlen(g) + 4096;
-            glbnv_buffer = malloc(glbnv_buffer_sz * sizeof(char));
+            glbnv_buffer_sz = glbnv_size + 4096;
+            glbnv_buffer = calloc(glbnv_buffer_sz, sizeof(char));
         }
     } else {
-        glbnv_buffer_sz = strlen(g) + 4096;
-        glbnv_buffer = malloc(glbnv_buffer_sz * sizeof(char));
+        glbnv_buffer_sz = glbnv_size + 4096;
+        glbnv_buffer = calloc(glbnv_buffer_sz, sizeof(char));
     }
-    strcpy(glbnv_buffer, g);
-    if (check_omils_buffer(glbnv_buffer, &glbnv_size) == NULL)
+
+    memcpy(glbnv_buffer, g, glbnv_size);
+
+    if (check_omils_buffer(glbnv_buffer, &glbnv_size) == NULL) {
+        glbnv_buffer_sz = 0;
+        if (glbnv_buffer)
+            free(glbnv_buffer);
+        glbnv_buffer = NULL;
         return;
+    }
 }
 
 static ListStatus *search(ListStatus *root, const char *s) {
