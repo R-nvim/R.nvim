@@ -343,6 +343,7 @@ static void *receive_msg(void *v)
 #else
             close(sockfd);
 #endif
+            sockfd = -1;
             if (rlen != -1 && rlen != 0) {
                 fprintf(stderr, "TCP socket -1: restarting...\n");
                 fprintf(stderr,
@@ -399,8 +400,11 @@ void stop_server(void) {
     TerminateThread(Tid, 0);
     CloseHandle(Tid);
 #else
-    close(sockfd);
-    pthread_cancel(Tid);
-    pthread_join(Tid, NULL);
+    if (sockfd > 0)
+        close(sockfd);
+    if (Tid) {
+        pthread_cancel(Tid);
+        pthread_join(Tid, NULL);
+    }
 #endif
 }

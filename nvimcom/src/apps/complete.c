@@ -499,7 +499,6 @@ void complete(const char *id, char *base, char *funcnm, char *dtfrm,
     }
 
     if (funargs || funcnm) {
-
         if (funargs) {
             // Insert arguments of .GlobalEnv function
             p = str_cat(p, funargs);
