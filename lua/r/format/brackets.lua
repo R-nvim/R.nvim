@@ -83,13 +83,15 @@ M.formatsubsetting = function(bufnr)
     -- Parse the query
     local query_obj = vim.treesitter.query.parse(lang, query)
 
+    local replacements = {}
+
     for id, node, _ in query_obj:iter_captures(root, bufnr, 0, -1) do
         local replacement
 
         if query_obj.captures[id] == "dollar_operator" then
             replacement = build_extract_operator_replacement(node, bufnr)
         elseif query_obj.captures[id] == "single_bracket" then
-            local value_node = node:named_child(0) -- Assuming the first child is the value
+            local value_node = node:named_child(0)
 
             if not value_node then return end
 
@@ -102,18 +104,29 @@ M.formatsubsetting = function(bufnr)
             end
         end
 
-        -- Replace the node with the constructed replacement
         if replacement then
-            local range = { node:range() }
-            vim.api.nvim_buf_set_text(
-                bufnr,
-                range[1],
-                range[2],
-                range[3],
-                range[4],
-                { replacement }
-            )
+            local start_row, start_col, end_row, end_col = node:range()
+            table.insert(replacements, {
+                start_row = start_row,
+                start_col = start_col,
+                end_row = end_row,
+                end_col = end_col,
+                text = replacement,
+            })
         end
+    end
+
+    -- Apply replacements in reverse order
+    for i = #replacements, 1, -1 do
+        local r = replacements[i]
+        vim.api.nvim_buf_set_text(
+            bufnr,
+            r.start_row,
+            r.start_col,
+            r.end_row,
+            r.end_col,
+            { r.text }
+        )
     end
 end
 
