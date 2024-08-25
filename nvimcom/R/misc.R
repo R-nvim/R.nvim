@@ -163,9 +163,9 @@ Rnvim.chunk <- function(..., local = parent.frame()) Rnvim.source(..., local = l
 #' This function is sent to R Console when the user press `\aa`, `\ae`, or `\ao`.
 #' @param ... Further arguments passed to base::source.
 #' @param local See base::source.
-source.and.clean <- function(f, print.eval = TRUE, ...) {
+source.and.clean <- function(f, print.eval = TRUE, spaced = FALSE, ...) {
     on.exit(unlink(f))
-    base::source(f, print.eval = print.eval, ...)
+    base::source(f, print.eval = print.eval, spaced = spaced, ...)
 }
 
 #' Format R code.
