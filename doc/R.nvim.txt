@@ -81,12 +81,14 @@ Before installing the plugin, you should install its dependencies:
 
 Main dependencies:
 
-   Neovim >= 0.9.5
+   Neovim >= 0.9.5:
       https://github.com/neovim/neovim/releases
       See also: https://github.com/neovim/neovim/wiki/Installing-Neovim
 
-   nvim-treesitter + parsers for `r`, `markdown` and `rnoweb`:
+   nvim-treesitter:
       https://github.com/nvim-treesitter/nvim-treesitter
+      You have to enable highlighting by tree-sitter and install parsers for
+      `r`, `markdown`, `markdown_inline`, `rnoweb`, and `yaml`.
 
    cmp-r (for auto-completion):
       https://github.com/R-nvim/cmp-r
