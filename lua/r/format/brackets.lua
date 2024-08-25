@@ -52,11 +52,12 @@ local function build_extract_operator_replacement(node, bufnr)
     -- Start collecting identifiers from the node
     collect_identifiers(node)
 
-    -- Construct the replacement string
+    -- Construct the replacement string, avoiding double wrapping
     local replacement = table.remove(identifiers, 1)
     for _, id in ipairs(identifiers) do
-        replacement = replacement .. string.format('[["%s"]]', id)
+        replacement = string.format('%s[["%s"]]', replacement, id)
     end
+
     return replacement
 end
 
