@@ -4,8 +4,6 @@
 -- Second case, when using the [ operator: vec[1] -> vec[[1]]
 -- It supports multiple subsetting and nested expressions: df$var[1] -> df[["var"]][[1]]
 
--- TODO: just juste the first level of subsetting for the $ operator.
-
 local warn = require("r").warn
 local M = {}
 
