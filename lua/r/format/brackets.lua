@@ -31,7 +31,7 @@ local query = [[
 ]]
 
 --- Build a replacement string for a given node by traversing its child nodes
----@param node userdata: The Treesitter node to traverse
+---@param node TSNode: The Treesitter node to traverse
 ---@param bufnr number: The buffer number
 ---@return string: The constructed replacement string
 local function build_extract_operator_replacement(node, bufnr)
@@ -64,7 +64,7 @@ local function build_extract_operator_replacement(node, bufnr)
 end
 
 --- Format extract_operator subsetting expressions
----@param node userdata: The Treesitter node to process
+---@param node TSNode: The Treesitter node to process
 ---@param bufnr number: The buffer number
 ---@return table: The replacement information for the node
 local function process_extract_operator(node, bufnr)
@@ -87,7 +87,7 @@ local function process_extract_operator(node, bufnr)
 end
 
 --- Format subset subsetting expressions
----@param node userdata: The Treesitter node to process
+---@param node TSNode: The Treesitter node to process
 ---@param bufnr number: The buffer number
 ---@return table: The replacement information for the node
 local function process_subset(node, bufnr)
@@ -139,26 +139,43 @@ M.formatsubsetting = function(bufnr)
 
     local replacements = {}
 
+    -- First pass: Process extract_operator nodes
     for id, node, _ in query_obj:iter_captures(root, bufnr, 0, -1) do
-        local replacement
-
         if query_obj.captures[id] == "dollar_operator" then
-            -- Get the parent node
             local parent = node:parent()
-
-            -- Check if the parent is an extract_operator
             if parent and parent:type() ~= "extract_operator" then
-                replacement = process_extract_operator(node, bufnr)
+                local replacement = process_extract_operator(node, bufnr)
+                if replacement then table.insert(replacements, replacement) end
             end
-        elseif query_obj.captures[id] == "single_bracket" then
-            replacement = process_subset(node, bufnr)
         end
-
-        if replacement then table.insert(replacements, replacement) end
     end
 
-    -- Apply replacements in reverse order
-    -- vim.print(replacements)
+    -- Apply the extract_operator replacements in reverse order
+    for i = #replacements, 1, -1 do
+        local r = replacements[i]
+        vim.api.nvim_buf_set_text(
+            bufnr,
+            r.start_row,
+            r.start_col,
+            r.end_row,
+            r.end_col,
+            { r.text }
+        )
+    end
+
+    -- Clear replacements and handle subset nodes in a second pass
+    replacements = {}
+
+    for id, node, _ in query_obj:iter_captures(root, bufnr, 0, -1) do
+        if query_obj.captures[id] == "single_bracket" then
+            local replacement = process_subset(node, bufnr)
+            if replacement and next(replacement) ~= nil then
+                table.insert(replacements, replacement)
+            end
+        end
+    end
+
+    -- Apply the subset replacements in reverse order
     for i = #replacements, 1, -1 do
         local r = replacements[i]
         vim.api.nvim_buf_set_text(
