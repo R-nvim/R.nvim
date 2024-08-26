@@ -4,6 +4,8 @@
 -- Second case, when using the [ operator: vec[1] -> vec[[1]]
 -- It supports multiple subsetting and nested expressions: df$var[1] -> df[["var"]][[1]]
 
+-- TODO: just juste the first level of subsetting for the $ operator.
+
 local warn = require("r").warn
 local M = {}
 
@@ -61,6 +63,57 @@ local function build_extract_operator_replacement(node, bufnr)
     return replacement
 end
 
+--- Format extract_operator subsetting expressions
+---@param node userdata: The Treesitter node to process
+---@param bufnr number: The buffer number
+---@return table: The replacement information for the node
+local function process_extract_operator(node, bufnr)
+    local replacement = build_extract_operator_replacement(node, bufnr)
+
+    if replacement and node then
+        local start_row, start_col, end_row, end_col = node:range()
+        return {
+            text_to_replace = vim.treesitter.get_node_text(node, bufnr),
+            start_row = start_row,
+            start_col = start_col,
+            end_row = end_row,
+            end_col = end_col,
+            text = replacement,
+        }
+    end
+
+    -- empty table
+    return {}
+end
+
+--- Format subset subsetting expressions
+---@param node userdata: The Treesitter node to process
+---@param bufnr number: The buffer number
+---@return table: The replacement information for the node
+local function process_subset(node, bufnr)
+    local value_node = node:named_child(0)
+
+    if not value_node then return {} end
+
+    -- Process only if the value is not a comma. This prevents
+    -- processing when the brackets are used for subsetting a matrix.
+    -- We can verify this by checking if the node has a single child.
+    if node:named_child_count() == 1 then
+        local value = vim.treesitter.get_node_text(value_node, bufnr)
+        local replacement = string.format("[[%s]]", value)
+        local start_row, start_col, end_row, end_col = node:range()
+        return {
+            start_row = start_row,
+            start_col = start_col,
+            end_row = end_row,
+            end_col = end_col,
+            text = replacement,
+        }
+    end
+
+    return {}
+end
+
 --- Formats subsetting expressions in the current buffer using Treesitter and
 --- parses the buffer to find and replace specific patterns defined in a
 --- Treesitter query
@@ -90,34 +143,22 @@ M.formatsubsetting = function(bufnr)
         local replacement
 
         if query_obj.captures[id] == "dollar_operator" then
-            replacement = build_extract_operator_replacement(node, bufnr)
-        elseif query_obj.captures[id] == "single_bracket" then
-            local value_node = node:named_child(0)
+            -- Get the parent node
+            local parent = node:parent()
 
-            if not value_node then return end
-
-            -- Process only if the value is not a comma. This prevents
-            -- processing when the brackets are used for subsetting a matrix.
-            -- We can verify this by checking if the node has a single child.
-            if node:named_child_count() == 1 then
-                local value = vim.treesitter.get_node_text(value_node, bufnr)
-                replacement = string.format("[[%s]]", value)
+            -- Check if the parent is an extract_operator
+            if parent and parent:type() ~= "extract_operator" then
+                replacement = process_extract_operator(node, bufnr)
             end
+        elseif query_obj.captures[id] == "single_bracket" then
+            replacement = process_subset(node, bufnr)
         end
 
-        if replacement then
-            local start_row, start_col, end_row, end_col = node:range()
-            table.insert(replacements, {
-                start_row = start_row,
-                start_col = start_col,
-                end_row = end_row,
-                end_col = end_col,
-                text = replacement,
-            })
-        end
+        if replacement then table.insert(replacements, replacement) end
     end
 
     -- Apply replacements in reverse order
+    -- vim.print(replacements)
     for i = #replacements, 1, -1 do
         local r = replacements[i]
         vim.api.nvim_buf_set_text(
