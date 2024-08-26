@@ -30,7 +30,9 @@ local query = [[
         (_) )) @single_bracket)
 ]]
 
---- Build a replacement string for a given node by traversing its child nodes
+--- Build a replacement string for a given node by traversing its child nodes.
+--- This function uses the top level node of an extract_operator node to
+--- traverse its children and build a replacement string.
 ---@param node TSNode: The Treesitter node to traverse
 ---@param bufnr number: The buffer number
 ---@return string: The constructed replacement string
@@ -82,7 +84,6 @@ local function process_extract_operator(node, bufnr)
         }
     end
 
-    -- empty table
     return {}
 end
 
@@ -150,7 +151,7 @@ M.formatsubsetting = function(bufnr)
         end
     end
 
-    -- Apply the extract_operator replacements in reverse order
+    -- Apply the replacements in reverse order
     for i = #replacements, 1, -1 do
         local r = replacements[i]
         vim.api.nvim_buf_set_text(
@@ -175,7 +176,7 @@ M.formatsubsetting = function(bufnr)
         end
     end
 
-    -- Apply the subset replacements in reverse order
+    -- Apply the replacements in reverse order
     for i = #replacements, 1, -1 do
         local r = replacements[i]
         vim.api.nvim_buf_set_text(
