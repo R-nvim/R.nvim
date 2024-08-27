@@ -631,7 +631,7 @@ local windows_config = function()
             return rip
         end
 
-        local run_cmd = { "reg.exe", "QUERY", "HKCU\\SOFTWARE\\R-core\\R", "/s" }
+        local run_cmd = { "reg.exe", "QUERY", "HKLM\\SOFTWARE\\R-core\\R", "/s" }
         local rip = get_rip(run_cmd)
         if #rip == 0 then
             -- Normally, 32 bit applications access only 32 bit registry and...
@@ -661,11 +661,11 @@ local windows_config = function()
         rinstallpath = rinstallpath:gsub("%s*$", "")
         local hasR32 = vim.fn.isdirectory(rinstallpath .. "\\bin\\i386")
         local hasR64 = vim.fn.isdirectory(rinstallpath .. "\\bin\\x64")
-        if hasR32 == 1 and not hasR64 then isi386 = true end
-        if hasR64 == 1 and not hasR32 then isi386 = false end
+        if hasR32 == 1 and hasR64 == 0 then isi386 = true end
+        if hasR64 == 1 and hasR32 == 0 then isi386 = false end
         if hasR32 == 1 and isi386 then
             vim.env.PATH = rinstallpath .. "\\bin\\i386;" .. vim.env.PATH
-        elseif hasR64 and isi386 == 0 then
+        elseif hasR64 == 1 and not isi386 then
             vim.env.PATH = rinstallpath .. "\\bin\\x64;" .. vim.env.PATH
         else
             vim.env.PATH = rinstallpath .. "\\bin;" .. vim.env.PATH
