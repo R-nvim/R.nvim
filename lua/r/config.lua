@@ -635,27 +635,30 @@ local windows_config = function()
         local reg_roots = { "HKCU", "HKLM" }
         local rip = {}
         for i = 1, #reg_roots do
-            local run_cmd = { "reg.exe", "QUERY", reg_roots[i] .. "\\SOFTWARE\\R-core\\R", "/s" }
-            rip = get_rip(run_cmd)
             if #rip == 0 then
-                -- Normally, 32 bit applications access only 32 bit registry and...
-                -- We have to try again if the user has installed R only in the other architecture.
-                if vim.fn.has("win64") then
-                    table.insert(run_cmd, "/reg:64")
-                else
-                    table.insert(run_cmd, "/reg:32")
-                end
+                local run_cmd = { "reg.exe", "QUERY", reg_roots[i] .. "\\SOFTWARE\\R-core\\R", "/s" }
                 rip = get_rip(run_cmd)
-            end
 
-            if i == #reg_roots and #rip == 0 then
-                warn(
-                    "Could not find R path in Windows Registry. "
-                        .. "If you have already installed R, please, set the value of 'R_path'."
-                )
-                wtime = (uv.hrtime() - wtime) / 1000000000
-                require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
-                return
+                if #rip == 0 then
+                    -- Normally, 32 bit applications access only 32 bit registry and...
+                    -- We have to try again if the user has installed R only in the other architecture.
+                    if vim.fn.has("win64") then
+                        table.insert(run_cmd, "/reg:64")
+                    else
+                        table.insert(run_cmd, "/reg:32")
+                    end
+                    rip = get_rip(run_cmd)
+
+                    if #rip == 0 and i == #reg_roots then
+                        warn(
+                            "Could not find R path in Windows Registry. "
+                                .. "If you have already installed R, please, set the value of 'R_path'."
+                        )
+                        wtime = (uv.hrtime() - wtime) / 1000000000
+                        require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
+                        return
+                    end
+                end
             end
         end
 
