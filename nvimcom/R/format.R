@@ -7,7 +7,7 @@ check_formatfun <- function() {
                 options(nvimcom.formatfun = "tidy_source")
             } else {
                 .C("nvimcom_msg_to_nvim",
-                   "lua require('r').warn('You have to install either formatR or styler in order to run :Rformat')",
+                   "lua require('r').warn('You have to install either formatR or styler in order to run :RFormat')",
                    PACKAGE = "nvimcom")
                 return(invisible(NULL))
             }
@@ -17,7 +17,7 @@ check_formatfun <- function() {
 
 #' Format R file.
 #' Sent to nvimcom through rnvimserver by R.nvim when the user runs the
-#' `Rformat` command.
+#' `RFormat` command.
 #' @param fname File name of buffer to be formatted.
 #' @param wco Text width, based on Vim option 'textwidth'.
 #' @param sw Vim option 'shiftwidth'.
@@ -32,7 +32,10 @@ nvim_format_file <- function(fname, wco, sw) {
             return(invisible(NULL))
         }
     } else if (getOption("nvimcom.formatfun") == "style_text") {
+        sq <- getOption("styler.quiet")
+        options(styler.quiet = TRUE)
         ok <- try(styler::style_file(fname, indent_by = sw))
+        options(styler.quiet = sq)
         if (inherits(ok, "try-error")) {
             .C("nvimcom_msg_to_nvim",
                "lua require('r').warn('Error trying to execute the function styler::style_file()')",
@@ -52,7 +55,7 @@ nvim_format_file <- function(fname, wco, sw) {
 
 #' Format R code.
 #' Sent to nvimcom through rnvimserver by R.nvim when the user runs the
-#' `Rformat` command.
+#' `RFormat` command.
 #' @param l1 First line of selection. R.nvim needs the information to know
 #' what lines to replace.
 #' @param l2 Last line of selection. R.nvim needs the information to know
