@@ -55,7 +55,7 @@ M.insert_roxygen = function(bufnr)
         "#'",
     }
 
-    for id, function_node in query_obj:iter_captures(root, bufnr) do
+    for _, function_node in query_obj:iter_captures(root, bufnr) do
         local start_row, _, end_row, _ = function_node:range()
 
         -- The cursor is within the range of a function definition
