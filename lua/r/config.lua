@@ -631,27 +631,35 @@ local windows_config = function()
             return rip
         end
 
-        local run_cmd = { "reg.exe", "QUERY", "HKCU\\SOFTWARE\\R-core\\R", "/s" }
-        local rip = get_rip(run_cmd)
-        if #rip == 0 then
-            -- Normally, 32 bit applications access only 32 bit registry and...
-            -- We have to try again if the user has installed R only in the other architecture.
-            if vim.fn.has("win64") then
-                table.insert(run_cmd, "/reg:64")
-            else
-                table.insert(run_cmd, "/reg:32")
-            end
-            rip = get_rip(run_cmd)
-        end
+        -- Check both HKCU and HKLM. See #223
+        local reg_roots = { "HKCU", "HKLM" }
+        local rip = {}
+        for i = 1, #reg_roots do
+            if #rip == 0 then
+                local run_cmd = { "reg.exe", "QUERY", reg_roots[i] .. "\\SOFTWARE\\R-core\\R", "/s" }
+                rip = get_rip(run_cmd)
 
-        if #rip == 0 then
-            warn(
-                "Could not find R path in Windows Registry. "
-                    .. "If you have already installed R, please, set the value of 'R_path'."
-            )
-            wtime = (uv.hrtime() - wtime) / 1000000000
-            require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
-            return
+                if #rip == 0 then
+                    -- Normally, 32 bit applications access only 32 bit registry and...
+                    -- We have to try again if the user has installed R only in the other architecture.
+                    if vim.fn.has("win64") then
+                        table.insert(run_cmd, "/reg:64")
+                    else
+                        table.insert(run_cmd, "/reg:32")
+                    end
+                    rip = get_rip(run_cmd)
+
+                    if #rip == 0 and i == #reg_roots then
+                        warn(
+                            "Could not find R path in Windows Registry. "
+                                .. "If you have already installed R, please, set the value of 'R_path'."
+                        )
+                        wtime = (uv.hrtime() - wtime) / 1000000000
+                        require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
+                        return
+                    end
+                end
+            end
         end
 
         local rinstallpath = nil
@@ -661,11 +669,11 @@ local windows_config = function()
         rinstallpath = rinstallpath:gsub("%s*$", "")
         local hasR32 = vim.fn.isdirectory(rinstallpath .. "\\bin\\i386")
         local hasR64 = vim.fn.isdirectory(rinstallpath .. "\\bin\\x64")
-        if hasR32 == 1 and not hasR64 then isi386 = true end
-        if hasR64 == 1 and not hasR32 then isi386 = false end
+        if hasR32 == 1 and hasR64 == 0 then isi386 = true end
+        if hasR64 == 1 and hasR32 == 0 then isi386 = false end
         if hasR32 == 1 and isi386 then
             vim.env.PATH = rinstallpath .. "\\bin\\i386;" .. vim.env.PATH
-        elseif hasR64 and isi386 == 0 then
+        elseif hasR64 == 1 and not isi386 then
             vim.env.PATH = rinstallpath .. "\\bin\\x64;" .. vim.env.PATH
         else
             vim.env.PATH = rinstallpath .. "\\bin;" .. vim.env.PATH
