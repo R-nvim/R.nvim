@@ -188,6 +188,9 @@ M.build_tags = function()
     )
 end
 
+--- Reload the current buffer. Called by nvimcom after formatting a file.
+M.reload = function() vim.cmd("edit %") end
+
 --- Receive formatted code from the nvimcom and change the buffer accordingly
 ---@param lnum1 number First selected line of unformatted code.
 ---@param lnum2 number Last selected line of unformatted code.
