@@ -19,8 +19,9 @@ local map_desc = {
     RViewDFa            = { m = "", k = "", c = "Edit",     d = "View the head of a data.frame or matrix under cursor in a split window" },
     RShowEx             = { m = "", k = "", c = "Edit",     d = "Extract the Examples section and paste it in a split window" },
     RSeparatePath       = { m = "", k = "", c = "Edit",     d = "Split the file path or the url under the cursor" },
-    RFormatNumbers      = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers to explicitly indicate them as integers." },
-    RFormatSubsetting   = { m = "", k = "", c = "Edit",     d = "Replace all the `$` subsetting operators with `[[` in the current buffer." },
+    RFormatNumbers      = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers to explicitly indicate them as integers" },
+    RFormatSubsetting   = { m = "", k = "", c = "Edit",     d = "Replace all the `$` subsetting operators with `[[` in the current buffer" },
+    RInsertRoxygen      = { m = "", k = "", c = "Edit",     d = "Insert roxygen skeleton above the current function definition" },
     RNextRChunk         = { m = "", k = "", c = "Navigate", d = "Go to the next chunk of R code" },
     RGoToTeX            = { m = "", k = "", c = "Navigate", d = "Go the corresponding line in the generated LaTeX document" },
     RPreviousRChunk     = { m = "", k = "", c = "Navigate", d = "Go to the previous chunk of R code" },
@@ -219,6 +220,7 @@ local edit = function()
     -- Format functions
     create_maps("nvi", "RFormatNumbers",    "cn", "<Cmd>lua require('r.format.numbers').formatnum()")
     create_maps("nvi", "RFormatSubsetting",    "cs", "<Cmd>lua require('r.format.brackets').formatsubsetting()")
+    create_maps("nvi", "RInsertRoxygen",    "ir", "<Cmd>lua require('r.roxygen').insert_roxygen()")
 end
 
 local send = function(file_type)
