@@ -636,7 +636,8 @@ local windows_config = function()
         local rip = {}
         for i = 1, #reg_roots do
             if #rip == 0 then
-                local run_cmd = { "reg.exe", "QUERY", reg_roots[i] .. "\\SOFTWARE\\R-core\\R", "/s" }
+                local run_cmd =
+                    { "reg.exe", "QUERY", reg_roots[i] .. "\\SOFTWARE\\R-core\\R", "/s" }
                 rip = get_rip(run_cmd)
 
                 if #rip == 0 then
@@ -655,7 +656,11 @@ local windows_config = function()
                                 .. "If you have already installed R, please, set the value of 'R_path'."
                         )
                         wtime = (uv.hrtime() - wtime) / 1000000000
-                        require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
+                        require("r.edit").add_to_debug_info(
+                            "windows setup",
+                            wtime,
+                            "Time"
+                        )
                         return
                     end
                 end
@@ -812,6 +817,12 @@ local create_user_commands = function()
         nargs = "?",
         complete = function() return config_keys end,
     })
+
+    vim.api.nvim_create_user_command(
+        "Roxygenize",
+        function() require("r.roxygen").insert_roxygen(vim.api.nvim_get_current_buf()) end,
+        {}
+    )
 end
 
 local global_setup = function()
