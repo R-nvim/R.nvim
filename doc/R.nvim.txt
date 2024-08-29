@@ -1929,9 +1929,9 @@ insinde the function passed to `hook.on_filetype` as in the examples below
 8. roxygen2 support                                          *R.nvim-roxygen2*
 
 R.nvim has supports to insert roxygen2 skeletons in R scripts. To insert a new
-roxygen2 block, you can use the `<LocalLeader>ir` (insert roxygen) key binding
-while the cursor is in the line above the function definition. If a block of
-roxygen2 is already present, no modification will be made.
+roxygen2 block, you can use the `Roxygenize` function while the cursor is in
+the line above the function definition. If a block of roxygen2 is already
+present, no modification will be made.
 
 ==============================================================================
 8. History                                                    *R.nvim-history*
