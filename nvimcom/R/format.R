@@ -74,7 +74,8 @@ nvim_format_txt <- function(l1, l2, wco, sw, txt) {
                PACKAGE = "nvimcom")
             return(invisible(NULL))
         }
-        txt <- gsub("'", "\x13", paste0(ok$text.tidy, collapse = "\x14"))
+        txt <- paste0(gsub("'", "\x13", gsub("\n", "\x14", ok$text.tidy)),
+                      collapse = "\x14")
     } else if (getOption("nvimcom.formatfun") == "style_text") {
         ok <- try(styler::style_text(txt, indent_by = sw))
         if (inherits(ok, "try-error")) {
