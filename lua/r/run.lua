@@ -416,23 +416,37 @@ M.formart_code = function(tbl)
         wco = 180
     end
 
-    local lns = vim.api.nvim_buf_get_lines(0, tbl.line1 - 1, tbl.line2, true)
-    local txt = table.concat(lns, "\020")
-    txt = txt:gsub("\\", "\\\\"):gsub("'", "\019")
-    M.send_to_nvimcom(
-        "E",
-        "nvimcom:::nvim_format("
-            .. tbl.line1
-            .. ", "
-            .. tbl.line2
-            .. ", "
-            .. wco
-            .. ", "
-            .. vim.o.shiftwidth
-            .. ", '"
-            .. txt
-            .. "')"
-    )
+    if tbl.range == 0 then
+        vim.cmd("update")
+        M.send_to_nvimcom(
+            "E",
+            "nvimcom:::nvim_format_file('"
+                .. vim.api.nvim_buf_get_name(0)
+                .. "', "
+                .. wco
+                .. ", "
+                .. vim.o.shiftwidth
+                .. ")"
+        )
+    else
+        local lns = vim.api.nvim_buf_get_lines(0, tbl.line1 - 1, tbl.line2, true)
+        local txt = table.concat(lns, "\020")
+        txt = txt:gsub("\\", "\\\\"):gsub("'", "\019")
+        M.send_to_nvimcom(
+            "E",
+            "nvimcom:::nvim_format_txt("
+                .. tbl.line1
+                .. ", "
+                .. tbl.line2
+                .. ", "
+                .. wco
+                .. ", "
+                .. vim.o.shiftwidth
+                .. ", '"
+                .. txt
+                .. "')"
+        )
+    end
 end
 
 --- Request R to evaluate a command and send its output back

@@ -121,11 +121,11 @@ Additional dependencies for editing Rnoweb documents:
    PDF viewer with SyncTeX support and capable of automatically reloading
    documents. This is required only if you edit Rnoweb files.
       On Linux and other Unix systems: Zathura.
-      On OS X: Skim.
+      On macOS: Skim.
       On Windows: SumatraPDF.
 
 
-Suggestions for Unix (Linux, OS X, etc.):
+Suggestions for Unix (Linux, macOS, etc.):
 
    Tmux >= 3.0:  http://tmux.sourceforge.net
                  Tmux is required only if you want to run R in an external
@@ -385,15 +385,9 @@ in Neovim:
    :RInsert dput(levels(var))
 <
 The command `:RFormat` calls the function `style_text()` (if the package
-`styler` is installed) or the function `tidy_source()` (if the package
-`formatR` is installed) to format either the entire buffer or the selected
-lines. The command only works if R is running. If `style_text()` is used the
-value of 'shiftwidth' is passed as `indent_by`, and if `tidy_source()` is
-used, the value of the `width.cutoff` argument is set to the buffer's
-'textwidth' if it is not outside the range 20-180.
-
-Se R help on `tidy_source` for details on how to control the function
-behavior.
+`styler` is installed) to format the selected lines. If no text is selected,
+either `style_file()` is called to format the entire buffer. The command only
+works if R is running. The value of 'shiftwidth' is passed as `indent_by`.
 
 
 ------------------------------------------------------------------------------
@@ -623,7 +617,7 @@ The compilation of `nvimcom` during R startup will fail on Windows if your
 <
 
 ------------------------------------------------------------------------------
-5.6 You can't put `syntax enable` in your `init.vim` (OS X only)
+5.6 You can't put `syntax enable` in your `init.vim` (macOS only)
 
 It seems that if you put the command `syntax enable` in your `init.vim` on OS
 X, file type plugins are immediately sourced. Consequently, all R.nvim
@@ -710,7 +704,7 @@ command:
 |rconsole_height|     Number of lines of R Console
 |rconsole_width|      Number of columns of R Console
 |min_editor_width|    Minimum number of columns of editor after R start
-|applescript|         Use osascript in Mac OS X to run R.app
+|applescript|         Use osascript in macOS to run R.app
 |RStudio_cmd|         Run RStudio instead of R.
 |listmethods|         Do `nvim.list.args()` instead of `args()`
 |specialplot|         Do `nvim.plot()` instead of `plot()`
@@ -877,7 +871,7 @@ used to send commands from Neovim to R.
 6.3. Terminal emulator (Linux/Unix only)                       *external_term*
                                                                  *silent_term*
 
-Note: The options of this section are ignored on Mac OS X, where the command
+Note: The options of this section are ignored on macOS, where the command
 `open` is called to run the default application used to run shell scripts.
 
 R will run in Neovim's built-in terminal emulator, unless you set the value of
@@ -1186,7 +1180,7 @@ If it is necessary to call a different application to run the above commands
 in your system, you should set the value of `R_cmd` in your config.
 
 By default the value of `R_app` is `"R"` on Unix systems (such as Linux and
-Mac OS X). On Windows, it is `Rterm.exe` if R is going to run in a Neovim
+macOS). On Windows, it is `Rterm.exe` if R is going to run in a Neovim
 buffer and `"Rgui.exe"` otherwise. R.nvim cannot send messages to `Rterm.exe`
 in an external `cmd` window. If your R binary has a different name (for
 example, if it is called by a custom script), you should set the value of
@@ -1338,10 +1332,10 @@ window.
 
 
 ------------------------------------------------------------------------------
-6.16. Integration with R.app (OS X only) and RStudio             *applescript*
+6.16. Integration with R.app (macOS only) and RStudio             *applescript*
                                                                  *RStudio_cmd*
 
-If you are on Mac OS X and want to use the R.app graphical application, put in
+If you are on macOS and want to use the R.app graphical application, put in
 your config:
 >lua
    applescript = true
@@ -1557,7 +1551,7 @@ the X server (not on Wayland), the application `wmctrl` is required to raise
 both the PDF viewer and Neovim windows. This feature is not implemented for
 Wayland windows managers other than Sway.
 
-R.nvim will call Sumatra to open the PDF on Windows, Skim on Mac OS X, and
+R.nvim will call Sumatra to open the PDF on Windows, Skim on macOS, and
 Zathura on Linux, but you can change the values of `synctex` and `pdfviewer`
 in your config if you don't need SyncTeX support. Setting `pdfviewer` to an
 empty string will open the PDF with the OS default application. Examples:
@@ -1578,7 +1572,7 @@ this with the option `open_html` whose values are the same of `open_pdf`:
 
 The browser application called by R.nvim is whatever is returned by the R
 command `getOption("browser")`, unless it is NULL. In this case, R.nvim will
-call `open` on both Windows and Mac OS X, and `xdg-open` on Linux.
+call `open` on both Windows and macOS, and `xdg-open` on Linux.
 
 Note: R.nvim tracks the browser PID to know that it is open and to try to
 focus its window. This means that if either `open` or `xdg-open` was callled
@@ -1788,7 +1782,7 @@ the corresponding line in the PDF viewer and vice-versa. R.nvim has support
 for SyncTeX in three applications:
 
    Linux:   Zathura
-   OS X:    Skim
+   macOS:    Skim
    Windows: SumatraPDF
 
 To completely disable SyncTeX support, put in your config:
