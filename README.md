@@ -136,6 +136,9 @@ The option `notmuxconf` was renamed as `config_tmux` to avoid the negation of
 the negation `notmuxconf=false` or the even more awkward confirmation of the
 negation `notmuxconf=true`. The default value of `config_tmux` is `true`.
 
+The `:RFormat` command no longer has the option to use the package `formatR`;
+now, the `styler` package is required.
+
 ### New features
 
 There are two new commands:
