@@ -213,6 +213,8 @@ M.load_html = function(fullpath, browser)
         else
             cmd = { "xdg-open", fullpath }
         end
+    elseif browser == "RbrowseURLfun" then
+        send_to_nvimcom("E", "browseURL('" .. fullpath .. "')")
     else
         cmd = vim.split(browser, " ")
         table.insert(cmd, fullpath)

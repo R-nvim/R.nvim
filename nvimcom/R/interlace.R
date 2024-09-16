@@ -357,10 +357,14 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
         res <- rmarkdown::render(Rmdfile, outform, ...)
     }
     brwsr <- ""
-    if (grepl("\\.html$", res)) {
+    if (endsWith(res, ".html")) {
         brwsr <- getOption("browser")
-        if (!is.character(brwsr))
-            brwsr <- ""
+        if (is.function(brwsr)) {
+            brwsr <- "RbrowseURLfun"
+        } else {
+            if (!is.character(brwsr))
+                brwsr <- ""
+        }
     }
     .C("nvimcom_msg_to_nvim",
        paste0("lua require('r.doc').open('", res, "', '", brwsr, "')"),
