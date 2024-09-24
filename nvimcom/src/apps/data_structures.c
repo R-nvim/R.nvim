@@ -448,6 +448,7 @@ static char *count_sep(char *b1, int *size) {
                 fprintf(stderr, "Number of separators: %d (%s)\n", n, b);
                 fflush(stderr);
                 free(b1);
+                *size = 0;
                 return NULL;
             }
         }
@@ -473,7 +474,7 @@ static char *count_sep(char *b1, int *size) {
  * successful. Returns NULL if the buffer does not meet the expected format or
  * validation fails.
  */
-static void *check_omils_buffer(char *buffer, int *size) {
+static char *check_omils_buffer(char *buffer, int *size) {
     // Ensure that there are exactly 7 \006 between new line characters
     buffer = count_sep(buffer, size);
 
@@ -524,8 +525,6 @@ void update_glblenv_buffer(char *g) {
 
     if (check_omils_buffer(glbnv_buffer, &glbnv_size) == NULL) {
         glbnv_buffer_sz = 0;
-        if (glbnv_buffer)
-            free(glbnv_buffer);
         glbnv_buffer = NULL;
         return;
     }
