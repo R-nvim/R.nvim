@@ -163,6 +163,16 @@ local function set_buf_options()
     -- Uncomment if needed
     -- vim.keymap.set("n", "<RightMouse>", require("r.browser").on_right_click, opts)
 
+    -- Arbitrary keymap, command pairs from config.objbr_mappings
+    for key, command in pairs(config.objbr_mappings) do
+        vim.keymap.set(
+            "n",
+            key,
+            function() require("r.browser").run_custom_command(command) end,
+            opts
+        )
+    end
+
     -- Stop insert mode when entering the buffer
     vim.api.nvim_create_autocmd("BufEnter", {
         command = "stopinsert",
@@ -561,5 +571,20 @@ end
 --- Return Object Browser buffer number
 ---@return number
 function M.get_buf_nr() return ob_buf end
+
+function M.run_custom_command(command)
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
+    if lnum < 3 then return end
+
+    local curline = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
+    local object_name = M.get_name(lnum, curline)
+    if object_name == "" then
+        warn("No object selected.")
+        return
+    end
+
+    -- Execute the command on the selected object
+    require("r.send").cmd(command .. "(" .. object_name .. ")")
+end
 
 return M
