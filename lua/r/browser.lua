@@ -188,8 +188,6 @@ local function set_buf_options()
     require("r.maps").create("rbrowser")
 end
 
-local find_parent
-
 --- Return the parent list, data.frame or S4 object
 ---@param child string
 ---@param curline number
@@ -383,10 +381,7 @@ function M.get_name(lnum, line)
         end
     else
         if curview == "libraries" then
-            if isutf8 and idx == 12 then
-                word = word:gsub("%$%[%[", "[[")
-                return word
-            elseif not isutf8 and idx == 8 then
+            if (isutf8 and idx == 12) or (idx == 8) then
                 word = word:gsub("%$%[%[", "[[")
                 return word
             end
