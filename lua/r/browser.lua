@@ -104,21 +104,27 @@ local add_backticks = function(word, esc_reserved)
 end
 
 local set_buf_options = function()
-    vim.api.nvim_set_option_value("wrap", false, { scope = "local" })
-    vim.api.nvim_set_option_value("list", false, { scope = "local" })
-    vim.api.nvim_set_option_value("number", false, { scope = "local" })
-    vim.api.nvim_set_option_value("relativenumber", false, { scope = "local" })
-    vim.api.nvim_set_option_value("cursorline", false, { scope = "local" })
-    vim.api.nvim_set_option_value("cursorcolumn", false, { scope = "local" })
-    vim.api.nvim_set_option_value("spell", false, { scope = "local" })
-    vim.api.nvim_set_option_value("winfixwidth", false, { scope = "local" })
-    vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
-    vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
-    vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
-    vim.api.nvim_set_option_value("syntax", "rbrowser", { scope = "local" })
-    vim.api.nvim_set_option_value("iskeyword", "@,48-57,_,.", { scope = "local" })
-    vim.api.nvim_set_option_value("signcolumn", "no", { scope = "local" })
-    vim.api.nvim_set_option_value("foldcolumn", "0", { scope = "local" })
+    local options = {
+        wrap = false,
+        list = false,
+        number = false,
+        relativenumber = false,
+        cursorline = false,
+        cursorcolumn = false,
+        spell = false,
+        winfixwidth = false,
+        swapfile = false,
+        bufhidden = "wipe",
+        buftype = "nofile",
+        syntax = "rbrowser",
+        iskeyword = "@,48-57,_,.",
+        signcolumn = "no",
+        foldcolumn = "0",
+    }
+
+    for opt, val in pairs(options) do
+        vim.api.nvim_set_option_value(opt, val, { scope = "local" })
+    end
 
     local opts = { silent = true, noremap = true, expr = false }
     vim.api.nvim_buf_set_keymap(
