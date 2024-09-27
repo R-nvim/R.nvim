@@ -18,12 +18,12 @@ local auto_starting = true
 -- Popup menu
 local hasbrowsermenu = false
 
---- Escape with backticks invalid R names
+--- Escape invalid R names with backticks
 ---@param word string
 ---@param esc_reserved boolean
 ---@return string
-local add_backticks = function(word, esc_reserved)
-    -- Unamed list element
+local function add_backticks(word, esc_reserved)
+    -- Unnamed list element
     if word:find("^%[%[") then return word end
 
     local punct = {
@@ -103,7 +103,7 @@ local add_backticks = function(word, esc_reserved)
     return word
 end
 
-local set_buf_options = function()
+local function set_buf_options()
     local options = {
         wrap = false,
         list = false,
@@ -153,7 +153,7 @@ local find_parent
 ---@param curline number
 ---@param curpos number
 ---@return string
-find_parent = function(child, curline, curpos)
+local function find_parent(child, curline, curpos)
     local line
     local idx
     local parent
@@ -202,8 +202,7 @@ find_parent = function(child, curline, curpos)
 end
 
 -- Start Object Browser
-local start_OB
-start_OB = function()
+local function start_OB()
     -- Either open or close the Object Browser
     local savesb = vim.o.switchbuf
     vim.o.switchbuf = "useopen,usetab"
@@ -271,7 +270,7 @@ end
 local M = {}
 
 -- Open an Object Browser window
-M.start = function(_)
+function M.start(_)
     -- Only opens the Object Browser if R is running
     if vim.g.R_Nvim_status < 5 then
         warn("The Object Browser can be opened only if R is running.")
@@ -298,11 +297,11 @@ end
 
 --- Return the active pane of the Object Browser
 ---@return string
-M.get_curview = function() return curview end
+function M.get_curview() return curview end
 
 --- Get the name of parent library
 ---@return string
-M.get_pkg_name = function()
+function M.get_pkg_name()
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     while lnum > 2 do
         local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
@@ -314,11 +313,11 @@ M.get_pkg_name = function()
     return ""
 end
 
---- Get name of object on te current line
+--- Get name of object on the current line
 ---@param lnum number
 ---@param line string
 ---@return string
-M.get_name = function(lnum, line)
+function M.get_name(lnum, line)
     if lnum < 3 or line:find("^$") then return "" end
 
     local idx = line:find("#")
@@ -335,12 +334,10 @@ M.get_name = function(lnum, line)
         end
     else
         if curview == "libraries" then
-            if isutf8 then
-                if idx == 12 then
-                    word = word:gsub("%$%[%[", "[[")
-                    return word
-                end
-            elseif idx == 8 then
+            if isutf8 and idx == 12 then
+                word = word:gsub("%$%[%[", "[[")
+                return word
+            elseif not isutf8 and idx == 8 then
                 word = word:gsub("%$%[%[", "[[")
                 return word
             end
@@ -359,9 +356,9 @@ M.get_name = function(lnum, line)
     end
 end
 
-M.open_close_lists = function(stt) job.stdin("Server", "34" .. stt .. curview .. "\n") end
+function M.open_close_lists(stt) job.stdin("Server", "34" .. stt .. curview .. "\n") end
 
-M.update_OB = function(what)
+function M.update_OB(what)
     local wht = what == "both" and curview or what
     if curview ~= wht then return "curview != what" end
     if upobcnt then
@@ -391,7 +388,7 @@ M.update_OB = function(what)
     upobcnt = false
 end
 
-M.on_double_click = function()
+function M.on_double_click()
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     if lnum == 2 then return end
 
@@ -445,7 +442,7 @@ M.on_double_click = function()
     end
 end
 
-M.on_right_click = function()
+function M.on_right_click()
     -- The function vim.fn.popup_menu() doesn't work when called from Lua.
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     if lnum == 1 then return end
@@ -505,7 +502,7 @@ M.on_right_click = function()
     hasbrowsermenu = true
 end
 
-M.on_BufUnload = function()
+function M.on_BufUnload()
     ob_buf = nil
     ob_win = nil
     send_to_nvimcom("N", "OnOBBufUnload")
@@ -513,6 +510,6 @@ end
 
 --- Return Object Browser buffer number
 ---@return number
-M.get_buf_nr = function() return ob_buf end
+function M.get_buf_nr() return ob_buf end
 
 return M
