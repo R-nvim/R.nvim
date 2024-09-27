@@ -126,28 +126,11 @@ local set_buf_options = function()
         vim.api.nvim_set_option_value(opt, val, { scope = "local" })
     end
 
-    local opts = { silent = true, noremap = true, expr = false }
-    vim.api.nvim_buf_set_keymap(
-        0,
-        "n",
-        "<CR>",
-        "<Cmd>lua require('r.browser').on_double_click()<CR>",
-        opts
-    )
-    vim.api.nvim_buf_set_keymap(
-        0,
-        "n",
-        "<2-LeftMouse>",
-        "<Cmd>lua require('r.browser').on_double_click()<CR>",
-        opts
-    )
-    -- vim.api.nvim_buf_set_keymap(
-    --     0,
-    --     "n",
-    --     "<RightMouse>",
-    --     "<Cmd>lua require('r.browser').on_right_click()<CR>",
-    --     opts
-    -- )
+    local opts = { silent = true, noremap = true, expr = false, buffer = true }
+    vim.keymap.set("n", "<CR>", require("r.browser").on_double_click, opts)
+    vim.keymap.set("n", "<2-LeftMouse>", require("r.browser").on_double_click, opts)
+    -- Uncomment if needed
+    -- vim.keymap.set("n", "<RightMouse>", require("r.browser").on_right_click, opts)
 
     vim.api.nvim_create_autocmd("BufEnter", {
         command = "stopinsert",
