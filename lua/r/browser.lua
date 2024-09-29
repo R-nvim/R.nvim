@@ -163,14 +163,22 @@ local function set_buf_options()
     -- Uncomment if needed
     -- vim.keymap.set("n", "<RightMouse>", require("r.browser").on_right_click, opts)
 
-    -- Arbitrary keymap, command pairs from config.objbr_mappings
-    for key, command in pairs(config.objbr_mappings) do
-        vim.keymap.set(
-            "n",
-            key,
-            function() require("r.browser").run_custom_command(command) end,
-            opts
-        )
+    -- Set up custom key mappings from config.objbr_mappings
+    for key, action in pairs(config.objbr_mappings) do
+        if type(action) == "string" then
+            -- Mapping is an R code string
+            vim.keymap.set(
+                "n",
+                key,
+                function() require("r.browser").run_custom_command(action) end,
+                opts
+            )
+        elseif type(action) == "function" then
+            -- Mapping is a Lua function
+            vim.keymap.set("n", key, function() action() end, opts)
+        else
+            warn("Invalid mapping for key '" .. key .. "'. Must be a string or function.")
+        end
     end
 
     -- Stop insert mode when entering the buffer
@@ -345,6 +353,17 @@ end
 --- Return the active pane of the Object Browser
 ---@return string
 function M.get_curview() return curview end
+
+--- Toggle between "GlobalEnv" and "libraries" views
+function M.toggle_view()
+    if curview == "libraries" then
+        curview = "GlobalEnv"
+        job.stdin("Server", "31\n")
+    else
+        curview = "libraries"
+        job.stdin("Server", "321\n")
+    end
+end
 
 --- Get the name of parent library
 ---@return string

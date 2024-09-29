@@ -62,7 +62,11 @@ local config = {
     objbr_openlist      = false,
     objbr_place         = "script,right",
     objbr_w             = 40,
-		objbr_mappings 			= { s = "summary", p = "plot" },
+		objbr_mappings 			= {
+															s = "summary",
+															p = "plot",
+															v = function() require('r.browser').toggle_view() end
+													},
 		objbr_placeholder   = "{object}",
     open_example        = true,
     open_html           = "open and focus",
