@@ -12,8 +12,8 @@ Key components:
 - `M.get_name`, `M.get_pkg_name`: Utility functions to retrieve object names and
   package names from the current cursor position.
 - `add_backticks`: Escapes invalid R object names by wrapping them in backticks.
-- Various helper functions and variables to manage the state and interaction
-  with the R session and the Neovim interface.
+- Custom key mappings: Allows users to bind arbitrary commands or Lua functions
+  to keys within the Object Browser.
 
 This file integrates with `r.config`, `r.job`, `r.run`, and `r.send` to communicate
 with the R backend and update the Object Browser interface accordingly.
@@ -202,10 +202,7 @@ end
 ---@param curpos number
 ---@return string
 local function find_parent(child, curline, curpos)
-    local line
-    local idx
-    local parent
-    local suffix
+    local line, idx, parent, suffix
     while curline > 3 do
         curline = curline - 1
         line = vim.api.nvim_buf_get_lines(0, curline - 1, curline, true)[1]
@@ -222,7 +219,7 @@ local function find_parent(child, curline, curpos)
             else
                 local msg = "Unrecognized type of parent: `"
                     .. parent
-                    .. "`\nKnown types are `data.frame`s, `list`s and `S4` objects."
+                    .. "`\nKnown types are `data.frame`s, `list`s, and `S4` objects."
                 vim.notify(msg, vim.log.levels.ERROR, { title = "R.nvim" })
                 return ""
             end
@@ -239,12 +236,7 @@ local function find_parent(child, curline, curpos)
 
     local fullname = parent .. suffix .. child
 
-    local spacelimit
-    if curview == "GlobalEnv" then
-        spacelimit = 6
-    else
-        spacelimit = isutf8 and 12 or 8
-    end
+    local spacelimit = (curview == "GlobalEnv") and 6 or (isutf8 and 12 or 8)
     if idx > spacelimit then return find_parent(fullname, curline, idx) end
     return fullname
 end
@@ -322,7 +314,7 @@ end
 
 local M = {}
 
--- Open an Object Browser window
+--- Open an Object Browser window
 function M.start(_)
     -- Only opens the Object Browser if R is running
     if vim.g.R_Nvim_status < 5 then
@@ -392,7 +384,7 @@ function M.get_name(lnum, line)
     word = add_backticks(word, true)
 
     if idx == 5 then
-        -- top level object
+        -- Top-level object
         if curview == "libraries" then
             return word .. ":"
         else
@@ -426,7 +418,7 @@ function M.open_close_lists(stt) job.stdin("Server", "34" .. stt .. curview .. "
 --- Update the Object Browser content
 ---@param what string
 function M.update_OB(what)
-    local wht = what == "both" and curview or what
+    local wht = (what == "both") and curview or what
     if curview ~= wht then return "curview != what" end
     if upobcnt then
         -- vim.api.nvim_err_writeln("OB called twice")
@@ -463,13 +455,7 @@ function M.on_double_click()
 
     -- Toggle between "GlobalEnv" and "libraries" views
     if lnum == 1 then
-        if curview == "libraries" then
-            curview = "GlobalEnv"
-            job.stdin("Server", "31\n")
-        else
-            curview = "libraries"
-            job.stdin("Server", "321\n")
-        end
+        M.toggle_view()
         return
     end
 
@@ -586,6 +572,8 @@ end
 ---@return number
 function M.get_buf_nr() return ob_buf end
 
+--- Run a custom command on the selected object
+---@param command string
 function M.run_custom_command(command)
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     if lnum < 3 then return end
@@ -599,10 +587,10 @@ function M.run_custom_command(command)
 
     local placeholder = config.objbr_placeholder or "{object}"
 
-    -- Replace {object} with the object name
+    -- Replace placeholder with the object name
     local cmd_to_run = command:gsub(placeholder, object_name)
 
-    -- If no placeholder was found, follow legacy behaviour
+    -- If no placeholder was found, append the object name to the command
     if cmd_to_run == command then cmd_to_run = command .. "(" .. object_name .. ")" end
 
     -- Execute the command on the selected object
