@@ -578,8 +578,14 @@ function M.run_custom_command(command)
         return
     end
 
+    -- Replace {object} with the object name
+    local cmd_to_run = command:gsub("{object}", object_name)
+
+    -- If no placeholder was found, follow legacy behaviour
+    if cmd_to_run == command then cmd_to_run = command .. "(" .. object_name .. ")" end
+
     -- Execute the command on the selected object
-    require("r.send").cmd(command .. "(" .. object_name .. ")")
+    require("r.send").cmd(cmd_to_run)
 end
 
 return M
