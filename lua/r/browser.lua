@@ -578,8 +578,10 @@ function M.run_custom_command(command)
         return
     end
 
+    local placeholder = config.objbr_placeholder or "{object}"
+
     -- Replace {object} with the object name
-    local cmd_to_run = command:gsub("{object}", object_name)
+    local cmd_to_run = command:gsub(placeholder, object_name)
 
     -- If no placeholder was found, follow legacy behaviour
     if cmd_to_run == command then cmd_to_run = command .. "(" .. object_name .. ")" end

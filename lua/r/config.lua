@@ -63,6 +63,7 @@ local config = {
     objbr_place         = "script,right",
     objbr_w             = 40,
 		objbr_mappings 			= { s = "summary", p = "plot" },
+		objbr_placeholder   = "{object}",
     open_example        = true,
     open_html           = "open and focus",
     open_pdf            = "open and focus",
