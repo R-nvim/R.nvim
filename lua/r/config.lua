@@ -65,7 +65,6 @@ local config = {
 		objbr_mappings 			= {
 															s = "summary",
 															p = "plot",
-															v = function() require('r.browser').toggle_view() end
 													},
 		objbr_placeholder   = "{object}",
     open_example        = true,
