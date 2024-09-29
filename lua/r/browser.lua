@@ -5,15 +5,14 @@ such as variables, data frames, lists, and libraries, directly from the editor.
 
 Key components:
 
-- `start_OB`: Opens or closes the Object Browser window in Neovim.
 - `M.start`: Initiates the Object Browser if R is running.
 - `M.on_double_click`: Handles double-click events within the Object Browser to
   toggle views or inspect objects.
 - `M.get_name`, `M.get_pkg_name`: Utility functions to retrieve object names and
   package names from the current cursor position.
 - `add_backticks`: Escapes invalid R object names by wrapping them in backticks.
-- Various helper functions and variables to manage the state and interaction
-  with the R session and the Neovim interface.
+- Custom key mappings: Allows users to bind arbitrary R commands or Lua functions
+  to keys within the Object Browser.
 
 This file integrates with `r.config`, `r.job`, `r.run`, and `r.send` to communicate
 with the R backend and update the Object Browser interface accordingly.
@@ -28,8 +27,7 @@ local send_to_nvimcom = require("r.run").send_to_nvimcom
 local lc_env = string.lower(
     tostring(vim.env.LC_MESSAGES) .. tostring(vim.env.LC_ALL) .. tostring(vim.env.LANG)
 )
-local isutf8 = (lc_env:find("utf-8", 1, true) or lc_env:find("utf8", 1, true)) and true
-    or false
+local isutf8 = lc_env:find("utf%-8") or lc_env:find("utf8") and true or false
 
 -- Current view in the Object Browser: "GlobalEnv" or "libraries"
 local curview = "GlobalEnv"
@@ -42,7 +40,7 @@ local upobcnt = false -- Prevents multiple simultaneous updates
 local running_objbr = false -- Indicates if the Object Browser is currently running
 local auto_starting = true -- Controls automatic starting behavior
 
--- Popup menu
+-- Popup menu flag
 local hasbrowsermenu = false
 
 --- Escape invalid R names with backticks
@@ -160,8 +158,6 @@ local function set_buf_options()
     local opts = { silent = true, noremap = true, expr = false, buffer = true }
     vim.keymap.set("n", "<CR>", require("r.browser").on_double_click, opts)
     vim.keymap.set("n", "<2-LeftMouse>", require("r.browser").on_double_click, opts)
-    -- Uncomment if needed
-    -- vim.keymap.set("n", "<RightMouse>", require("r.browser").on_right_click, opts)
 
     -- Set up custom key mappings from config.objbr_mappings
     for key, action in pairs(config.objbr_mappings) do
@@ -175,7 +171,7 @@ local function set_buf_options()
             )
         elseif type(action) == "function" then
             -- Mapping is a Lua function
-            vim.keymap.set("n", key, function() action() end, opts)
+            vim.keymap.set("n", key, action, opts)
         else
             warn("Invalid mapping for key '" .. key .. "'. Must be a string or function.")
         end
@@ -188,30 +184,27 @@ local function set_buf_options()
     })
 
     vim.api.nvim_create_autocmd("BufUnload", {
-        command = "lua require('r.browser').on_BufUnload()",
-        pattern = "<buffer>",
+        callback = require("r.browser").on_BufUnload,
+        buffer = 0,
     })
 
     vim.api.nvim_buf_set_lines(0, 0, 1, false, { ".GlobalEnv | Libraries" })
     require("r.maps").create("rbrowser")
 end
 
---- Return the parent list, data.frame or S4 object
+--- Find the parent object for nested elements
 ---@param child string
 ---@param curline number
 ---@param curpos number
 ---@return string
 local function find_parent(child, curline, curpos)
-    local line
-    local idx
-    local parent
-    local suffix
+    local line, idx, parent, suffix
     while curline > 3 do
         curline = curline - 1
         line = vim.api.nvim_buf_get_lines(0, curline - 1, curline, true)[1]
         line = line:gsub("\t.*", "")
         idx = line:find("#")
-        if idx < curpos then
+        if idx and idx < curpos then
             parent = line:sub(idx + 1)
             if line:find("%[#") or line:find("%$#") then
                 suffix = "$"
@@ -222,7 +215,7 @@ local function find_parent(child, curline, curpos)
             else
                 local msg = "Unrecognized type of parent: `"
                     .. parent
-                    .. "`\nKnown types are `data.frame`s, `list`s and `S4` objects."
+                    .. "`\nKnown types are `data.frame`s, `list`s, and `S4` objects."
                 vim.notify(msg, vim.log.levels.ERROR, { title = "R.nvim" })
                 return ""
             end
@@ -236,15 +229,9 @@ local function find_parent(child, curline, curpos)
     end
 
     parent = add_backticks(parent, false)
-
     local fullname = parent .. suffix .. child
 
-    local spacelimit
-    if curview == "GlobalEnv" then
-        spacelimit = 6
-    else
-        spacelimit = isutf8 and 12 or 8
-    end
+    local spacelimit = (curview == "GlobalEnv") and 6 or (isutf8 and 12 or 8)
     if idx > spacelimit then return find_parent(fullname, curline, idx) end
     return fullname
 end
@@ -293,7 +280,7 @@ local function start_OB()
                 vim.cmd("belowright split Object_Browser")
             else
                 warn('Invalid value for R_objbr_place: "' .. config.objbr_place .. '"')
-                vim.cmd("set switchbuf=" .. savesb)
+                vim.o.switchbuf = savesb
                 return
             end
         end
@@ -317,12 +304,12 @@ local function start_OB()
     end
 
     -- Restore original 'switchbuf' option
-    vim.cmd("set switchbuf=" .. savesb)
+    vim.o.switchbuf = savesb
 end
 
 local M = {}
 
--- Open an Object Browser window
+--- Open an Object Browser window
 function M.start(_)
     -- Only opens the Object Browser if R is running
     if vim.g.R_Nvim_status < 5 then
@@ -345,9 +332,7 @@ function M.start(_)
     running_objbr = false
 
     -- Execute any user-defined hooks after opening the Object Browser
-    if config.hook.after_ob_open then
-        vim.schedule(function() config.hook.after_ob_open() end)
-    end
+    if config.hook.after_ob_open then vim.schedule(config.hook.after_ob_open) end
 end
 
 --- Return the active pane of the Object Browser
@@ -371,9 +356,7 @@ function M.get_pkg_name()
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     while lnum > 2 do
         local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
-        if line:find("^   :#[0-9a-zA-Z%.]*\t") then
-            return tostring(line:gsub("   :#(.-)\t.*", "%1"))
-        end
+        if line:find("^   :#[0-9a-zA-Z%.]*\t") then return line:match("^   :#(.-)\t") end
         lnum = lnum - 1
     end
     return ""
@@ -392,7 +375,7 @@ function M.get_name(lnum, line)
     word = add_backticks(word, true)
 
     if idx == 5 then
-        -- top level object
+        -- Top-level object
         if curview == "libraries" then
             return word .. ":"
         else
@@ -400,7 +383,7 @@ function M.get_name(lnum, line)
         end
     else
         if curview == "libraries" then
-            if (isutf8 and idx == 12) or (idx == 8) then
+            if (isutf8 and idx == 12) or idx == 8 then
                 word = word:gsub("%$%[%[", "[[")
                 return word
             end
@@ -426,12 +409,9 @@ function M.open_close_lists(stt) job.stdin("Server", "34" .. stt .. curview .. "
 --- Update the Object Browser content
 ---@param what string
 function M.update_OB(what)
-    local wht = what == "both" and curview or what
+    local wht = (what == "both") and curview or what
     if curview ~= wht then return "curview != what" end
-    if upobcnt then
-        -- vim.api.nvim_err_writeln("OB called twice")
-        return "OB called twice"
-    end
+    if upobcnt then return "OB called twice" end
 
     upobcnt = true
 
@@ -452,31 +432,26 @@ function M.update_OB(what)
     -- Update the Object Browser buffer
     vim.api.nvim_set_option_value("modifiable", true, { buf = ob_buf })
     vim.api.nvim_buf_set_lines(ob_buf, 0, -1, false, lines)
-
     vim.api.nvim_set_option_value("modifiable", false, { buf = ob_buf })
     upobcnt = false
 end
 
+--- Handle double-click events in the Object Browser
 function M.on_double_click()
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     if lnum == 2 then return end
 
     -- Toggle between "GlobalEnv" and "libraries" views
     if lnum == 1 then
-        if curview == "libraries" then
-            curview = "GlobalEnv"
-            job.stdin("Server", "31\n")
-        else
-            curview = "libraries"
-            job.stdin("Server", "321\n")
-        end
+        M.toggle_view()
         return
     end
 
     -- Get the current line and object name
-    lnum = vim.api.nvim_win_get_cursor(0)[1]
     local curline = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
     local key = M.get_name(lnum, curline)
+    if key == "" then return end
+
     if curview == "GlobalEnv" then
         if curline:find("&#.*\t") then
             -- Object is a list or data.frame
@@ -501,7 +476,7 @@ function M.on_double_click()
             require("r.doc").ask_R_doc(key, M.get_pkg_name(), false)
         else
             if
-                string.find(key, ":%$")
+                key:find(":%$")
                 or curline:find("%[#.*\t")
                 or curline:find("%$#.*\t")
                 or curline:find("<#.*\t")
@@ -516,66 +491,7 @@ function M.on_double_click()
     end
 end
 
-function M.on_right_click()
-    -- The function vim.fn.popup_menu() doesn't work when called from Lua.
-    local lnum = vim.api.nvim_win_get_cursor(0)[1]
-    if lnum == 1 then return end
-
-    local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
-    local key = M.get_name(lnum, line)
-    if key == "" then return end
-
-    if line:find("^   ##") then return end
-
-    local isfunction = false
-    if line:find("%(#") then isfunction = true end
-
-    if hasbrowsermenu then vim.fn.aunmenu("]RBrowser") end
-
-    key = key:gsub("%.", "\\.")
-    key = key:gsub(" ", "\\ ")
-
-    vim.fn.execute(
-        "amenu ]RBrowser.summary("
-            .. key
-            .. ") <Cmd>lua require('r.run').action('summary')<CR>"
-    )
-    vim.fn.execute(
-        "amenu ]RBrowser.str(" .. key .. ") <Cmd>lua require('r.run').action('str')<CR>"
-    )
-    vim.fn.execute(
-        "amenu ]RBrowser.names("
-            .. key
-            .. ") <Cmd>lua require('r.run').action('nvim.names')<CR>"
-    )
-    vim.fn.execute(
-        "amenu ]RBrowser.plot(" .. key .. ") <Cmd>lua require('r.run').action('plot')<CR>"
-    )
-    vim.fn.execute(
-        "amenu ]RBrowser.print("
-            .. key
-            .. ") <Cmd>lua require('r.run').action('args')<CR>"
-    )
-    vim.fn.execute("amenu ]RBrowser.-sep01- <nul>")
-    vim.fn.execute(
-        "amenu ]RBrowser.example("
-            .. key
-            .. ") <Cmd>lua require('r.run').action('example')<CR>"
-    )
-    vim.fn.execute(
-        "amenu ]RBrowser.help(" .. key .. ") <Cmd>lua require('r.run').action('help')<CR>"
-    )
-    if isfunction then
-        vim.fn.execute(
-            "amenu ]RBrowser.args("
-                .. key
-                .. ") <Cmd>lua require('r.run').action('args')<CR>"
-        )
-    end
-    vim.fn.popup_menu("]RBrowser")
-    hasbrowsermenu = true
-end
-
+--- Handle buffer unload event
 function M.on_BufUnload()
     ob_buf = nil
     ob_win = nil
@@ -586,6 +502,8 @@ end
 ---@return number
 function M.get_buf_nr() return ob_buf end
 
+--- Run a custom R command on the selected object
+---@param command string
 function M.run_custom_command(command)
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     if lnum < 3 then return end
@@ -599,10 +517,10 @@ function M.run_custom_command(command)
 
     local placeholder = config.objbr_placeholder or "{object}"
 
-    -- Replace {object} with the object name
+    -- Replace placeholder with the object name
     local cmd_to_run = command:gsub(placeholder, object_name)
 
-    -- If no placeholder was found, follow legacy behaviour
+    -- If no placeholder was found, append the object name to the command
     if cmd_to_run == command then cmd_to_run = command .. "(" .. object_name .. ")" end
 
     -- Execute the command on the selected object
