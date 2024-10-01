@@ -31,19 +31,15 @@ local lc_env = string.lower(
 local isutf8 = (lc_env:find("utf-8", 1, true) or lc_env:find("utf8", 1, true)) and true
     or false
 
--- Current view in the Object Browser: "GlobalEnv" or "libraries"
-local curview = "GlobalEnv"
-
--- Object Browser window and buffer references
-local ob_win
-local ob_buf
-
-local upobcnt = false -- Prevents multiple simultaneous updates
-local running_objbr = false -- Indicates if the Object Browser is currently running
-local auto_starting = true -- Controls automatic starting behavior
-
--- Popup menu
-local hasbrowsermenu = false
+local state = {
+    curview = "GlobalEnv", -- Current view in the Object Browser
+    win = nil, -- Object Browser window reference, previously `ob_win`
+    buf = nil, -- Object Browser buffer reference, previously `ob_buf`
+    upobcnt = false, -- Prevents multiple simultaneous updates
+    is_running = false, -- Indicates if the Object Browser is currently running, previously `running_objbr`
+    auto_starting = true, -- Controls automatic starting behavior
+    hasbrowsermenu = false, -- Popup menu state
+}
 
 --- Escape invalid R names with backticks
 ---@param word string
@@ -236,7 +232,7 @@ local function find_parent(child, curline, curpos)
 
     local fullname = parent .. suffix .. child
 
-    local spacelimit = (curview == "GlobalEnv") and 6 or (isutf8 and 12 or 8)
+    local spacelimit = (state.curview == "GlobalEnv") and 6 or (isutf8 and 12 or 8)
     if idx > spacelimit then return find_parent(fullname, curline, idx) end
     return fullname
 end
@@ -246,13 +242,13 @@ local function start_OB()
     local savesb = vim.o.switchbuf
     vim.o.switchbuf = "useopen,usetab"
 
-    if ob_buf and vim.api.nvim_buf_is_loaded(ob_buf) then
+    if state.buf and vim.api.nvim_buf_is_loaded(state.buf) then
         -- Object Browser is open; close it
         local ob_tab = nil
-        if vim.api.nvim_win_is_valid(ob_win) then
-            ob_tab = vim.api.nvim_win_get_tabpage(ob_win)
+        if vim.api.nvim_win_is_valid(state.win) then
+            ob_tab = vim.api.nvim_win_get_tabpage(state.win)
         end
-        vim.api.nvim_buf_delete(ob_buf, {})
+        vim.api.nvim_buf_delete(state.buf, {})
         if ob_tab ~= vim.api.nvim_win_get_tabpage(0) then start_OB() end
     else
         -- Open Object Browser
@@ -298,12 +294,12 @@ local function start_OB()
         end
 
         set_buf_options()
-        curview = "GlobalEnv"
-        ob_buf = vim.api.nvim_get_current_buf()
-        ob_win = vim.api.nvim_get_current_win()
+        state.curview = "GlobalEnv"
+        state.buf = vim.api.nvim_get_current_buf()
+        state.win = vim.api.nvim_get_current_win()
 
-        if config.objbr_auto_start and auto_starting then
-            auto_starting = false
+        if config.objbr_auto_start and state.auto_starting then
+            state.auto_starting = false
             vim.cmd.sb(edbuf)
         end
     end
@@ -322,19 +318,19 @@ function M.start(_)
         return
     end
 
-    if running_objbr then
+    if state.is_running then
         -- Prevents calling the function twice due to BufEnter event
         return
     end
 
-    running_objbr = true
+    state.is_running = true
 
     -- Request data from R to populate the Object Browser
     job.stdin("Server", "31\n")
     send_to_nvimcom("A", "RObjBrowser")
 
     start_OB()
-    running_objbr = false
+    state.is_running = false
 
     -- Execute any user-defined hooks after opening the Object Browser
     if config.hook.after_ob_open then
@@ -344,15 +340,15 @@ end
 
 --- Return the active pane of the Object Browser
 ---@return string
-function M.get_curview() return curview end
+function M.get_curview() return state.curview end
 
 --- Toggle between "GlobalEnv" and "libraries" views
 function M.toggle_view()
-    if curview == "libraries" then
-        curview = "GlobalEnv"
+    if state.curview == "libraries" then
+        state.curview = "GlobalEnv"
         job.stdin("Server", "31\n")
     else
-        curview = "libraries"
+        state.curview = "libraries"
         job.stdin("Server", "321\n")
     end
 end
@@ -385,13 +381,13 @@ function M.get_name(lnum, line)
 
     if idx == 5 then
         -- Top-level object
-        if curview == "libraries" then
+        if state.curview == "libraries" then
             return word .. ":"
         else
             return word
         end
     else
-        if curview == "libraries" then
+        if state.curview == "libraries" then
             if (isutf8 and idx == 12) or (idx == 8) then
                 word = word:gsub("%$%[%[", "[[")
                 return word
@@ -413,22 +409,22 @@ end
 
 --- Expand or collapse lists and data frames in the Object Browser
 ---@param stt string
-function M.open_close_lists(stt) job.stdin("Server", "34" .. stt .. curview .. "\n") end
+function M.open_close_lists(stt) job.stdin("Server", "34" .. stt .. state.curview .. "\n") end
 
 --- Update the Object Browser content
 ---@param what string
 function M.update_OB(what)
-    local wht = (what == "both") and curview or what
-    if curview ~= wht then return "curview != what" end
-    if upobcnt then
+    local wht = (what == "both") and state.curview or what
+    if state.curview ~= wht then return "curview != what" end
+    if state.upobcnt then
         -- vim.api.nvim_err_writeln("OB called twice")
         return "OB called twice"
     end
 
-    upobcnt = true
+    state.upobcnt = true
 
-    if not ob_buf then
-        upobcnt = false
+    if not state.buf then
+        state.upobcnt = false
         return "Object_Browser not listed"
     end
 
@@ -442,11 +438,11 @@ function M.update_OB(what)
     if not lines then lines = { "Error loading data" } end
 
     -- Update the Object Browser buffer
-    vim.api.nvim_set_option_value("modifiable", true, { buf = ob_buf })
-    vim.api.nvim_buf_set_lines(ob_buf, 0, -1, false, lines)
+    vim.api.nvim_set_option_value("modifiable", true, { buf = state.buf })
+    vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, lines)
 
-    vim.api.nvim_set_option_value("modifiable", false, { buf = ob_buf })
-    upobcnt = false
+    vim.api.nvim_set_option_value("modifiable", false, { buf = state.buf })
+    state.upobcnt = false
 end
 
 function M.on_double_click()
@@ -463,7 +459,7 @@ function M.on_double_click()
     lnum = vim.api.nvim_win_get_cursor(0)[1]
     local curline = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
     local key = M.get_name(lnum, curline)
-    if curview == "GlobalEnv" then
+    if state.curview == "GlobalEnv" then
         if curline:find("&#.*\t") then
             -- Object is a list or data.frame
             send_to_nvimcom("L", key)
@@ -516,7 +512,7 @@ function M.on_right_click()
     local isfunction = false
     if line:find("%(#") then isfunction = true end
 
-    if hasbrowsermenu then vim.fn.aunmenu("]RBrowser") end
+    if state.hasbrowsermenu then vim.fn.aunmenu("]RBrowser") end
 
     key = key:gsub("%.", "\\.")
     key = key:gsub(" ", "\\ ")
@@ -559,18 +555,18 @@ function M.on_right_click()
         )
     end
     vim.fn.popup_menu("]RBrowser")
-    hasbrowsermenu = true
+    state.hasbrowsermenu = true
 end
 
 function M.on_BufUnload()
-    ob_buf = nil
-    ob_win = nil
+    state.buf = nil
+    state.win = nil
     send_to_nvimcom("N", "OnOBBufUnload")
 end
 
 --- Return Object Browser buffer number
 ---@return number
-function M.get_buf_nr() return ob_buf end
+function M.get_buf_nr() return state.buf end
 
 --- Run a custom command on the selected object
 ---@param command string
