@@ -704,6 +704,8 @@ command:
 |config_tmux|         Don't use a specially built Tmux config file
 |rconsole_height|     Number of lines of R Console
 |rconsole_width|      Number of columns of R Console
+|register_treesitter| Should R.nvim register treesitter parsers for quarto and
+rmd files. Default is true.
 |min_editor_width|    Minimum number of columns of editor after R start
 |applescript|         Use osascript in macOS to run R.app
 |RStudio_cmd|         Run RStudio instead of R.
