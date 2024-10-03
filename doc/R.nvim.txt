@@ -704,6 +704,7 @@ command:
 |config_tmux|         Don't use a specially built Tmux config file
 |rconsole_height|     Number of lines of R Console
 |rconsole_width|      Number of columns of R Console
+|register_treesitter| Register treesitter parsers for quarto and rmd files
 |min_editor_width|    Minimum number of columns of editor after R start
 |applescript|         Use osascript in macOS to run R.app
 |RStudio_cmd|         Run RStudio instead of R.
@@ -1352,7 +1353,7 @@ simple as the number `1`.
 
 
 ------------------------------------------------------------------------------
-6.16. Special R functions                                        *listmethods*
+6.17. Special R functions                                        *listmethods*
                                                                  *specialplot*
 
 The R function `args()` lists the arguments of a function, but not the
@@ -1834,8 +1835,9 @@ configuration:
 >lua
   convert_range_int = true
 
+
 ------------------------------------------------------------------------------
-6.36. Convert extraction operators                  *convert_extract_operator*
+6.37. Convert extraction operators                  *convert_extract_operator*
 
 There are two types of subsetting expressions in R: `$` and `[.` `R.nvim`
 allows to convert the subsetting operators `[` and `$` to `[[`.
@@ -1848,8 +1850,9 @@ allows to convert the subsetting operators `[` and `$` to `[[`.
 The default key binding for this functionally is `<LocalLeader>cs` (change
 subsetting).
 
+
 ------------------------------------------------------------------------------
-6.38. Installing missing R packages in the current buffer    *install_missing*
+6.39. Installing missing R packages in the current buffer    *install_missing*
 
 If the `lintr` package is installed and properly configured
 (https://github.com/R-nvim/R.nvim/wiki/lintr), it will mark any R packages
@@ -1857,8 +1860,9 @@ used in the current buffer that are not installed as missing. These missing
 packages can be automatically installed using the `<LocalLeader>ip` (install
 packages) key binding.
 
+
 ------------------------------------------------------------------------------
-6.38. Split file paths and URLs                                   *split_path
+6.40. Split file paths and URLs                                   *split_path
 
 You can split the path of the current file, directory, or a URL under the
 cursor into its components (e.g., directory, file name, extension) using the
@@ -1873,6 +1877,17 @@ Current available functions are:
 
 If the target string is detected as a URL, it will be split using the '/' character.
 will be handled using the `paste0()` function.
+
+
+------------------------------------------------------------------------------
+6.41. Tree-sitter parser for Quarto and RMarkdown        *register_treesitter*
+
+R.nvim registers the Markdown parser to both Quarto and RMarkdown documents.
+This will change in the future if dedicated parsers are written for them.
+You can disable this feature in your R.nvim config:
+>lua
+  register_treesitter = false
+
 
 ==============================================================================
 7. Custom key bindings                                   *R.nvim-key-bindings*
