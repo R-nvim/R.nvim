@@ -285,7 +285,7 @@ but temporary files are used in a few cases.
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's
     output.
 
-- [Ark](https://github.com/posit-dev/ark): a LSP server/DAP server/Jupyter kernal
+- [Ark](https://github.com/posit-dev/ark): a LSP server/DAP server/Jupyter kernel
     for R.
 
 - [southernlights](https://github.com/jalvesaq/southernlights): a colourscheme 
