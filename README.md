@@ -145,15 +145,15 @@ firm commitment to backwards compatibility.
 
 ### Removed features:
 
-- `Rrst` is no longer supported (it no longer seems to be widely used)
+- reStructuredText support (it no longer seems to be widely used).
 
-- Debugging support (a debug adaptor would be better)
+- Nvim-R's debugging support (a debug adaptor would be better).
 
 - Legacy omni-completion (we now recommend
-    [nvim-cmp](https://github.com/hrsh7th/nvim-cmp))
+    [nvim-cmp](https://github.com/hrsh7th/nvim-cmp)).
 
 - Highlighting functions from `.GlobalEnv` (difficult to make compatible with
-    tree-sitter + LSP highlighting)
+    tree-sitter + LSP highlighting).
 
 - The `echo` argument for functions that send code to R console has been
     removed. Users can still set the `source_args` to define the arguments that
@@ -164,10 +164,10 @@ firm commitment to backwards compatibility.
 ### Changes:
 
 - `Alt+-` is now used to insert `<-`. This can be configured using
-    `assignment_keymap`
+    `assignment_keymap`.
 
 - `R_source` and `after_R_start` have been replaced with more powerful `hook`
-    options
+    options.
 
 - `nvimpager`, which controls how R documentation is displayed, now how possible
     options `"split_h"`, `"split_v"`, `"tab"`, `"float"` (not implemented yet),
@@ -195,27 +195,27 @@ firm commitment to backwards compatibility.
 
 #### New keybindings
 
-- `<LocalLeader>sc` sends a piped chain of commands
+- `<LocalLeader>sc` sends a piped chain of commands.
 
 - `<LocalLeader>ip` installs missing packages detected by
-    [languageserver](https://github.com/REditorSupport/languageserver):
+    [languageserver](https://github.com/REditorSupport/languageserver).
 
 - `<LocalLeader>sp` splits a filepath under the cursor into individual
     components concatenated using `paste()` (requires
     [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
-    installed)
+    installed).
 
 - `<LocalLeader>sh` splits a filepath under the cursor into individual 
     components concatenated using `here::here()` (requires
     [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
-    installed)
+    installed).
 
 - `<LocalLeader>,` inserts a pipe operator (`|>`). This is configurable using
-     `pipe_keymap`
+     `pipe_keymap`.
 
 #### New options
 
-- `auto_quit` can be configured to automatically quit R when you quit Neovim
+- `auto_quit` can be configured to automatically quit R when you quit Neovim.
 
 - `rproj_prioritise` can be configured to control how `.Rproj` files change the
     behaviour of R.nvim. Amongst other things, this may affect whether 
