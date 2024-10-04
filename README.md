@@ -163,8 +163,8 @@ firm commitment to backwards compatibility.
 
 ### Changes:
 
-- `Alt+-` is now used to insert `<-`. This can be configured using
-    `assignment_keymap`.
+- `<M-->` (i.e. `Alt + -`) is now used to insert `<-`. This can be configured
+    using `assignment_keymap`.
 
 - `R_source` and `after_R_start` have been replaced with more powerful `hook`
     options.
