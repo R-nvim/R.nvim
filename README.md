@@ -145,9 +145,9 @@ firm commitment to backwards compatibility.
 
 ### Removed features:
 
-- reStructuredText support (it no longer seems to be widely used).
+- reStructuredText support (no longer seems to be widely used).
 
-- Nvim-R's debugging support (a debug adaptor would be better).
+- Debugging support (a formal debug adaptor would be a better solution).
 
 - Legacy omni-completion (we now recommend
     [nvim-cmp](https://github.com/hrsh7th/nvim-cmp)).
@@ -169,7 +169,7 @@ firm commitment to backwards compatibility.
 - `R_source` and `after_R_start` have been replaced with more powerful `hook`
     options.
 
-- `nvimpager`, which controls how R documentation is displayed, now how possible
+- `nvimpager`, which controls how R documentation is displayed, now has possible
     options `"split_h"`, `"split_v"`, `"tab"`, `"float"` (not implemented yet),
     and `"no"`.
 
@@ -210,8 +210,8 @@ firm commitment to backwards compatibility.
     [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
     installed).
 
-- `<LocalLeader>,` inserts a pipe operator (`|>`). This is configurable using
-     `pipe_keymap`.
+- `<LocalLeader>,` inserts a pipe operator (`|>`). This keybinding is
+    configurable using `pipe_keymap`.
 
 #### New options
 
