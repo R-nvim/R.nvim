@@ -80,7 +80,7 @@ A longer example adding some custom behaviour:
 See the plugin [documentation](doc/R.nvim.txt) for a complete list of
 possible options. You can also consult the [Wiki](https://github.com/R-nvim/R.nvim/wiki).
 
-## Autocompletion
+### Autocompletion
 
 R autocompletion should be configured via another plugin. We recommend 
 [cmp-r](https://github.com/R-nvim/cmp-r), which can be minimally configured 
@@ -104,7 +104,7 @@ Note that [languageserver](https://github.com/REditorSupport/languageserver)
 can also be used for autocompletions, but using autocompletions from both
 sources simultaneously is not advised.
 
-## Tree-sitter
+### Tree-sitter
 
 Tree-sitter greatly enhances much of the functionality of R.nvim, and can be
 minimally configured like so:
