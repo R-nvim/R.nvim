@@ -201,12 +201,9 @@ firm commitment to backwards compatibility.
     [languageserver](https://github.com/REditorSupport/languageserver).
 
 - `<LocalLeader>sp` splits a filepath under the cursor into individual
-    components concatenated using `paste()` (requires
-    [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
-    installed).
-
-- `<LocalLeader>sh` splits a filepath under the cursor into individual 
-    components concatenated using `here::here()` (requires
+    components concatenated using either `"here::here"` (the default),
+    `"here"`, `"file.path"`, `"fs::path"`, or `"path"`, depending on how
+    `path_split_fun` is set. Requires
     [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
     installed).
 
