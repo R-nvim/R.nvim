@@ -9,7 +9,7 @@ R.nvim adds R support to Neovim, including:
 
 - A built-in object explorer and autocompletions built from your R environment
 
-- Keyboard shortcuts for common inserts like `->` and `|>`
+- Keyboard shortcuts for common inserts like `<-` and `|>`
 
 - Quarto/R Markdown support
 
