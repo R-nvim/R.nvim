@@ -1888,9 +1888,29 @@ You can disable this feature in your R.nvim config:
 >lua
   register_treesitter = false
 
+==============================================================================
+7. Public Lua API                                             *public-lua-api*
+
+The Lua internals for R.nvim should be considered generally unstable and
+subject to change without notice. There are some exceptions to this rule,
+which are declared stable for the benefit of users:
+
+r.run.action(rcmd, mode, args)                                 *r.run.action()*
+    Calls an R function on the word currently under the cursor
+
+    Parameters: ~
+        {rcmd} (string)     The name of an R function
+        {mode} (string)     The current mode (`"n"` or `"v"`)
+        {args} (string)     Extra arguments to pass to `rcmd`
+
+r.send.cmd(command)                                              *r.send.cmd()*
+    Calls an R function on the word currently under the cursor
+
+    Parameters: ~
+        {command} (string)  Code to send to the current R session
 
 ==============================================================================
-7. Custom key bindings                                   *R.nvim-key-bindings*
+8. Custom key bindings                                   *R.nvim-key-bindings*
 
 See |user_maps_only| if you want to inhibit the creation of default mappings.
 See |disable_cmds| if you only want to avoid the creation of some of them.
@@ -1937,7 +1957,7 @@ insinde the function passed to `hook.on_filetype` as in the examples below
 
 
 ==============================================================================
-8. roxygen2 support                                          *R.nvim-roxygen2*
+9. roxygen2 support                                          *R.nvim-roxygen2*
 
 R.nvim has supports to insert roxygen2 skeletons in R scripts. To insert a new
 roxygen2 block, you can use the `Roxygenize` function while the cursor is
@@ -1945,7 +1965,7 @@ inside a function definition. If a block of roxygen2 is already present, no
 modification will be made.
 
 ==============================================================================
-8. History                                                    *R.nvim-history*
+10. History                                                   *R.nvim-history*
 
 See: https://www.vim.org/scripts/script.php?script_id=2628
      https://groups.google.com/g/vim-r-plugin

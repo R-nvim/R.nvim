@@ -1,147 +1,191 @@
+![GitHub Release](https://img.shields.io/github/v/release/R-nvim/R.nvim)
 ![Selene linter check](https://github.com/jalvesaq/tmp-R-Nvim/actions/workflows/selene.yml/badge.svg)
 
 # R.nvim
 
-This is the development code of R.nvim which improves Neovim's support to edit
-R scripts.
+R.nvim adds R support to Neovim, including:
+
+- Communication with R via Neovim's built-in terminal or tmux
+
+- A built-in object explorer and autocompletions built from your R environment
+
+- Keyboard shortuts for common inserts like `->` and `|>`
+
+- Quarto/R Markdown support
+
+- ...And much more!
+
+<p align="center">
+    <img style="width: 800px" src="screenshot.png">
+</p>
 
 ## Installation
 
-If you use a plugin manager, follow its instructions on how to install plugins
-from GitHub. Users of [lazy.nvim](https://github.com/folke/lazy.nvim) who
-opted for `defaults.lazy=true` have to configure R.nvim with `lazy=false`.
-Examples of configuration for `lazy.nvim` (see also [cmp-r]):
-
-Minimal configuration:
+Here's a (very) minimal configuration using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
-  {
+{
     "R-nvim/R.nvim",
+     -- Only required if you also set defaults.lazy = true 
     lazy = false
-  },
-  {
+    -- R.nvim is still young and we may make some breaking changes from time
+    -- to time. For now we recommend pinning to the latest minor version
+    -- like so:
+    version = "~0.1.0"
+},
+```
+
+A longer example adding some custom behaviour:
+
+```lua
+{
+    "R-nvim/R.nvim",
+     -- Only required if you also set defaults.lazy = true 
+    lazy = false
+    -- R.nvim is still young and we may make some breaking changes from time
+    -- to time. For now we recommend pinning to the latest minor version
+    -- like so:
+    version = "~0.1.0"
+    config = function()
+        -- Create a table with the options to be passed to setup()
+        local opts = {
+            hook = {
+                on_filetype = function()
+                    vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
+                    vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
+                end
+            }
+            R_args = {"--quiet", "--no-save"},
+            min_editor_width = 72,
+            rconsole_width = 78,
+            disable_cmds = {
+                    "RClearConsole",
+                    "RCustomStart",
+                    "RSPlot",
+                    "RSaveClose",
+                },
+            }
+            -- Check if the environment variable "R_AUTO_START" exists.
+            -- If using fish shell, you could put in your config.fish:
+            -- alias r "R_AUTO_START=true nvim"
+            if vim.env.R_AUTO_START == "true" then
+                opts.auto_start = "on startup"
+                opts.objbr_auto_start = true
+            end
+            require("r").setup(opts)
+        end,
+},
+```
+
+See the plugin [documentation](doc/R.nvim.txt) for a complete list of
+possible options. You can also consult the [Wiki](https://github.com/R-nvim/R.nvim/wiki).
+
+## Autocompletion
+
+R autocompletion should be configured via another plugin. We recommend 
+[cmp-r](https://github.com/R-nvim/cmp-r), which can be minimally configured 
+like so:
+
+
+``` lua
+{
+    "R-nvim/cmp-r",
+    {
+        "hrsh7th/nvim-cmp",
+        config = function()
+            require("cmp").setup({ sources = {{ name = "cmp_r" }}})
+            require("cmp_r").setup({})
+        end,
+    },
+},
+```
+
+Note that [languageserver](https://github.com/REditorSupport/languageserver)
+can also be used for autocompletions, but using autocompletions from both
+sources simultaneously is not advised.
+
+## Tree-sitter
+
+Tree-sitter greatly enhances much of the functionality of R.nvim, and can be
+minimally configured like so:
+
+``` lua
+{
     "nvim-treesitter/nvim-treesitter",
     run = ":TSUpdate",
     config = function ()
-      require("nvim-treesitter.configs").setup({
-        ensure_installed = { "markdown", "markdown_inline", "r", "rnoweb", "yaml" },
-        highlight = { enable = true },
-      })
+        require("nvim-treesitter.configs").setup({
+            ensure_installed = { "markdown", "markdown_inline", "r", "rnoweb", "yaml" },
+            highlight = { enable = true },
+        })
     end
-  },
-  "R-nvim/cmp-r",
-  {
-    "hrsh7th/nvim-cmp",
-    config = function()
-      require("cmp").setup({ sources = {{ name = "cmp_r" }}})
-      require("cmp_r").setup({ })
-    end,
-  },
+},
 ```
 
-More complex configuration (for `R.nvim` only):
-
-```lua
-    {
-        "R-nvim/R.nvim",
-        config = function ()
-            -- Create a table with the options to be passed to setup()
-            local opts = {
-                hook = {
-                    on_filetype = function()
-                        vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", {})
-                        vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", {})
-                    end
-                }
-                R_args = {"--quiet", "--no-save"},
-                min_editor_width = 72,
-                rconsole_width = 78,
-                disable_cmds = {
-                        "RClearConsole",
-                        "RCustomStart",
-                        "RSPlot",
-                        "RSaveClose",
-                    },
-                }
-                -- Check if the environment variable "R_AUTO_START" exists.
-                -- If using fish shell, you could put in your config.fish:
-                -- alias r "R_AUTO_START=true nvim"
-                if vim.env.R_AUTO_START == "true" then
-                    opts.auto_start = "on startup"
-                    opts.objbr_auto_start = true
-                end
-                require("r").setup(opts)
-            end,
-        lazy = false
-    },
-```
-
-The complete list of options is in the documentation.
-See also the [Wiki](https://github.com/R-nvim/R.nvim/wiki).
 
 ## Usage
 
-Please read the plugin's
-[documentation](https://github.com/R-nvim/R.nvim/blob/main/doc/R.nvim.txt) for
-instructions on usage. See also the output of `:RMapsDesc`.
+Please see the [documentation](doc/R.nvim.txt) for instructions on usage. For a
+complete list of keymaps, see the output of `:RMapsDesc`.
+
+## Lifecycle
+
+R.nvim is still maturing and its public API (configuration options,
+commands, and some of the Lua internals) may undergo breaking changes from
+time to time. This project uses [semantic versioning](https://semver.org/) to 
+help with this, and we will always bump the minor version, e.g. from 0.1.x to
+0.2.0, when we make a breaking change. Users are thus encouraged to pin their
+installation of R.nvim to the **latest minor release** and to check the release
+notes for any breaking changes when upgrading.
+
+Eventually we plan to release a version 1.0.0, at which point we will make a 
+firm commitment to backwards compatibility.
 
 ## Transitioning from Nvim-R
 
-### Changes
+### Removed features:
 
-During the conversion of VimScript to Lua, we decided to end support for features
-that were useful in the past but no longer sufficiently valuable to be worth
-the effort of conversion. We removed support for `Rrst` (it seems that not
-many people use it anymore), debugging code (a debug adapter would be better),
-legacy omni-completion (auto completion with
-[nvim-cmp](https://github.com/hrsh7th/nvim-cmp) is better), and highlighting
-functions from .GlobalEnv (difficult to make compatible with tree-sitter + LSP
-highlighting).
+- `Rrst` is no longer supported (it no longer seems to be widely used)
 
-We changed the default key binding to insert the assignment operator (`<-`) from an
-underscore (which was familiar to Emacs-ESS users) to `Alt+-` which is more
-convenient (but does not work on Vim). See the option `assignment_keymap`.
+- Debugging support (a debug adaptor would be better)
 
-We replaced the options `R_source` and `after_R_start` with some more specific
-`hook`s and we can insert other hooks for Lua functions at other parts of the
-code under user request.
+- Legacy omni-completion (we now recommend
+    [nvim-cmp](https://github.com/hrsh7th/nvim-cmp))
 
-We added a keybinding for the pipe operator (`|>`). This defaults to
-`<LocalLeader>,` and is configurable with the option `pipe_keymap`.
+- Highlighting functions from `.GlobalEnv` (difficult to make compatible with
+    tree-sitter + LSP highlighting)
 
-We added awareness of `.Rproj` files (the project-level configuration
-files used by RStudio). This may, for example, change whether `pipe_keymap`
-inserts `|>` or `%>%` for a particular project. See the option `rproj_prioritise`
-for a full list of the behaviours which may be affected by `.Rproj` files,
-or to change whether they should affect things at all.
+- The `echo` argument for functions that send code to R console has been
+    removed. Users can still set the `source_args` to define the arguments that
+    will be passed to `base::source()` and include the argument `echo=TRUE`.
+    `max_lines_to_paste` can now be used to set the number of lines which can be
+    sent directly to the R Console without saving the code in a temporary file.
 
-We removed the `"echo"` parameters from the functions that send code to R
-Console. Users can still set the value of `source_args` to define the
-arguments that will be passed to `base::source()` and include the argument
-`echo=TRUE`. Now, there is a new option to define how many lines can be sent
-directly to the R Console without saving the code in a temporary file to be
-sourced (`max_lines_to_paste`).
+### Changes:
 
-The options for displaying R documentation (`nvimpager`) are now: `"split_h"`,
-`"split_v"`, `"tab"`, `"float"` (not implemented yet), and `"no"`.
+- `Alt+-` is now used to insert `<-`. This can be configured using
+    `assignment_keymap`
 
-The options `openpdf` and `openhtml` were renamed as `open_pdf` and
-`open_html`, they now are strings and there is a minor change in how they
-behave.
+- `R_source` and `after_R_start` have been replaced with more powerful `hook`
+    options
 
-The option `nvim_wd` was renamed as `setwd` and it now is a string and its
-default value is "no".
+- `nvimpager`, which controls how R documentation is displayed, now how possible
+    options `"split_h"`, `"split_v"`, `"tab"`, `"float"` (not implemented yet),
+    and `"no"`.
 
-The option `notmuxconf` was renamed as `config_tmux` to avoid the negation of
-the negation `notmuxconf=false` or the even more awkward confirmation of the
-negation `notmuxconf=true`. The default value of `config_tmux` is `true`.
+- `open_pdf` replaces `openpdf` and `openhtml`; see the documentation for
+    details.
 
-The `:RFormat` command no longer has the option to use the package `formatR`;
-now, the `styler` package is required.
+- `setwd` replaces `nvim_wd`. The new default value is `"no"`.
+
+- `config_tmux` replaces `notmuxconf`. The new default value is `true`.
+
+- `:RFormat` now requires {styler} to be installed; {formatR} is no longer
+    supported.
 
 ### New features
 
-There are two new commands:
+#### New commands
 
 - `:RMapsDesc` displays the list of key bindings followed by short
   descriptions.
@@ -149,51 +193,48 @@ There are two new commands:
 - `:RConfigShow` displays the list of configuration options and their current
   values.
 
-There is one new command to send the above-piped chain of commands. Its
-default key binding is `<LocalLeader>sc`.
+#### New keybindings
 
-There is a new command to install missing packages detected by the
-[languageserver]: `<LocalLeader>ip`.
+- `<LocalLeader>sc` sends a piped chain of commands
 
-There is a new option: `auto_quit`.
+- `<LocalLeader>ip` installs missing packages detected by
+    [languageserver](https://github.com/REditorSupport/languageserver):
 
-If you have [colorout] installed, and if you are not loading it in your
-`~/.Rprofile`, it should be version `1.3-1` or higher. Reason: R.nvim calls
-the function `colorout::isColorOut()` which in previous `colorout` versions
-were unduly enabling the output colorizing.
+- `<LocalLeader>sp` splits a filepath under the cursor into individual
+    components concatenated using `paste()` (requires
+    [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
+    installed)
 
-There are two new commands available to separate a file path into its different
-components.
+- `<LocalLeader>sh` splits a filepath under the cursor into individual 
+    components concatenated using `here::here()` (requires
+    [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
+    installed)
 
-The first command, `<LocalLeader>sp`, will take the file path under
-the cursor and break it down into its components, then surround it with the
-`paste()` function.
+- `<LocalLeader>,` inserts a pipe operator (`|>`). This is configurable using
+     `pipe_keymap`
 
-The second command, `<LocalLeader>sh`, will also break down
-the file path under the cursor into its components, but instead surround it
-with the `here()` function.
+#### New options
 
-It's important to note that both functions require
-the [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
-plugin to be installed.
+- `auto_quit` can be configured to automatically quit R when you quit Neovim
 
-For example, if you have the following file path under the cursor:
-
-```r
-read.csv("/home/user/Documents/file.csv")
-```
-
-Running the `<LocalLeader>sp` command will transform it into:
-
-```r
-read.csv(paste("/home", "user", "Documents", "file.csv", sep = "/"))
-```
+- `rproj_prioritise` can be configured to control how `.Rproj` files change the
+    behaviour of R.nvim. Amongst other things, this may affect whether 
+    `<LocalLeader>,` inserts `|>` or `%>%`.
 
 ## Screenshots and videos
 
-None yet. Tell us if you published a video presenting R.nvim features.
+None yet! Please let us know if you publish a video presenting R.nvim features 😃
 
-## The communication between Neovim and R
+## Troubleshooting
+
+- [colorout](https://github.com/jalvesaq/colorout): If you have [colorout]
+    installed and are *not* loading it in your `~/.Rprofile`, it should be
+    version `1.3-1` or higher. This is because R.nvim uses
+    `colorout::isColorOut()` which in previous `colorout` versions was unduly
+    enabling the output colorizing.
+
+
+## How R.nvim communicates with your R session
 
 The diagram below shows how the communication between Neovim and R works.
 ![Neovim-R communication](https://raw.githubusercontent.com/jalvesaq/tmp-R-Nvim/master/nvimrcom.svg "Neovim-R communication")
@@ -235,15 +276,19 @@ but temporary files are used in a few cases.
 
 ## See also:
 
-- [cmp-r]: [nvim-cmp] source using R.nvim as backend.
+- [cmp-r](https://github.com/R-nvim/cmp-r): autocompletion source for
+    [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) using R.nvim as backend.
 
-- [languageserver]: a language server for R.
+- [languageserver](https://github.com/REditorSupport/languageserver): a
+    language server for R.
 
-- [colorout]: a package to colorize R's output.
+- [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's
+    output.
 
-[cmp-r]: https://github.com/R-nvim/cmp-r
-[neovim]: https://github.com/neovim/neovim
-[southernlights]: https://github.com/jalvesaq/southernlights
-[colorout]: https://github.com/jalvesaq/colorout
-[languageserver]: https://cran.r-project.org/web/packages/languageserver/index.html
-[nvim-cmp]: https://github.com/hrsh7th/nvim-cmp
+- [Ark](https://github.com/posit-dev/ark): a LSP server/DAP server/Jupyter kernal
+    for R.
+
+- [southernlights](https://github.com/jalvesaq/southernlights): a colourscheme 
+    for vim.
+
+
