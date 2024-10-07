@@ -692,6 +692,8 @@ command:
 |objbr_opendf|        Display data.frames open in the Object Browser
 |objbr_openlist|      Display lists open in the Object Browser
 |objbr_allnames|      Display hidden objects in the Object Browser
+|objbr_mappings|      Add custom keymap to the Object Browser
+|objbr_placeholder|   Define the string to substitute for with objects
 |compl_data|          Limits to completion data (avoid R slowdown)
 |nvimpager|           Use Neovim to see R documentation
 |open_example|        Use Neovim to display R examples
@@ -1037,6 +1039,8 @@ cursor is not at the beginning of the line.
                                                               *objbr_openlist*
                                                               *objbr_allnames*
                                                               *compl_data*
+                                                              *objbr_mappings*
+                                                              *objbr_placeholder*
 By default, the Object Browser will be created at the right of the script
 window, and with 40 columns. Valid values for the Object Browser placement are
 the combination of either "script" or "console" and "right", "left", "above",
@@ -1115,6 +1119,116 @@ values if you notice any delay when R is running commands. In this case,
 please, put `options(nvimcom.verbose = 1)` in your `~/.Rprofile` and use the
 information output by `nvimcom` to decide what parameter to change.
 
+As of R.nvim version 0.1.0, it is possible to add a custom keymap through
+`objbr_mappings` table. The keymap defined in this table will be availble in
+the object browser only. Using this method, you can set keymaps that run Lua
+functions or R code. The following paragraphs documents how this feature
+works.
+
+In `objbr_mappings`, you can bind R functions (without parentheses) to keys.
+In the following example, pressing `l` in the object browser will run
+`length({object})` in the current R session, where `{object}` is the object
+under the cursor in the object browser.
+
+>lua
+      objbr_mappings = {
+        c = 'class',
+        l = 'length',
+        n = 'names',
+        s = 'summary',
+        t = 'table',
+      },
+<
+
+It is also possible to use R namespacing to call R code not defined in the
+current R session. The following example run `glimpse` function from the R
+package `dplyr` on `object` (i.e., simply sends `dplyr::glimpse({object})`) to
+the current session.
+>lua
+      objbr_mappings = {
+        g = 'dplyr::glimpse',
+      },
+<
+You can also explicitly use `{object}` notation in you bindings. This allows
+you to bind more complicated R expressions.
+>lua
+      objbr_mappings = {
+        -- Similar to the previous.
+        t = 'table({objects})',
+        g = 'dplyr::glimpse({object})',
+        -- using {object}
+        sna = 'sum(is.na({object}))', -- count NAs of a vector.
+      },
+<
+R code can potentially include any sequence of character, and in the edge
+case, the R code you define in `objbr_mappings` may itself include the pattern
+`{object}`. In this case, R.nvim will falsely replace legitimate `{object}`
+patterns in R expressions with the name of the object under cursor. In that
+case (or if `{object}` feels too much to type), you may want to use a
+pattern other than `{object}` to refer to objects under cursor in the object
+browser. Here you should define `objbr_placeholder` in your `config` table.
+>lua
+      objbr_mappings = {
+        t = 'table',
+        g = 'dplyr::glimpse',
+        sna = 'sum(is.na(@@))',
+      },
+      objbr_placeholder = '@@'
+<
+One might need to use special keys (e.g., <localleader>, <CR>, etc) when defining a
+keymap. Lua allows the use *bracket notation* to use non-alphanumeric
+characters in table keys.
+>lua
+      objbr_mappings = {
+        ['<localleader>gg'] = 'head({object}, 30)',
+      },
+<
+You can also bind keys to Lua functions. For example, the following example binds
+`e` to an anonymous function that fetches the definition of an R function
+under the cursor and opens it in a new vim buffer. The code also binds `v` in the
+object browser to toggle between the two view (i.e., `.Globalenv` and `Libraries`).
+>lua
+      objbr_mappings = {
+        ['<localleader>gg'] = 'head',
+        e = function()
+          local browser = require 'r.browser'
+          local config = require('r.config').get_config()
+          local lnum = vim.api.nvim_win_get_cursor(0)[1]
+          local curline = vim.fn.getline(lnum)
+          local object_name = browser.get_name(lnum, curline)
+          if object_name == '' then
+            require('r').warn 'No object selected.'
+            return
+          end
+
+          local temp_file = config.localtmpdir .. '/function_def_' .. vim.env.RNVIM_ID .. '.R'
+
+          -- Send R command to write the function definition to a temp file
+          local cmd = string.format('writeLines(deparse(%s), "%s")', object_name, temp_file)
+          require('r.send').cmd(cmd)
+
+          -- Wait for R to execute the command and write the file
+          vim.defer_fn(function()
+            local output = vim.fn.readfile(temp_file)
+            if not output or #output == 0 then
+              require('r').warn 'Could not retrieve function definition.'
+              return
+            end
+
+            -- Open a new split window and display the function definition
+            vim.cmd 'split'
+            vim.cmd 'enew'
+            vim.bo.filetype = 'r' -- Set filetype to R
+            vim.api.nvim_buf_set_lines(0, 0, -1, false, output)
+
+          end, 100)
+        end,
+        t = 'table',
+        v = function()
+          require('r.browser').toggle_view()
+        end,
+      },
+<
 
 ------------------------------------------------------------------------------
 6.8. Neovim as pager for R                                      *open_example*

@@ -58,6 +58,14 @@ A longer example adding some custom behaviour:
             R_args = {"--quiet", "--no-save"},
             min_editor_width = 72,
             rconsole_width = 78,
+            objbr_mappings = { -- Object browser keymap
+                c = 'class', -- Call R functions
+                ['<localleader>gg'] = 'head({object}, n = 15)', -- Use {object} notation to write arbitrary R code.
+                v = function()
+                    -- Run lua functions
+                    require('r.browser').toggle_view()
+                end
+            },
             disable_cmds = {
                     "RClearConsole",
                     "RCustomStart",
@@ -217,6 +225,9 @@ firm commitment to backwards compatibility.
 - `rproj_prioritise` can be configured to control how `.Rproj` files change the
     behaviour of R.nvim. Amongst other things, this may affect whether 
     `<LocalLeader>,` inserts `|>` or `%>%`.
+
+- `objbr_mappings` can be configured to run R commands on objects in the
+    current session.
 
 ## Screenshots and videos
 
