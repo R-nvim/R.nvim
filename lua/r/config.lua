@@ -62,11 +62,11 @@ local config = {
     objbr_openlist      = false,
     objbr_place         = "script,right",
     objbr_w             = 40,
-		objbr_mappings 			= {
-															s = "summary",
-															p = "plot",
-													},
-		objbr_placeholder   = "{object}",
+    objbr_mappings      = {
+                              s = "summary",
+                              p = "plot",
+                          },
+    objbr_placeholder   = "{object}",
     open_example        = true,
     open_html           = "open and focus",
     open_pdf            = "open and focus",
@@ -270,7 +270,7 @@ local apply_user_opts = function()
         -----------------------------------------------------------------------
         -- 4. If the option is a dictionary, check each value individually
         -----------------------------------------------------------------------
-        if type(user_opt) == "table" then
+        if type(user_opt) == "table" and key_name ~= "objbr_mappings" then
             for k, v in pairs(user_opt) do
                 if type(k) == "string" then
                     local next_key = {}
