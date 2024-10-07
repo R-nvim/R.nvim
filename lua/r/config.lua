@@ -78,6 +78,7 @@ local config = {
     quarto_render_args  = "",
     rconsole_height     = 15,
     rconsole_width      = 80,
+    register_treesitter = true,
     remote_compldir     = "",
     rm_knit_cache       = false,
     rmarkdown_args      = "",
@@ -913,6 +914,10 @@ M.real_setup = function()
         vim.schedule(function() config.hook.on_filetype() end)
     end
     require("r.rproj").apply_settings(config)
+
+    if config.register_treesitter then
+        vim.treesitter.language.register("markdown", { "quarto", "rmd" })
+    end
 end
 
 --- Return the table with the final configure variables: the default values

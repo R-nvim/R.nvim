@@ -704,6 +704,7 @@ command:
 |config_tmux|         Don't use a specially built Tmux config file
 |rconsole_height|     Number of lines of R Console
 |rconsole_width|      Number of columns of R Console
+|register_treesitter| Register treesitter parsers for quarto and rmd files
 |min_editor_width|    Minimum number of columns of editor after R start
 |applescript|         Use osascript in macOS to run R.app
 |RStudio_cmd|         Run RStudio instead of R.
@@ -1352,7 +1353,7 @@ simple as the number `1`.
 
 
 ------------------------------------------------------------------------------
-6.16. Special R functions                                        *listmethods*
+6.17. Special R functions                                        *listmethods*
                                                                  *specialplot*
 
 The R function `args()` lists the arguments of a function, but not the
@@ -1834,8 +1835,9 @@ configuration:
 >lua
   convert_range_int = true
 
+
 ------------------------------------------------------------------------------
-6.36. Convert extraction operators                  *convert_extract_operator*
+6.37. Convert extraction operators                  *convert_extract_operator*
 
 There are two types of subsetting expressions in R: `$` and `[.` `R.nvim`
 allows to convert the subsetting operators `[` and `$` to `[[`.
@@ -1848,8 +1850,9 @@ allows to convert the subsetting operators `[` and `$` to `[[`.
 The default key binding for this functionally is `<LocalLeader>cs` (change
 subsetting).
 
+
 ------------------------------------------------------------------------------
-6.38. Installing missing R packages in the current buffer    *install_missing*
+6.39. Installing missing R packages in the current buffer    *install_missing*
 
 If the `lintr` package is installed and properly configured
 (https://github.com/R-nvim/R.nvim/wiki/lintr), it will mark any R packages
@@ -1857,8 +1860,9 @@ used in the current buffer that are not installed as missing. These missing
 packages can be automatically installed using the `<LocalLeader>ip` (install
 packages) key binding.
 
+
 ------------------------------------------------------------------------------
-6.38. Split file paths and URLs                                   *split_path
+6.40. Split file paths and URLs                                   *split_path
 
 You can split the path of the current file, directory, or a URL under the
 cursor into its components (e.g., directory, file name, extension) using the
@@ -1874,8 +1878,39 @@ Current available functions are:
 If the target string is detected as a URL, it will be split using the '/' character.
 will be handled using the `paste0()` function.
 
+
+------------------------------------------------------------------------------
+6.41. Tree-sitter parser for Quarto and RMarkdown        *register_treesitter*
+
+R.nvim registers the Markdown parser to both Quarto and RMarkdown documents.
+This will change in the future if dedicated parsers are written for them.
+You can disable this feature in your R.nvim config:
+>lua
+  register_treesitter = false
+
 ==============================================================================
-7. Custom key bindings                                   *R.nvim-key-bindings*
+7. Public Lua API                                             *public-lua-api*
+
+The Lua internals for R.nvim should be considered generally unstable and
+subject to change without notice. There are some exceptions to this rule,
+which are declared stable for the benefit of users:
+
+r.run.action(rcmd, mode, args)                                 *r.run.action()*
+    Calls an R function on the word currently under the cursor
+
+    Parameters: ~
+        {rcmd} (string)     The name of an R function
+        {mode} (string)     The current mode (`"n"` or `"v"`)
+        {args} (string)     Extra arguments to pass to `rcmd`
+
+r.send.cmd(command)                                              *r.send.cmd()*
+    Calls an R function on the word currently under the cursor
+
+    Parameters: ~
+        {command} (string)  Code to send to the current R session
+
+==============================================================================
+8. Custom key bindings                                   *R.nvim-key-bindings*
 
 See |user_maps_only| if you want to inhibit the creation of default mappings.
 See |disable_cmds| if you only want to avoid the creation of some of them.
@@ -1922,7 +1957,7 @@ insinde the function passed to `hook.on_filetype` as in the examples below
 
 
 ==============================================================================
-8. roxygen2 support                                          *R.nvim-roxygen2*
+9. roxygen2 support                                          *R.nvim-roxygen2*
 
 R.nvim has supports to insert roxygen2 skeletons in R scripts. To insert a new
 roxygen2 block, you can use the `Roxygenize` function while the cursor is
@@ -1930,7 +1965,7 @@ inside a function definition. If a block of roxygen2 is already present, no
 modification will be made.
 
 ==============================================================================
-8. History                                                    *R.nvim-history*
+10. History                                                   *R.nvim-history*
 
 See: https://www.vim.org/scripts/script.php?script_id=2628
      https://groups.google.com/g/vim-r-plugin
