@@ -1119,17 +1119,15 @@ values if you notice any delay when R is running commands. In this case,
 please, put `options(nvimcom.verbose = 1)` in your `~/.Rprofile` and use the
 information output by `nvimcom` to decide what parameter to change.
 
-As of R.nvim version 0.1.0, it is possible to add a custom keymap through
-`objbr_mappings` table. The keymap defined in this table will be availble in
-the object browser only. Using this method, you can set keymaps that run Lua
-functions or R code. The following paragraphs documents how this feature
-works.
+It is possible to add a custom keymap through `objbr_mappings` table. The
+keymap defined in this table will be availble in the object browser only.
+Using this method, you can set keymaps that run Lua functions or R code. The
+following paragraphs documents how this feature works.
 
 In `objbr_mappings`, you can bind R functions (without parentheses) to keys.
 In the following example, pressing `l` in the object browser will run
 `length({object})` in the current R session, where `{object}` is the object
 under the cursor in the object browser.
-
 >lua
       objbr_mappings = {
         c = 'class',
@@ -1139,7 +1137,6 @@ under the cursor in the object browser.
         t = 'table',
       },
 <
-
 It is also possible to use R namespacing to call R code not defined in the
 current R session. The following example run `glimpse` function from the R
 package `dplyr` on `object` (i.e., simply sends `dplyr::glimpse({object})`) to
