@@ -1,5 +1,5 @@
 local config = require("r.config").get_config()
-local warn = require("r").warn
+local warn = require("r.log").warn
 local M = {}
 
 M.start_RStudio = function()

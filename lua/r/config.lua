@@ -1,4 +1,5 @@
-local warn = require("r").warn
+local warn = require("r.log").warn
+local utils = require("r.utils")
 local uv = vim.loop
 
 -- stylua: ignore start
@@ -111,22 +112,8 @@ local config = {
 
 -- stylua: ignore end
 
-local config_keys
-
 local user_opts = {}
 local did_real_setup = false
-
-local show_config = function(tbl)
-    local opt = tbl.args
-    local out = {}
-    if opt and opt:len() > 0 then
-        opt = opt:gsub(" .*", "")
-        table.insert(out, { vim.inspect(config[opt]) })
-    else
-        table.insert(out, { vim.inspect(config) })
-    end
-    vim.schedule(function() vim.api.nvim_echo(out, false, {}) end)
-end
 
 local set_editing_mode = function()
     if config.editing_mode ~= "" then return end
@@ -170,8 +157,6 @@ end
 --- being applied. If a check fails, a warning is show, and the default option
 --- is used instead.
 local apply_user_opts = function()
-    local utils = require("r.utils")
-
     -- Ensure that some config options will be in lower case
     for _, v in pairs({
         "auto_start",
@@ -295,8 +280,6 @@ local apply_user_opts = function()
 end
 
 local do_common_global = function()
-    local utils = require("r.utils")
-
     config.uname = uv.os_uname().sysname
     config.is_windows = config.uname:find("Windows", 1, true) ~= nil
     config.is_darwin = config.uname == "Darwin"
@@ -586,20 +569,13 @@ local do_common_global = function()
     end
 end
 
-local resolve_fullpaths = function(tbl)
-    for i, v in ipairs(tbl) do
-        tbl[i] = uv.fs_realpath(v)
-    end
-end
-
 local windows_config = function()
-    local utils = require("r.utils")
     local wtime = uv.hrtime()
     local isi386 = false
 
     if config.R_path ~= "" then
         local rpath = vim.split(config.R_path, ";")
-        resolve_fullpaths(rpath)
+        utils.resolve_fullpaths(rpath)
         vim.fn.reverse(rpath)
         for _, dir in ipairs(rpath) do
             if vim.fn.isdirectory(dir) then
@@ -731,7 +707,7 @@ local unix_config = function()
     local utime = uv.hrtime()
     if config.R_path ~= "" then
         local rpath = vim.split(config.R_path, ":")
-        resolve_fullpaths(rpath)
+        utils.resolve_fullpaths(rpath)
 
         -- Add the current directory to the beginning of the path
         table.insert(rpath, 1, "")
@@ -753,13 +729,15 @@ local unix_config = function()
         end
     end
 
-    if vim.fn.executable(config.R_app) ~= 1 then
-        warn(
-            '"'
-                .. config.R_app
-                .. '" not found. Fix the value of either R_path or R_app in your config.'
-        )
-    end
+    utils.check_executable(config.R_app, function(exists)
+        if not exists then
+            warn(
+                '"'
+                    .. config.R_app
+                    .. '" not found. Fix the value of either R_path or R_app in your config.'
+            )
+        end
+    end)
 
     if
         (type(config.external_term) == "boolean" and config.external_term)
@@ -771,75 +749,10 @@ local unix_config = function()
     require("r.edit").add_to_debug_info("unix setup", utime, "Time")
 end
 
-local create_user_commands = function()
-    vim.api.nvim_create_user_command(
-        "RStop",
-        function(_) require("r.run").signal_to_R("SIGINT") end,
-        {}
-    )
-    vim.api.nvim_create_user_command(
-        "RKill",
-        function(_) require("r.run").signal_to_R("SIGKILL") end,
-        {}
-    )
-    vim.api.nvim_create_user_command("RBuildTags", require("r.edit").build_tags, {})
-    vim.api.nvim_create_user_command("RDebugInfo", require("r.edit").show_debug_info, {})
-    vim.api.nvim_create_user_command("RMapsDesc", require("r.maps").show_map_desc, {})
-
-    vim.api.nvim_create_user_command(
-        "RSend",
-        function(tbl) require("r.send").cmd(tbl.args) end,
-        { nargs = 1 }
-    )
-
-    vim.api.nvim_create_user_command(
-        "RFormat",
-        require("r.run").formart_code,
-        { range = "%" }
-    )
-
-    vim.api.nvim_create_user_command(
-        "RInsert",
-        function(tbl) require("r.run").insert(tbl.args, "here") end,
-        { nargs = 1 }
-    )
-
-    vim.api.nvim_create_user_command(
-        "RSourceDir",
-        function(tbl) require("r.run").source_dir(tbl.args) end,
-        { nargs = 1, complete = "dir" }
-    )
-
-    vim.api.nvim_create_user_command(
-        "RHelp",
-        function(tbl) require("r.doc").ask_R_help(tbl.args) end,
-        {
-            nargs = "?",
-            complete = require("r.server").list_objs,
-        }
-    )
-
-    vim.api.nvim_create_user_command("RConfigShow", show_config, {
-        nargs = "?",
-        complete = function() return config_keys end,
-    })
-
-    vim.api.nvim_create_user_command(
-        "Roxygenize",
-        function() require("r.roxygen").insert_roxygen(vim.api.nvim_get_current_buf()) end,
-        {}
-    )
-end
-
 local global_setup = function()
     local gtime = uv.hrtime()
 
     if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
-
-    config_keys = {}
-    for k, _ in pairs(config) do
-        table.insert(config_keys, tostring(k))
-    end
 
     set_pdf_viewer()
     apply_user_opts()
@@ -871,7 +784,7 @@ local global_setup = function()
         config[k] = v
     end
 
-    create_user_commands()
+    require("r.commands").create_user_commands()
     vim.fn.timer_start(1, require("r.config").check_health)
     vim.schedule(function() require("r.server").check_nvimcom_version() end)
 
@@ -935,12 +848,20 @@ M.check_health = function()
         warn("Please, uninstall Nvim-R before using R.nvim.")
     end
 
-    if vim.fn.executable(config.R_app) == 0 then
-        warn("R_app executable not found: '" .. config.R_app .. "'")
-    end
+    -- Check R_app asynchronously
+    utils.check_executable(config.R_app, function(exists)
+        if not exists then
+            warn("R_app executable not found: '" .. config.R_app .. "'")
+        end
+    end)
 
-    if not config.R_cmd == config.R_app and vim.fn.executable(config.R_cmd) == 0 then
-        warn("R_cmd executable not found: '" .. config.R_cmd .. "'")
+    -- Check R_cmd asynchronously if it's different from R_app
+    if config.R_cmd ~= config.R_app then
+        utils.check_executable(config.R_cmd, function(exists)
+            if not exists then
+                warn("R_cmd executable not found: '" .. config.R_cmd .. "'")
+            end
+        end)
     end
 
     if vim.fn.has("nvim-0.9.5") ~= 1 then warn("R.nvim requires Neovim >= 0.9.5") end

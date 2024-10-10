@@ -1,5 +1,5 @@
 local read_dcf = require("r.utils").read_dcf
-local warn = require("r.init").warn
+local warn = require("r.log").warn
 
 local M = {}
 

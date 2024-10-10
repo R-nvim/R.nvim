@@ -20,7 +20,7 @@ with the R backend and update the Object Browser interface accordingly.
 ]]
 
 local config = require("r.config").get_config()
-local warn = require("r").warn
+local warn = require("r.log").warn
 local job = require("r.job")
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 

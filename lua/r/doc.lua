@@ -1,6 +1,6 @@
 local config = require("r.config").get_config()
 local send_to_nvimcom = require("r.run").send_to_nvimcom
-local warn = require("r").warn
+local warn = require("r.log").warn
 local utils = require("r.utils")
 local cursor = require("r.cursor")
 local job = require("r.job")

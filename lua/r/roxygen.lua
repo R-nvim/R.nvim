@@ -1,4 +1,4 @@
-local warn = require("r").warn
+local warn = require("r.log").warn
 local M = {}
 
 local parsers = require("nvim-treesitter.parsers")

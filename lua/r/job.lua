@@ -3,7 +3,7 @@
 
 local M = {}
 local jobs = {}
-local warn = require("r").warn
+local warn = require("r.log").warn
 
 -- Structure to keep track of incomplete input data.
 local incomplete_input = { size = 0, received = 0, str = "" }

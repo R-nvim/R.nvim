@@ -1,6 +1,6 @@
 local config = require("r.config").get_config()
 
-local warn = require("r").warn
+local warn = require("r.log").warn
 local M = {}
 
 -- We check if treesitter is available in the check_parsers() function of the

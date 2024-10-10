@@ -1,8 +1,8 @@
-local warn = require("r").warn
+local warn = require("r.log").warn
 
 local M = {}
 local S = require("r.send")
-local inform = require("r").inform
+local inform = require("r.log").inform
 
 --- Removes duplicate entries from a table of packages.
 --- Each package is represented by a table with a 'message' field.
