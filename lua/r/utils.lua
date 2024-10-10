@@ -67,6 +67,12 @@ local get_rnw_lang = function()
     end
 end
 
+function M.resolve_fullpaths(tbl)
+    for i, v in ipairs(tbl) do
+        tbl[i] = uv.fs_realpath(v)
+    end
+end
+
 --- Get language at current cursor position
 ---@return string
 function M.get_lang()
