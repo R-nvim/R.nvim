@@ -206,6 +206,11 @@ M.load_html = function(fullpath, browser)
         return
     end
 
+    if browser == "RbrowseURLfun" then
+        send_to_nvimcom("E", "browseURL('" .. fullpath .. "')")
+        return
+    end
+
     local cmd
     if browser == "" then
         if config.is_windows or config.is_darwin then
@@ -213,13 +218,10 @@ M.load_html = function(fullpath, browser)
         else
             cmd = { "xdg-open", fullpath }
         end
-    elseif browser == "RbrowseURLfun" then
-        send_to_nvimcom("E", "browseURL('" .. fullpath .. "')")
     else
         cmd = vim.split(browser, " ")
         table.insert(cmd, fullpath)
     end
-
     job.start(fullpath, cmd, { detach = true, on_exit = job.on_exit })
 end
 
