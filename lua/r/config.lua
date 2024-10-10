@@ -1,4 +1,5 @@
 local warn = require("r").warn
+local check_executable = require("r.utils").check_executable
 local uv = vim.loop
 
 -- stylua: ignore start
@@ -753,13 +754,15 @@ local unix_config = function()
         end
     end
 
-    if vim.fn.executable(config.R_app) ~= 1 then
-        warn(
-            '"'
-                .. config.R_app
-                .. '" not found. Fix the value of either R_path or R_app in your config.'
-        )
-    end
+    check_executable(config.R_app, function(exists)
+        if not exists then
+            warn(
+                '"'
+                    .. config.R_app
+                    .. '" not found. Fix the value of either R_path or R_app in your config.'
+            )
+        end
+    end)
 
     if
         (type(config.external_term) == "boolean" and config.external_term)
@@ -935,12 +938,20 @@ M.check_health = function()
         warn("Please, uninstall Nvim-R before using R.nvim.")
     end
 
-    if vim.fn.executable(config.R_app) == 0 then
-        warn("R_app executable not found: '" .. config.R_app .. "'")
-    end
+    -- Check R_app asynchronously
+    check_executable(config.R_app, function(exists)
+        if not exists then
+            warn("R_app executable not found: '" .. config.R_app .. "'")
+        end
+    end)
 
-    if not config.R_cmd == config.R_app and vim.fn.executable(config.R_cmd) == 0 then
-        warn("R_cmd executable not found: '" .. config.R_cmd .. "'")
+    -- Check R_cmd asynchronously if it's different from R_app
+    if config.R_cmd ~= config.R_app then
+        check_executable(config.R_cmd, function(exists)
+            if not exists then
+                warn("R_cmd executable not found: '" .. config.R_cmd .. "'")
+            end
+        end)
     end
 
     if vim.fn.has("nvim-0.9.5") ~= 1 then warn("R.nvim requires Neovim >= 0.9.5") end
