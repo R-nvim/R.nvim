@@ -1,6 +1,6 @@
 local config = require("r.config").get_config()
 local utils = require("r.utils")
-local warn = require("r").warn
+local warn = require("r.log").warn
 local saved_home = nil
 local M = {}
 

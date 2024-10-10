@@ -1,4 +1,4 @@
-local warn = require("r").warn
+local warn = require("r.log").warn
 local uv = vim.uv
 
 local M = {}

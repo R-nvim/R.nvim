@@ -1,4 +1,4 @@
-local warn = require("r").warn
+local warn = require("r.log").warn
 local config = require("r.config").get_config()
 local job = require("r.job")
 

@@ -1,6 +1,6 @@
 local config = require("r.config").get_config()
 local get_lang = require("r.utils").get_lang
-local warn = require("r").warn
+local warn = require("r.log").warn
 local del_list = {}
 local rscript_buf = nil
 local debug_info = { Time = {} }
