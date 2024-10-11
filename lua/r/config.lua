@@ -114,6 +114,8 @@ local config = {
 
 local user_opts = {}
 local did_real_setup = false
+local unix = require("r.platform.unix")
+local windows = require("r.platform.windows")
 
 local set_editing_mode = function()
     if config.editing_mode ~= "" then return end
@@ -569,186 +571,6 @@ local do_common_global = function()
     end
 end
 
-local windows_config = function()
-    local wtime = uv.hrtime()
-    local isi386 = false
-
-    if config.R_path ~= "" then
-        local rpath = vim.split(config.R_path, ";")
-        utils.resolve_fullpaths(rpath)
-        vim.fn.reverse(rpath)
-        for _, dir in ipairs(rpath) do
-            if vim.fn.isdirectory(dir) then
-                vim.env.PATH = dir .. ";" .. vim.env.PATH
-            else
-                warn(
-                    '"'
-                        .. dir
-                        .. '" is not a directory. Fix the value of R_path in your config.'
-                )
-            end
-        end
-    else
-        if vim.env.RTOOLS40_HOME then
-            if vim.fn.isdirectory(vim.env.RTOOLS40_HOME .. "\\mingw64\\bin\\") then
-                vim.env.PATH = vim.env.RTOOLS40_HOME .. "\\mingw64\\bin;" .. vim.env.PATH
-            elseif vim.fn.isdirectory(vim.env.RTOOLS40_HOME .. "\\usr\\bin") then
-                vim.env.PATH = vim.env.RTOOLS40_HOME .. "\\usr\\bin;" .. vim.env.PATH
-            end
-        else
-            if vim.fn.isdirectory("C:\\rtools40\\mingw64\\bin") then
-                vim.env.PATH = "C:\\rtools40\\mingw64\\bin;" .. vim.env.PATH
-            elseif vim.fn.isdirectory("C:\\rtools40\\usr\\bin") then
-                vim.env.PATH = "C:\\rtools40\\usr\\bin;" .. vim.env.PATH
-            end
-        end
-
-        local get_rip = function(run_cmd)
-            local resp = utils.system(run_cmd, { text = true }):wait()
-            local rout = vim.split(resp.stdout, "\n")
-            local rip = {}
-            for _, v in pairs(rout) do
-                if v:find("InstallPath.*REG_SZ") then table.insert(rip, v) end
-            end
-            return rip
-        end
-
-        -- Check both HKCU and HKLM. See #223
-        local reg_roots = { "HKCU", "HKLM" }
-        local rip = {}
-        for i = 1, #reg_roots do
-            if #rip == 0 then
-                local run_cmd =
-                    { "reg.exe", "QUERY", reg_roots[i] .. "\\SOFTWARE\\R-core\\R", "/s" }
-                rip = get_rip(run_cmd)
-
-                if #rip == 0 then
-                    -- Normally, 32 bit applications access only 32 bit registry and...
-                    -- We have to try again if the user has installed R only in the other architecture.
-                    if vim.fn.has("win64") then
-                        table.insert(run_cmd, "/reg:64")
-                    else
-                        table.insert(run_cmd, "/reg:32")
-                    end
-                    rip = get_rip(run_cmd)
-
-                    if #rip == 0 and i == #reg_roots then
-                        warn(
-                            "Could not find R path in Windows Registry. "
-                                .. "If you have already installed R, please, set the value of 'R_path'."
-                        )
-                        wtime = (uv.hrtime() - wtime) / 1000000000
-                        require("r.edit").add_to_debug_info(
-                            "windows setup",
-                            wtime,
-                            "Time"
-                        )
-                        return
-                    end
-                end
-            end
-        end
-
-        local rinstallpath = nil
-        rinstallpath = rip[1]
-        rinstallpath = rinstallpath:gsub(".*InstallPath.*REG_SZ%s*", "")
-        rinstallpath = rinstallpath:gsub("\n", "")
-        rinstallpath = rinstallpath:gsub("%s*$", "")
-        local hasR32 = vim.fn.isdirectory(rinstallpath .. "\\bin\\i386")
-        local hasR64 = vim.fn.isdirectory(rinstallpath .. "\\bin\\x64")
-        if hasR32 == 1 and hasR64 == 0 then isi386 = true end
-        if hasR64 == 1 and hasR32 == 0 then isi386 = false end
-        if hasR32 == 1 and isi386 then
-            vim.env.PATH = rinstallpath .. "\\bin\\i386;" .. vim.env.PATH
-        elseif hasR64 == 1 and not isi386 then
-            vim.env.PATH = rinstallpath .. "\\bin\\x64;" .. vim.env.PATH
-        else
-            vim.env.PATH = rinstallpath .. "\\bin;" .. vim.env.PATH
-        end
-    end
-
-    if not config.R_args then
-        if type(config.external_term) == "boolean" and config.external_term == false then
-            config.R_args = { "--no-save" }
-        else
-            config.R_args = { "--sdi", "--no-save" }
-        end
-    end
-    wtime = (uv.hrtime() - wtime) / 1000000000
-    require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
-end
-
-local tmux_config = function()
-    local ttime = uv.hrtime()
-    -- Check whether Tmux is OK
-    if vim.fn.executable("tmux") == 0 then
-        config.external_term = false
-        warn("tmux executable not found")
-        return
-    end
-
-    local tmuxversion
-    if config.uname:find("OpenBSD") then
-        -- Tmux does not have -V option on OpenBSD: https://github.com/jcfaria/Vim-R-plugin/issues/200
-        tmuxversion = "0.0"
-    else
-        tmuxversion = vim.fn.system("tmux -V")
-        if tmuxversion then
-            tmuxversion = tmuxversion:gsub(".* ([0-9]%.[0-9]).*", "%1")
-            if #tmuxversion ~= 3 then tmuxversion = "1.0" end
-            if tmuxversion < "3.0" then warn("R.nvim requires Tmux >= 3.0") end
-        end
-    end
-    ttime = (uv.hrtime() - ttime) / 1000000000
-    require("r.edit").add_to_debug_info("tmux setup", ttime, "Time")
-end
-
-local unix_config = function()
-    local utime = uv.hrtime()
-    if config.R_path ~= "" then
-        local rpath = vim.split(config.R_path, ":")
-        utils.resolve_fullpaths(rpath)
-
-        -- Add the current directory to the beginning of the path
-        table.insert(rpath, 1, "")
-
-        -- loop over rpath in reverse.
-        for i = #rpath, 1, -1 do
-            local dir = rpath[i]
-            local is_dir = uv.fs_stat(dir)
-            -- Each element in rpath must exist and be a directory
-            if is_dir and is_dir.type == "directory" then
-                vim.env.PATH = dir .. ":" .. vim.env.PATH
-            else
-                warn(
-                    '"'
-                        .. dir
-                        .. '" is not a directory. Fix the value of R_path in your config.'
-                )
-            end
-        end
-    end
-
-    utils.check_executable(config.R_app, function(exists)
-        if not exists then
-            warn(
-                '"'
-                    .. config.R_app
-                    .. '" not found. Fix the value of either R_path or R_app in your config.'
-            )
-        end
-    end)
-
-    if
-        (type(config.external_term) == "boolean" and config.external_term)
-        or type(config.external_term) == "string"
-    then
-        tmux_config() -- Consider removing this line if it's not necessary
-    end
-    utime = (uv.hrtime() - utime) / 1000000000
-    require("r.edit").add_to_debug_info("unix setup", utime, "Time")
-end
-
 local global_setup = function()
     local gtime = uv.hrtime()
 
@@ -774,9 +596,9 @@ local global_setup = function()
     -- See https://github.com/jalvesaq/Nvim-R/issues/625
     do_common_global()
     if config.is_windows then
-        windows_config()
+        windows.configure(config)
     else
-        unix_config()
+        unix.configure(config)
     end
 
     -- Override default config values with user options for the second time.
