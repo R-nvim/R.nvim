@@ -1,6 +1,6 @@
 local warn = require("r.log").warn
 local utils = require("r.utils")
-local uv = vim.loop
+local uv = vim.uv
 
 -- stylua: ignore start
 

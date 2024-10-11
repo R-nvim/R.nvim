@@ -235,7 +235,7 @@ M.obj = function(fnm)
         vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
         vim.cmd("stopinsert")
         vim.api.nvim_create_autocmd("BufUnload", {
-            command = "lua vim.loop.fs_unlink('" .. fnm .. "_wait')",
+            command = "lua vim.uv.fs_unlink('" .. fnm .. "_wait')",
             pattern = "<buffer>",
         })
     end)

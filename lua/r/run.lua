@@ -10,7 +10,7 @@ local what_R = "R"
 local R_pid = 0
 local r_args
 local nseconds
-local uv = vim.loop
+local uv=vim.uv
 
 local start_R2
 start_R2 = function()
