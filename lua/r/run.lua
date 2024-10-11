@@ -11,7 +11,7 @@ local what_R = "R"
 local R_pid = 0
 local r_args
 local nseconds
-local uv=vim.uv
+local uv = vim.uv
 
 local start_R2
 start_R2 = function()
@@ -329,7 +329,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     end
 
     vim.g.R_Nvim_status = 7
-    hooks.run_after_R_start(config)
+    hooks.run(config, "after_R_start")
     send.set_send_cmd_fun()
 end
 

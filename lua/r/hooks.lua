@@ -1,26 +1,34 @@
+--[[
+This module implements functions that manage the execution of
+user-defined hooks. These are defined in the `config.hooks` table in
+the user configuration:
+
+defaults = {
+    ...,
+    hook = {
+        on_filetype = function() end,
+        after_config = function() end,
+        after_R_start = function() end,
+        after_ob_open = function() end,
+    },
+    ...,
+}
+
+User documentation for user-defined hooks: section 6.29
+]]
+
 local M = {}
 
-function M.run_after_config(config)
-    if config.hook and config.hook.after_config then
-        vim.schedule(function() config.hook.after_config() end)
-    end
-end
-
-function M.run_on_filetype(config)
-    if config.hook and config.hook.on_filetype then
-        vim.schedule(function() config.hook.on_filetype() end)
-    end
-end
-
-function M.run_after_R_start(config)
-    if config.hook and config.hook.after_R_start then
-        vim.schedule(function() config.hook.after_R_start() end)
-    end
-end
-
-function M.run_after_ob_open(config)
-    if config.hook and config.hook.after_ob_open then
-        vim.schedule(function() config.hook.after_ob_open() end)
+--- Run the specified user-defined hook
+---
+--- Currently valid `hook_name` values are 'on_filetype',
+--- 'after_config', 'after_R_start', 'after_ob_open'
+---
+---@param config table
+---@param hook_name string
+function M.run(config, hook_name)
+    if config.hook and config.hook[hook_name] then -- Is config.hook check necessary?
+        vim.schedule(function() config.hook[hook_name]() end)
     end
 end
 

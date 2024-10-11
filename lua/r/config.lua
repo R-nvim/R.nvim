@@ -611,7 +611,7 @@ local global_setup = function()
     vim.fn.timer_start(1, require("r.config").check_health)
     vim.schedule(function() require("r.server").check_nvimcom_version() end)
 
-    hooks.run_after_config(config)
+    hooks.run(config, "after_config")
 
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
@@ -644,7 +644,7 @@ M.real_setup = function()
         did_real_setup = true
         global_setup()
     end
-    hooks.run_on_filetype(config)
+    hooks.run(config, "on_filetype")
     require("r.rproj").apply_settings(config)
 
     if config.register_treesitter then
