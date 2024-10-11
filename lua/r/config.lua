@@ -1,6 +1,7 @@
 local warn = require("r.log").warn
 local utils = require("r.utils")
 local uv = vim.uv
+local hooks = require("r.hooks")
 
 -- stylua: ignore start
 
@@ -610,9 +611,7 @@ local global_setup = function()
     vim.fn.timer_start(1, require("r.config").check_health)
     vim.schedule(function() require("r.server").check_nvimcom_version() end)
 
-    if config.hook.after_config then
-        vim.schedule(function() config.hook.after_config() end)
-    end
+    hooks.run_after_config(config)
 
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
@@ -645,9 +644,7 @@ M.real_setup = function()
         did_real_setup = true
         global_setup()
     end
-    if config.hook.on_filetype then
-        vim.schedule(function() config.hook.on_filetype() end)
-    end
+    hooks.run_on_filetype(config)
     require("r.rproj").apply_settings(config)
 
     if config.register_treesitter then
