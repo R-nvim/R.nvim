@@ -6,6 +6,7 @@ local warn = require("r.log").warn
 local utils = require("r.utils")
 local send = require("r.send")
 local cursor = require("r.cursor")
+local hooks = require("r.hooks")
 local what_R = "R"
 local R_pid = 0
 local r_args
@@ -328,9 +329,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     end
 
     vim.g.R_Nvim_status = 7
-    if config.hook.after_R_start then
-        vim.schedule(function() config.hook.after_R_start() end)
-    end
+    hooks.run_after_R_start(config)
     send.set_send_cmd_fun()
 end
 
