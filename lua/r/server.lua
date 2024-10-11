@@ -1,5 +1,4 @@
 local edit = require("r.edit")
-local utils = require("r.utils")
 local job = require("r.job")
 local config = require("r.config").get_config()
 local warn = require("r.log").warn
@@ -216,7 +215,6 @@ local function build_package()
     }, function(code)
         if code == 0 then
             M.check_nvimcom_version()
-            cnv_again = 1
         else
             warn("Failed to build the package.")
         end
