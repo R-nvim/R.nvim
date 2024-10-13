@@ -331,23 +331,23 @@ M.chunks_up_to_here = function()
     local curbuf = vim.fn.getline(1, "$")
     local idx = 0
 
+    local begchk, endchk, chdchk
+
+    if filetype == "rnoweb" then
+        begchk = "^<<.*>>=$"
+        endchk = "^@"
+        chdchk = "^<<.*child *= *"
+    elseif filetype == "rmd" or filetype == "quarto" then
+        begchk = "^[ \t]*```[ ]*{"
+        endchk = "^[ \t]*```$"
+        chdchk = "^```.*child *= *"
+    else
+        -- Should never happen
+        warn('Strange filetype (SendFHChunkToR): "' .. filetype .. '"')
+        return
+    end
+
     while idx < here do
-        local begchk, endchk, chdchk
-
-        if filetype == "rnoweb" then
-            begchk = "^<<.*>>=$"
-            endchk = "^@"
-            chdchk = "^<<.*child *= *"
-        elseif filetype == "rmd" or filetype == "quarto" then
-            begchk = "^[ \t]*```[ ]*{r"
-            endchk = "^[ \t]*```$"
-            chdchk = "^```.*child *= *"
-        else
-            -- Should never happen
-            warn('Strange filetype (SendFHChunkToR): "' .. filetype .. '"')
-            return
-        end
-
         if
             curbuf[idx + 1]:find(begchk) and not curbuf[idx + 1]:find("[<, ]eval *= *F")
         then
@@ -361,6 +361,14 @@ M.chunks_up_to_here = function()
                 knit_child(curbuf[idx + 1], false)
                 idx = idx + 1
             else
+                local lang = "R"
+                if filetype == "rmd" or filetype == "quarto" then
+                    if curbuf[idx + 1]:find("{python") then
+                        lang = "python"
+                    elseif not curbuf[idx + 1]:find("{r") then
+                        lang = "other"
+                    end
+                end
                 idx = idx + 1
                 local i = idx + 1
                 local j = idx + 1
@@ -379,8 +387,16 @@ M.chunks_up_to_here = function()
                     idx = idx + 1
                     j = idx
                 end
+                local chunklines = {}
                 for k = i, j, 1 do
-                    table.insert(codelines, curbuf[k])
+                    table.insert(chunklines, curbuf[k])
+                end
+                if lang == "python" then
+                    table.insert(codelines, 'reticulate::py_run_string("' .. table.concat(chunklines, "\n"):gsub('"', '\\"') .. '")')
+                else
+                    for _, v in pairs(chunklines) do
+                        table.insert(codelines, v)
+                    end
                 end
             end
         else
