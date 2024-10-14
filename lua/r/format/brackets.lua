@@ -4,7 +4,7 @@
 -- Second case, when using the [ operator: vec[1] -> vec[[1]]
 -- It supports multiple subsetting and nested expressions: df$var[1] -> df[["var"]][[1]]
 
-local warn = require("r").warn
+local warn = require("r.log").warn
 local M = {}
 
 local parsers = require("nvim-treesitter.parsers")

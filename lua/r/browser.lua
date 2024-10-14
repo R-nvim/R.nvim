@@ -20,8 +20,9 @@ with the R backend and update the Object Browser interface accordingly.
 ]]
 
 local config = require("r.config").get_config()
-local warn = require("r").warn
+local warn = require("r.log").warn
 local job = require("r.job")
+local hooks = require("r.hooks")
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 
 -- Determine if the locale uses UTF-8 encoding
@@ -332,10 +333,7 @@ function M.start(_)
     start_OB()
     state.is_running = false
 
-    -- Execute any user-defined hooks after opening the Object Browser
-    if config.hook.after_ob_open then
-        vim.schedule(function() config.hook.after_ob_open() end)
-    end
+    hooks.run(config, "after_ob_open")
 end
 
 --- Return the active pane of the Object Browser

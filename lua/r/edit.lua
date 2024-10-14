@@ -1,6 +1,6 @@
 local config = require("r.config").get_config()
 local get_lang = require("r.utils").get_lang
-local warn = require("r").warn
+local warn = require("r.log").warn
 local del_list = {}
 local rscript_buf = nil
 local debug_info = { Time = {} }
@@ -235,7 +235,7 @@ M.obj = function(fnm)
         vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
         vim.cmd("stopinsert")
         vim.api.nvim_create_autocmd("BufUnload", {
-            command = "lua vim.loop.fs_unlink('" .. fnm .. "_wait')",
+            command = "lua vim.uv.fs_unlink('" .. fnm .. "_wait')",
             pattern = "<buffer>",
         })
     end)

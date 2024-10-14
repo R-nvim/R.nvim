@@ -1,8 +1,8 @@
 local config = require("r.config").get_config()
 local utils = require("r.utils")
-local warn = require("r").warn
+local warn = require("r.log").warn
 local job = require("r.job")
-local uv = vim.loop
+local uv=vim.uv
 
 local check_installed = function()
     if vim.fn.executable(config.pdfviewer) == 0 then

@@ -1,7 +1,7 @@
 local config = require("r.config").get_config()
 local utils = require("r.utils")
-local uv = vim.loop
-local warn = require("r").warn
+local uv=vim.uv
+local warn = require("r.log").warn
 
 local term_name = nil
 local term_cmd = nil

@@ -1,9 +1,8 @@
 local edit = require("r.edit")
-local utils = require("r.utils")
 local job = require("r.job")
 local config = require("r.config").get_config()
-local warn = require("r").warn
-local uv = vim.loop
+local warn = require("r.log").warn
+local uv = vim.uv
 local b_warn = {}
 local b_err = {}
 local b_out = {}
@@ -12,6 +11,7 @@ local o_err = {}
 local pkgbuild_attempt = false
 local rhelp_list = {}
 local building_objls = false
+local check_executable = require("r.utils").check_executable
 
 local M = {}
 
@@ -199,6 +199,28 @@ local start_rnvimserver = function()
     )
 end
 
+-- Function to build the package
+local function build_package()
+    -- Change directory to config.tmpdir
+    local cmd = "cd "
+        .. vim.fn.shellescape(config.tmpdir)
+        .. " && "
+        .. vim.fn.shellescape("R")
+        .. " CMD build "
+        .. vim.fn.shellescape(config.rnvim_home .. "/nvimcom")
+
+    uv.spawn("sh", {
+        args = { "-c", cmd },
+        stdio = nil,
+    }, function(code)
+        if code == 0 then
+            M.check_nvimcom_version()
+        else
+            warn("Failed to build the package.")
+        end
+    end)
+end
+
 -- Check if the exit code of the script that built nvimcom was zero
 -- and if the file nvimcom_info seems to be OK (has three lines).
 local init_exit = function(_, data, _)
@@ -215,21 +237,13 @@ local init_exit = function(_, data, _)
         -- R.nvim/nvimcom directory not found. Perhaps R running in remote machine...
         -- Try to use local R to build the nvimcom package.
         pkgbuild_attempt = true
-        if vim.fn.executable("R") == 1 then
-            local shf = {
-                "cd " .. config.tmpdir,
-                "R CMD build " .. config.rnvim_home .. "/nvimcom",
-            }
-            vim.fn.writefile(shf, config.tmpdir .. "/buildpkg.sh")
-            local obj = utils
-                .system({ "sh", config.tmpdir .. "/buildpkg.sh" }, { text = true })
-                :wait()
-            if obj.code == 0 then
-                M.check_nvimcom_version()
-                cnv_again = 1
+        check_executable("R", function(exists)
+            if exists then
+                build_package()
+            else
+                warn('"R" executable not found.')
             end
-            vim.fn.delete(config.tmpdir .. "/buildpkg.sh")
-        end
+        end)
     else
         if vim.fn.filereadable(vim.fn.expand("~/.R/Makevars")) == 1 then
             warn(

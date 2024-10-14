@@ -1,5 +1,5 @@
-local warn = require("r").warn
-local inform = require("r").inform
+local warn = require("r.log").warn
+local inform = require("r.log").inform
 local send = require("r.send")
 local utils = require("r.utils")
 local get_lang = require("r.utils").get_lang

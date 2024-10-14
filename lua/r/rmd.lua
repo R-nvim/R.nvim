@@ -1,8 +1,8 @@
-local inform = require("r").inform
+local inform = require("r.log").inform
 local config = require("r.config").get_config()
 local send = require("r.send")
 local get_lang = require("r.utils").get_lang
-local uv = vim.loop
+local uv=vim.uv
 
 local M = {}
 

@@ -1,7 +1,7 @@
 local M = {}
 
 local config = require("r.config").get_config()
-local warn = require("r").warn
+local warn = require("r.log").warn
 local r_width = 80
 local number_col
 local r_bufnr = nil

@@ -2,15 +2,16 @@ local M = {}
 local config = require("r.config").get_config()
 local job = require("r.job")
 local edit = require("r.edit")
-local warn = require("r").warn
+local warn = require("r.log").warn
 local utils = require("r.utils")
 local send = require("r.send")
 local cursor = require("r.cursor")
+local hooks = require("r.hooks")
 local what_R = "R"
 local R_pid = 0
 local r_args
 local nseconds
-local uv = vim.loop
+local uv = vim.uv
 
 local start_R2
 start_R2 = function()
@@ -328,9 +329,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     end
 
     vim.g.R_Nvim_status = 7
-    if config.hook.after_R_start then
-        vim.schedule(function() config.hook.after_R_start() end)
-    end
+    hooks.run(config, "after_R_start")
     send.set_send_cmd_fun()
 end
 
