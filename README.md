@@ -26,7 +26,7 @@ Here's a (very) minimal configuration using [lazy.nvim](https://github.com/folke
 ```lua
 {
     "R-nvim/R.nvim",
-     -- Only required if you also set defaults.lazy = true 
+     -- Only required if you also set defaults.lazy = true
     lazy = false
     -- R.nvim is still young and we may make some breaking changes from time
     -- to time. For now we recommend pinning to the latest minor version
@@ -40,7 +40,7 @@ A longer example adding some custom behaviour:
 ```lua
 {
     "R-nvim/R.nvim",
-     -- Only required if you also set defaults.lazy = true 
+     -- Only required if you also set defaults.lazy = true
     lazy = false
     -- R.nvim is still young and we may make some breaking changes from time
     -- to time. For now we recommend pinning to the latest minor version
@@ -67,21 +67,21 @@ A longer example adding some custom behaviour:
                 end
             },
             disable_cmds = {
-                    "RClearConsole",
-                    "RCustomStart",
-                    "RSPlot",
-                    "RSaveClose",
-                },
-            }
-            -- Check if the environment variable "R_AUTO_START" exists.
-            -- If using fish shell, you could put in your config.fish:
-            -- alias r "R_AUTO_START=true nvim"
-            if vim.env.R_AUTO_START == "true" then
-                opts.auto_start = "on startup"
-                opts.objbr_auto_start = true
-            end
-            require("r").setup(opts)
-        end,
+                "RClearConsole",
+                "RCustomStart",
+                "RSPlot",
+                "RSaveClose",
+            },
+        }
+        -- Check if the environment variable "R_AUTO_START" exists.
+        -- If using fish shell, you could put in your config.fish:
+        -- alias r "R_AUTO_START=true nvim"
+        if vim.env.R_AUTO_START == "true" then
+            opts.auto_start = "on startup"
+            opts.objbr_auto_start = true
+        end
+        require("r").setup(opts)
+    end,
 },
 ```
 
@@ -90,8 +90,8 @@ possible options. You can also consult the [Wiki](https://github.com/R-nvim/R.nv
 
 ### Autocompletion
 
-R autocompletion should be configured via another plugin. We recommend 
-[cmp-r](https://github.com/R-nvim/cmp-r), which can be minimally configured 
+R autocompletion should be configured via another plugin. We recommend
+[cmp-r](https://github.com/R-nvim/cmp-r), which can be minimally configured
 like so:
 
 
@@ -140,13 +140,13 @@ complete list of keymaps, see the output of `:RMapsDesc`.
 
 R.nvim is still maturing and its public API (configuration options,
 commands, and some of the Lua internals) may undergo breaking changes from
-time to time. This project uses [semantic versioning](https://semver.org/) to 
+time to time. This project uses [semantic versioning](https://semver.org/) to
 help with this, and we will always bump the minor version, e.g. from 0.1.x to
 0.2.0, when we make a breaking change. Users are thus encouraged to pin their
 installation of R.nvim to the **latest minor release** and to check the release
 notes for any breaking changes when upgrading.
 
-Eventually we plan to release a version 1.0.0, at which point we will make a 
+Eventually we plan to release a version 1.0.0, at which point we will make a
 firm commitment to backwards compatibility.
 
 ## Transitioning from Nvim-R
@@ -223,7 +223,7 @@ firm commitment to backwards compatibility.
 - `auto_quit` can be configured to automatically quit R when you quit Neovim.
 
 - `rproj_prioritise` can be configured to control how `.Rproj` files change the
-    behaviour of R.nvim. Amongst other things, this may affect whether 
+    behaviour of R.nvim. Amongst other things, this may affect whether
     `<LocalLeader>,` inserts `|>` or `%>%`.
 
 - `objbr_mappings` can be configured to run R commands on objects in the
@@ -296,7 +296,7 @@ but temporary files are used in a few cases.
 - [Ark](https://github.com/posit-dev/ark): a LSP server/DAP server/Jupyter kernel
     for R.
 
-- [southernlights](https://github.com/jalvesaq/southernlights): a colourscheme 
+- [southernlights](https://github.com/jalvesaq/southernlights): a colourscheme
     for vim.
 
 
