@@ -21,7 +21,12 @@ R.nvim adds R support to Neovim, including:
 
 ## Installation
 
-Here's a (very) minimal configuration using [lazy.nvim](https://github.com/folke/lazy.nvim):
+Please, see the list of dependencies at section 3.1 of
+[doc/R.nvim.txt](https://github.com/R-nvim/R.nvim/blob/main/doc/R.nvim.txt).
+
+Here's a (very) minimal configuration using
+[lazy.nvim](https://github.com/folke/lazy.nvim) (not including `R.nvim`
+dependencies):
 
 ```lua
 {
@@ -114,8 +119,8 @@ sources simultaneously is not advised.
 
 ### Tree-sitter
 
-Tree-sitter greatly enhances much of the functionality of R.nvim, and can be
-minimally configured like so:
+Tree-sitter is required to enable much of the functionality of R.nvim, and can
+be minimally configured like so:
 
 ``` lua
 {
