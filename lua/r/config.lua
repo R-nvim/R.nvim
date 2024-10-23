@@ -1,4 +1,3 @@
-local warn = require("r.log").warn
 local utils = require("r.utils")
 local uv = vim.uv
 local hooks = require("r.hooks")
@@ -118,6 +117,12 @@ local did_real_setup = false
 local unix = require("r.platform.unix")
 local windows = require("r.platform.windows")
 
+local smsgs = {}
+local swarn = function(msg)
+    table.insert(smsgs, msg)
+    require("r.log").warn(msg)
+end
+
 local set_editing_mode = function()
     if config.editing_mode ~= "" then return end
 
@@ -218,7 +223,7 @@ local apply_user_opts = function()
         -- 1. Check the option exists
         -----------------------------------------------------------------------
         if default_val == nil then
-            warn("Invalid option `" .. key_name .. "`.")
+            swarn("Invalid option `" .. key_name .. "`.")
             return
         end
 
@@ -227,7 +232,7 @@ local apply_user_opts = function()
         -----------------------------------------------------------------------
         local expected_types = valid_types[key_name] or { type(default_val) }
         if vim.fn.index(expected_types, type(user_opt)) == -1 then
-            warn(
+            swarn(
                 "Invalid option type for `"
                     .. key_name
                     .. "`. Type should be "
@@ -244,7 +249,7 @@ local apply_user_opts = function()
         -----------------------------------------------------------------------
         local expected_values = valid_values[key_name]
         if expected_values and vim.fn.index(expected_values, user_opt) == -1 then
-            warn(
+            swarn(
                 "Invalid option value for `"
                     .. key_name
                     .. "`. Value should be "
@@ -313,7 +318,7 @@ local do_common_global = function()
             config.user_login = vim.fn.system("whoami")
         else
             config.user_login = "NoLoginName"
-            warn("Could not determine user name.")
+            swarn("Could not determine user name.")
         end
     end
 
@@ -321,7 +326,7 @@ local do_common_global = function()
     config.user_login = config.user_login:gsub("[^%w]", "")
     if config.user_login == "" then
         config.user_login = "NoLoginName"
-        warn("Could not determine user name.")
+        swarn("Could not determine user name.")
     end
 
     if config.is_windows then
@@ -510,7 +515,7 @@ local do_common_global = function()
 
     -- Look for invalid options
     local objbrplace = vim.split(config.objbr_place, ",")
-    if #objbrplace > 2 then warn("Too many options for R_objbr_place.") end
+    if #objbrplace > 2 then swarn("Too many options for R_objbr_place.") end
     for _, pos in ipairs(objbrplace) do
         if
             pos ~= "console"
@@ -522,7 +527,7 @@ local do_common_global = function()
             and pos:lower() ~= "top"
             and pos:lower() ~= "bottom"
         then
-            warn(
+            swarn(
                 'Invalid value for R_objbr_place: "'
                     .. pos
                     .. "\". Please see R.nvim's documentation."
@@ -662,15 +667,15 @@ M.check_health = function()
 
     -- Check if either Vim-R-plugin or Nvim-R is installed
     if vim.fn.exists("*WaitVimComStart") ~= 0 then
-        warn("Please, uninstall Vim-R-plugin before using R.nvim.")
+        swarn("Please, uninstall Vim-R-plugin before using R.nvim.")
     elseif vim.fn.exists("*RWarningMsg") ~= 0 then
-        warn("Please, uninstall Nvim-R before using R.nvim.")
+        swarn("Please, uninstall Nvim-R before using R.nvim.")
     end
 
     -- Check R_app asynchronously
     utils.check_executable(config.R_app, function(exists)
         if not exists then
-            warn("R_app executable not found: '" .. config.R_app .. "'")
+            swarn("R_app executable not found: '" .. config.R_app .. "'")
         end
     end)
 
@@ -678,12 +683,12 @@ M.check_health = function()
     if config.R_cmd ~= config.R_app then
         utils.check_executable(config.R_cmd, function(exists)
             if not exists then
-                warn("R_cmd executable not found: '" .. config.R_cmd .. "'")
+                swarn("R_cmd executable not found: '" .. config.R_cmd .. "'")
             end
         end)
     end
 
-    if vim.fn.has("nvim-0.9.5") ~= 1 then warn("R.nvim requires Neovim >= 0.9.5") end
+    if vim.fn.has("nvim-0.9.5") ~= 1 then swarn("R.nvim requires Neovim >= 0.9.5") end
 
     -- Check if treesitter is available
     local function has_parser(parser_name, parsers)
@@ -695,8 +700,8 @@ M.check_health = function()
     end
     local has_treesitter, _ = pcall(require, "nvim-treesitter")
     if not has_treesitter then
-        warn(
-            'R.nvim requires nvim-treesitter. Please install it and the parsers for "r", "markdown", and "rnoweb".'
+        swarn(
+            'R.nvim requires nvim-treesitter. Please install it and the parsers for "r", "markdown", "rnoweb", and "yaml".'
         )
     else
         -- Check if required treesitter parsers are available
@@ -710,10 +715,15 @@ M.check_health = function()
             or not has_parser("rnoweb", parsers)
             or not has_parser("yaml", parsers)
         then
-            warn(
+            swarn(
                 'R.nvim requires treesitter parsers for "r", "markdown", "rnoweb", and "yaml". Please, install them.'
             )
         end
+    end
+
+    if #smsgs > 0 then
+        local msg = "\n  " .. table.concat(smsgs, "\n  ")
+        require("r.edit").add_to_debug_info("Startup warnings", msg)
     end
 
     htime = (uv.hrtime() - htime) / 1000000000

@@ -170,10 +170,12 @@ If the plugin is active, pressing <LocalLeader>rf should start R.
 Did you see warning messages but they disappeared before you have had time to
 read them? Type the command |:messages| in Normal mode to see them again.
 
-Run the command `:RDebugInfo` which will show information useful to fix some
-common issues.
+Run `:checkhealth r` to check if some dependencies are installed. For a more
+complete diagnostic of `R.nvim` health, run the command `:RDebugInfo` which
+will show information useful to fix some common issues.
 
-To see messages received by `nvimcom`, put in your `~/.Rprofile`:
+To see on the R Console messages received by `nvimcom`, put in your
+`~/.Rprofile`:
 >r
   options(nvimcom.verbose = 5)
 <
