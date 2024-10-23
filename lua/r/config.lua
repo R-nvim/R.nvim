@@ -696,7 +696,7 @@ M.check_health = function()
     local has_treesitter, _ = pcall(require, "nvim-treesitter")
     if not has_treesitter then
         warn(
-            'R.nvim requires nvim-treesitter. Please install it and the parsers for "r", "markdown", and "rnoweb".'
+            'R.nvim requires nvim-treesitter. Please install it and the parsers for "r", "markdown", "rnoweb", and "yaml".'
         )
     else
         -- Check if required treesitter parsers are available
