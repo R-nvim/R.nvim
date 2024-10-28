@@ -521,7 +521,9 @@ void update_glblenv_buffer(char *g) {
         glbnv_buffer = calloc(glbnv_buffer_sz, sizeof(char));
     }
 
+    glbnv_buffer[0] = 0; // required after rm(list=ls())
     memcpy(glbnv_buffer, g, glbnv_size);
+    glbnv_buffer[glbnv_size] = 0;
 
     if (check_omils_buffer(glbnv_buffer, &glbnv_size) == NULL) {
         glbnv_buffer_sz = 0;
