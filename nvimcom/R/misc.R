@@ -466,7 +466,7 @@ update_params <- function(str) {
         return(invisible(NULL))
     }
     str <- gsub("\x11", "\n", str)
-    if (!require(yaml))
+    if (!require(yaml, quietly = TRUE))
         stop("Please, install the 'yaml' package.")
     params <<- yaml::yaml.load(str)$params
 }
