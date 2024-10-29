@@ -350,6 +350,7 @@ M.clear_R_info = function()
         vim.g.R_Nvim_status = 1
     end
     send.set_send_cmd_fun()
+    require("r.rmd").clean_params()
 end
 
 -- Background communication with R

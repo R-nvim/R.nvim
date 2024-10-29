@@ -180,6 +180,9 @@ M.update_params = function()
     end
 end
 
+-- Register params as empty. This function is called when R quits.
+M.clean_params = function() last_params = "" end
+
 --- Setup function for initializing module functionality.
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.
 M.setup = function()
