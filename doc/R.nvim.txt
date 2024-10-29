@@ -57,6 +57,8 @@ Git pull requests are welcome.
       - Syntax highlighting of the Object Browser.
   * SyncTeX support for Rnoweb.
   * Special highlighting for R output (.Rout files).
+  * Get the `params` variable from Quarto and Rmd YAML header and Create and
+    update the corresponding `params` list in `.GlobalEnv`.
   * Most of the plugin's behavior is customizable.
 
 
