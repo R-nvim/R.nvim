@@ -17,6 +17,8 @@ M.send_cmd_to_term = function(command)
         return false
     end
 
+    if config.is_windows then require("r.run").send_to_nvimcom("B", "R is Busy") end
+
     local cmd
     if config.clear_line then
         if config.editing_mode == "emacs" then

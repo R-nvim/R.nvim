@@ -392,7 +392,12 @@ M.chunks_up_to_here = function()
                     table.insert(chunklines, curbuf[k])
                 end
                 if lang == "python" then
-                    table.insert(codelines, 'reticulate::py_run_string("' .. table.concat(chunklines, "\n"):gsub('"', '\\"') .. '")')
+                    table.insert(
+                        codelines,
+                        'reticulate::py_run_string("'
+                            .. table.concat(chunklines, "\n"):gsub('"', '\\"')
+                            .. '")'
+                    )
                 else
                     for _, v in pairs(chunklines) do
                         table.insert(codelines, v)
