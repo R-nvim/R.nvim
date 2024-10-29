@@ -96,6 +96,9 @@ M.buf_enter = function()
     then
         rscript_buf = vim.api.nvim_get_current_buf()
     end
+    if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
+        require("r.rmd").update_params()
+    end
 end
 
 --- Get the number of R script buffer

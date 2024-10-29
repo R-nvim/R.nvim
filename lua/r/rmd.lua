@@ -173,10 +173,22 @@ M.update_params = function()
     local params_str = table.concat(params, "\017")
     if last_params ~= params_str then
         last_params = params_str
-        require("r.run").send_to_nvimcom(
-            "E",
-            "nvimcom:::update_params('" .. params_str .. "')"
-        )
+        if config.is_windows then
+            -- On Windows, R will crash if nvimcom evaluates a command in the
+            -- background while R is busy
+            params_str = table.concat(params, "\n")
+            params_str = params_str:gsub('"', '\\"')
+            params_str = 'params <- yaml::yaml.load("' .. params_str .. '")[[1]]'
+            if config.bracketed_paste then
+                params_str = "\027[200~" .. params_str .. "\027[201~"
+            end
+            send.cmd(params_str)
+        else
+            require("r.run").send_to_nvimcom(
+                "E",
+                "nvimcom:::update_params('" .. params_str .. "')"
+            )
+        end
     end
 end
 

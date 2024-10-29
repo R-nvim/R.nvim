@@ -1,7 +1,7 @@
 check_formatfun <- function() {
   if (length(find.package("styler", quiet = TRUE, verbose = FALSE)) == 0) {
     .C("nvimcom_msg_to_nvim",
-      "lua require('r').warn('You have to install styler in order to run :RFormat')",
+      "lua require('r.log').warn('You have to install styler in order to run :RFormat')",
       PACKAGE = "nvimcom"
     )
     return(FALSE)
@@ -26,7 +26,7 @@ nvim_format_file <- function(fname, wco, sw) {
   options(styler.quiet = sq)
   if (inherits(ok, "try-error")) {
     .C("nvimcom_msg_to_nvim",
-      "lua require('r').warn('Error trying to execute the function styler::style_file()')",
+      "lua require('r.log').warn('Error trying to execute the function styler::style_file()')",
       PACKAGE = "nvimcom"
     )
     return(invisible(NULL))
@@ -58,7 +58,7 @@ nvim_format_txt <- function(l1, l2, wco, sw, txt) {
   ok <- try(styler::style_text(txt, indent_by = sw))
   if (inherits(ok, "try-error")) {
     .C("nvimcom_msg_to_nvim",
-      "lua require('r').warn('Error trying to execute the function styler::style_text()')",
+      "lua require('r.log').warn('Error trying to execute the function styler::style_text()')",
       PACKAGE = "nvimcom"
     )
     return(invisible(NULL))

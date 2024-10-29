@@ -760,7 +760,7 @@ static void nvimcom_eval_expr(const char *buf) {
          * a semicolon. */
         PROTECT(ans = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
         if (er && verbose > 1) {
-            strcpy(rep, "lua require('r').warn('Error running: ");
+            strcpy(rep, "lua require('r.log').warn('Error running: ");
             strncat(rep, buf2, 80);
             strcat(rep, "')");
             send_to_nvim(rep);
@@ -768,7 +768,7 @@ static void nvimcom_eval_expr(const char *buf) {
         UNPROTECT(1);
     } else {
         if (verbose > 1) {
-            strcpy(rep, "lua require('r').warn('Invalid command: ");
+            strcpy(rep, "lua require('r.log').warn('Invalid command: ");
             strncat(rep, buf2, 80);
             strcat(rep, "')");
             send_to_nvim(rep);
@@ -1003,6 +1003,11 @@ static void nvimcom_parse_received_msg(char *buf) {
     }
 
     switch (buf[0]) {
+#ifdef WIN32
+    case 'B':
+        r_is_busy = 1;
+        break;
+#endif
     case 'A': // Object Browser started
         if (autoglbenv == 0)
             autoglbenv = 1;
@@ -1264,7 +1269,8 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
 #ifdef WIN32
                 DWORD ti;
                 tid = CreateThread(NULL, 0, client_loop_thread, NULL, 0, &ti);
-                nvimcom_send_running_info(CHAR(STRING_ELT(rinfo, 0)), CHAR(STRING_ELT(nvv, 0)));
+                nvimcom_send_running_info(CHAR(STRING_ELT(rinfo, 0)),
+                                          CHAR(STRING_ELT(nvv, 0)));
 #else
                 pthread_create(&tid, NULL, client_loop_thread, NULL);
                 snprintf(flag_eval, 510, "nvimcom:::send_nvimcom_info('%d')",
