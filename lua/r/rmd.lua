@@ -2,7 +2,7 @@ local inform = require("r.log").inform
 local config = require("r.config").get_config()
 local send = require("r.send")
 local get_lang = require("r.utils").get_lang
-local uv=vim.uv
+local uv = vim.uv
 
 local M = {}
 
@@ -147,6 +147,39 @@ M.next_chunk = function()
     end
 end
 
+local last_params = ""
+
+--- Get the params variable from the YAML metadata and send it to nvimcom which
+--- will create the params list in the .GlobalEnv.
+M.update_params = function()
+    if vim.g.R_Nvim_status < 7 then return end
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
+    if lines[1] ~= "---" then return end
+
+    local params = {}
+    local i = 2
+    while i < #lines do
+        if lines[i] == "---" then break end
+        if lines[i] == "params:" then
+            table.insert(params, "params:")
+            i = i + 1
+            while lines[i]:sub(1, 1) == " " and i < #lines do
+                table.insert(params, lines[i])
+                i = i + 1
+            end
+        end
+        i = i + 1
+    end
+    local params_str = table.concat(params, "\017")
+    if last_params ~= params_str then
+        last_params = params_str
+        require("r.run").send_to_nvimcom(
+            "E",
+            "nvimcom:::update_params('" .. params_str .. "')"
+        )
+    end
+end
+
 --- Setup function for initializing module functionality.
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.
 M.setup = function()
@@ -184,6 +217,7 @@ M.setup = function()
     -- Record setup time for debugging
     rmdtime = (uv.hrtime() - rmdtime) / 1000000000
     require("r.edit").add_to_debug_info("rmd setup", rmdtime, "Time")
+    vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
 end
 
 --- Compiles the current R Markdown document into a specified output format.

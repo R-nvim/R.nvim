@@ -457,3 +457,16 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
     .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
     return(invisible(NULL))
 }
+
+update_params <- function(str) {
+    if (str == "") {
+        if (length(grep("^params$", ls(.GlobalEnv))) == 1) {
+            rm(params, envir = .GlobalEnv)
+        }
+        return(invisible(NULL))
+    }
+    str <- gsub("\x11", "\n", str)
+    if (!require(yaml))
+        stop("Please, install the 'yaml' package.")
+    params <<- yaml::yaml.load(str)$params
+}
