@@ -309,11 +309,11 @@ void resolve(const char *wrd, const char *pkg) {
             size_t sz = strlen(f[5]) + strlen(f[6]) + 16;
             char *buffer = malloc(sz);
             p = str_cat(p, f[2]);
-            p = str_cat(p, " ");
+            p = str_cat(p, " `");
             p = str_cat(p, f[3]);
             p = str_cat(p, "::");
             p = str_cat(p, f[0]);
-            p = str_cat(p, "\x14\x14**");
+            p = str_cat(p, "`\x14\x14**");
             format(f[5], buffer, ' ', '\x14');
             p = str_cat(p, buffer);
             p = str_cat(p, "**\x14\x14");
