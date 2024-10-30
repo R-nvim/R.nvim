@@ -152,7 +152,9 @@ local last_params = ""
 --- Get the params variable from the YAML metadata and send it to nvimcom which
 --- will create the params list in the .GlobalEnv.
 M.update_params = function()
+    if not vim.g.R_Nvim_status then return end
     if vim.g.R_Nvim_status < 7 then return end
+
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
     if lines[1] ~= "---" then return end
 
