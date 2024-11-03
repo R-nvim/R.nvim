@@ -497,14 +497,22 @@ M.selection = function(m)
     local lang = get_lang()
 
     if
-        vim.o.filetype == "rnoweb"
-        or vim.o.filetype == "rmd"
-        or vim.o.filetype == "quarto"
+        (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
+        and lang ~= "r"
+        and lang ~= "python"
+        and not vim.api.nvim_get_current_line():find("`r ")
     then
-        if lang ~= "r" and lang ~= "python" then
-            inform("Not inside R or Python code chunk.")
-            return
-        end
+        inform("Not inside R or Python code chunk.")
+        return
+    end
+
+    if
+        vim.o.filetype == "rnoweb"
+        and lang ~= "r"
+        and not vim.api.nvim_get_current_line():find("\\Sexpr{")
+    then
+        inform("Not inside R code chunk.")
+        return
     end
 
     -- Leave visual mode
@@ -728,6 +736,7 @@ end
 
 local get_root_node = function(bufnr)
     local parser = vim.treesitter.get_parser(bufnr, "r", {})
+    if not parser then return nil end
     local tree = parser:parse()[1]
     return tree:root()
 end
@@ -755,6 +764,7 @@ M.funs = function(bufnr, capture_all, move_down)
     end
 
     local root_node = get_root_node(bufnr)
+    if not root_node then return end
     local cursor_pos = vim.api.nvim_win_get_cursor(0)[1]
 
     local lines = {}
