@@ -458,17 +458,17 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
     return(invisible(NULL))
 }
 
-update_params <- function(str) {
-    if (str == "") {
+update_params <- function(fname) {
+    if (fname == "DeleteOldParams") {
         if (length(grep("^params$", ls(.GlobalEnv))) == 1) {
             rm(params, envir = .GlobalEnv)
         }
-        return(invisible(NULL))
+    } else {
+        if (!require(knitr, quietly = TRUE))
+            stop("Please, install the 'knitr' package.")
+        flines <- readLines(fname)
+        params <<- knitr::knit_params(flines) |> lapply(\(x) x$value)
     }
-    str <- gsub("\x11", "\n", str)
-    if (!require(yaml, quietly = TRUE))
-        stop("Please, install the 'yaml' package.")
-    params <<- yaml::yaml.load(str)$params
     .C("nvimcom_task", PACKAGE = "nvimcom")
     return(invisible(NULL))
 }
