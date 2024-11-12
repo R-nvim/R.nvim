@@ -147,7 +147,7 @@ M.next_chunk = function()
     end
 end
 
-local last_params = ""
+local has_params = false
 
 --- Get the params variable from the YAML metadata and send it to nvimcom which
 --- will create the params list in the .GlobalEnv.
@@ -158,44 +158,35 @@ M.update_params = function()
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
     if lines[1] ~= "---" then return end
 
-    local params = {}
+    local p = false
     local i = 2
     while i < #lines do
-        if lines[i] == "---" then break end
         if lines[i] == "params:" then
-            table.insert(params, "params:")
-            i = i + 1
-            while lines[i]:sub(1, 1) == " " and i < #lines do
-                table.insert(params, lines[i])
-                i = i + 1
-            end
+            p = true
+            break
         end
+        if lines[i] == "---" then break end
         i = i + 1
     end
-    local params_str = table.concat(params, "\017")
-    if last_params ~= params_str then
-        last_params = params_str
-        if config.is_windows then
-            -- On Windows, R will crash if nvimcom evaluates a command in the
-            -- background while R is busy
-            params_str = table.concat(params, "\n")
-            params_str = params_str:gsub('"', '\\"')
-            params_str = 'params <- yaml::yaml.load("' .. params_str .. '")[[1]]'
-            if config.bracketed_paste then
-                params_str = "\027[200~" .. params_str .. "\027[201~"
-            end
-            send.cmd(params_str)
-        else
+    if p then
+        require("r.run").send_to_nvimcom(
+            "E",
+            "nvimcom:::update_params('" .. vim.api.nvim_buf_get_name(0) .. "')"
+        )
+        has_params = true
+    else
+        if has_params then
             require("r.run").send_to_nvimcom(
                 "E",
-                "nvimcom:::update_params('" .. params_str .. "')"
+                "nvimcom:::update_params('DeleteOldParams')"
             )
         end
+        has_params = false
     end
 end
 
 -- Register params as empty. This function is called when R quits.
-M.clean_params = function() last_params = "" end
+M.clean_params = function() has_params = false end
 
 --- Setup function for initializing module functionality.
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.

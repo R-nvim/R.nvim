@@ -1066,7 +1066,10 @@ static void nvimcom_parse_received_msg(char *buf) {
         }
         break;
     case 'E': // eval expression
+    case 'R': // eval expression and update GlobalEnv list
         p = buf;
+        if (*p == 'R')
+            flag_glbenv = 1;
         p++;
         if (strstr(p, getenv("RNVIM_ID")) == p) {
             p += strlen(getenv("RNVIM_ID"));
