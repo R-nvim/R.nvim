@@ -346,23 +346,27 @@ M.show_map_desc = function()
     local lw = tostring(label_w)
     local kw = tostring(key_w)
 
-    local bycat = {
-        Start = {},
-        Edit = {},
-        Navigate = {},
-        Send = {},
-        Command = {},
-        Weave = {},
-        Object_Browser = {},
+    local cat = {
+        "Start",
+        "Edit",
+        "Navigate",
+        "Send",
+        "Command",
+        "Weave",
+        "Object_Browser",
     }
+    local bycat = {}
+    for _, c in pairs(cat) do
+        bycat[c] = {}
+    end
     for k, v in pairs(map_desc) do
         table.insert(bycat[v.c], { k, v.m, v.k, v.d })
     end
 
     local map_key_desc = {}
-    for c, t in pairs(bycat) do
+    for _, c in pairs(cat) do
         table.insert(map_key_desc, { c .. "\n", "Title" })
-        for _, v in pairs(t) do
+        for _, v in pairs(bycat[c]) do
             table.insert(
                 map_key_desc,
                 { string.format("  %-0" .. lw .. "s", v[1]), "Identifier" }
