@@ -287,7 +287,7 @@ M.view_df = function(oname, howto, txt)
         end
 
         if config.csv_app:find("^:") then
-            vim.cmd(config.csv_app .. " " .. tsvnm)
+            vim.cmd(cmd)
             return
         end
 
