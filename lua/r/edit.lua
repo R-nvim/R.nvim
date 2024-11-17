@@ -296,15 +296,22 @@ M.view_df = function(oname, howto, txt)
         return
     end
 
-    if howto == "head" then
-        -- head() of data.frame
-        vim.cmd("above")
-        vim.cmd("7split " .. oname)
+    if vim.fn.bufloaded(oname) == 1 then
+        local sbopt = vim.o.switchbuf
+        vim.o.switchbuf = "useopen,usetab"
+        vim.cmd.sb(oname)
+        vim.o.switchbuf = sbopt
     else
-        vim.api.nvim_cmd({ cmd = howto, args = { oname } }, {})
+        if howto == "head" then
+            -- head() of data.frame
+            vim.cmd("above")
+            vim.cmd("7split " .. oname)
+        else
+            vim.api.nvim_cmd({ cmd = howto, args = { oname } }, {})
+        end
     end
     vim.api.nvim_set_option_value("modifiable", true, { scope = "local" })
-    vim.api.nvim_buf_set_lines(0, 0, 1, true, csv_lines)
+    vim.api.nvim_buf_set_lines(0, 0, -1, true, csv_lines)
     vim.api.nvim_set_option_value("modifiable", false, { scope = "local" })
     vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
     vim.api.nvim_set_option_value("filetype", "csv", { scope = "local" })
