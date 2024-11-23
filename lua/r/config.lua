@@ -52,7 +52,6 @@ local config = {
     local_R_library_dir = "",
     max_paste_lines     = 20,
     min_editor_width    = 80,
-    non_r_compl         = true,
     setwd               = "no",
     nvimpager           = "split_h",
     objbr_allnames      = false,
