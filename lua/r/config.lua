@@ -131,7 +131,7 @@ local hooks = require("r.hooks")
 ---Whether to run R in an external terminal emulator rather than Noevim's
 ---built-in terminal emulator; defaults to `false`. See |external_term| or
 ---`:help external_term` for more information.
----@field external_term boolean
+---@field external_term? boolean
 ---
 ---Whether X tools are avaialble; used for window management. By default the
 ---availability will be detected from the system, but you can force its use
@@ -383,14 +383,26 @@ local hooks = require("r.hooks")
 ---
 ---Time to wait before loading the {nvimcom} package after starting R; defaults
 ---to `60` seconds. See |wait| or `:help wait` for more information.
----@field wait?
+---@field wait? integer
 
 ---@alias RprojField '"pipe_version"'
 
 ---@alias RHook fun(): nil
 
+---@class RConfig: RConfigUserOpts
+---@field uname? string
+---@field is_windows? boolean
+---@field is_darwin? boolean
+---@field rnvim_home? string
+---@field uservimfiles? string
+---@field user_login? string
+---@field localtmpdir? string
+---@field source_read? string
+---@field source_write? string
+---@field curview? string
+
 -- stylua: ignore start
----@type RConfigUserOpts
+---@type RConfig
 local config = {
     OutDec              = ".",
     RStudio_cmd         = "",
@@ -599,6 +611,7 @@ local apply_user_opts = function()
             if type(default_val) == "table" then
                 default_val = default_val[k]
             else
+                ---@type any
                 default_val = nil
                 break
             end
@@ -1040,7 +1053,7 @@ end
 
 --- Return the table with the final configure variables: the default values
 --- overridden by user options.
----@return table
+---@return RConfig
 M.get_config = function() return config end
 
 M.check_health = function()
