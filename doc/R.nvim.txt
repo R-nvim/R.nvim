@@ -1041,8 +1041,8 @@ put in your config:
 >lua
    rmdchunk = "``"
 <
-If `rmdchunk = 2` (the default), in addition of creating an empty chunk
-block, a single backtick will be converted in inline R delimiters if the
+If `rmdchunk = 2` (the default), in addition to creating an empty chunk
+block, a single backtick will be converted to inline R delimiters if the
 cursor is not at the beginning of the line.
 
 
@@ -1074,7 +1074,7 @@ config, as below:
 >lua
    objbr_w = 30
 <
-If the Object Browser is being created bellow or at the top of the existing
+If the Object Browser is being created below or at the top of the existing
 window, it will be 10 lines high, unless you set its height in your config:
 >lua
    objbr_h = 20
