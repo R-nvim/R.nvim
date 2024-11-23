@@ -2,8 +2,395 @@ local utils = require("r.utils")
 local uv = vim.uv
 local hooks = require("r.hooks")
 
--- stylua: ignore start
 
+---@class RConfigUserOpts
+---
+---Used to set R's `OutDec` option; see `?options` in R; see |OutDec| or
+---`:help OutDec` for more information.
+---@field OutDec? string 
+---
+---Optionally set R.nvim to use RStudio to run R code; see `|RStudio_cmd|` or
+---`:help RStudio_cmd` for more information.
+---@field RStudio_cmd? string
+---
+---Optionally override the command used to start R, defaults to `"R"`.
+---See |R_app| or `:help R_app` for more information.
+---@field R_app? string
+---
+---Additional command line arguments passed to R on startup. See |R_args| or
+---`:help R_args` for more information.
+---@field R_args? string[]
+---
+---This command will be used to run some background scripts; Defaults to the
+---same value as |R_app|. See |R_cmd| or `:help R_cmd` for more information.
+---@field R_cmd? string
+---
+---Optionally set the path to the R executable used by R.nvim. The user's
+---`PATH` environmental variable will be used by default. See |R_path| or 
+---`:help R_path` for more information.
+---@field R_path? string
+---
+---Whether to add additional highlighting to R output; defaultst to `false`.
+---See |Rout_more_colors| or `:help Rout_more_colors` for more information.
+---@field Rout_more_colors? boolean
+---
+---Whether to use the R.app graphical application on Mac OS X. Defaults
+---to `false`. See |applescript| or `:help applescript` for more information.
+---@field applescript? boolean
+---
+---Whether to remember the window layout when quitting R; defaults to `true`.
+---See |arrange_windows| or `:help arrange_windows` for more information.
+---@field arrange_windows? boolean
+---
+---The keymap used to insert `<-`; defaults to `<M-->`, i.e. Alt + M in most
+---terminals. See |assignment_keymap| or `:help assignment_keymap` for more
+---information.
+---@field assignment_keymap? string
+---
+---The keymap used to insert the pipe operator; defaults to `<localleader>,`.
+---See |pipe_keymap| or `:help pipe_keymap` for more information.
+---@field pipe_keymap? string
+---
+---The version of the pipe operator to insert on |pipe_keymap|; defaults to
+---`"native"`. See |pipe_version| or `:help pipe_version` for more information.
+---@field pipe_version? '"native"' | '"|>"' | '"magrittr"' | '"%>%"'
+---
+---Whether to force auto-scrolling in the R console; defaults to `true`.
+---See |auto_scroll| or `:help auto_scroll` for more information.
+---@field auto_scroll? boolean
+---
+---Whether to start R automatically when you open an R script; defaults to
+---`"no". See |auto_start| or `:help auto_start` for more information.
+---@field auto_start? '"no"' | '"on startup"' | '"always"'
+---
+---Whether closing Neovim should also quit R; defaults to `true` in Neovim's
+---built-in terminal emulator and `false` otherwise. See |auto_quit| or
+---`:help auto_quit` for more information.
+---@field auto_quit? boolean
+---
+---Controls which lines are sent to the R console on `<LocalLeader>pp`;
+---defaults to `false`. See |bracketed_paste| or `:help bracketed_paste` for
+---more information.
+---@field bracketed_paste? boolean
+---
+---Options to control the behaviour of the R console window; defaults to
+---`"winfixwidth winfixheight nobuflisted"`. See `|buffer_opts|` or `:help
+---buffer_opts` for more information.
+---@field buffer_opts? string
+---
+---Whether to set a keymap to clear the console; defaults to `true` but should
+---be set to `false` if your version of R supports this feature out-of-the-box.
+---See |clear_console| or `:help clear_console` for more information.
+---@field clear_console? boolean
+---
+---Set to `true` to add `<C-a><C-k>` to every R command; defaults to `false`.
+---See |clear_line| or `:help clear_line` for more information.
+---@field clear_line? boolean
+---
+---Whether to close the terminal window when R quits; defaults to `true`.
+---see |close_term| or `:help close_term` for more information.
+---@field close_term? boolean
+---
+---Whether to set a keymap to format all numbers as integers for the current
+---buffer; defaults to `false`. See |convert_range_int| or
+---`:help convert_range_int` for more informatin.
+---@field convert_range_int? boolean
+---
+---Optionally you can give a directory where lists used for autocompletion
+---will be stored. Defaults to `""`. See |compldir| or `:help compldir` for
+---more information.
+---@field compldir? string
+---
+---Options for fine-grained control of the object browser. See |compl_data| or
+---`:help compl_data` for more information.
+---@field compl_data? { max_depth: integer, max_size: integer, max_time: integer }
+---
+---Whether to use R.nvim's configuration for Tmux if running R in an external
+---terminal emulator. Set to `false` if you want to use your own `.tmux.conf`.
+---Defaults to `true`. See |config_tmux| or `:help config_tmux` for more
+---information.
+---@field config_tmux? boolean
+---
+---Control the program to use when viewing CSV files; defaults to `""`, i.e.
+---to open these in a normal Neovim buffer. See |csv_app| or `:help csv_app`
+---for more information.
+---@field csv_app? string
+---
+---A table of R.nvim commands to disable. Defaults to `{ "" }`.
+---See |disable_cmds| or `:help disable_cmds` for more information.
+---@field disable_cmds? table<integer, string>
+---
+---Set to `"vi"` if R is running in vi editing mode; defaults to `""`.
+---See `|editing_mode|` or `:help editing_mode` for more information.
+---@field editing_mode? string
+---
+---Whether to use `<Esc>` to leave terminal mode and enter normal mode;
+---defaults to `true`. See |esc_term| or `:help esc_term` for more information.
+---@field esc_term? boolean
+---
+---Whether to run R in an external terminal emulator rather than Noevim's
+---built-in terminal emulator; defaults to `false`. See |external_term| or
+---`:help external_term` for more information.
+---@field external_term boolean
+---
+---Whether X tools are avaialble; used for window management. By default the
+---availability will be detected from the system, but you can force its use
+---by setting this value to `true` or `false`.
+---@field has_X_tools? boolean
+---
+---Whether to highlight R output using Neovim. Defaults to `false` if the
+---package {colorout} is loaded, or `true` otherwise. See |hl_term| or 
+---`:help hl_term` for more information.
+---@field hl_term? boolean
+---
+---Functions to run on various events. See |hook| or `:help hook` for more
+---information.
+---@field hook? { on_filetype: RHook, after_config: RHook, after_R_start: RHook, after_ob_open: RHook}
+---
+---Whether to allow R.nvim commands when in insert mode; defaults to `false`.
+---See |insert_mode_cmds| or `:help insert_mode_cmds` for more information.
+---@field insert_mode_cmds? boolean
+---
+---Command and arguments to use when producing PDFs. See |latexcmd| or
+---`:help latexcmd` for more information.
+---@field latexcmd? table<string, string>
+---
+---Whether to list arguments for methods on `<localleader>ra`; defaults to
+---`false`. See |listmethods| or `:help listmethods` for more information.
+---@field listmethods? boolean
+---
+---Optionally supply the path to the directory where the {nvimcom} is
+---installed. See `/doc/remote_access.md` for more information.
+---@field local_R_library_dir? string
+---
+---When sending lines to the console, this is the number of lines at which
+---R.nvim will instead create and source a temporary file. Defaults to `20`.
+---See |max_paste_lines| or `:help max_paste_lines` for more information.
+---@field max_paste_lines? integer
+---
+---Used to control how R.nvim splits the window when intialising the R console;
+---defaults to `80`. See |min_editor_width| or `:help min_editor_width` for
+---more information.
+---@field min_editor_width? integer
+---
+---How to set the working directory when starting R; defaults to `"no"` to not
+---set the working directory. See |setwd| or `:help setwd` for more
+---information.
+---@field setwd? '"no"' | '"file"' | '"nvim"'
+---
+---How to open R man pages/help documentation; defaults to `"split_h"`.
+---See |nvimpager| or `:help nvimpager` for more information.
+---@field nvimpager? '"split_h"' | '"split_v"' | '"tab"' | '"float"' | '"no"'
+---
+---Whether to show hidden objects in the object browser; defaults to `false`.
+---See |objbr_allnames| or `:help objbr_allnames` for more information.
+---@field objbr_allnames? boolean
+---
+---Whether to start the object browser when R starts; defaults to `false`.
+---See |objbr_auto_start| or `:help objbr_auto_start` for more information.
+---@field objbr_auto_start? boolean
+---
+---Default height for the object browser; defaults to `10`. See |objbr_h| or
+---`:help objbr_h` for more information.
+---@field objbr_h? integer
+---
+---Whether to expand dataframes in the object browser; defaults to `true`.
+---See |objbr_opendf| or `:help objbr_opendf` for more information.
+---@field objbr_opendf? boolean
+---
+---Whether to expand lists in the object browser; defaults to `false`.
+---See |objbr_openlist| or `:help objbr_openlist` for more information.
+---@field objbr_openlist? boolean
+---
+---Where to open the object browser; defaults to `"script,right"`.
+---See |objbr_place| or `:help objbr_place` for more information.
+---@field objbr_place? string
+---
+---Default width for the object browser; defaults to `40`. See |objbr_w| or
+---`:help objbr_w` for more information.
+---@field objbr_w? integer
+---
+---Keymappings to set for the object browser. Table keys give the keymaps
+---and values give R functions to call for the object under the cursor.
+---Defaults to `{ s = "summary", p = "plot" }`
+---@field objbr_mappings? table<string, string>
+---
+---Optionally a placeholder to use when setting object browser mappings.
+---Defaults to `"{object}"`. See |objbr_placeholder| or
+---`:help objbr_placeholder` for more information.
+---@field objbr_placeholder? string
+---
+---Whether to open R examples in a Neovim buffer; defaults to `true`.
+---See |open_example| or `:help open_example` for more information.
+---@field open_example? boolean
+---
+---How to open HTML files after rendering an R Markdown document; defaults to
+---`"open and focus"`. See |open_html| or `:help open_html` for more
+---information.
+---@field open_html? '"open and focus"' | '"open"' | '"no"'
+---
+---How to open PDF files after rendering an R Markdown document; defaults to
+---`"open and focus"`. See |open_pdf| or `:help open_pdf` for more
+---information.
+---@field open_pdf? '"open and focus"' | '"open"' | '"no"'
+---
+---When sending a line, this controls whether preceding lines are also sent if
+---they're part of the same paragraph. Defaults to `true`.
+---See |paragraph_begin| or `:help paragraph_begin` for more information.
+---@field paragraph_begin? boolean
+---
+---Whether to send the surrounding paragraph when an individual line is
+---sent to the R console; defaults to `true`. See |parenblock| or
+---`:help parenblock` for more information.
+---@field parenblock? boolean
+---
+---The function to use when splitting a filepath; defaults to `"file.path"`.
+---See |path_split_fun| or `:help path_split_fun` for more information.
+---@field path_split_fun? string
+---
+---The program to use to open PDF files; the default behaviour depends on the
+---platform. See |pdfviewer| or `:help pdfviewer` for more information.
+---@field pdfviewer? string
+---
+---Additional arguments passed to `quarto::quarto_preview()`; defaults to `""`.
+---See |quarto_preview_args| or `:help quarto_preview_args` for more
+---information.
+---@field quarto_preview_args? string
+---
+---Additional arguments passed to `quarto::quarto_render()`; defaults to `""`.
+---See |quarto_render_args| or `:help quarto_render_args` for more
+---information.
+---@field quarto_render_args? string
+---
+---The default height for the R console; defaults to `15`.
+---See |rconsole_height| or `:help rconsole_height` for more information.
+---@field rconsole_height? integer
+---
+---The default width for the R console; defaults to `80`.
+---See |rconsole_width| or `:help rconsole_width` for more information.
+---@field rconsole_width? integer
+---
+---Whether to register the Markdown parser for Quarto and RMarkdown documents;
+---defaults to `true`. See |register_treesitter| or `:help register_treesitter`
+---for more information.
+---@field register_treesitter? boolean
+---
+---Options for accessing a remote R session from local Neovim.
+---See |remote_compldir| or `:help remote_compldir` for more information.
+---@field remote_compldir? string
+---
+--Whether to automatically remove {knitr} cache files; defaults to `false`.
+--This field is undocumented, but users can still apply it if they really
+--want to.
+--@field private rm_knit_cache? boolean
+--
+---Additional arguments passed to `rmarkdown::render()`; defaults to `""`.
+---See |rmarkdown_args| or `:help rmarkdown_args` for more information.
+---@field rmarkdown_args? string
+---
+---The environment in which to render R Markdown documents; defaults to
+---`".GlobalEnv"`. See |rmd_environment| or `:help rmd_environment` for more
+---information.
+---@field rmd_environment? string
+---
+---Controls if and how backticks are replaced with code chunk/inline code
+---delimiters when writing R Markdown and Quarto files. See |rmdchunk| or
+---`:help rmdchunk` for more information.
+---@field rmdchunk? string | integer
+---
+---Whether to remove hidden objects from the workspace on `<LocalLeader>rm`;
+---defaults to `false`. See |rmhidden| or `:help rmhidden` for more
+---information.
+---@field rmhidden? boolean
+---S
+---Whether to replace `<` with `<<>>=\n@` when writing Rnoweb files; defaults
+---to `true`. See |rnowebchunk| or `:help rnowebchunk` for more information.
+---@field rnowebchunk         = true,
+---
+--The directory containing R.nvim's plugin files.
+--@field private rnvim_home? string
+--
+---Controls whether the resulting `.Rout` file is not opened in a new tab when
+---running `R CMD BATCH`; defaults to `false`. See |routnotab| or
+---`:help routnotab` for more information.
+---@field routnotab? boolean
+---
+---Controls which fields from a `.Rproj` file should influence R.nvim settings.
+---Defaults to `{ "pipe_version" }`. See |proj_prioritise| or
+---`:help rproj_prioritise` for more information.
+---@field rproj_prioritise? table<integer, RprojField>
+---
+---Whether to save the position of the R console on quit; defaults to `true`.
+---See |save_win_pos| or `:help save_win_pos` for more information.
+---@field save_win_pos? boolean
+---
+---Whether to set the `HOME` environmental variable; defaults to `true`.
+---See |set_home_env| or `:help set_home_env` for more information.
+---@field set_home_env? boolean
+---
+---Controls how R's `width` option is set by R.nvim; defaults to `2`,
+---meaning the value will be set according to the initial width of the R
+---console. See |setwidth| or `:help setwidth` for more information.
+---@field setwidth? boolean | integer
+---
+---Whether to display terminal error messages as warnings; defaults to
+---`false`. See |silent_term| or `:help silent_term` for more information.
+---@field silent_term? boolean
+---
+--Optionally a path to the program Skim which may be used to open PDF files;
+--defaults to '""'.
+--@field private skim_app_path? string
+---
+---Additional arguments passed to `source()` when running R code; defaults to
+---`""`. See |source_args| or `:help source_args` for more information.
+---@field source_args? string
+---
+---Whether to use R.nvim's `nvim.plit()` on `<LocalLeader>rg`; defaults to
+---`false`. See |specialplot| or `:help specialplot` for more information.
+---@field specialplot? boolean
+---
+---Packages for which to built autocompletions when R starts; defaults to
+---`"base,stats,graphics,grDevices,utils,methods"`. See |start_libs| or
+---`:help start_libs` for more information.
+---@field start_libs? string
+---
+---Whether to use SyncTex with R.nvim; defaults to `true`. See |synctex| or
+---`:help synctex` for more information.
+---@field synctex? boolean
+---
+--The PID of R.nvim's terminal window. This is set internally.
+--@field private term_pid? integer
+--
+--The title of R.nvim's terminal window. This is set internally.
+--@field private term_title? string
+--
+---Controls the display of LaTeX errors and warnings; defaults to `true`
+---to output these to the console. See |texerr| or `:help texerr` for more 
+---information.
+---@field texerr? boolean
+---
+---Can be used to set a particular directory to use for temporary files;
+---defaults to `""` to use the OS default. See |tmpdir| or `:help tmpdir` for
+---more information.
+---@field tmpdir? string
+---
+--Internal variable used to store the user login name.
+--@field private user_login? string
+--
+---If `true` then default keymaps will not be created; defaults to `false`.
+---See |user_maps_only| or `:help user_maps_only` for more information.
+---@field user_maps_only? boolean
+---
+---Time to wait before loading the {nvimcom} package after starting R; defaults
+---to `60` seconds. See |wait| or `:help wait` for more information.
+---@field wait?
+
+---@alias RprojField '"pipe_version"'
+
+---@alias RHook fun(): nil
+
+-- stylua: ignore start
+---@type RConfigUserOpts
 local config = {
     OutDec              = ".",
     RStudio_cmd         = "",
@@ -231,13 +618,11 @@ local apply_user_opts = function()
         local expected_types = valid_types[key_name] or { type(default_val) }
         if vim.fn.index(expected_types, type(user_opt)) == -1 then
             swarn(
-                "Invalid option type for `"
-                    .. key_name
-                    .. "`. Type should be "
-                    .. utils.msg_join(expected_types, ", ", ", or ", "")
-                    .. ", not "
-                    .. type(user_opt)
-                    .. "."
+                ("Invalid option type for `%s`. Type should be %s, not %s."):format(
+                    key_name,
+                    utils.msg_join(expected_types, ", ", ", or ", ""),
+                    type(user_opt)
+                )
             )
             return
         end
@@ -248,13 +633,11 @@ local apply_user_opts = function()
         local expected_values = valid_values[key_name]
         if expected_values and vim.fn.index(expected_values, user_opt) == -1 then
             swarn(
-                "Invalid option value for `"
-                    .. key_name
-                    .. "`. Value should be "
-                    .. utils.msg_join(expected_values, ", ", ", or ")
-                    .. ', not "'
-                    .. user_opt
-                    .. '".'
+                ('Invalid option value for `%s`. Value should be %s, not "%s"'):format(
+                    key_name,
+                    utils.msg_join(expected_values, ", ", ", or "),
+                    user_opt
+                )
             )
             return
         end
