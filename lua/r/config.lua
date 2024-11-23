@@ -39,7 +39,6 @@ local config = {
     esc_term            = true,
     external_term       = false, -- might be a string
     has_X_tools         = false,
-    help_w              = 46,
     hl_term             = true,
     hook                = {
                               on_filetype = function() end,
