@@ -97,8 +97,9 @@ nvim_viewobj <- function(oname, fenc = "", nrows = NULL, howto = "tabnew", R_df_
           o <- utils::head(o, n = nrows)
         }
         if (!is.null(R_df_viewer)) {
+            cmd <- gsub("'", "\x13", R_df_viewer)
             .C("nvimcom_msg_to_nvim",
-               paste0("lua require('r.send').cmd(require('r.config').get_config().df_viewer .. '(\"", oname, "\"))"),
+               paste0("lua vim.schedule(function() require('r.send').cmd('", cmd, "') end)"),
                PACKAGE = "nvimcom")
             return(invisible(NULL))
         }

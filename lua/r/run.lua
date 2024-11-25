@@ -611,8 +611,18 @@ M.action = function(rcmd, mode, args)
     local argmnts = args or ""
 
     if rcmd == "viewobj" then
-        if config.df_viewer then
-            argmnts = argmnts .. ', R_df_viewer = "' .. config.df_viewer .. '"'
+        if config.csv_app:find("^R:") then
+            local cmd = config.csv_app:gsub("^R:", "")
+            if cmd:find("%(%)") then
+                cmd = cmd:gsub("()", "(" .. rkeyword .. ")")
+            elseif cmd:find("%%s") then
+                cmd = cmd:gsub("%%s", rkeyword)
+            else
+                cmd = cmd .. "(" .. rkeyword .. ")"
+            end
+            cmd = cmd:gsub("'", '"')
+            cmd = cmd:gsub('"', '\\"')
+            argmnts = argmnts .. ', R_df_viewer = "' .. cmd .. '"'
         end
         if rkeyword:find("::") then
             M.send_to_nvimcom(

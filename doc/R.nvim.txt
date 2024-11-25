@@ -558,7 +558,7 @@ others would be very time consuming to fix without breaking anything.
 
 
 ------------------------------------------------------------------------------
-5.1. R must be started by Neovim
+5.1. R must be started by R.nvim
 
 The communication between Neovim and R will work only if R was started by the
 running Neovim instance through the <LocalLeader>rf command. If you use R.nvim
@@ -1573,7 +1573,7 @@ elements are arguments to be passed to the command. Examples:
 >lua
    latexcmd = {"pdflatex"}
    latexcmd = {"xelatex"}
-   latexcmd = {"latexmk", "-pdf", "-pdflatex='xelatex %O -synctex=1 %S'"}
+   latexcmd = {"latexmk", "-pdf", '-pdflatex="xelatex %O -synctex=1 %S"'}
 <
 The elements of `latexcmd` may contain double quotes (as in the last example
 above), but not single quotes, because R.nvim will use single quotes to
@@ -1871,7 +1871,7 @@ You may also include "%s" in `csv_app` to indicate the position of the tsv
 file name in the command to be executed. Example using the `toggleterm.nvim`
 plugin which requires the whole command within quotes:
 >lua
-   csv_app = ":TermExec cmd='vd %s'"
+   csv_app = ':TermExec cmd="vd %s"'
 <
 You may also try to see the table in a graphical viewer such as LibreOffice
 Calc:
@@ -1879,10 +1879,18 @@ Calc:
    csv_app = "localc"
    csv_app = "c:/Program Files (x86)/LibreOffice 4/program/scalc.exe"
 <
-`csv_app` was not tested on Windows.
+`csv_app` can be a Lua function which will receive a single argument: the name
+of the `tsv` file.
 
-Finally, `csv_app` can be a Lua function which will receive a single
-argument: the name of the `tsv` file.
+Finally, there is also the option of configuring R.nvim to run an R command to
+display the data. You have to prefix the command with ":R". Examples:
+>lua
+   csv_app = "R:tibble::tibble"
+   csv_app = "R:relimp::showData(%s, font = 'Courier 14')"
+<
+The substring `%s` is replaced by the name of the object under the cursor, and
+`()` are added if necessary. In this case, no `csv` file is saved (see also
+|R.nvim-key-bindings|).
 
 If `csv_app` is not defined, there will be addional maps to open the file in a
 split window, in a vertical split window, or to see only the head of the csv
@@ -1893,13 +1901,6 @@ in your config. Valid values are `"\t"`, `";"` and `","`. Example:
 >lua
    csv_delim = ","
 <
-There is also the option of configuring R.nvim to run an R command to
-display the data. Examples:
->lua
-   df_viewer = "relimp::showData(%s, font = 'Courier 14')"
-<
-The value of `df_viewer` is a string and the substring `%s` is replaced by the
-name of the object under the cursor.
 
 
 ------------------------------------------------------------------------------
