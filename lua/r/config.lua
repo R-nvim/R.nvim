@@ -305,7 +305,7 @@ local hooks = require("r.hooks")
 ---S
 ---Whether to replace `<` with `<<>>=\n@` when writing Rnoweb files; defaults
 ---to `true`. See |rnowebchunk| or `:help rnowebchunk` for more information.
----@field rnowebchunk         = true,
+---@field rnowebchunk? boolean
 ---
 --The directory containing R.nvim's plugin files.
 --@field private rnvim_home? string
