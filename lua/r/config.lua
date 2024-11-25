@@ -7,7 +7,7 @@ local hooks = require("r.hooks")
 ---
 ---Used to set R's `OutDec` option; see `?options` in R; see |OutDec| or
 ---`:help OutDec` for more information.
----@field OutDec? string 
+---@field OutDec? string
 ---
 ---Optionally set R.nvim to use RStudio to run R code; see `|RStudio_cmd|` or
 ---`:help RStudio_cmd` for more information.
@@ -26,7 +26,7 @@ local hooks = require("r.hooks")
 ---@field R_cmd? string
 ---
 ---Optionally set the path to the R executable used by R.nvim. The user's
----`PATH` environmental variable will be used by default. See |R_path| or 
+---`PATH` environmental variable will be used by default. See |R_path| or
 ---`:help R_path` for more information.
 ---@field R_path? string
 ---
@@ -112,9 +112,9 @@ local hooks = require("r.hooks")
 ---@field config_tmux? boolean
 ---
 ---Control the program to use when viewing CSV files; defaults to `""`, i.e.
----to open these in a normal Neovim buffer. See |csv_app| or `:help csv_app`
+---to open these in a normal Neovim buffer. See |view_df| or `:help view_df`
 ---for more information.
----@field csv_app? string
+---@field view_df? { open_app: string, how: string, csv_sep: string, n_lines: integer, save_fun: string, open_fun: string | function }
 ---
 ---A table of R.nvim commands to disable. Defaults to `{ "" }`.
 ---See |disable_cmds| or `:help disable_cmds` for more information.
@@ -139,7 +139,7 @@ local hooks = require("r.hooks")
 ---@field has_X_tools? boolean
 ---
 ---Whether to highlight R output using Neovim. Defaults to `false` if the
----package {colorout} is loaded, or `true` otherwise. See |hl_term| or 
+---package {colorout} is loaded, or `true` otherwise. See |hl_term| or
 ---`:help hl_term` for more information.
 ---@field hl_term? boolean
 ---
@@ -365,7 +365,7 @@ local hooks = require("r.hooks")
 --@field private term_title? string
 --
 ---Controls the display of LaTeX errors and warnings; defaults to `true`
----to output these to the console. See |texerr| or `:help texerr` for more 
+---to output these to the console. See |texerr| or `:help texerr` for more
 ---information.
 ---@field texerr? boolean
 ---
@@ -432,7 +432,6 @@ local config = {
         max_time = 100,
     },
     config_tmux         = true,
-    csv_app             = "",
     disable_cmds        = { "" },
     editing_mode        = "",
     esc_term            = true,
@@ -504,6 +503,14 @@ local config = {
     tmpdir              = "",
     user_login          = "",
     user_maps_only      = false,
+    view_df = {
+        open_app = "",  -- How to open the CSV in Neovim or an external application.
+        how = "tabnew", -- How to display the data within Neovim if not using an external application.
+        csv_sep = "",   -- Field separator to be used when saving the CSV.
+        n_lines = -1,   -- Number of lines to save in the CSV (0 for all lines).
+        save_fun = "",  -- Save the data.frame in a CSV file
+        open_fun = "",  -- Use an R function to open the data.frame directly (no conversion to CSV needed)
+    },
     wait                = 60,
 }
 
@@ -581,7 +588,6 @@ local apply_user_opts = function()
     local valid_types = {
         external_term    = { "boolean", "string" },
         rmdchunk         = { "number", "string" },
-        csv_app          = { "string", "function" },
     }
 
     -- If an option is an enum, you can define the possible values here:
@@ -630,13 +636,15 @@ local apply_user_opts = function()
         -----------------------------------------------------------------------
         local expected_types = valid_types[key_name] or { type(default_val) }
         if vim.fn.index(expected_types, type(user_opt)) == -1 then
-            swarn(
-                ("Invalid option type for `%s`. Type should be %s, not %s."):format(
-                    key_name,
-                    utils.msg_join(expected_types, ", ", ", or ", ""),
-                    type(user_opt)
+            if key_name == "view_df.open_app" and type(user_opt) ~= "function" then
+                swarn(
+                    ("Invalid option type for `%s`. Type should be %s, not %s."):format(
+                        key_name,
+                        utils.msg_join(expected_types, ", ", ", or ", ""),
+                        type(user_opt)
+                    )
                 )
-            )
+            end
             return
         end
 

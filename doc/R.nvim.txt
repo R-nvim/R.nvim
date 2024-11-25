@@ -88,7 +88,7 @@ Main dependencies:
    nvim-treesitter:
       https://github.com/nvim-treesitter/nvim-treesitter
       You have to enable highlighting by tree-sitter and install parsers for
-      `r`, `markdown`, `markdown_inline`, `rnoweb`, and `yaml`.
+      `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`, and `csv`.
 
    cmp-r (for auto-completion):
       https://github.com/R-nvim/cmp-r
@@ -362,9 +362,9 @@ values separated by tab characters and display this file. The command
 <LocalLeader>vh will show the `head()` of the data.frame or matrix in a
 horizontal split that opens above the current window. This behavior can be
 customized, and you can configure R.nvim to call an external application to
-display the data.frame or matrix (see |R.nvim-df-view|). All files involved in
-these operations are created in R.nvim's temporary directory and deleted when
-R quits.
+display the data.frame or matrix (see |view_df|). All files involved in these
+operations are created in R.nvim's temporary directory and deleted when R
+quits.
 
 You can source all .R files in a directory with the Normal mode command
 `:RSourceDir`, which accepts an optional argument (the directory to be
@@ -558,7 +558,7 @@ others would be very time consuming to fix without breaking anything.
 
 
 ------------------------------------------------------------------------------
-5.1. R must be started by Neovim
+5.1. R must be started by R.nvim
 
 The communication between Neovim and R will work only if R was started by the
 running Neovim instance through the <LocalLeader>rf command. If you use R.nvim
@@ -756,7 +756,7 @@ command:
 |tmpdir|              Where temporary files are created
 |compldir|            Where lists for auto completion are stored
 |remote_compldir|     Mount point of remote cache directory
-|R.nvim-df-view|      Options for visualizing a data.frame or matrix
+|view_df|             Options for visualizing a data.frame or matrix
 |R.nvim-SyncTeX|      Options for SyncTeX
 
 
@@ -1573,7 +1573,7 @@ elements are arguments to be passed to the command. Examples:
 >lua
    latexcmd = {"pdflatex"}
    latexcmd = {"xelatex"}
-   latexcmd = {"latexmk", "-pdf", "-pdflatex='xelatex %O -synctex=1 %S'"}
+   latexcmd = {"latexmk", "-pdf", '-pdflatex="xelatex %O -synctex=1 %S"'}
 <
 The elements of `latexcmd` may contain double quotes (as in the last example
 above), but not single quotes, because R.nvim will use single quotes to
@@ -1842,65 +1842,118 @@ See https://github.com/R-nvim/R.nvim/wiki/Remote-access
 
 
 ------------------------------------------------------------------------------
-6.33. View a data.frame or matrix                             *R.nvim-df-view*
-                                                              *csv_app*
-                                                              *csv_delim*
+6.33. View a data.frame or matrix                                    *view_df*
 
 
 You can see data.frames and matrices in external applications with
-<LocalLeader>rv. By default, R.nvim will generate a `tsv` file from the
-`data.frame` or `matrix` and display it in a new tab. But you can change this
-by setting the value of `csv_app` which must be a string.
-
-If `csv_app` begins with "terminal:", R.nvim will open a new tab with the
+<LocalLeader>rv. By default, R.nvim will generate a `tsv` file from the whole
+`data.frame` or `matrix` and paste its contents it in a new tab. But you can
+change this by setting the values of the `view_df` elements in your config.
+The default values are:
+>lua
+   view_df = {
+      open_app = "",  -- How to open the CSV
+      how = "tabnew", -- How to display the data if doing it within Neovim
+      csv_sep = "",   -- Field separator to be used when saving the CSV.
+      n_lines = -1,   -- Number of lines to save in the CSV (0 for all lines).
+      save_fun = "",  -- R function to save the data.frame in a CSV file
+      open_fun = "",  -- R function to open the data.frame directly
+                      -- (no conversion to CSV needed)
+   },
+<
+If `open_app` begins with "terminal:", R.nvim will open a new tab with the
 application running in a terminal emulator. For example, if you want to use
 Visidata to see tabular data, put in your config:
 >lua
-   csv_app = "terminal:vd"
+   open_app = "terminal:vd"
 <
 If you are running Neovim within Tmux, you may prefer:
 >lua
-   csv_app = "tmux new-window vd"
+   open_app = "tmux new-window vd"
 <
-If `csv_app` begins with ":", R.nvim will append the name of the tsv file
+If `open_app` begins with ":", R.nvim will append the name of the tsv file
 and |:execute| the command. Example:
 >lua
-   csv_app = ":vsplit"
+   open_app = ":vsplit"
 <
-You may also include "%s" in `csv_app` to indicate the position of the tsv
+You may also include "%s" in `open_app` to indicate the position of the tsv
 file name in the command to be executed. Example using the `toggleterm.nvim`
 plugin which requires the whole command within quotes:
 >lua
-   csv_app = ":TermExec cmd='vd %s'"
+   open_app = ':TermExec cmd="vd %s"'
 <
 You may also try to see the table in a graphical viewer such as LibreOffice
 Calc:
 >lua
-   csv_app = "localc"
-   csv_app = "c:/Program Files (x86)/LibreOffice 4/program/scalc.exe"
+   open_app = "localc"
+   open_app = "c:/Program Files (x86)/LibreOffice 4/program/scalc.exe"
 <
-`csv_app` was not tested on Windows.
+`open_app` can be a Lua function which will receive a single argument: the name
+of the `tsv` file. Example on how to see the first five lines as a
+notification:
+>lua
+   view_df = {
+     n_lines = 5,
+     open_app = function(file_name)
+       local lines = vim.fn.readfile(file_name)
+       vim.notify(table.concat(lines, "\n"))
+     end
+   }
+<
+The substring `%s` is replaced by the name of the object under the cursor, and
+`()` are added if necessary. In this case, no `csv` file is saved (see also
+|R.nvim-key-bindings|).
 
-Finally, `csv_app` can be a Lua function which will receive a single
-argument: the name of the `tsv` file.
+The data will be displayed in a new tab. Change the value of `how` to "split"
+or "vsplit" to display the data in a split window.
 
-If `csv_app` is not defined, there will be addional maps to open the file in a
-split window, in a vertical split window, or to see only the head of the csv
-in a split window.
-
-If the default field delimiter causes problems in your case, you can change it
+If the default field delimiter (`\t`) causes problems in your case, you can change it
 in your config. Valid values are `"\t"`, `";"` and `","`. Example:
 >lua
-   csv_delim = ","
+   csv_sep = ","
 <
-There is also the option of configuring R.nvim to run an R command to
-display the data. Examples:
->lua
-   df_viewer = "relimp::showData(%s, font = 'Courier 14')"
-<
-The value of `df_viewer` is a string and the substring `%s` is replaced by the
-name of the object under the cursor.
+By default, the `tsv` file is got by capturing the output of `write.table()`.
+This has the advantage of depending only on base R. The data is streamed
+through nvimcom's TCP connection to ensure that it will work if R is running
+remotely. If this is too slow for the size of your data sets, or if you want
+to display more lines of data, you will want to change other `view_df`
+options, such as `save_fun` (see example below).
 
+If the value `n_lines` is `-1`, the maximum number of lines displayed will be:
+>r
+   ceiling(10000 / number_of_columns)
+<
+Set the value of `n_lines` to `0` to display all lines or to any positive
+integer number to set a fixed maximum.
+
+If are not running R remotely and want the CSV file written more quickly, you
+can define the function to save the CSV. In this case, the data will be saved
+in a file instead of streamed. The function must receive the `data.frame` as
+the first argument and the file name as the second argument and should return
+the name of the saved file. Examples:
+
+Use `data.table` to save a TSV file:
+>lua
+   view_df = {
+     n_lines = 0,
+     save_fun = "function(obj, obj_name) {f <- paste0(obj_name, '.tsv'); data.table::fwrite(obj, f, sep = '\t') ; f}",
+   }
+
+Use `arrow` to save a parquet file, and VisiData to open it:
+>lua
+   view_df = {
+     n_lines = 0,
+     save_fun = "function(obj, obj_name) {f <- paste0(obj_name, '.parquet'); arrow::write_parquet(obj, f) ; f}",
+     open_app = "terminal:vd"
+   }
+<
+Finally, instead of either streaming or saving the `data.frame`, there is also
+an option to configure R.nvim to send a command to the R Console to display
+the data. Examples:
+>lua
+   open_fun = "tibble::tibble"
+   open_fun = "relimp::showData(%s, font = 'Courier 14')"
+<
 
 ------------------------------------------------------------------------------
 6.34. SyncTeX support                                         *R.nvim-SyncTeX*

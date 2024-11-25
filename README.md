@@ -129,7 +129,7 @@ be minimally configured like so:
     run = ":TSUpdate",
     config = function ()
         require("nvim-treesitter.configs").setup({
-            ensure_installed = { "markdown", "markdown_inline", "r", "rnoweb", "yaml" },
+            ensure_installed = { "markdown", "markdown_inline", "r", "rnoweb", "yaml", "csv" },
             highlight = { enable = true },
         })
     end
@@ -196,6 +196,11 @@ firm commitment to backwards compatibility.
 
 - `:RFormat` now requires {styler} to be installed; {formatR} is no longer
     supported.
+
+- `view_df` is a table replacing the options `csv_app`,
+  `csv_delim`, and `df_viewer`. The commands to see a `data.frame`
+  or `matrix` in a split window were eliminated. See the documentation
+  on `view_df` for alternative ways of getting similar results.
 
 ### New features
 

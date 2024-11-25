@@ -112,14 +112,8 @@ start_R2 = function()
             "reg.finalizer(.GlobalEnv, nvimcom:::final_msg, onexit = TRUE)"
         )
     end
-    if config.csv_delim and (config.csv_delim == "," or config.csv_delim == ";") then
-        table.insert(
-            start_options,
-            'options(nvimcom.delim = "' .. config.csv_delim .. '")'
-        )
-    else
-        table.insert(start_options, 'options(nvimcom.delim = "\t")')
-    end
+    local sep = config.view_df.csv_sep or "\t"
+    table.insert(start_options, 'options(nvimcom.delim = "' .. sep .. '")')
 
     table.insert(
         start_options,
@@ -608,11 +602,24 @@ M.action = function(rcmd, mode, args)
         return
     end
 
-    local argmnts = args or ""
-
     if rcmd == "viewobj" then
-        if config.df_viewer then
-            argmnts = argmnts .. ', R_df_viewer = "' .. config.df_viewer .. '"'
+        local n_lines = config.view_df.n_lines or -1
+        local argmnts = ", nrows = " .. tostring(n_lines)
+        if config.view_df.open_fun and config.view_df.open_fun ~= "" then
+            local cmd = config.view_df.open_fun
+            if cmd:find("%(%)") then
+                cmd = cmd:gsub("()", "(" .. rkeyword .. ")")
+            elseif cmd:find("%%s") then
+                cmd = cmd:gsub("%%s", rkeyword)
+            else
+                cmd = cmd .. "(" .. rkeyword .. ")"
+            end
+            cmd = cmd:gsub("'", '"')
+            cmd = cmd:gsub('"', '\\"')
+            argmnts = argmnts .. ', R_df_viewer = "' .. cmd .. '"'
+        end
+        if config.view_df.save_fun and config.view_df.save_fun ~= "" then
+            argmnts = argmnts .. ", save_fun = " .. config.view_df.save_fun
         end
         if rkeyword:find("::") then
             M.send_to_nvimcom(
@@ -630,7 +637,10 @@ M.action = function(rcmd, mode, args)
             )
         end
         return
-    elseif rcmd == "dputtab" then
+    end
+
+    local argmnts = args or ""
+    if rcmd == "dputtab" then
         M.send_to_nvimcom(
             "E",
             'nvimcom:::nvim_dput("' .. rkeyword .. '"' .. argmnts .. ")"
