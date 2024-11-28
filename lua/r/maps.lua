@@ -14,9 +14,6 @@ local map_desc = {
     ROpenPDF            = { m = "", k = "", c = "Edit",     d = "Open the PDF generated from the current document" },
     RDputObj            = { m = "", k = "", c = "Edit",     d = "Run dput(<cword>) and show the output in a new tab" },
     RViewDF             = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a new tab" },
-    RViewDFs            = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a split window" },
-    RViewDFv            = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a vertically split window" },
-    RViewDFa            = { m = "", k = "", c = "Edit",     d = "View the head of a data.frame or matrix under cursor in a split window" },
     RShowEx             = { m = "", k = "", c = "Edit",     d = "Extract the Examples section and paste it in a split window" },
     RSeparatePath       = { m = "", k = "", c = "Edit",     d = "Split the file path or the url under the cursor" },
     RFormatNumbers      = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers to explicitly indicate them as integers" },
@@ -143,15 +140,6 @@ local control = function(file_type)
     create_maps("v",   "RDputObj",          "td", "<Cmd>lua require('r.run').action('dputtab', 'v')")
 
     create_maps("ni", "RPackages",          "ip", "<Cmd>lua require('r.packages').install_missing_packages()")
-
-    if type(config.csv_app) == "function" or config.csv_app == "" then
-        create_maps("ni",  "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"split\"')")
-        create_maps("ni",  "RViewDFv",          "vv", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"vsplit\"')")
-        create_maps("ni",  "RViewDFa",          "vh", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"head\", nrows=6')")
-        create_maps("v",   "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', 'v', ', howto=\"split\"')")
-        create_maps("v",   "RViewDFv",          "vv", "<Cmd>lua require('r.run').action('viewobj', 'v', ', howto=\"vsplit\"')")
-        create_maps("v",   "RViewDFa",          "vh", "<Cmd>lua require('r.run').action('viewobj', 'v', ', howto=\"head\", nrows=6')")
-    end
 
     -- Arguments,      example,             help
     create_maps("nvi", "RShowArgs",         "ra", "<Cmd>lua require('r.run').action('args')")

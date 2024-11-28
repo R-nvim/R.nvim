@@ -62,10 +62,9 @@ nvim_dput <- function(oname, howto = "tabnew") {
 #' @param oname The name of the object (`data.frame` or `matrix`).
 #' @param fenc File encoding to be used.
 #' @param nrows How many lines to show.
-#' @param howto How to display the output in Vim.
-#' @param R_df_viewer R function to be called to show the `data.frame` or
-#' `matrix`.
-nvim_viewobj <- function(oname, fenc = "", nrows = NULL, howto = "tabnew", R_df_viewer = NULL) {
+#' @param R_df_viewer R function to be called to show the `data.frame`.
+#' @param save_fun R function to be called to save the CSV file.
+nvim_viewobj <- function(oname, fenc = "", nrows = -1, R_df_viewer = NULL, save_fun = NULL) {
     if (is.data.frame(oname) || is.matrix(oname)) {
         # Only when the rkeyword includes "::"
         o <- oname
@@ -93,29 +92,38 @@ nvim_viewobj <- function(oname, fenc = "", nrows = NULL, howto = "tabnew", R_df_
         }
     }
     if (is.data.frame(o) || is.matrix(o)) {
-        if (!is.null(nrows)) {
-          o <- utils::head(o, n = nrows)
+        if (nrows < 0)
+            nrows <- ceiling(10000 / ncol(o))
+        if (nrows != 0 && nrows < nrow(o)) {
+          o <- o[1:nrows, ]
         }
         if (!is.null(R_df_viewer)) {
+            cmd <- gsub("'", "\x13", R_df_viewer)
             .C("nvimcom_msg_to_nvim",
-               paste0("lua require('r.send').cmd(require('r.config').get_config().df_viewer .. '(\"", oname, "\"))"),
+               paste0("lua vim.schedule(function() require('r.send').cmd('", cmd, "') end)"),
                PACKAGE = "nvimcom")
             return(invisible(NULL))
         }
-        if (getOption("nvimcom.delim") == "\t") {
-            txt <- capture.output(write.table(o, sep = "\t", row.names = FALSE, quote = FALSE,
-                                              fileEncoding = fenc))
+        if (is.null(save_fun)) {
+            if (getOption("nvimcom.delim") == "\t") {
+                txt <- capture.output(write.table(o, sep = "\t", row.names = FALSE, quote = FALSE,
+                                                  fileEncoding = fenc))
+            } else {
+                txt <- capture.output(write.table(o, sep = getOption("nvimcom.delim"), row.names = FALSE,
+                                                  fileEncoding = fenc))
+            }
+            txt <- paste0(txt, collapse = "\x14")
+            txt <- gsub("'", "\x13", txt)
         } else {
-            txt <- capture.output(write.table(o, sep = getOption("nvimcom.delim"), row.names = FALSE,
-                                              fileEncoding = fenc))
+            txt <- save_fun(o, oname)
+            if (is.null(txt))
+                txt <- oname
         }
-        txt <- paste0(txt, collapse = "\x14")
-        txt <- gsub("'", "\x13", txt)
         .C("nvimcom_msg_to_nvim",
-           paste0("lua require('r.edit').view_df('", oname, "', '", howto, "', '", txt, "')"),
+           paste0("lua require('r.edit').view_df('", oname, "', '", txt, "')"),
            PACKAGE = "nvimcom")
     } else {
-        nvim_dput(oname, howto)
+        nvim_dput(oname)
     }
     return(invisible(NULL))
 }
