@@ -22,7 +22,7 @@ local mk_R_dir = function(libd)
             { prompt = '"' .. libd .. '" is not writable. Create it now? [y/n] ' },
             function(input)
                 if input and input:find("y") then
-                    local dw = vim.fn.mkdir(libd, "p")
+                    local dw = vim.fn.mkdir(vim.fn.expand(libd), "p")
                     if dw == 1 then
                         -- Try again
                         M.check_nvimcom_version()
