@@ -592,6 +592,7 @@ M.line = function(m, lnum)
         return
     end
 
+    local ok = false
     if
         vim.bo.filetype == "rnoweb"
         or vim.bo.filetype == "rmd"
@@ -599,12 +600,12 @@ M.line = function(m, lnum)
     then
         if lang == "python" then
             line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
-            M.cmd(line)
-            if m == true then cursor.move_next_line() end
+            ok = M.cmd(line)
+            if ok and m == true then cursor.move_next_line() end
             return
         end
         if lang ~= "r" then
-            inform("Not inside R or Python code chunk.")
+            inform("Not inside R or Python code chunk [within " .. lang .. "]")
             return
         end
     end
@@ -621,13 +622,13 @@ M.line = function(m, lnum)
         M.source_lines(lines, nil)
     else
         if config.bracketed_paste then
-            M.cmd("\027[200~" .. line .. "\027[201~")
+            ok = M.cmd("\027[200~" .. line .. "\027[201~")
         else
-            M.cmd(line)
+            ok = M.cmd(line)
         end
     end
 
-    if m == true then
+    if ok and m == true then
         local last_line = vim.api.nvim_buf_line_count(0)
         -- Move to the last line of the sent expression
         vim.api.nvim_win_set_cursor(0, { math.min(lnum + 1, last_line), 0 })
