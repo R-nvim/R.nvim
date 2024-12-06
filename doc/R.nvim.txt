@@ -747,6 +747,7 @@ command:
 |open_html|           Open HTML after processing Rmd or Quarto
 |insert_mode_cmds|    Allow R commands in insert mode
 |rmhidden|            Remove hidden objects from R workspace
+|set_params|          Control setting `params` in `.GlobalEnv` (`"no" ` to disable).
 |wait|                Time to wait for nvimcom loading
 |wait_reply|          Time to wait for R reply
 |setwd|               Directory where to start R
