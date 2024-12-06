@@ -467,6 +467,7 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
 }
 
 update_params <- function(fname) {
+    if config.set_params == "no" then return end
     if (fname == "DeleteOldParams") {
         if (exists("params", envir = .GlobalEnv)) {
             rm(params, envir = .GlobalEnv)

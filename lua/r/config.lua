@@ -384,6 +384,10 @@ local hooks = require("r.hooks")
 ---Time to wait before loading the {nvimcom} package after starting R; defaults
 ---to `60` seconds. See |wait| or `:help wait` for more information.
 ---@field wait? integer
+---
+---Set `params` based on the YAML header for R Markdown and
+---Quarto documents. Defaults to `"yes"`.
+---@field set_params? string
 
 ---@alias RprojField '"pipe_version"'
 
@@ -512,6 +516,7 @@ local config = {
         open_fun = "",  -- Use an R function to open the data.frame directly (no conversion to CSV needed)
     },
     wait                = 60,
+    set_params          = "yes",
 }
 
 -- stylua: ignore end
@@ -577,6 +582,7 @@ local apply_user_opts = function()
         "open_pdf",
         "open_html",
         "setwd",
+        "set_params",
     }) do
         if user_opts[v] then user_opts[v] = string.lower(user_opts[v]) end
     end
@@ -600,6 +606,7 @@ local apply_user_opts = function()
         setwd            = { "no", "file", "nvim" },
         pipe_version     = { "native", "magrittr" },
         path_split_fun   = { "here::here", "here", "file.path", "fs::path", "path" },
+        set_params       = { "no", "yes"},
     }
     -- stylua: ignore end
 

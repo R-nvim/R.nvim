@@ -152,6 +152,7 @@ local has_params = false
 --- Get the params variable from the YAML metadata and send it to nvimcom which
 --- will create the params list in the .GlobalEnv.
 M.update_params = function()
+    if config.set_params == "no" then return end
     if not vim.g.R_Nvim_status then return end
     if vim.g.R_Nvim_status < 7 then return end
 
@@ -225,7 +226,9 @@ M.setup = function()
     -- Record setup time for debugging
     rmdtime = (uv.hrtime() - rmdtime) / 1000000000
     require("r.edit").add_to_debug_info("rmd setup", rmdtime, "Time")
-    vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
+    if config.set_params != "no" then
+        vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
+    end
 end
 
 --- Compiles the current R Markdown document into a specified output format.
