@@ -325,7 +325,10 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     vim.g.R_Nvim_status = 7
     hooks.run(config, "after_R_start")
     send.set_send_cmd_fun()
-    if vim.o.filetype == "quarto" or vim.o.filetype == "rmd" then
+    if
+        config.set_params ~= "no"
+        and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
+    then
         require("r.rmd").update_params()
     end
 end
