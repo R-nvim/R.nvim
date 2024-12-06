@@ -569,9 +569,8 @@ end
 
 --- Send current line to R Console
 ---@param m boolean|string Movement to do after sending the line.
----@param lnum number Number of line to send (optional).
-M.line = function(m, lnum)
-    if not lnum then lnum = vim.api.nvim_win_get_cursor(0)[1] end
+M.line = function(m)
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
     local line = vim.fn.getline(lnum)
     local lang = get_lang()
     if lang == "chunk_child" then
@@ -618,9 +617,10 @@ M.line = function(m, lnum)
     local lines
     lines, lnum = get_code_to_send(line, lnum)
 
-    if #lines > 0 then
-        M.source_lines(lines, nil)
+    if #lines > 1 then
+        ok = M.source_lines(lines, nil)
     else
+        if #lines == 1 then line = lines[1] end
         if config.bracketed_paste then
             ok = M.cmd("\027[200~" .. line .. "\027[201~")
         else
@@ -755,12 +755,12 @@ M.funs = function(bufnr, capture_all, move_down)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
     if vim.bo[bufnr].filetype == "quarto" or vim.bo[bufnr].filetype == "rmd" then
-        vim.notify("Not yet supported in Rmd or Quarto files.")
+        inform("Not yet supported in Rmd or Quarto files.")
         return
     end
 
     if vim.bo[bufnr].filetype ~= "r" then
-        vim.notify("Not an R file.")
+        inform("Not an R file.")
         return
     end
 
