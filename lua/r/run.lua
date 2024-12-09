@@ -69,6 +69,10 @@ start_R2 = function()
         start_options,
         "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")"
     )
+    table.insert(
+        start_options,
+        'options(nvimcom.set_params = "' .. config.set_params .. '")'
+    )
     if config.objbr_allnames then
         table.insert(start_options, "options(nvimcom.allnames = TRUE)")
     else
@@ -78,11 +82,6 @@ start_R2 = function()
         table.insert(start_options, "options(nvimcom.texerrs = TRUE)")
     else
         table.insert(start_options, "options(nvimcom.texerrs = FALSE)")
-    end
-    if config.set_params == "yes" then
-        table.insert(start_options, "options(nvimcom.preserve_params = FALSE)")
-    else
-        table.insert(start_options, "options(nvimcom.preserve_params = TRUE)")
     end
 
     local has_cmp_r, _ = pcall(require, "cmp_r")
@@ -330,10 +329,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     vim.g.R_Nvim_status = 7
     hooks.run(config, "after_R_start")
     send.set_send_cmd_fun()
-    if
-        config.set_params ~= "no"
-        and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
-    then
+    if vim.o.filetype == "quarto" or vim.o.filetype == "rmd" then
         require("r.rmd").update_params()
     end
 end

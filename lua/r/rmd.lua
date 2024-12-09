@@ -226,9 +226,7 @@ M.setup = function()
     -- Record setup time for debugging
     rmdtime = (uv.hrtime() - rmdtime) / 1000000000
     require("r.edit").add_to_debug_info("rmd setup", rmdtime, "Time")
-    if config.set_params ~= "no" then
-        vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
-    end
+    vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
 end
 
 --- Compiles the current R Markdown document into a specified output format.
