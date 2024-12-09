@@ -79,6 +79,11 @@ start_R2 = function()
     else
         table.insert(start_options, "options(nvimcom.texerrs = FALSE)")
     end
+    if config.set_params == "yes" then
+        table.insert(start_options, "options(nvimcom.preserve_params = FALSE)")
+    else
+        table.insert(start_options, "options(nvimcom.preserve_params = TRUE)")
+    end
 
     local has_cmp_r, _ = pcall(require, "cmp_r")
     if has_cmp_r then

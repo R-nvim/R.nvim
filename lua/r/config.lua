@@ -387,7 +387,7 @@ local hooks = require("r.hooks")
 ---
 ---Set `params` based on the YAML header for R Markdown and
 ---Quarto documents. Defaults to `"yes"`.
----@field set_params? string
+---@field set_params? '"no"' | '"no_override"' | '"yes"'
 
 ---@alias RprojField '"pipe_version"'
 
@@ -606,7 +606,7 @@ local apply_user_opts = function()
         setwd            = { "no", "file", "nvim" },
         pipe_version     = { "native", "magrittr" },
         path_split_fun   = { "here::here", "here", "file.path", "fs::path", "path" },
-        set_params       = { "no", "yes"},
+        set_params       = { "no", "no_override", "yes"},
     }
     -- stylua: ignore end
 

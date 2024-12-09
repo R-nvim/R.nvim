@@ -472,6 +472,10 @@ update_params <- function(fname) {
             rm(params, envir = .GlobalEnv)
         }
     } else {
+        if (exists("params", envir = .GlobalEnv) &&
+            getOption("nvimcom.preserve_params"))
+            return(invisible(NULL))
+
         if (!require(knitr, quietly = TRUE))
             stop("Please, install the 'knitr' package.")
         flines <- readLines(fname)
