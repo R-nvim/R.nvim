@@ -359,7 +359,7 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
             rm(params, envir = .GlobalEnv)
         }
         res <- rmarkdown::render(Rmdfile, outform, ...)
-        if (exists("old_params", inherits = TRUE)) {
+        if (exists("old_params", inherits = FALSE)) {
             assign(
                 "params",
                 old_params,
