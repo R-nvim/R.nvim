@@ -306,6 +306,7 @@ local fill_k2 = function(mlist, m)
     for _, v in pairs(mlist) do
         if v:find("@<Plug>R") then
             lbl = v:gsub(".*@<Plug>", "")
+            lbl = lbl:gsub(" .*", "") -- See issue #288
             km = v:gsub("^" .. m .. "%s*", "")
             km = km:gsub(" .*", "")
             if not map_desc[lbl].m:find(m) then map_desc[lbl].m = map_desc[lbl].m .. m end
