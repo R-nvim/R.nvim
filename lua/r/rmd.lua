@@ -154,6 +154,7 @@ local has_params = false
 M.update_params = function()
     if not vim.g.R_Nvim_status then return end
     if vim.g.R_Nvim_status < 7 then return end
+    if config.set_params == "no" then return end
 
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
     if lines[1] ~= "---" then return end

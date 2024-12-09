@@ -747,6 +747,7 @@ command:
 |open_html|           Open HTML after processing Rmd or Quarto
 |insert_mode_cmds|    Allow R commands in insert mode
 |rmhidden|            Remove hidden objects from R workspace
+|set_params|          Control setting `params` in `.GlobalEnv`
 |wait|                Time to wait for nvimcom loading
 |wait_reply|          Time to wait for R reply
 |setwd|               Directory where to start R
@@ -2066,6 +2067,19 @@ This will change in the future if dedicated parsers are written for them.
 You can disable this feature in your R.nvim config:
 >lua
   register_treesitter = false
+
+
+------------------------------------------------------------------------------
+6.42. Set `params` based on the YAML header                       *set_params*
+
+Set `params` based on the YAML header for R Markdown and Quarto documents.
+Defaults to `"yes"`. Valid values:
+
+   `"no"`:          Don't create the object `params` in the `.GlobalEnv`.
+   `"no_override"`: Create the object `params` only if it doesn't exist yet.
+   `"yes"`:         Create and override the object `params` whenever the
+                  corresponding YAML field changes.
+
 
 ==============================================================================
 7. Public Lua API                                             *public-lua-api*

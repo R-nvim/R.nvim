@@ -354,13 +354,18 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
         if (is.na(mtime2) || (!is.na(mtime1) && mtime2 <= mtime1))
             res <- ""
     } else {
-        if (length(grep("^params$", ls(.GlobalEnv))) == 1) {
-            old_params <- params
+        if (exists("params", envir = .GlobalEnv)) {
+            old_params <- get("params", envir = .GlobalEnv)
             rm(params, envir = .GlobalEnv)
         }
         res <- rmarkdown::render(Rmdfile, outform, ...)
-        if (exists("old_params"))
-            params <<- old_params
+        if (exists("old_params", inherits = FALSE)) {
+            assign(
+                "params",
+                old_params,
+                envir = .GlobalEnv
+            )
+        }
     }
     brwsr <- ""
     if (endsWith(res, ".html")) {

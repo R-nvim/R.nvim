@@ -467,15 +467,29 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
 }
 
 update_params <- function(fname) {
+    if (
+        getOption("nvimcom.set_params") == "no" ||
+          (
+            getOption("nvimcom.set_params") == "no_override" &&
+                exists("params", envir = .GlobalEnv)
+          )
+    ) {
+      return(invisible(NULL))
+    }
     if (fname == "DeleteOldParams") {
-        if (length(grep("^params$", ls(.GlobalEnv))) == 1) {
+        if (exists("params", envir = .GlobalEnv)) {
             rm(params, envir = .GlobalEnv)
         }
     } else {
         if (!require(knitr, quietly = TRUE))
             stop("Please, install the 'knitr' package.")
         flines <- readLines(fname)
-        params <<- knitr::knit_params(flines) |> lapply(\(x) x$value)
+        params <- knitr::knit_params(flines)
+        assign(
+            "params",
+            lapply(params, \(x) x$value),
+            envir = .GlobalEnv
+        )
     }
     .C("nvimcom_task", PACKAGE = "nvimcom")
     return(invisible(NULL))
