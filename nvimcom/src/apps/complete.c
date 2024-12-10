@@ -200,24 +200,30 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
                         while (*s)
                             s++;
                         while (*s != '\n') {
-                            // Look for \0 or ' ' because some arguments share
-                            // the same documentation item. Example: lm()
-                            if (*s == 0 || *s == ' ') {
-                                s++;
-                                if (str_here(s, itm)) {
-                                    s += strlen(itm);
-                                    if (*s == '\005' || *s == ',') {
-                                        while (*s && *s != '\005')
-                                            s++;
+                            if (*s == 0) {
+                                while (*s != '\005') {
+                                    // Look for \0 or ' ' because some arguments share
+                                    // the same documentation item. Example: lm()
+                                    if (*s == 0 || *s == ' ') {
                                         s++;
-                                        char *b =
-                                            calloc(strlen(s) + 2, sizeof(char));
-                                        format(s, b, ' ', '\x14');
-                                        printf("lua %s('%s')\n", resolve_cb, b);
-                                        fflush(stdout);
-                                        free(b);
-                                        return;
+                                        if (str_here(s, itm)) {
+                                            s += strlen(itm);
+                                            if (*s == '\005' || *s == ',') {
+                                                while (*s && *s != '\005')
+                                                    s++;
+                                                s++;
+                                                char *b =
+                                                    calloc(strlen(s) + 2, sizeof(char));
+                                                format(s, b, ' ', '\x14');
+                                                printf("lua %s('%s')\n", resolve_cb, b);
+                                                fflush(stdout);
+                                                free(b);
+                                                return;
+                                            }
+                                        }
+
                                     }
+                                    s++;
                                 }
                             }
                             s++;
