@@ -367,7 +367,7 @@ get_arg_doc_list <- function(fun, pkg) {
     atbl[, 1] <- gsub("\\\\dots", "...", atbl[, 1])
     args <- apply(atbl, 1,
                   function(x)
-                      paste0(x[1], "\x05`", x[1], "`: ",
+                      paste0(x[1], "\x05`", gsub(", ", "`, `", x[1]), "`: ",
                              .Call("rd2md", x[2], PACKAGE = "nvimcom"), "\x06"))
     line <- nvim.fix.string(paste0(fun, "\x06", paste0(args, collapse = "")))
     cat(line, sep = "", "\n")
