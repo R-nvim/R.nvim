@@ -114,6 +114,8 @@ local function get_code_to_send(txt, row)
         ignore_injections = false,
     })
 
+    if node and node:type() == "program" then node = node:child(0) end
+
     while node do
         local parent = node:parent()
         if
