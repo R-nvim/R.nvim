@@ -57,6 +57,7 @@ M.ask_R_doc = function(rkeyword, package, getclass)
             .. package
             .. '")'
     else
+        firstobj = firstobj:gsub('"', '\\"')
         rcmd = 'nvimcom:::nvim.help("'
             .. rkeyword
             .. '", '
