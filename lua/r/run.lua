@@ -73,7 +73,11 @@ start_R2 = function()
         start_options,
         'options(nvimcom.set_params = "' .. config.set_params .. '")'
     )
-    if config.set_params ~= "no" and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd") then
+    if
+        config.set_params ~= "no"
+        and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
+        and require("r.rmd").params_status() == "new"
+    then
         table.insert(
             start_options,
             'nvimcom:::update_params("' .. vim.api.nvim_buf_get_name(0) .. '")'
