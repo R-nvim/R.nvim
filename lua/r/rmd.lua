@@ -147,7 +147,40 @@ M.next_chunk = function()
     end
 end
 
-local has_params = false
+local last_params = ""
+
+--- Check if the YAML field params exists and if it is new
+--- @return string
+M.params_status = function()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
+    if lines[1] ~= "---" then
+        if last_params == "" then return "unchanged" end
+        last_params = ""
+        return "deleted"
+    end
+
+    local i = 2
+    while i < #lines do
+        if lines[i] == "params:" then
+            local cp = ""
+            i = i + 1
+            while i < #lines and lines[i]:sub(1, 1) == " " do
+                cp = cp .. lines[i]
+                i = i + 1
+            end
+            if last_params == cp then return "unchanged" end
+            last_params = cp
+            return "new"
+        end
+        if lines[i] == "---" then break end
+        i = i + 1
+    end
+    if last_params ~= "" then
+        last_params = ""
+        return "deleted"
+    end
+    return "unchanged"
+end
 
 --- Get the params variable from the YAML metadata and send it to nvimcom which
 --- will create the params list in the .GlobalEnv.
@@ -156,38 +189,22 @@ M.update_params = function()
     if vim.g.R_Nvim_status < 7 then return end
     if config.set_params == "no" then return end
 
-    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
-    if lines[1] ~= "---" then return end
-
-    local p = false
-    local i = 2
-    while i < #lines do
-        if lines[i] == "params:" then
-            p = true
-            break
-        end
-        if lines[i] == "---" then break end
-        i = i + 1
-    end
-    if p then
+    local p = M.params_status()
+    if p == "new" then
         require("r.run").send_to_nvimcom(
             "E",
             "nvimcom:::update_params('" .. vim.api.nvim_buf_get_name(0) .. "')"
         )
-        has_params = true
-    else
-        if has_params then
-            require("r.run").send_to_nvimcom(
-                "E",
-                "nvimcom:::update_params('DeleteOldParams')"
-            )
-        end
-        has_params = false
+    elseif p == "deleted" then
+        require("r.run").send_to_nvimcom(
+            "E",
+            "nvimcom:::update_params('DeleteOldParams')"
+        )
     end
 end
 
 -- Register params as empty. This function is called when R quits.
-M.clean_params = function() has_params = false end
+M.clean_params = function() last_params = "" end
 
 --- Setup function for initializing module functionality.
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.

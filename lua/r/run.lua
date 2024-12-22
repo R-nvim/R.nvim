@@ -55,7 +55,7 @@ start_R2 = function()
 
     table.insert(
         start_options,
-        ' Sys.setenv(RNVIM_RSLV_CB = "' .. vim.env.RNVIM_RSLV_CB .. '")'
+        'Sys.setenv(RNVIM_RSLV_CB = "' .. vim.env.RNVIM_RSLV_CB .. '")'
     )
     table.insert(
         start_options,
@@ -73,6 +73,16 @@ start_R2 = function()
         start_options,
         'options(nvimcom.set_params = "' .. config.set_params .. '")'
     )
+    if
+        config.set_params ~= "no"
+        and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
+        and require("r.rmd").params_status() == "new"
+    then
+        table.insert(
+            start_options,
+            'nvimcom:::update_params("' .. vim.api.nvim_buf_get_name(0) .. '")'
+        )
+    end
     if config.objbr_allnames then
         table.insert(start_options, "options(nvimcom.allnames = TRUE)")
     else
@@ -329,9 +339,6 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     vim.g.R_Nvim_status = 7
     hooks.run(config, "after_R_start")
     send.set_send_cmd_fun()
-    if vim.o.filetype == "quarto" or vim.o.filetype == "rmd" then
-        require("r.rmd").update_params()
-    end
 end
 
 M.clear_R_info = function()
