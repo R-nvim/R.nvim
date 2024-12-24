@@ -292,90 +292,136 @@ end
 local M = {}
 
 M.create = function(file_type)
-    control(file_type)
-    if file_type == "rbrowser" then return end
-    send(file_type)
-    if file_type == "rdoc" then return end
-    start()
-    edit()
+	control(file_type)
+	if file_type == "rbrowser" then
+		return
+	end
+	send(file_type)
+	if file_type == "rdoc" then
+		return
+	end
+	start()
+	edit()
 end
 
 local fill_k2 = function(mlist, m)
-    local km
-    local lbl
-    for _, v in pairs(mlist) do
-        if v:find("@<Plug>R") then
-            lbl = v:gsub(".*@<Plug>", "")
-            lbl = lbl:gsub(" .*", "") -- See issue #288
-            km = v:gsub("^" .. m .. "%s*", "")
-            km = km:gsub(" .*", "")
-            if not map_desc[lbl].m:find(m) then map_desc[lbl].m = map_desc[lbl].m .. m end
-            if map_desc[lbl] and map_desc[lbl].k == "" then map_desc[lbl].k = km end
-        end
-    end
+	local km
+	local lbl
+	for _, v in pairs(mlist) do
+		if v:find("@<Plug>R") then
+			lbl = v:gsub(".*@<Plug>", "")
+			lbl = lbl:gsub(" .*", "") -- See issue #288
+			km = v:gsub("^" .. m .. "%s*", "")
+			km = km:gsub(" .*", "")
+			if not map_desc[lbl].m:find(m) then
+				map_desc[lbl].m = map_desc[lbl].m .. m
+			end
+			if map_desc[lbl] and map_desc[lbl].k == "" then
+				map_desc[lbl].k = km
+			end
+		end
+	end
 end
 
 local fill_k = function()
-    local nlist = vim.split(vim.fn.execute("nmap", "silent!") or "", "\n")
-    local vlist = vim.split(vim.fn.execute("vmap", "silent!") or "", "\n")
-    local ilist = vim.split(vim.fn.execute("imap", "silent!") or "", "\n")
-    fill_k2(nlist, "n")
-    fill_k2(vlist, "v")
-    fill_k2(ilist, "i")
+	local nlist = vim.split(vim.fn.execute("nmap", "silent!") or "", "\n")
+	local vlist = vim.split(vim.fn.execute("vmap", "silent!") or "", "\n")
+	local ilist = vim.split(vim.fn.execute("imap", "silent!") or "", "\n")
+	fill_k2(nlist, "n")
+	fill_k2(vlist, "v")
+	fill_k2(ilist, "i")
 end
 
 M.show_map_desc = function()
-    local label_w = 1
-    local key_w = 1
-    fill_k()
-    for k, v in pairs(map_desc) do
-        if #k >= label_w then label_w = #k + 1 end
-        if #v.k >= key_w then key_w = #v.k + 1 end
-    end
-    local lw = tostring(label_w)
-    local kw = tostring(key_w)
+	local label_w = 1
+	local key_w = 1
+	fill_k()
+	for k, v in pairs(map_desc) do
+		if #k >= label_w then
+			label_w = #k + 1
+		end
+		if #v.k >= key_w then
+			key_w = #v.k + 1
+		end
+	end
+	local lw = tostring(label_w)
+	local kw = tostring(key_w)
 
-    local cat = {
-        "Start",
-        "Edit",
-        "Navigate",
-        "Send",
-        "Command",
-        "Weave",
-        "Object_Browser",
-    }
-    local bycat = {}
-    for _, c in pairs(cat) do
-        bycat[c] = {}
-    end
-    for k, v in pairs(map_desc) do
-        table.insert(bycat[v.c], { k, v.m, v.k, v.d })
-    end
+	local cat = {
+		"Start",
+		"Edit",
+		"Navigate",
+		"Send",
+		"Command",
+		"Weave",
+		"Object_Browser",
+	}
+	local bycat = {}
+	for _, c in pairs(cat) do
+		bycat[c] = {}
+	end
+	for k, v in pairs(map_desc) do
+		table.insert(bycat[v.c], { k, v.m, v.k, v.d })
+	end
 
-    local map_key_desc = {}
-    for _, c in pairs(cat) do
-        table.insert(map_key_desc, { c .. "\n", "Title" })
-        for _, v in pairs(bycat[c]) do
-            table.insert(
-                map_key_desc,
-                { string.format("  %-0" .. lw .. "s", v[1]), "Identifier" }
-            )
-            table.insert(map_key_desc, { string.format("  %-04s", v[2]), "Type" })
-            local keymap = v[3] or " "
-            for _, d in pairs(config.disable_cmds) do
-                if d == v[1] then
-                    keymap = "disabled"
-                    break
-                end
-            end
-            table.insert(map_key_desc, {
-                string.format("%-0" .. kw .. "s", keymap),
-                keymap == "disabled" and "Comment" or "Special",
-            })
-            table.insert(map_key_desc, { v[4] .. "\n" })
-        end
-    end
-    vim.schedule(function() vim.api.nvim_echo(map_key_desc, false, {}) end)
+	local map_key_desc = {}
+	for _, c in pairs(cat) do
+		table.insert(map_key_desc, { c .. "\n", "Title" })
+		for _, v in pairs(bycat[c]) do
+			table.insert(map_key_desc, { string.format("  %-0" .. lw .. "s", v[1]), "Identifier" })
+			table.insert(map_key_desc, { string.format("  %-04s", v[2]), "Type" })
+			local keymap = v[3] or " "
+			for _, d in pairs(config.disable_cmds) do
+				if d == v[1] then
+					keymap = "disabled"
+					break
+				end
+			end
+			table.insert(map_key_desc, {
+				string.format("%-0" .. kw .. "s", keymap),
+				keymap == "disabled" and "Comment" or "Special",
+			})
+			table.insert(map_key_desc, { v[4] .. "\n" })
+		end
+	end
+
+	local buf = vim.api.nvim_create_buf(false, true) -- no file, scratch buffer
+	local row = -1
+	local col_start = {}
+	local col_end = {}
+	local line = ""
+	local hls = {}
+	for _, text_hl in pairs(map_key_desc) do
+		local text = text_hl[1]:gsub("\n", "")
+		line = line .. text
+		local hl = text_hl[2]
+		if hl == "Title" or hl == "Identifier" or row == -1 then -- start new line on "Title" or "Identifier"
+			row = row + 1
+		end
+		if hl == "Title" then -- on "Title" write to buffer
+			vim.api.nvim_buf_set_lines(buf, row, row, false, { line })
+			vim.api.nvim_buf_add_highlight(buf, -1, hl, row, 0, #line)
+			line = ""
+		elseif hl == "Identifier" then
+			col_start = { 0 }
+			col_end = { #text }
+			table.insert(hls, hl)
+		elseif hl then
+			table.insert(col_start, col_end[#col_end])
+			table.insert(col_end, #line)
+			table.insert(hls, hl)
+		else -- hl is nil so it is the description so it's eol so write to buffer with appropriate highlights
+			vim.api.nvim_buf_set_lines(buf, row, row, false, { line })
+			vim.api.nvim_buf_add_highlight(buf, -1, hls[1], row, col_start[1], col_end[1])
+			vim.api.nvim_buf_add_highlight(buf, -1, hls[2], row, col_start[2], col_end[2])
+			vim.api.nvim_buf_add_highlight(buf, -1, hls[3], row, col_start[3], col_end[3])
+			hls = {}
+			line = ""
+		end
+	end
+
+	vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+	vim.api.nvim_open_win(buf, true, { style = "minimal", split = "above" })
 end
 
 return M
