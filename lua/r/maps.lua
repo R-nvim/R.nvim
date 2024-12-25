@@ -329,12 +329,8 @@ M.show_map_desc = function()
     local key_w = 1
     fill_k()
     for k, v in pairs(map_desc) do
-        if #k >= label_w then
-            label_w = #k + 1
-        end
-        if #v.k >= key_w then
-            key_w = #v.k + 1
-        end
+        if #k >= label_w then label_w = #k + 1 end
+        if #v.k >= key_w then key_w = #v.k + 1 end
     end
     local lw = tostring(label_w)
     local kw = tostring(key_w)
@@ -360,7 +356,10 @@ M.show_map_desc = function()
     for _, c in pairs(cat) do
         table.insert(map_key_desc, { c .. "\n", "Title" })
         for _, v in pairs(bycat[c]) do
-            table.insert(map_key_desc, { string.format("  %-0" .. lw .. "s", v[1]), "Identifier" })
+            table.insert(
+                map_key_desc,
+                { string.format("  %-0" .. lw .. "s", v[1]), "Identifier" }
+            )
             table.insert(map_key_desc, { string.format("  %-04s", v[2]), "Type" })
             local keymap = v[3] or " "
             for _, d in pairs(config.disable_cmds) do
