@@ -375,7 +375,45 @@ M.show_map_desc = function()
             table.insert(map_key_desc, { v[4] .. "\n" })
         end
     end
-    vim.schedule(function() vim.api.nvim_echo(map_key_desc, false, {}) end)
+
+    local buf = vim.api.nvim_create_buf(false, true) -- no file, scratch buffer
+    local row = -1
+    local col_start = {}
+    local col_end = {}
+    local line = ""
+    local hls = {}
+    for _, text_hl in pairs(map_key_desc) do
+        local text = text_hl[1]:gsub("\n", "")
+        line = line .. text
+        local hl = text_hl[2]
+        if hl == "Title" or hl == "Identifier" or row == -1 then -- start new line on "Title" or "Identifier"
+            row = row + 1
+        end
+        if hl == "Title" then -- on "Title" write to buffer
+            vim.api.nvim_buf_set_lines(buf, row, row, false, { line })
+            vim.api.nvim_buf_add_highlight(buf, -1, hl, row, 0, #line)
+            line = ""
+        elseif hl == "Identifier" then
+            col_start = { 0 }
+            col_end = { #text }
+            table.insert(hls, hl)
+        elseif hl then
+            table.insert(col_start, col_end[#col_end])
+            table.insert(col_end, #line)
+            table.insert(hls, hl)
+        else -- hl is nil so it is the description so it's eol so write to buffer with appropriate highlights
+            vim.api.nvim_buf_set_lines(buf, row, row, false, { line })
+            vim.api.nvim_buf_add_highlight(buf, -1, hls[1], row, col_start[1], col_end[1])
+            vim.api.nvim_buf_add_highlight(buf, -1, hls[2], row, col_start[2], col_end[2])
+            vim.api.nvim_buf_add_highlight(buf, -1, hls[3], row, col_start[3], col_end[3])
+            hls = {}
+            line = ""
+        end
+    end
+
+    vim.api.nvim_buf_set_keymap(buf, "n", "q", "<Cmd>q<CR>", {})
+    vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+    vim.api.nvim_open_win(buf, true, { style = "minimal", split = "above" })
 end
 
 return M

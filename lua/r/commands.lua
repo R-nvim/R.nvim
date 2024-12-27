@@ -8,10 +8,27 @@ local function show_config(tbl)
     if opt and opt:len() > 0 then
         opt = opt:gsub(" .*", "")
         table.insert(out, { vim.inspect(config[opt]) })
+        vim.api.nvim_echo(out, false, {}) -- if argument is passed, only print it out at the bottom
+        return
     else
         table.insert(out, { vim.inspect(config) })
     end
-    vim.schedule(function() vim.api.nvim_echo(out, false, {}) end)
+
+    local out_buf = vim.split(out[1][1], "\n") -- separate the out string to a table of strings separated by "\n"
+
+    local buf = vim.api.nvim_create_buf(false, true) -- no file, scratch buffer
+    vim.api.nvim_buf_set_lines(buf, 0, 0, false, out_buf)
+
+    for row, line in ipairs(out_buf) do -- add highlighting to keywords
+        local col = line:find("=")
+        if col ~= nil then
+            vim.api.nvim_buf_add_highlight(buf, -1, "Type", row - 1, 0, col - 2)
+        end
+    end
+
+    vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+    vim.api.nvim_buf_set_keymap(buf, "n", "q", "<Cmd>q<CR>", {})
+    vim.api.nvim_open_win(buf, true, { style = "minimal", split = "above" })
 end
 
 local config_keys = {}
