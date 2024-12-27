@@ -88,7 +88,7 @@ Main dependencies:
    nvim-treesitter:
       https://github.com/nvim-treesitter/nvim-treesitter
       You have to enable highlighting by tree-sitter and install parsers for
-      `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`, and `csv`.
+      `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`, `latex`, and `csv`.
 
    cmp-r (for auto-completion):
       https://github.com/R-nvim/cmp-r
@@ -103,27 +103,29 @@ Main dependencies:
       On Windows, you have to install Rtools to be able to build `nvimcom`:
       https://cran.r-project.org/bin/windows/Rtools/
 
-   Note about the R package `nvimcom`:
+      Note about the R package `nvimcom`:
 
-     - You do not need to load nvimcom in your .Rprofile because the R.nvim
-       plugin sets the environment variable `R_DEFAULT_PACKAGES`, including
-       `nvimcom` in the list of packages to be loaded on R startup. However,
-       if you set the option `defaultPackages` in a .Rprofile, you should
-       include "nvimcom" among the packages to be loaded (see
-       |nvimcom-not-loaded|).
+      You do not need to load nvimcom in your .Rprofile because the R.nvim
+      plugin sets the environment variable `R_DEFAULT_PACKAGES`, including
+      `nvimcom` in the list of packages to be loaded on R startup. However,
+      if you set the option `defaultPackages` in a .Rprofile, you should
+      include "nvimcom" among the packages to be loaded (see
+      |nvimcom-not-loaded|).
+
+   Quarto: required to complete chunk options in `#|` comments in Quarto, Rmd
+      and Rnoweb documents: https://quarto.org/
 
 
 Additional dependencies for editing Rnoweb documents:
 
-   latexmk:       Automate the compilation of LaTeX documents.
-                  See examples in |latexcmd|.
+   latexmk: Automate the compilation of LaTeX documents.
+            See examples in |latexcmd|.
 
    PDF viewer with SyncTeX support and capable of automatically reloading
    documents. This is required only if you edit Rnoweb files.
       On Linux and other Unix systems: Zathura.
       On macOS: Skim.
       On Windows: SumatraPDF.
-
 
 Suggestions for Unix (Linux, macOS, etc.):
 
@@ -345,7 +347,7 @@ To get help on an R topic, you can also type in Neovim (Normal mode):
 >vim
    :RHelp topic
 <
-You may close the R documentation buffer by simply pressing `q`. R
+You may close the R documentation window by simply pressing `q`. R
 documentation is open in a 'modifiable' buffer to allow you to edit the
 code in the "Examples" section. Press `<LocalLeader>`gn to jump to the
 next section of R code ("Usage" or "Examples" section) and use R.nvim
@@ -394,6 +396,8 @@ works if R is running. The value of 'shiftwidth' is passed as `indent_by`.
 
 ------------------------------------------------------------------------------
 4.2. Editing Rnoweb files
+
+See |rnoweb-chunks| to know how to properly include chunk options.
 
 In Rnoweb files (.Rnw), when the cursor is over the `@` character, which
 finishes an R chunk, the command to send a line to R Console will make cursor
@@ -621,7 +625,30 @@ until an empty line is found.
 
 
 ------------------------------------------------------------------------------
-5.5 You can't put `syntax enable` in your `init.vim` (macOS only)
+5.5 Old style chunks not properly recognized in Rnoweb         *rnoweb-chunks*
+
+Chunks of R code with old style headers are not correctly recognized by
+tree-sitter and, consequently, it's not properly highlighted and sent to the
+R Console. So, instead of:
+>
+   <<example, echo=TRUE, results="asis">>=
+   x <- 1
+   print(x)
+   @
+<
+You should write:
+>
+   <<example>>=
+   #| echo: true
+   #| results: "asis"
+
+   x <- 1
+   print(x)
+   @
+<
+
+------------------------------------------------------------------------------
+5.6 You can't put `syntax enable` in your `init.vim` (macOS only)
 
 It seems that if you put the command `syntax enable` in your `init.vim` on OS
 X, file type plugins are immediately sourced. Consequently, all R.nvim
@@ -633,7 +660,7 @@ details, please, access:
 
 
 ------------------------------------------------------------------------------
-5.6. Windows bugs and limitations
+5.7. Windows bugs and limitations
 
 ------------------------------
 Wrong message that "R is busy"
@@ -687,6 +714,8 @@ command:
 >vim
    :RConfigShow
 <
+You may close the window opened by `:RConfigShow` by simply pressing `q`.
+
 |auto_start|          Start R automatically
 |objbr_auto_start|    Start the Object Browser automatically
 |built-in-terminal|   Options to control Neovim's built-in terminal
@@ -1937,7 +1966,7 @@ Use `data.table` to save a TSV file:
 >lua
    view_df = {
      n_lines = 0,
-     save_fun = "function(obj, obj_name) {f <- paste0(obj_name, '.tsv'); data.table::fwrite(obj, f, sep = '\t') ; f}",
+     save_fun = "function(obj, obj_name) {f <- paste0('/tmp/', obj_name, '.tsv'); data.table::fwrite(obj, f, sep = '\t') ; f}",
    }
 
 Use `arrow` to save a parquet file, and VisiData to open it:
@@ -2115,7 +2144,8 @@ mapped in the current session, do in Normal mode:
 >vim
    :RMapsDesc
 <
-The prefix "RD" in the labels means "cursor down".
+You may close the window opened by `:RMapsDesc` by simply pressing `q`. The
+prefix "RD" in the labels means "cursor down".
 
 The plugin contains a function called `action` in the Lua module `r.run`
 which allows you to build ad-hoc commands to R. This function takes the name
