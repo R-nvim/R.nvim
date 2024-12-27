@@ -411,6 +411,7 @@ M.show_map_desc = function()
         end
     end
 
+    vim.api.nvim_buf_set_keymap(buf, "n", "q", "<Cmd>q<CR>", {})
     vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
     vim.api.nvim_open_win(buf, true, { style = "minimal", split = "above" })
 end
