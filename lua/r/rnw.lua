@@ -153,20 +153,22 @@ end
 local M = {}
 
 M.write_chunk = function()
-    local lang = get_lang()
-    if vim.api.nvim_get_current_line() == "" and lang == "rnoweb" then
-        local curline = vim.api.nvim_win_get_cursor(0)[1]
-        vim.api.nvim_buf_set_lines(
-            0,
-            curline - 1,
-            curline - 1,
-            true,
-            { "<<>>=", "@", "" }
-        )
-        vim.api.nvim_win_set_cursor(0, { curline, 2 })
-    else
-        vim.fn.feedkeys("<", "n")
+    if vim.api.nvim_get_current_line() == "" then
+        local lang = get_lang()
+        if lang == "rnoweb" or lang == "latex" then
+            local curline = vim.api.nvim_win_get_cursor(0)[1]
+            vim.api.nvim_buf_set_lines(
+                0,
+                curline - 1,
+                curline - 1,
+                true,
+                { "<<>>=", "@", "" }
+            )
+            vim.api.nvim_win_set_cursor(0, { curline, 2 })
+            return
+        end
     end
+    vim.fn.feedkeys("<", "n")
 end
 
 --- Move the cursor to the previous chunk
