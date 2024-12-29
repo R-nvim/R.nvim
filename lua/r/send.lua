@@ -757,7 +757,7 @@ M.funs = function(bufnr, capture_all, move_down)
 
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
-    if vim.bo[bufnr].filetype ~= "r" then
+    if vim.bo[bufnr].filetype ~= "r" and vim.bo[bufnr].filetype ~= "rnoweb" then
         inform("Not yet supported in '" .. vim.bo[bufnr].filetype .. "' files.")
         return
     end
