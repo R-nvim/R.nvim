@@ -57,7 +57,14 @@ M.check = function()
 
     vim.health.start("Checking tree-sitter parsers:")
 
-    for _, parser in ipairs({ "r", "markdown", "markdown_inline", "rnoweb", "latex", "yaml" }) do
+    for _, parser in ipairs({
+        "r",
+        "markdown",
+        "markdown_inline",
+        "rnoweb",
+        "latex",
+        "yaml",
+    }) do
         if parser_installed(parser) then
             vim.health.ok("`" .. parser .. "` " .. " found.")
         else
