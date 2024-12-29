@@ -105,14 +105,15 @@ local function get_code_to_send(txt, row)
     if vim.o.filetype == "rhelp" then return get_rhelp_code_to_send(txt, row) end
 
     -- Find the 'root' node for the current expression --------------------
-    local n_lang = vim.o.filetype == "rnoweb" and "r" or nil
     local node = vim.treesitter.get_node({
         bufnr = 0,
         pos = { row - 1, col - 1 },
-        lang = n_lang,
         -- Required for quarto/rmd/rnoweb; harmless for r.
         ignore_injections = false,
     })
+
+    -- This is a strange fix for https://github.com/R-nvim/R.nvim/issues/298
+    if node then vim.schedule(function() end) end
 
     if node and node:type() == "program" then node = node:child(0) end
 
@@ -756,13 +757,8 @@ M.funs = function(bufnr, capture_all, move_down)
 
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
-    if vim.bo[bufnr].filetype == "quarto" or vim.bo[bufnr].filetype == "rmd" then
-        inform("Not yet supported in Rmd or Quarto files.")
-        return
-    end
-
-    if vim.bo[bufnr].filetype ~= "r" then
-        inform("Not an R file.")
+    if vim.bo[bufnr].filetype ~= "r" and vim.bo[bufnr].filetype ~= "rnoweb" then
+        inform("Not yet supported in '" .. vim.bo[bufnr].filetype .. "' files.")
         return
     end
 
