@@ -253,12 +253,6 @@ local send = function(file_type)
         create_maps("n",   "RNextRChunk",     "gn", "<Cmd>lua require('r.rmd').next_chunk()")
         create_maps("n",   "RPreviousRChunk", "gN", "<Cmd>lua require('r.rmd').previous_chunk()")
     end
-    if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
-        create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
-        if config.rm_knit_cache then
-            create_maps("nvi", "RKnitRmCache", "kc", "<Cmd>lua require('r.rnw').rm_knit_cache()")
-        end
-    end
     if file_type == "quarto" then
         create_maps("n",   "RQuartoRender",   "qr", "<Cmd>lua require('r.quarto').command('render')")
         create_maps("n",   "RQuartoPreview",  "qp", "<Cmd>lua require('r.quarto').command('preview')")
@@ -280,6 +274,12 @@ local send = function(file_type)
         end
         create_maps("n", "RNextRChunk",     "gn", "<Cmd>lua require('r.rnw').next_chunk()")
         create_maps("n", "RPreviousRChunk", "gN", "<Cmd>lua require('r.rnw').previous_chunk()")
+    end
+    if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
+        create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
+        if config.rm_knit_cache then
+            create_maps("nvi", "RKnitRmCache", "kc", "<Cmd>lua require('r.rnw').rm_knit_cache()")
+        end
     end
     if file_type == "rdoc" then
         vim.api.nvim_buf_set_keymap(0, "n", "q", "<Cmd>quit<CR>",
