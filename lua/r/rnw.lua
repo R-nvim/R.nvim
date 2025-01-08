@@ -281,10 +281,13 @@ M.weave = function(bibtex, knit, pdf)
         if #config.latexcmd == 1 then
             pdfcmd = pdfcmd .. ", latexargs = character()"
         else
-            pdfcmd = pdfcmd
-                .. ', latexargs = c("'
-                .. table.concat(config.latexcmd, '", "')
-                .. '")'
+            pdfcmd = pdfcmd .. ", latexargs = c('" .. config.latexcmd[2] .. "'"
+            local i = 2
+            while i < #config.latexcmd do
+                i = i + 1
+                pdfcmd = pdfcmd .. ", '" .. config.latexcmd[i] .. "'"
+            end
+            pdfcmd = pdfcmd .. ")"
         end
     end
 
