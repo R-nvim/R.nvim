@@ -4,7 +4,7 @@ local uv = vim.uv
 local warn = require("r.log").warn
 
 local term_name = nil
-local term_cmd = nil
+local term_cmd = ""
 local tmuxsname = nil
 
 -- local global_option_value = TmuxOption("some_option", "global")
@@ -21,7 +21,7 @@ local external_term_config = function()
         term_name = string.gsub(tostring(config.external_term), " .*", "")
         if string.find(tostring(config.external_term), " ") then
             -- Complete command defined by the user
-            term_cmd = config.external_term
+            term_cmd = tostring(config.external_term)
             return
         end
     end

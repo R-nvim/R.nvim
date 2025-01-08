@@ -205,6 +205,7 @@ local function find_parent(child, curline, curpos)
         line = vim.api.nvim_buf_get_lines(0, curline - 1, curline, true)[1]
         line = line:gsub("\t.*", "")
         idx = line:find("#")
+        if idx == nil then return "" end
         if idx < curpos then
             parent = line:sub(idx + 1)
             if line:find("%[#") or line:find("%$#") then

@@ -62,7 +62,7 @@ local init_stdout = function(_, data, _)
         out_line = ""
 
         -- In spite of flush(stdout()), rcmd might be concatenating two commands
-        local rcmdl = vim.fn.split(rcmd, "\020", 0)
+        local rcmdl = vim.fn.split(rcmd, "\020", false)
         for _, c in ipairs(rcmdl) do
             if c:find("^WARN: ") then
                 table.insert(b_warn, c:sub(7))
