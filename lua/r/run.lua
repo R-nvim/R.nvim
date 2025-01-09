@@ -100,7 +100,7 @@ start_R2 = function()
     else
         table.insert(start_options, "options(nvimcom.autoglbenv = 0)")
     end
-    if config.setwidth and config.setwidth == 2 then
+    if config.setwidth == 2 then
         table.insert(start_options, "options(nvimcom.setwidth = TRUE)")
     else
         table.insert(start_options, "options(nvimcom.setwidth = FALSE)")
@@ -110,17 +110,10 @@ start_R2 = function()
     else
         table.insert(start_options, "options(nvimcom.nvimpager = TRUE)")
     end
-    if
-        type(config.external_term) == "boolean"
-        and not config.external_term
-        and config.esc_term
-    then
+    if config.external_term == "" and config.esc_term then
         table.insert(start_options, "options(editor = nvimcom:::nvim.edit)")
     end
-    if
-        (type(config.external_term) == "boolean" and config.external_term == true)
-        or type(config.external_term) == "string"
-    then
+    if config.external_term ~= "" then
         table.insert(
             start_options,
             "reg.finalizer(.GlobalEnv, nvimcom:::final_msg, onexit = TRUE)"
@@ -155,7 +148,7 @@ start_R2 = function()
         return
     end
 
-    if type(config.external_term) == "boolean" and config.external_term == false then
+    if config.external_term == "" then
         require("r.term").start_term()
         return
     end
@@ -188,17 +181,11 @@ end
 M.start_R = function(whatr)
     -- R started and nvimcom loaded
     if vim.g.R_Nvim_status == 7 then
-        if type(config.external_term) == "boolean" and config.external_term == false then
-            require("r.term").reopen_win()
-        end
+        if config.external_term == "" then require("r.term").reopen_win() end
         return
     end
 
-    if
-        type(config.external_term) == "string"
-        and config.external_term:find("tmux split%-window")
-        and not vim.env.TMUX_PANE
-    then
+    if config.external_term:find("tmux split%-window") and not vim.env.TMUX_PANE then
         warn("Neovim must be running within Tmux to run `tmux split-window`.")
         return
     end
@@ -345,9 +332,7 @@ M.clear_R_info = function()
     vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.RNVIM_ID))
     vim.fn.delete(config.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.RNVIM_ID))
     R_pid = 0
-    if type(config.external_term) == "boolean" and config.external_term == false then
-        require("r.term").close_term()
-    end
+    if config.external_term == "" then require("r.term").close_term() end
     if job.is_running("Server") then
         vim.g.R_Nvim_status = 3
         job.stdin("Server", "43\n")
@@ -391,7 +376,7 @@ M.quit_R = function(how)
     end
 
     if config.is_windows then
-        if type(config.external_term) == "boolean" and config.external_term then
+        if config.external_term ~= "" then
             -- SaveWinPos
             job.stdin(
                 "Server",
@@ -709,11 +694,7 @@ end
 M.clear_console = function()
     if config.clear_console == false then return end
 
-    if
-        config.is_windows
-        and type(config.external_term) == "boolean"
-        and config.external_term
-    then
+    if config.is_windows and config.external_term ~= "" then
         job.stdin("Server", "86\n")
         vim.wait(50)
         job.stdin("Server", "87\n")

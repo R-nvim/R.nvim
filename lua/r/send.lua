@@ -156,7 +156,7 @@ M.set_send_cmd_fun = function()
 
     if config.RStudio_cmd ~= "" then
         M.cmd = require("r.rstudio").send_cmd_to_RStudio
-    elseif type(config.external_term) == "boolean" and config.external_term == false then
+    elseif config.external_term == "" then
         M.cmd = require("r.term").send_cmd_to_term
     elseif config.is_windows then
         M.cmd = require("r.windows").send_cmd_to_Rgui

@@ -876,7 +876,7 @@ has changed, Neovim will send to nvimcom the command `options(width=X)`,
 where X is the new terminal width. You can set the value of `setwidth` to 0 to
 avoid the width being set. Example:
 >lua
-   setwidth = false
+   setwidth = 0
 <
 On Windows, the command is sent to R Console because it would crash R if sent
 through nvimcom.
@@ -909,7 +909,7 @@ value:
 If you do not want to run R in Neovim's built-in terminal emulator, you
 have to install Tmux >= 3.0, and then put in your config:
 >lua
-   external_term = true
+   external_term = "default"
 <
 Then, R will start in an external terminal emulator (useful if you use two
 monitors and want Neovim and R separate from each other), and Tmux will be
@@ -924,10 +924,11 @@ Note: The options of this section are ignored on macOS, where the command
 `open` is called to run the default application used to run shell scripts.
 
 R will run in Neovim's built-in terminal emulator, unless you set the value of
-`external_term`, which can be a boolean value, the name of the terminal
-emulator or the complete command to run the terminal emulator. On Windows,
-only boolean values are valid; if `true` R.nvim will run `Rgui.exe`, and not
-really a terminal emulator.
+`external_term`, which can be `""` (use Neovim's built-in terminal),
+`"default"` (automatically choose a pre-defined terminal), the name of the
+terminal emulator or the complete command to run the terminal emulator. On
+Windows, if the value of `external_term` is `"default"`, R.nvim will run
+`Rgui.exe`, and not really a terminal emulator.
 
 On Linux, a command for running the terminal is predefined for the following
 options:
@@ -941,12 +942,12 @@ options:
     7. xterm
 
 
-If the value of `external_term` is `true`, the plugin runs the first terminal
+If the value of `external_term` is `"default"`, the plugin runs the first terminal
 emulator that it finds from the above list. If your favorite terminal emulator
 is not selected, you may define it in your config. Below are some examples of
 how to set the value of `external_term`:
 >lua
-   external_term = true      -- Run R in an external terminal (or Rgui.exe)
+   external_term = "default" -- Run R in an external terminal (or Rgui.exe)
    external_term = "konsole" -- Run R in konsole
 <
 If `external_term` is just the name of one of the above terminal emulators,
@@ -1063,7 +1064,7 @@ put in your config:
 Similarly, in Rmd and Quarto files, the grave accent (backtick) is replaced
 with chunk delimiters unless you put in your config:
 >lua
-   rmdchunk = 0
+   rmdchunk = ""
 <
 You can also define a different shortcut for `rmdchunk`. For example, to use
 two backticks instead of one to trigger the completion of the chunk delimiter,
@@ -1071,7 +1072,7 @@ put in your config:
 >lua
    rmdchunk = "``"
 <
-If `rmdchunk = 2` (the default), in addition to creating an empty chunk
+If `rmdchunk = "both"` (the default), in addition to creating an empty chunk
 block, a single backtick will be converted to inline R delimiters if the
 cursor is not at the beginning of the line.
 
@@ -1297,7 +1298,7 @@ The valid values of `nvimpager` are:
 
    "tab"       : Show the help document in a new tab. If there is already a
                  tab with an R help document tab, use it.
-                 This is the default if `external_term` = `true`.
+                 This is the default if `external_term` is not `""`.
    "split_h"   : Split the window horizontally, as `:help` does. That is,
                  display R documentation above the editor window or at the
                  very top of the screen.

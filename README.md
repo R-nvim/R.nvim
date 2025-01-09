@@ -197,6 +197,8 @@ firm commitment to backwards compatibility.
 
 - `setwd` replaces `nvim_wd`. The new default value is `"no"`.
 
+- Only strings are valid values for `external_term` and `rmdchunk`.
+
 - `config_tmux` replaces `notmuxconf`. The new default value is `true`.
 
 - `:RFormat` now requires {styler} to be installed; {formatR} is no longer

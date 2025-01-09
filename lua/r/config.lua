@@ -110,7 +110,7 @@ local hooks = require("r.hooks")
 ---Control the program to use when viewing CSV files; defaults to `""`, i.e.
 ---to open these in a normal Neovim buffer. Do `:help view_df` for more
 ---information.
----@field view_df? { open_app: string, how: string, csv_sep: string, n_lines: integer, save_fun: string, open_fun: string | function }
+---@field view_df? { open_app: string, how: string, csv_sep: string, n_lines: integer, save_fun: string, open_fun: string }
 ---
 ---A table of R.nvim commands to disable. Defaults to `{ "" }`.
 ---Do `:help disable_cmds` for more information.
@@ -125,9 +125,8 @@ local hooks = require("r.hooks")
 ---@field esc_term? boolean
 ---
 ---Whether to run R in an external terminal emulator rather than Neovim's
----built-in terminal emulator; defaults to `false`. Do `:help external_term`
----for more information.
----@field external_term? boolean | string
+---built-in terminal emulator. Do `:help external_term` for more information.
+---@field external_term? string
 ---
 ---Whether X tools are available; used for window management. By default the
 ---availability will be detected from the system, but you can force its use
@@ -289,7 +288,7 @@ local hooks = require("r.hooks")
 ---Controls if and how backticks are replaced with code chunk/inline code
 ---delimiters when writing R Markdown and Quarto files. Do `:help rmdchunk`
 ---for more information.
----@field rmdchunk? string | integer
+---@field rmdchunk? string
 ---
 ---Whether to remove hidden objects from the workspace on `<LocalLeader>rm`;
 ---defaults to `false`. Do `:help rmhidden` for more information.
@@ -320,7 +319,7 @@ local hooks = require("r.hooks")
 ---Controls how R's `width` option is set by R.nvim; defaults to `2`,
 ---meaning the value will be set according to the initial width of the R
 ---console. Do `:help setwidth` for more information.
----@field setwidth? boolean | integer
+---@field setwidth? integer
 ---
 ---Whether to display terminal error messages as warnings; defaults to
 ---`false`. Do `:help silent_term` for more information.
@@ -426,7 +425,7 @@ local config = {
     disable_cmds        = { "" },
     editing_mode        = "",
     esc_term            = true,
-    external_term       = false, -- might be a string
+    external_term       = "",
     has_X_tools         = false,
     hl_term             = true,
     hook                = {
@@ -473,7 +472,7 @@ local config = {
     rm_knit_cache       = false,
     rmarkdown_args      = "",
     rmd_environment     = ".GlobalEnv",
-    rmdchunk            = 2, -- might be a string
+    rmdchunk            = "both",
     rmhidden            = false,
     rnowebchunk         = true,
     rnvim_home          = "",
@@ -578,13 +577,6 @@ local apply_user_opts = function()
     end
 
     -- stylua: ignore start
-    -- If an option can be multiple types, you can specify those types here.
-    -- Otherwise, the user option is checked against the type of the default
-    -- value.
-    local valid_types = {
-        external_term    = { "boolean", "string" },
-        rmdchunk         = { "number", "string" },
-    }
 
     -- If an option is an enum, you can define the possible values here:
     local valid_values = {
@@ -631,17 +623,14 @@ local apply_user_opts = function()
         -----------------------------------------------------------------------
         -- 2. Check the option has one of the expected types
         -----------------------------------------------------------------------
-        local expected_types = valid_types[key_name] or { type(default_val) }
-        if vim.fn.index(expected_types, type(user_opt)) == -1 then
-            if key_name == "view_df.open_app" and type(user_opt) ~= "function" then
-                swarn(
-                    ("Invalid option type for `%s`. Type should be %s, not %s."):format(
-                        key_name,
-                        utils.msg_join(expected_types, ", ", ", or ", ""),
-                        type(user_opt)
-                    )
+        if type(default_val) ~= type(user_opt) then
+            swarn(
+                ("Invalid option type for `%s`. Type should be %s, not %s."):format(
+                    key_name,
+                    type(default_val),
+                    type(user_opt)
                 )
-            end
+            )
             return
         end
 
@@ -875,11 +864,7 @@ local do_common_global = function()
     -- Default values of some variables
     if
         config.RStudio_cmd ~= ""
-        or (
-            config.is_windows
-            and type(config.external_term) == "boolean"
-            and config.external_term == true
-        )
+        or (config.is_windows and config.external_term == "default")
     then
         -- Sending multiple lines at once to either Rgui on Windows or RStudio does not work.
         config.max_paste_lines = 1
@@ -887,7 +872,7 @@ local do_common_global = function()
         config.parenblock = false
     end
 
-    if type(config.external_term) == "boolean" and config.external_term == false then
+    if config.external_term == "" then
         config.nvimpager = "split_h"
         config.save_win_pos = false
         config.arrange_windows = false
@@ -954,7 +939,7 @@ local do_common_global = function()
 
     -- Set the name of R executable
     if config.is_windows then
-        if type(config.external_term) == "boolean" and config.external_term == false then
+        if config.external_term == "" then
             config.R_app = "Rterm.exe"
         else
             config.R_app = "Rgui.exe"
@@ -988,9 +973,7 @@ local global_setup = function()
     -- values.
     set_editing_mode()
 
-    if type(config.external_term) == "boolean" and config.external_term == false then
-        config.auto_quit = true
-    end
+    if config.external_term == "" then config.auto_quit = true end
 
     -- Load functions that were not converted to Lua yet
     -- Configure more values that depend on either system features or other

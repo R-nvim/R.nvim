@@ -41,12 +41,7 @@ function M.configure(config)
         end
     end)
 
-    if
-        (type(config.external_term) == "boolean" and config.external_term)
-        or type(config.external_term) == "string"
-    then
-        tmux.configure(config)
-    end
+    if config.external_term ~= "" then tmux.configure(config) end
     utime = (uv.hrtime() - utime) / 1000000000
     require("r.edit").add_to_debug_info("unix setup", utime, "Time")
 end
