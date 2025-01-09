@@ -27,7 +27,7 @@ M.write_chunk = function()
             return
         else
             -- inline R code within markdown text
-            if config.rmdchunk == 2 then
+            if config.rmdchunk == "both" then
                 local pos = vim.api.nvim_win_get_cursor(0)
                 local next_char =
                     vim.api.nvim_get_current_line():sub(pos[2] + 1, pos[2] + 1)
@@ -213,7 +213,7 @@ M.setup = function()
     local cfg = require("r.config").get_config()
 
     -- Configure key mapping for writing chunks based on configuration settings
-    if type(cfg.rmdchunk) == "number" and (cfg.rmdchunk == 1 or cfg.rmdchunk == 2) then
+    if cfg.rmdchunk == "`" or cfg.rmdchunk == "both" then
         vim.api.nvim_buf_set_keymap(
             0,
             "i",
@@ -221,7 +221,7 @@ M.setup = function()
             "<Cmd>lua require('r.rmd').write_chunk()<CR>",
             { silent = true }
         )
-    elseif type(cfg.rmdchunk) == "string" then
+    elseif cfg.rmdchunk ~= "" then
         vim.api.nvim_buf_set_keymap(
             0,
             "i",

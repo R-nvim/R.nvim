@@ -6,7 +6,7 @@ function M.configure(config)
     local ttime = uv.hrtime()
     -- Check whether Tmux is OK
     if vim.fn.executable("tmux") == 0 then
-        config.external_term = false
+        config.external_term = ""
         log.warn("tmux executable not found")
         return
     end

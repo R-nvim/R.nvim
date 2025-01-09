@@ -103,7 +103,7 @@ function M.configure(config)
     end
 
     if not config.R_args then
-        if type(config.external_term) == "boolean" and config.external_term == false then
+        if config.external_term == "" then
             config.R_args = { "--no-save" }
         else
             config.R_args = { "--sdi", "--no-save" }
