@@ -169,7 +169,6 @@ function M.ensure_directory_exists(dir_path)
 end
 
 local get_fw_info_X = function()
-    local config = require("r.config").get_config()
     local obj = M.system({ "xprop", "-root" }, { text = true }):wait()
     if obj.code ~= 0 then
         warn("Failed to run `xprop -root`")
@@ -215,6 +214,7 @@ local get_fw_info_X = function()
         )
         return
     end
+    local config = require("r.config").get_config()
     config.term_title = nm
     config.term_pid = tonumber(pid)
 end

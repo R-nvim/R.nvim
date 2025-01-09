@@ -85,7 +85,7 @@ local SyncTeX_readconc = function(basenm)
         texidx = texidx + 1
         while i < max_i and texidx < ntexln do
             i = i + 1
-            local lnrange = vim.fn.range(1, concl[i])
+            local lnrange = vim.fn.range(1, tonumber(concl[i]))
             i = i + 1
             for _, _ in ipairs(lnrange) do
                 if texidx > ntexln then break end
@@ -222,7 +222,7 @@ end
 -- Because this function delete files, it will not be documented.
 -- If you want to try it, put in your config:
 --
--- let rm_knit_cache = true
+-- rm_knit_cache = true
 --
 -- If don't want to answer the question about deleting files, and
 -- if you trust this code more than I do, put in your config:
@@ -297,11 +297,11 @@ M.weave = function(bibtex, knit, pdf)
 
     if not pdf or config.open_pdf == "no" then pdfcmd = pdfcmd .. ", view = FALSE" end
 
-    if config.latex_build_dir then
+    if config.latex_build_dir ~= "" then
         pdfcmd = pdfcmd .. ', builddir="' .. config.latex_build_dir .. '"'
     end
 
-    if not knit and config.sweaveargs then
+    if not knit and config.sweaveargs ~= "" then
         pdfcmd = pdfcmd .. ", " .. config.sweaveargs
     end
 

@@ -225,7 +225,7 @@ M.setup = function()
         vim.api.nvim_buf_set_keymap(
             0,
             "i",
-            cfg.rmdchunk,
+            tostring(cfg.rmdchunk),
             "<Cmd>lua require('r.rmd').write_chunk()<CR>",
             { silent = true }
         )

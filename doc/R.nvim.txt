@@ -1354,7 +1354,7 @@ example, if it is called by a custom script), you should set the value of
 Set this option in your config if you want to pass command line arguments to
 R at the startup. The value of this variable must be a `string[]`. Example:
 >lua
-   R_args = {"--no-save", "--quiet"}
+   R_args = { "--no-save", "--quiet" }
 <
 On Linux, there is no default value for |R_args|. On Windows, the default
 value is `{"--sdi"}`, but you may change it to `{"--mdi"}` if you do not like
@@ -1597,13 +1597,13 @@ If `xelatex` is not installed, it will be replaced with `pdflatex` in the
 above command. If `latexmk` is not installed, R.nvim will call either
 `xelatex` or `pdflatex` directly.
 
-You can set the value `latexcmd` to change this behavior. `latexcmd` is a
-list: its first element is the command to be executed and the remaining
-elements are arguments to be passed to the command. Examples:
+To change this behavior, you can set the value `latexcmd` which is a list
+whose first element is the command to be executed and the remaining elements
+are arguments to be passed to the command. Examples:
 >lua
-   latexcmd = {"pdflatex"}
-   latexcmd = {"xelatex"}
-   latexcmd = {"latexmk", "-pdf", '-pdflatex="xelatex %O -synctex=1 %S"'}
+   latexcmd = { "xelatex" }
+   latexcmd = { "pdflatex", "-interaction=nonstopmode", "-synctex=1" }
+   latexcmd = { "latexmk", "-pdf", '-pdflatex="xelatex %O -synctex=1 %S"' }
 <
 The elements of `latexcmd` may contain double quotes (as in the last example
 above), but not single quotes, because R.nvim will use single quotes to
@@ -1836,12 +1836,12 @@ of key bindings labels is shown with the command:
 Below is an example on how to disable the commands that send `setwd()` and
 `dput()` to R Console:
 >lua
-   disable_cmds = {"RSetwd", "RDputObj"}
+   disable_cmds = { "RSetwd", "RDputObj" }
 <
 If you want to disable R.nvim for a specific file type, create the variable
 `R_filetypes` with a list of file types that should be supported. Example:
 >lua
-   vim.g.R_filetypes = {"r", "rmd", "rnoweb", "quarto", "rhelp"}
+   vim.g.R_filetypes = { "r", "rmd", "rnoweb", "quarto", "rhelp" }
 <
 If the variable `R_filetypes` does not exist, all file types from the above
 list will be supported.
