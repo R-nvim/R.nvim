@@ -154,11 +154,13 @@ start_R2 = function()
     end
 
     if config.applescript then
+        warn("Support for running R.app may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/309")
         require("r.osx").start_Rapp()
         return
     end
 
     if config.is_windows then
+        warn("Support for running Rgui.exe may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/308")
         require("r.windows").start_Rgui()
         return
     end

@@ -26,8 +26,6 @@ local external_term_config = function()
         end
     end
 
-    if config.is_darwin then return end
-
     local etime = uv.hrtime()
     if config.external_term == "default" then
         -- Terminal name not defined. Try to find a known one.
