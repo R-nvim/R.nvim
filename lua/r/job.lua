@@ -139,9 +139,14 @@ end
 --- Opens an R terminal with the specified command.
 ---@param cmd string The command to start the R terminal with.
 M.R_term_open = function(cmd)
-    local jobid = vim.fn.jobstart(cmd, { on_exit = M.on_exit, term = true })
+    local jobid = 0
+    if vim.fn.has("nvim-0.11") == 1 then
+        jobid = vim.fn.jobstart(cmd, { on_exit = M.on_exit, term = true })
+    else
+        jobid = vim.fn.termopen(cmd, { on_exit = M.on_exit })
+    end
     if jobid == 0 then
-        warn("Invalid arguments R in built-in terminal: " .. tostring(cmd))
+        warn("Invalid arguments to run R in built-in terminal: " .. tostring(cmd))
     elseif jobid == -1 then
         warn("Command not executable: " .. tostring(cmd))
     else

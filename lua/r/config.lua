@@ -864,7 +864,7 @@ local do_common_global = function()
     -- Default values of some variables
     if
         config.RStudio_cmd ~= ""
-        or (config.is_windows and config.external_term == "default")
+        or (config.is_windows and config.external_term ~= "")
     then
         -- Sending multiple lines at once to either Rgui on Windows or RStudio does not work.
         config.max_paste_lines = 1
