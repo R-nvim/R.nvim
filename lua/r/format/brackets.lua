@@ -87,8 +87,6 @@ M.formatsubsetting = function(bufnr)
 
     if not parser then return nil end
 
-    local tree = parser:parse()[1]
-
     local ts_utils = require("nvim-treesitter.ts_utils")
     local node = ts_utils.get_node_at_cursor()
 
