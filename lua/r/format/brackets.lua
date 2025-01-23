@@ -19,8 +19,8 @@ M.formatsubsetting = function(bufnr)
         local rhs_node = node:field("rhs")[1]
 
         if lhs_node and rhs_node then
-            local lhs_text = ts_utils.get_node_text(lhs_node, bufnr)[1]
-            local rhs_text = ts_utils.get_node_text(rhs_node, bufnr)[1]
+            local lhs_text = vim.treesitter.get_node_text(lhs_node, bufnr)
+            local rhs_text = vim.treesitter.get_node_text(rhs_node, bufnr)
 
             local start_row, start_col, end_row, end_col = node:range()
             local new_text = lhs_text .. '[["' .. rhs_text .. '"]]'
@@ -41,10 +41,10 @@ M.formatsubsetting = function(bufnr)
         local arguments_node = node:field("arguments")[1]
 
         if function_node and arguments_node then
-            local function_text = ts_utils.get_node_text(function_node, bufnr)[1]
+            local function_text = vim.treesitter.get_node_text(function_node, bufnr)
             local argument_node = arguments_node:named_child(0)
             local value_node = argument_node:field("value")[1]
-            local value_text = ts_utils.get_node_text(value_node, bufnr)[1]
+            local value_text = vim.treesitter.get_node_text(value_node, bufnr)
 
             local start_row, start_col, end_row, end_col = node:range()
             local new_text = function_text .. "[[" .. value_text .. "]]"
@@ -91,7 +91,9 @@ M.formatsubsetting = function(bufnr)
 
     local tree = parser:parse()[1]
 
+    local ts_utils = require("nvim-treesitter.ts_utils")
     local node = ts_utils.get_node_at_cursor()
+
     if node:type() == "extract_operator" then
         replace_extract_operator(node)
     elseif node:type() == "arguments" then
