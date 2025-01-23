@@ -1,5 +1,5 @@
 local config = require("r.config").get_config()
-local warn = require("r").warn
+local warn = require("r.log").warn
 
 -- stylua: ignore start
 
@@ -14,13 +14,10 @@ local map_desc = {
     ROpenPDF            = { m = "", k = "", c = "Edit",     d = "Open the PDF generated from the current document" },
     RDputObj            = { m = "", k = "", c = "Edit",     d = "Run dput(<cword>) and show the output in a new tab" },
     RViewDF             = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a new tab" },
-    RViewDFs            = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a split window" },
-    RViewDFv            = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a vertically split window" },
-    RViewDFa            = { m = "", k = "", c = "Edit",     d = "View the head of a data.frame or matrix under cursor in a split window" },
     RShowEx             = { m = "", k = "", c = "Edit",     d = "Extract the Examples section and paste it in a split window" },
     RSeparatePath       = { m = "", k = "", c = "Edit",     d = "Split the file path or the url under the cursor" },
-    RFormatNumbers      = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers to explicitly indicate them as integers." },
-    RFormatSubsetting   = { m = "", k = "", c = "Edit",     d = "Replace all the `$` subsetting operators with `[[` in the current buffer." },
+    RFormatNumbers      = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers to explicitly indicate them as integers" },
+    RFormatSubsetting   = { m = "", k = "", c = "Edit",     d = "Replace all the `$` subsetting operators with `[[` in the current buffer" },
     RNextRChunk         = { m = "", k = "", c = "Navigate", d = "Go to the next chunk of R code" },
     RGoToTeX            = { m = "", k = "", c = "Navigate", d = "Go the corresponding line in the generated LaTeX document" },
     RPreviousRChunk     = { m = "", k = "", c = "Navigate", d = "Go to the previous chunk of R code" },
@@ -144,15 +141,6 @@ local control = function(file_type)
 
     create_maps("ni", "RPackages",          "ip", "<Cmd>lua require('r.packages').install_missing_packages()")
 
-    if type(config.csv_app) == "function" or config.csv_app == "" then
-        create_maps("ni",  "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"split\"')")
-        create_maps("ni",  "RViewDFv",          "vv", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"vsplit\"')")
-        create_maps("ni",  "RViewDFa",          "vh", "<Cmd>lua require('r.run').action('viewobj', 'n', ', howto=\"head\", nrows=6')")
-        create_maps("v",   "RViewDFs",          "vs", "<Cmd>lua require('r.run').action('viewobj', 'v', ', howto=\"split\"')")
-        create_maps("v",   "RViewDFv",          "vv", "<Cmd>lua require('r.run').action('viewobj', 'v', ', howto=\"vsplit\"')")
-        create_maps("v",   "RViewDFa",          "vh", "<Cmd>lua require('r.run').action('viewobj', 'v', ', howto=\"head\", nrows=6')")
-    end
-
     -- Arguments,      example,             help
     create_maps("nvi", "RShowArgs",         "ra", "<Cmd>lua require('r.run').action('args')")
     create_maps("nvi", "RShowEx",           "re", "<Cmd>lua require('r.run').action('example')")
@@ -265,12 +253,6 @@ local send = function(file_type)
         create_maps("n",   "RNextRChunk",     "gn", "<Cmd>lua require('r.rmd').next_chunk()")
         create_maps("n",   "RPreviousRChunk", "gN", "<Cmd>lua require('r.rmd').previous_chunk()")
     end
-    if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
-        create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
-        if config.rm_knit_cache then
-            create_maps("nvi", "RKnitRmCache", "kc", "<Cmd>lua require('r.rnw').rm_knit_cache()")
-        end
-    end
     if file_type == "quarto" then
         create_maps("n",   "RQuartoRender",   "qr", "<Cmd>lua require('r.quarto').command('render')")
         create_maps("n",   "RQuartoPreview",  "qp", "<Cmd>lua require('r.quarto').command('preview')")
@@ -292,6 +274,12 @@ local send = function(file_type)
         end
         create_maps("n", "RNextRChunk",     "gn", "<Cmd>lua require('r.rnw').next_chunk()")
         create_maps("n", "RPreviousRChunk", "gN", "<Cmd>lua require('r.rnw').previous_chunk()")
+    end
+    if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
+        create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
+        if config.rm_knit_cache then
+            create_maps("nvi", "RKnitRmCache", "kc", "<Cmd>lua require('r.rnw').rm_knit_cache()")
+        end
     end
     if file_type == "rdoc" then
         vim.api.nvim_buf_set_keymap(0, "n", "q", "<Cmd>quit<CR>",
@@ -318,6 +306,7 @@ local fill_k2 = function(mlist, m)
     for _, v in pairs(mlist) do
         if v:find("@<Plug>R") then
             lbl = v:gsub(".*@<Plug>", "")
+            lbl = lbl:gsub(" .*", "") -- See issue #288
             km = v:gsub("^" .. m .. "%s*", "")
             km = km:gsub(" .*", "")
             if not map_desc[lbl].m:find(m) then map_desc[lbl].m = map_desc[lbl].m .. m end
@@ -346,23 +335,27 @@ M.show_map_desc = function()
     local lw = tostring(label_w)
     local kw = tostring(key_w)
 
-    local bycat = {
-        Start = {},
-        Edit = {},
-        Navigate = {},
-        Send = {},
-        Command = {},
-        Weave = {},
-        Object_Browser = {},
+    local cat = {
+        "Start",
+        "Edit",
+        "Navigate",
+        "Send",
+        "Command",
+        "Weave",
+        "Object_Browser",
     }
+    local bycat = {}
+    for _, c in pairs(cat) do
+        bycat[c] = {}
+    end
     for k, v in pairs(map_desc) do
         table.insert(bycat[v.c], { k, v.m, v.k, v.d })
     end
 
     local map_key_desc = {}
-    for c, t in pairs(bycat) do
+    for _, c in pairs(cat) do
         table.insert(map_key_desc, { c .. "\n", "Title" })
-        for _, v in pairs(t) do
+        for _, v in pairs(bycat[c]) do
             table.insert(
                 map_key_desc,
                 { string.format("  %-0" .. lw .. "s", v[1]), "Identifier" }
@@ -382,7 +375,45 @@ M.show_map_desc = function()
             table.insert(map_key_desc, { v[4] .. "\n" })
         end
     end
-    vim.schedule(function() vim.api.nvim_echo(map_key_desc, false, {}) end)
+
+    local buf = vim.api.nvim_create_buf(false, true) -- no file, scratch buffer
+    local row = -1
+    local col_start = {}
+    local col_end = {}
+    local line = ""
+    local hls = {}
+    for _, text_hl in pairs(map_key_desc) do
+        local text = text_hl[1]:gsub("\n", "")
+        line = line .. text
+        local hl = text_hl[2]
+        if hl == "Title" or hl == "Identifier" or row == -1 then -- start new line on "Title" or "Identifier"
+            row = row + 1
+        end
+        if hl == "Title" then -- on "Title" write to buffer
+            vim.api.nvim_buf_set_lines(buf, row, row, false, { line })
+            vim.api.nvim_buf_add_highlight(buf, -1, hl, row, 0, #line)
+            line = ""
+        elseif hl == "Identifier" then
+            col_start = { 0 }
+            col_end = { #text }
+            table.insert(hls, hl)
+        elseif hl then
+            table.insert(col_start, col_end[#col_end])
+            table.insert(col_end, #line)
+            table.insert(hls, hl)
+        else -- hl is nil so it is the description so it's eol so write to buffer with appropriate highlights
+            vim.api.nvim_buf_set_lines(buf, row, row, false, { line })
+            vim.api.nvim_buf_add_highlight(buf, -1, hls[1], row, col_start[1], col_end[1])
+            vim.api.nvim_buf_add_highlight(buf, -1, hls[2], row, col_start[2], col_end[2])
+            vim.api.nvim_buf_add_highlight(buf, -1, hls[3], row, col_start[3], col_end[3])
+            hls = {}
+            line = ""
+        end
+    end
+
+    vim.api.nvim_buf_set_keymap(buf, "n", "q", "<Cmd>q<CR>", {})
+    vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+    vim.api.nvim_open_win(buf, true, { style = "minimal", split = "above" })
 end
 
 return M

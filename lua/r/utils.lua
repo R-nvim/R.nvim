@@ -1,6 +1,29 @@
-local warn = require("r").warn
+local warn = require("r.log").warn
+local uv = vim.uv
 
 local M = {}
+
+--- Tries to asynchronously run cmd with --version
+--- callback function recieves true if exit code 0, otherwise false
+--- false means:
+---     1. executable not found.
+---     2. Not enough memory to spawn a process.
+---     3. User does not have necessary file permissions.
+---     4. executable does not support --version flag.
+---@param cmd string
+---@param callback function
+function M.check_executable(cmd, callback)
+    uv.spawn(cmd, {
+        args = { "--version" }, -- Assuming the executable supports '--version'
+        stdio = nil, -- We don't need to capture output here
+    }, function(code)
+        if code == 0 then
+            callback(true)
+        else
+            callback(false)
+        end
+    end)
+end
 
 --- Get language at current cursor position of rhelp buffer
 ---@return string
@@ -41,6 +64,12 @@ local get_rnw_lang = function()
         return "r"
     else
         return "latex"
+    end
+end
+
+function M.resolve_fullpaths(tbl)
+    for i, v in ipairs(tbl) do
+        tbl[i] = uv.fs_realpath(v)
     end
 end
 
@@ -140,7 +169,6 @@ function M.ensure_directory_exists(dir_path)
 end
 
 local get_fw_info_X = function()
-    local config = require("r.config").get_config()
     local obj = M.system({ "xprop", "-root" }, { text = true }):wait()
     if obj.code ~= 0 then
         warn("Failed to run `xprop -root`")
@@ -186,6 +214,7 @@ local get_fw_info_X = function()
         )
         return
     end
+    local config = require("r.config").get_config()
     config.term_title = nm
     config.term_pid = tonumber(pid)
 end
@@ -244,8 +273,8 @@ function M.system(cmd, opts)
     end
 
     --- init state
-    local stdout = assert(vim.loop.new_pipe(false))
-    local stderr = assert(vim.loop.new_pipe(false))
+    local stdout = assert(uv.new_pipe(false))
+    local stderr = assert(uv.new_pipe(false))
     local stdout_data, stderr_data
     local state = {
         handle = nil,
@@ -263,7 +292,7 @@ function M.system(cmd, opts)
     }
 
     --- run the command
-    state.handle, state.pid = vim.loop.spawn(cmd[1], {
+    state.handle, state.pid = uv.spawn(cmd[1], {
         args = vim.list_slice(cmd, 2),
         stdio = { nil, stdout, stderr },
         cwd = opts.cwd,

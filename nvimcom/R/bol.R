@@ -118,7 +118,7 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass) {
 
 
     if (length(res) == 0 || (length(res) == 1 && res == "")) {
-        res <- "{}"
+        res <- ""
     } else {
         if (is.null(pkg)) {
             info <- pkgname
@@ -255,7 +255,7 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
             } else {
                 # some libraries have functions as list elements
                 cat(n, "\006(\006function\006", printenv,
-                    "\006{}\006\006\006\n", sep = "")
+                    "\006\006\006\006\n", sep = "")
             }
         } else {
             if (is.list(xx) || is.environment(xx)) {
@@ -367,7 +367,7 @@ get_arg_doc_list <- function(fun, pkg) {
     atbl[, 1] <- gsub("\\\\dots", "...", atbl[, 1])
     args <- apply(atbl, 1,
                   function(x)
-                      paste0(x[1], "\x05`", x[1], "`: ",
+                      paste0(x[1], "\x05`", gsub(", ", "`, `", x[1]), "`: ",
                              .Call("rd2md", x[2], PACKAGE = "nvimcom"), "\x06"))
     line <- nvim.fix.string(paste0(fun, "\x06", paste0(args, collapse = "")))
     cat(line, sep = "", "\n")

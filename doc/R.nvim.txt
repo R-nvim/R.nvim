@@ -1,6 +1,4 @@
-*R.nvim.txt*                                                  *R.nvim*
-                                  R.nvim
-                          Plugin to work with R
+*R.nvim.txt*                                             Plugin to work with R
 
 Authors: R.nvim team (see: https://github.com/R-nvim)
 
@@ -51,7 +49,7 @@ Git pull requests are welcome.
       - Automatic formatting of the text to fit the panel width.
       - Send code and commands to R (useful to run examples).
       - Jump to another R documentation.
-      - Syntax highlighting of R documentation.
+      - See R documentation formatted as Rmd.
   * Object Browser (.GlobalEnv and loaded packages):
       - Tree view of objects.
       - Send commands with the object under cursor as argument.
@@ -59,6 +57,8 @@ Git pull requests are welcome.
       - Syntax highlighting of the Object Browser.
   * SyncTeX support for Rnoweb.
   * Special highlighting for R output (.Rout files).
+  * Get the `params` variable from Quarto and Rmd YAML header and Create and
+    update the corresponding `params` list in `.GlobalEnv`.
   * Most of the plugin's behavior is customizable.
 
 
@@ -88,7 +88,7 @@ Main dependencies:
    nvim-treesitter:
       https://github.com/nvim-treesitter/nvim-treesitter
       You have to enable highlighting by tree-sitter and install parsers for
-      `r`, `markdown`, `markdown_inline`, `rnoweb`, and `yaml`.
+      `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`, `latex`, and `csv`.
 
    cmp-r (for auto-completion):
       https://github.com/R-nvim/cmp-r
@@ -103,29 +103,31 @@ Main dependencies:
       On Windows, you have to install Rtools to be able to build `nvimcom`:
       https://cran.r-project.org/bin/windows/Rtools/
 
-   Note about the R package `nvimcom`:
+      Note about the R package `nvimcom`:
 
-     - You do not need to load nvimcom in your .Rprofile because the R.nvim
-       plugin sets the environment variable `R_DEFAULT_PACKAGES`, including
-       `nvimcom` in the list of packages to be loaded on R startup. However,
-       if you set the option `defaultPackages` in a .Rprofile, you should
-       include "nvimcom" among the packages to be loaded (see
-       |nvimcom-not-loaded|).
+      You do not need to load nvimcom in your .Rprofile because the R.nvim
+      plugin sets the environment variable `R_DEFAULT_PACKAGES`, including
+      `nvimcom` in the list of packages to be loaded on R startup. However,
+      if you set the option `defaultPackages` in a .Rprofile, you should
+      include "nvimcom" among the packages to be loaded (see
+      |nvimcom-not-loaded|).
+
+   Quarto: required to complete chunk options in `#|` comments in Quarto, Rmd
+      and Rnoweb documents: https://quarto.org/
 
 
 Additional dependencies for editing Rnoweb documents:
 
-   latexmk:       Automate the compilation of LaTeX documents.
-                  See examples in |latexcmd|.
+   latexmk: Automate the compilation of LaTeX documents.
+            See examples in |latexcmd|.
 
    PDF viewer with SyncTeX support and capable of automatically reloading
    documents. This is required only if you edit Rnoweb files.
       On Linux and other Unix systems: Zathura.
-      On OS X: Skim.
+      On macOS: Skim.
       On Windows: SumatraPDF.
 
-
-Suggestions for Unix (Linux, OS X, etc.):
+Suggestions for Unix (Linux, macOS, etc.):
 
    Tmux >= 3.0:  http://tmux.sourceforge.net
                  Tmux is required only if you want to run R in an external
@@ -172,10 +174,12 @@ If the plugin is active, pressing <LocalLeader>rf should start R.
 Did you see warning messages but they disappeared before you have had time to
 read them? Type the command |:messages| in Normal mode to see them again.
 
-Run the command `:RDebugInfo` which will show information useful to fix some
-common issues.
+Run `:checkhealth r` to check if some dependencies are installed. For a more
+complete diagnostic of `R.nvim` health, run the command `:RDebugInfo` which
+will show information useful to fix some common issues.
 
-To see messages received by `nvimcom`, put in your `~/.Rprofile`:
+To see on the R Console messages received by `nvimcom`, put in your
+`~/.Rprofile`:
 >r
   options(nvimcom.verbose = 5)
 <
@@ -343,7 +347,7 @@ To get help on an R topic, you can also type in Neovim (Normal mode):
 >vim
    :RHelp topic
 <
-You may close the R documentation buffer by simply pressing `q`. R
+You may close the R documentation window by simply pressing `q`. R
 documentation is open in a 'modifiable' buffer to allow you to edit the
 code in the "Examples" section. Press `<LocalLeader>`gn to jump to the
 next section of R code ("Usage" or "Examples" section) and use R.nvim
@@ -360,9 +364,9 @@ values separated by tab characters and display this file. The command
 <LocalLeader>vh will show the `head()` of the data.frame or matrix in a
 horizontal split that opens above the current window. This behavior can be
 customized, and you can configure R.nvim to call an external application to
-display the data.frame or matrix (see |R.nvim-df-view|). All files involved in
-these operations are created in R.nvim's temporary directory and deleted when
-R quits.
+display the data.frame or matrix (see |view_df|). All files involved in these
+operations are created in R.nvim's temporary directory and deleted when R
+quits.
 
 You can source all .R files in a directory with the Normal mode command
 `:RSourceDir`, which accepts an optional argument (the directory to be
@@ -385,19 +389,15 @@ in Neovim:
    :RInsert dput(levels(var))
 <
 The command `:RFormat` calls the function `style_text()` (if the package
-`styler` is installed) or the function `tidy_source()` (if the package
-`formatR` is installed) to format either the entire buffer or the selected
-lines. The command only works if R is running. If `style_text()` is used the
-value of 'shiftwidth' is passed as `indent_by`, and if `tidy_source()` is
-used, the value of the `width.cutoff` argument is set to the buffer's
-'textwidth' if it is not outside the range 20-180.
-
-Se R help on `tidy_source` for details on how to control the function
-behavior.
+`styler` is installed) to format the selected lines. If no text is selected,
+either `style_file()` is called to format the entire buffer. The command only
+works if R is running. The value of 'shiftwidth' is passed as `indent_by`.
 
 
 ------------------------------------------------------------------------------
 4.2. Editing Rnoweb files
+
+See |rnoweb-chunks| to know how to properly include chunk options.
 
 In Rnoweb files (.Rnw), when the cursor is over the `@` character, which
 finishes an R chunk, the command to send a line to R Console will make cursor
@@ -562,7 +562,7 @@ others would be very time consuming to fix without breaking anything.
 
 
 ------------------------------------------------------------------------------
-5.1. R must be started by Neovim
+5.1. R must be started by R.nvim
 
 The communication between Neovim and R will work only if R was started by the
 running Neovim instance through the <LocalLeader>rf command. If you use R.nvim
@@ -587,55 +587,18 @@ on your system.
 
 
 ------------------------------------------------------------------------------
-5.3. Wrong message that "R is busy" (Windows only)
+5.3. Object Browser and auto-completion limitations
 
-On Windows, when code is sent from Neovim to R Console, the nvimcom library
-sets the value of the internal variable `r_is_busy` to 1. The value is set
-back to 0 when any code is successfully evaluated. If you send invalid code to
-R, there will be no successful evaluation of code and, thus, the value of
-`r_is_busy` will remain set to 1. Then, if you try to update the object
-browser, see the R documentation for any function, or do other tasks that
-require hidden evaluation of code by R, the nvimcom library will refuse to
-do the tasks to avoid any risk of corrupting R's memory. It will tell Neovim
-that "R is busy" and Neovim will display this message. Everything should work
-as expected again after any valid code is executed in the R Console.
+New lines in list names (which includes column names in data frames and
+matrixes) are replaced with blank spaces in the data used by `cmp-r` and the
+Object Browser.
+
+Objects from environments accessed with the `browser()` function are not
+listed in the Object Browser or during auto-completion with `cmp-r`.
 
 
 ------------------------------------------------------------------------------
-5.4. Error if there is no package installed (on Windows only)
-
-On Windows, Neovim may fail to recognize that a directory is not writable, and
-this is required by R.nvim to detect if it is necessary to create the
-directory defined by `$R_LIBS_USER` environment variable. Consequently, R.nvim
-does no try to create the directory and nvimcom installation fails. This
-problem will happen if you have just installed or upgraded R. The workaround
-is to manually open R and install any package with the `install.packages()`
-command before using R.nvim.
-
-
-------------------------------------------------------------------------------
-5.5. ~/.Rprofile should not output anything (Windows only)
-
-The compilation of `nvimcom` during R startup will fail on Windows if your
-`~/.Rprofile` outputs anything. Example of how to replicate the bug:
->r
-   print("This message will break compilation by gcc!")
-<
-
-------------------------------------------------------------------------------
-5.6 You can't put `syntax enable` in your `init.vim` (OS X only)
-
-It seems that if you put the command `syntax enable` in your `init.vim` on OS
-X, file type plugins are immediately sourced. Consequently, all R.nvim
-variables will be used at their default values. The workaround is do not
-include the superfluous command `syntax enable` in the `init.vim`. For
-details, please, access:
-
-   https://github.com/jalvesaq/Nvim-R/issues/668
-
-
-------------------------------------------------------------------------------
-5.7 R code block not recognized within HTML tags
+5.4 R code block not recognized within HTML tags
 
 An R code block in a Markdown document is not recognized when within an HTML
 tag unless there is an extra empty line between the tag and the beginning of
@@ -650,7 +613,7 @@ the block. So, for example, instead of:
 We need:
 >
  <div>
- 
+
  ```{r}
  runif(3) # recognized as R code
  ```
@@ -662,11 +625,85 @@ until an empty line is found.
 
 
 ------------------------------------------------------------------------------
-5.8 Completion issue with new lines in list names
+5.5 Old style chunks not properly recognized in Rnoweb         *rnoweb-chunks*
 
-New lines in list names (which includes column names in data frames and
-matrixes) are replaced with blank spaces in the data used by `cmp-r` and the
-Object Browser.
+Chunks of R code with old style headers are not correctly recognized by
+tree-sitter and, consequently, it's not properly highlighted and sent to the
+R Console. So, instead of:
+>
+   <<example, echo=TRUE, results="asis">>=
+   x <- 1
+   print(x)
+   @
+<
+You should write:
+>
+   <<example>>=
+   #| echo: true
+   #| results: "asis"
+
+   x <- 1
+   print(x)
+   @
+<
+
+------------------------------------------------------------------------------
+5.6 You can't put `syntax enable` in your `init.vim` (macOS only)
+
+It seems that if you put the command `syntax enable` in your `init.vim` on OS
+X, file type plugins are immediately sourced. Consequently, all R.nvim
+variables will be used at their default values. The workaround is do not
+include the superfluous command `syntax enable` in the `init.vim`. For
+details, please, access:
+
+   https://github.com/jalvesaq/Nvim-R/issues/668
+
+
+------------------------------------------------------------------------------
+5.7. Windows bugs and limitations
+
+------------------------------
+Wrong message that "R is busy"
+
+On Windows, when code is sent from Neovim to R Console, the nvimcom library
+sets the value of the internal variable `r_is_busy` to 1. The value is set
+back to 0 when any code is successfully evaluated. If you send invalid code to
+R, there will be no successful evaluation of code and, thus, the value of
+`r_is_busy` will remain set to 1. Then, if you try to update the object
+browser, see the R documentation for any function, or do other tasks that
+require hidden evaluation of code by R, the nvimcom library will refuse to
+do the tasks to avoid any risk of corrupting R's memory. It will tell Neovim
+that "R is busy" and Neovim will display this message. Everything should work
+as expected again after any valid code is executed in the R Console.
+
+
+--------------------------------------
+Error if there is no package installed
+
+On Windows, Neovim may fail to recognize that a directory is not writable, and
+this is required by R.nvim to detect if it is necessary to create the
+directory defined by `$R_LIBS_USER` environment variable. Consequently, R.nvim
+does no try to create the directory and nvimcom installation fails. This
+problem will happen if you have just installed or upgraded R. The workaround
+is to manually open R and install any package with the `install.packages()`
+command before using R.nvim.
+
+
+--------------------------------------
+~/.Rprofile should not output anything
+
+The compilation of `nvimcom` during R startup will fail on Windows if your
+`~/.Rprofile` outputs anything. Example of how to replicate the bug:
+>r
+   print("This message will break compilation by gcc!")
+<
+
+-----------------------------------------
+Send commands to Radian doesn't work well
+
+If you use `radian` as |R_app|, multiple lines will not be correctly
+interpreted because `bracketed_paste` is not recogenized by terminals on
+Windows.
 
 
 ==============================================================================
@@ -677,6 +714,8 @@ command:
 >vim
    :RConfigShow
 <
+You may close the window opened by `:RConfigShow` by simply pressing `q`.
+
 |auto_start|          Start R automatically
 |objbr_auto_start|    Start the Object Browser automatically
 |built-in-terminal|   Options to control Neovim's built-in terminal
@@ -697,20 +736,23 @@ command:
 |objbr_opendf|        Display data.frames open in the Object Browser
 |objbr_openlist|      Display lists open in the Object Browser
 |objbr_allnames|      Display hidden objects in the Object Browser
+|objbr_mappings|      Add custom keymap to the Object Browser
+|objbr_placeholder|   Define the string to substitute for with objects
 |compl_data|          Limits to completion data (avoid R slowdown)
 |nvimpager|           Use Neovim to see R documentation
 |open_example|        Use Neovim to display R examples
 |R_path|              Directory where R is
 |R_app|, |R_cmd|        Names of R applications
 |R_args|              Arguments to pass to R
-|start_libs|          Objects for auto completion and syntax highlight
+|start_libs|          Objects for auto completion
 |Rout_more_colors|    More syntax highlighting in R output
 |routnotab|           Show output of R CMD BATCH in new window
 |config_tmux|         Don't use a specially built Tmux config file
 |rconsole_height|     Number of lines of R Console
 |rconsole_width|      Number of columns of R Console
+|register_treesitter| Register treesitter parsers for quarto and rmd files
 |min_editor_width|    Minimum number of columns of editor after R start
-|applescript|         Use osascript in Mac OS X to run R.app
+|applescript|         Use osascript in macOS to run R.app
 |RStudio_cmd|         Run RStudio instead of R.
 |listmethods|         Do `nvim.list.args()` instead of `args()`
 |specialplot|         Do `nvim.plot()` instead of `plot()`
@@ -734,6 +776,7 @@ command:
 |open_html|           Open HTML after processing Rmd or Quarto
 |insert_mode_cmds|    Allow R commands in insert mode
 |rmhidden|            Remove hidden objects from R workspace
+|set_params|          Control setting `params` in `.GlobalEnv`
 |wait|                Time to wait for nvimcom loading
 |wait_reply|          Time to wait for R reply
 |setwd|               Directory where to start R
@@ -743,7 +786,7 @@ command:
 |tmpdir|              Where temporary files are created
 |compldir|            Where lists for auto completion are stored
 |remote_compldir|     Mount point of remote cache directory
-|R.nvim-df-view|      Options for visualizing a data.frame or matrix
+|view_df|             Options for visualizing a data.frame or matrix
 |R.nvim-SyncTeX|      Options for SyncTeX
 
 
@@ -833,7 +876,7 @@ has changed, Neovim will send to nvimcom the command `options(width=X)`,
 where X is the new terminal width. You can set the value of `setwidth` to 0 to
 avoid the width being set. Example:
 >lua
-   setwidth = false
+   setwidth = 0
 <
 On Windows, the command is sent to R Console because it would crash R if sent
 through nvimcom.
@@ -866,7 +909,7 @@ value:
 If you do not want to run R in Neovim's built-in terminal emulator, you
 have to install Tmux >= 3.0, and then put in your config:
 >lua
-   external_term = true
+   external_term = "default"
 <
 Then, R will start in an external terminal emulator (useful if you use two
 monitors and want Neovim and R separate from each other), and Tmux will be
@@ -877,14 +920,15 @@ used to send commands from Neovim to R.
 6.3. Terminal emulator (Linux/Unix only)                       *external_term*
                                                                  *silent_term*
 
-Note: The options of this section are ignored on Mac OS X, where the command
+Note: The options of this section are ignored on macOS, where the command
 `open` is called to run the default application used to run shell scripts.
 
 R will run in Neovim's built-in terminal emulator, unless you set the value of
-`external_term`, which can be a boolean value, the name of the terminal
-emulator or the complete command to run the terminal emulator. On Windows,
-only boolean values are valid; if `true` R.nvim will run `Rgui.exe`, and not
-really a terminal emulator.
+`external_term`, which can be `""` (use Neovim's built-in terminal),
+`"default"` (automatically choose a pre-defined terminal), the name of the
+terminal emulator or the complete command to run the terminal emulator. On
+Windows, if the value of `external_term` is `"default"`, R.nvim will run
+`Rgui.exe`, and not really a terminal emulator.
 
 On Linux, a command for running the terminal is predefined for the following
 options:
@@ -898,12 +942,12 @@ options:
     7. xterm
 
 
-If the value of `external_term` is `true`, the plugin runs the first terminal
+If the value of `external_term` is `"default"`, the plugin runs the first terminal
 emulator that it finds from the above list. If your favorite terminal emulator
 is not selected, you may define it in your config. Below are some examples of
 how to set the value of `external_term`:
 >lua
-   external_term = true      -- Run R in an external terminal (or Rgui.exe)
+   external_term = "default" -- Run R in an external terminal (or Rgui.exe)
    external_term = "konsole" -- Run R in konsole
 <
 If `external_term` is just the name of one of the above terminal emulators,
@@ -1020,7 +1064,7 @@ put in your config:
 Similarly, in Rmd and Quarto files, the grave accent (backtick) is replaced
 with chunk delimiters unless you put in your config:
 >lua
-   rmdchunk = 0
+   rmdchunk = ""
 <
 You can also define a different shortcut for `rmdchunk`. For example, to use
 two backticks instead of one to trigger the completion of the chunk delimiter,
@@ -1028,8 +1072,8 @@ put in your config:
 >lua
    rmdchunk = "``"
 <
-If `rmdchunk = 2` (the default), in addition of creating an empty chunk
-block, a single backtick will be converted in inline R delimiters if the
+If `rmdchunk = "both"` (the default), in addition to creating an empty chunk
+block, a single backtick will be converted to inline R delimiters if the
 cursor is not at the beginning of the line.
 
 
@@ -1041,6 +1085,8 @@ cursor is not at the beginning of the line.
                                                               *objbr_openlist*
                                                               *objbr_allnames*
                                                               *compl_data*
+                                                              *objbr_mappings*
+                                                              *objbr_placeholder*
 By default, the Object Browser will be created at the right of the script
 window, and with 40 columns. Valid values for the Object Browser placement are
 the combination of either "script" or "console" and "right", "left", "above",
@@ -1059,7 +1105,7 @@ config, as below:
 >lua
    objbr_w = 30
 <
-If the Object Browser is being created bellow or at the top of the existing
+If the Object Browser is being created below or at the top of the existing
 window, it will be 10 lines high, unless you set its height in your config:
 >lua
    objbr_h = 20
@@ -1119,6 +1165,113 @@ values if you notice any delay when R is running commands. In this case,
 please, put `options(nvimcom.verbose = 1)` in your `~/.Rprofile` and use the
 information output by `nvimcom` to decide what parameter to change.
 
+It is possible to add a custom keymap through `objbr_mappings` table. The
+keymap defined in this table will be availble in the object browser only.
+Using this method, you can set keymaps that run Lua functions or R code. The
+following paragraphs documents how this feature works.
+
+In `objbr_mappings`, you can bind R functions (without parentheses) to keys.
+In the following example, pressing `l` in the object browser will run
+`length({object})` in the current R session, where `{object}` is the object
+under the cursor in the object browser.
+>lua
+      objbr_mappings = {
+        c = 'class',
+        l = 'length',
+        n = 'names',
+        s = 'summary',
+        t = 'table',
+      },
+<
+It is also possible to use R namespacing to call R code not defined in the
+current R session. The following example run `glimpse` function from the R
+package `dplyr` on `object` (i.e., simply sends `dplyr::glimpse({object})`) to
+the current session.
+>lua
+      objbr_mappings = {
+        g = 'dplyr::glimpse',
+      },
+<
+You can also explicitly use `{object}` notation in you bindings. This allows
+you to bind more complicated R expressions.
+>lua
+      objbr_mappings = {
+        -- Similar to the previous.
+        t = 'table({objects})',
+        g = 'dplyr::glimpse({object})',
+        -- using {object}
+        sna = 'sum(is.na({object}))', -- count NAs of a vector.
+      },
+<
+R code can potentially include any sequence of character, and in the edge
+case, the R code you define in `objbr_mappings` may itself include the pattern
+`{object}`. In this case, R.nvim will falsely replace legitimate `{object}`
+patterns in R expressions with the name of the object under cursor. In that
+case (or if `{object}` feels too much to type), you may want to use a
+pattern other than `{object}` to refer to objects under cursor in the object
+browser. Here you should define `objbr_placeholder` in your `config` table.
+>lua
+      objbr_mappings = {
+        t = 'table',
+        g = 'dplyr::glimpse',
+        sna = 'sum(is.na(@@))',
+      },
+      objbr_placeholder = '@@'
+<
+One might need to use special keys (e.g., <localleader>, <CR>, etc) when defining a
+keymap. Lua allows the use *bracket notation* to use non-alphanumeric
+characters in table keys.
+>lua
+      objbr_mappings = {
+        ['<localleader>gg'] = 'head({object}, 30)',
+      },
+<
+You can also bind keys to Lua functions. For example, the following example binds
+`e` to an anonymous function that fetches the definition of an R function
+under the cursor and opens it in a new vim buffer. The code also binds `v` in the
+object browser to toggle between the two view (i.e., `.Globalenv` and `Libraries`).
+>lua
+      objbr_mappings = {
+        ['<localleader>gg'] = 'head',
+        e = function()
+          local browser = require 'r.browser'
+          local config = require('r.config').get_config()
+          local lnum = vim.api.nvim_win_get_cursor(0)[1]
+          local curline = vim.fn.getline(lnum)
+          local object_name = browser.get_name(lnum, curline)
+          if object_name == '' then
+            require('r').warn 'No object selected.'
+            return
+          end
+
+          local temp_file = config.localtmpdir .. '/function_def_' .. vim.env.RNVIM_ID .. '.R'
+
+          -- Send R command to write the function definition to a temp file
+          local cmd = string.format('writeLines(deparse(%s), "%s")', object_name, temp_file)
+          require('r.send').cmd(cmd)
+
+          -- Wait for R to execute the command and write the file
+          vim.defer_fn(function()
+            local output = vim.fn.readfile(temp_file)
+            if not output or #output == 0 then
+              require('r').warn 'Could not retrieve function definition.'
+              return
+            end
+
+            -- Open a new split window and display the function definition
+            vim.cmd 'split'
+            vim.cmd 'enew'
+            vim.bo.filetype = 'r' -- Set filetype to R
+            vim.api.nvim_buf_set_lines(0, 0, -1, false, output)
+
+          end, 100)
+        end,
+        t = 'table',
+        v = function()
+          require('r.browser').toggle_view()
+        end,
+      },
+<
 
 ------------------------------------------------------------------------------
 6.8. Neovim as pager for R                                      *open_example*
@@ -1145,7 +1298,7 @@ The valid values of `nvimpager` are:
 
    "tab"       : Show the help document in a new tab. If there is already a
                  tab with an R help document tab, use it.
-                 This is the default if `external_term` = `true`.
+                 This is the default if `external_term` is not `""`.
    "split_h"   : Split the window horizontally, as `:help` does. That is,
                  display R documentation above the editor window or at the
                  very top of the screen.
@@ -1186,7 +1339,7 @@ If it is necessary to call a different application to run the above commands
 in your system, you should set the value of `R_cmd` in your config.
 
 By default the value of `R_app` is `"R"` on Unix systems (such as Linux and
-Mac OS X). On Windows, it is `Rterm.exe` if R is going to run in a Neovim
+macOS). On Windows, it is `Rterm.exe` if R is going to run in a Neovim
 buffer and `"Rgui.exe"` otherwise. R.nvim cannot send messages to `Rterm.exe`
 in an external `cmd` window. If your R binary has a different name (for
 example, if it is called by a custom script), you should set the value of
@@ -1202,7 +1355,7 @@ example, if it is called by a custom script), you should set the value of
 Set this option in your config if you want to pass command line arguments to
 R at the startup. The value of this variable must be a `string[]`. Example:
 >lua
-   R_args = {"--no-save", "--quiet"}
+   R_args = { "--no-save", "--quiet" }
 <
 On Linux, there is no default value for |R_args|. On Windows, the default
 value is `{"--sdi"}`, but you may change it to `{"--mdi"}` if you do not like
@@ -1338,10 +1491,10 @@ window.
 
 
 ------------------------------------------------------------------------------
-6.16. Integration with R.app (OS X only) and RStudio             *applescript*
+6.16. Integration with R.app (macOS only) and RStudio             *applescript*
                                                                  *RStudio_cmd*
 
-If you are on Mac OS X and want to use the R.app graphical application, put in
+If you are on macOS and want to use the R.app graphical application, put in
 your config:
 >lua
    applescript = true
@@ -1357,7 +1510,7 @@ simple as the number `1`.
 
 
 ------------------------------------------------------------------------------
-6.16. Special R functions                                        *listmethods*
+6.17. Special R functions                                        *listmethods*
                                                                  *specialplot*
 
 The R function `args()` lists the arguments of a function, but not the
@@ -1445,13 +1598,13 @@ If `xelatex` is not installed, it will be replaced with `pdflatex` in the
 above command. If `latexmk` is not installed, R.nvim will call either
 `xelatex` or `pdflatex` directly.
 
-You can set the value `latexcmd` to change this behavior. `latexcmd` is a
-list: its first element is the command to be executed and the remaining
-elements are arguments to be passed to the command. Examples:
+To change this behavior, you can set the value `latexcmd` which is a list
+whose first element is the command to be executed and the remaining elements
+are arguments to be passed to the command. Examples:
 >lua
-   latexcmd = {"pdflatex"}
-   latexcmd = {"xelatex"}
-   latexcmd = {"latexmk", "-pdf", "-pdflatex='xelatex %O -synctex=1 %S'"}
+   latexcmd = { "xelatex" }
+   latexcmd = { "pdflatex", "-interaction=nonstopmode", "-synctex=1" }
+   latexcmd = { "latexmk", "-pdf", '-pdflatex="xelatex %O -synctex=1 %S"' }
 <
 The elements of `latexcmd` may contain double quotes (as in the last example
 above), but not single quotes, because R.nvim will use single quotes to
@@ -1535,7 +1688,7 @@ and to not run in Rgui.
 
 
 ------------------------------------------------------------------------------
-6.24. Open PDF after processing quarto, rnoweb or rmd files        *pdfviewer*
+6.24. Open document generated from quarto, rnoweb or rmd files     *pdfviewer*
                                                                    *open_pdf*
                                                                    *open_html*
 
@@ -1557,7 +1710,7 @@ the X server (not on Wayland), the application `wmctrl` is required to raise
 both the PDF viewer and Neovim windows. This feature is not implemented for
 Wayland windows managers other than Sway.
 
-R.nvim will call Sumatra to open the PDF on Windows, Skim on Mac OS X, and
+R.nvim will call Sumatra to open the PDF on Windows, Skim on macOS, and
 Zathura on Linux, but you can change the values of `synctex` and `pdfviewer`
 in your config if you don't need SyncTeX support. Setting `pdfviewer` to an
 empty string will open the PDF with the OS default application. Examples:
@@ -1576,9 +1729,10 @@ this with the option `open_html` whose values are the same of `open_pdf`:
    "open and focus": Focus the browser window after generating the html.
 
 
-The browser application called by R.nvim is whatever is returned by the R
-command `getOption("browser")`, unless it is NULL. In this case, R.nvim will
-call `open` on both Windows and Mac OS X, and `xdg-open` on Linux.
+The browser application called by R.nvim is whatever string is returned by the
+R command `getOption("browser")`. If the option "browser" is `NULL`, R.nvim
+will call `open` on both Windows and macOS, and `xdg-open` on Linux. If it is
+an R function, R.nvim will send the command `browseURL()` to R.
 
 Note: R.nvim tracks the browser PID to know that it is open and to try to
 focus its window. This means that if either `open` or `xdg-open` was callled
@@ -1683,12 +1837,12 @@ of key bindings labels is shown with the command:
 Below is an example on how to disable the commands that send `setwd()` and
 `dput()` to R Console:
 >lua
-   disable_cmds = {"RSetwd", "RDputObj"}
+   disable_cmds = { "RSetwd", "RDputObj" }
 <
 If you want to disable R.nvim for a specific file type, create the variable
 `R_filetypes` with a list of file types that should be supported. Example:
 >lua
-   vim.g.R_filetypes = {"r", "rmd", "rnoweb", "quarto", "rhelp"}
+   vim.g.R_filetypes = { "r", "rmd", "rnoweb", "quarto", "rhelp" }
 <
 If the variable `R_filetypes` does not exist, all file types from the above
 list will be supported.
@@ -1719,65 +1873,118 @@ See https://github.com/R-nvim/R.nvim/wiki/Remote-access
 
 
 ------------------------------------------------------------------------------
-6.33. View a data.frame or matrix                             *R.nvim-df-view*
-                                                              *csv_app*
-                                                              *csv_delim*
+6.33. View a data.frame or matrix                                    *view_df*
 
 
 You can see data.frames and matrices in external applications with
-<LocalLeader>rv. By default, R.nvim will generate a `tsv` file from the
-`data.frame` or `matrix` and display it in a new tab. But you can change this
-by setting the value of `csv_app` which must be a string.
-
-If `csv_app` begins with "terminal:", R.nvim will open a new tab with the
+<LocalLeader>rv. By default, R.nvim will generate a `tsv` file from the whole
+`data.frame` or `matrix` and paste its contents it in a new tab. But you can
+change this by setting the values of the `view_df` elements in your config.
+The default values are:
+>lua
+   view_df = {
+      open_app = "",  -- How to open the CSV
+      how = "tabnew", -- How to display the data if doing it within Neovim
+      csv_sep = "",   -- Field separator to be used when saving the CSV.
+      n_lines = -1,   -- Number of lines to save in the CSV (0 for all lines).
+      save_fun = "",  -- R function to save the data.frame in a CSV file
+      open_fun = "",  -- R function to open the data.frame directly
+                      -- (no conversion to CSV needed)
+   },
+<
+If `open_app` begins with "terminal:", R.nvim will open a new tab with the
 application running in a terminal emulator. For example, if you want to use
 Visidata to see tabular data, put in your config:
 >lua
-   csv_app = "terminal:vd"
+   open_app = "terminal:vd"
 <
 If you are running Neovim within Tmux, you may prefer:
 >lua
-   csv_app = "tmux new-window vd"
+   open_app = "tmux new-window vd"
 <
-If `csv_app` begins with ":", R.nvim will append the name of the tsv file
+If `open_app` begins with ":", R.nvim will append the name of the tsv file
 and |:execute| the command. Example:
 >lua
-   csv_app = ":vsplit"
+   open_app = ":vsplit"
 <
-You may also include "%s" in `csv_app` to indicate the position of the tsv
+You may also include "%s" in `open_app` to indicate the position of the tsv
 file name in the command to be executed. Example using the `toggleterm.nvim`
 plugin which requires the whole command within quotes:
 >lua
-   csv_app = ":TermExec cmd='vd %s'"
+   open_app = ':TermExec cmd="vd %s"'
 <
 You may also try to see the table in a graphical viewer such as LibreOffice
 Calc:
 >lua
-   csv_app = "localc"
-   csv_app = "c:/Program Files (x86)/LibreOffice 4/program/scalc.exe"
+   open_app = "localc"
+   open_app = "c:/Program Files (x86)/LibreOffice 4/program/scalc.exe"
 <
-`csv_app` was not tested on Windows.
+`open_app` can be a Lua function which will receive a single argument: the name
+of the `tsv` file. Example on how to see the first five lines as a
+notification:
+>lua
+   view_df = {
+     n_lines = 5,
+     open_app = function(file_name)
+       local lines = vim.fn.readfile(file_name)
+       vim.notify(table.concat(lines, "\n"))
+     end
+   }
+<
+The substring `%s` is replaced by the name of the object under the cursor, and
+`()` are added if necessary. In this case, no `csv` file is saved (see also
+|R.nvim-key-bindings|).
 
-Finally, `csv_app` can be a Lua function which will receive a single
-argument: the name of the `tsv` file.
+The data will be displayed in a new tab. Change the value of `how` to "split"
+or "vsplit" to display the data in a split window.
 
-If `csv_app` is not defined, there will be addional maps to open the file in a
-split window, in a vertical split window, or to see only the head of the csv
-in a split window.
-
-If the default field delimiter causes problems in your case, you can change it
+If the default field delimiter (`\t`) causes problems in your case, you can change it
 in your config. Valid values are `"\t"`, `";"` and `","`. Example:
 >lua
-   csv_delim = ","
+   csv_sep = ","
 <
-There is also the option of configuring R.nvim to run an R command to
-display the data. Examples:
->lua
-   df_viewer = "relimp::showData(%s, font = 'Courier 14')"
-<
-The value of `df_viewer` is a string and the substring `%s` is replaced by the
-name of the object under the cursor.
+By default, the `tsv` file is got by capturing the output of `write.table()`.
+This has the advantage of depending only on base R. The data is streamed
+through nvimcom's TCP connection to ensure that it will work if R is running
+remotely. If this is too slow for the size of your data sets, or if you want
+to display more lines of data, you will want to change other `view_df`
+options, such as `save_fun` (see example below).
 
+If the value `n_lines` is `-1`, the maximum number of lines displayed will be:
+>r
+   ceiling(10000 / number_of_columns)
+<
+Set the value of `n_lines` to `0` to display all lines or to any positive
+integer number to set a fixed maximum.
+
+If are not running R remotely and want the CSV file written more quickly, you
+can define the function to save the CSV. In this case, the data will be saved
+in a file instead of streamed. The function must receive the `data.frame` as
+the first argument and the file name as the second argument and should return
+the name of the saved file. Examples:
+
+Use `data.table` to save a TSV file:
+>lua
+   view_df = {
+     n_lines = 0,
+     save_fun = "function(obj, obj_name) {f <- paste0('/tmp/', obj_name, '.tsv'); data.table::fwrite(obj, f, sep = '\t') ; f}",
+   }
+
+Use `arrow` to save a parquet file, and VisiData to open it:
+>lua
+   view_df = {
+     n_lines = 0,
+     save_fun = "function(obj, obj_name) {f <- paste0(obj_name, '.parquet'); arrow::write_parquet(obj, f) ; f}",
+     open_app = "terminal:vd"
+   }
+<
+Finally, instead of either streaming or saving the `data.frame`, there is also
+an option to configure R.nvim to send a command to the R Console to display
+the data. Examples:
+>lua
+   open_fun = "tibble::tibble"
+   open_fun = "relimp::showData(%s, font = 'Courier 14')"
+<
 
 ------------------------------------------------------------------------------
 6.34. SyncTeX support                                         *R.nvim-SyncTeX*
@@ -1788,7 +1995,7 @@ the corresponding line in the PDF viewer and vice-versa. R.nvim has support
 for SyncTeX in three applications:
 
    Linux:   Zathura
-   OS X:    Skim
+   macOS:    Skim
    Windows: SumatraPDF
 
 To completely disable SyncTeX support, put in your config:
@@ -1838,8 +2045,9 @@ configuration:
 >lua
   convert_range_int = true
 
+
 ------------------------------------------------------------------------------
-6.36. Convert extraction operators                  *convert_extract_operator*
+6.37. Convert extraction operators                  *convert_extract_operator*
 
 There are two types of subsetting expressions in R: `$` and `[.` `R.nvim`
 allows to convert the subsetting operators `[` and `$` to `[[`.
@@ -1852,8 +2060,9 @@ allows to convert the subsetting operators `[` and `$` to `[[`.
 The default key binding for this functionally is `<LocalLeader>cs` (change
 subsetting).
 
+
 ------------------------------------------------------------------------------
-6.38. Installing missing R packages in the current buffer    *install_missing*
+6.39. Installing missing R packages in the current buffer    *install_missing*
 
 If the `lintr` package is installed and properly configured
 (https://github.com/R-nvim/R.nvim/wiki/lintr), it will mark any R packages
@@ -1861,8 +2070,9 @@ used in the current buffer that are not installed as missing. These missing
 packages can be automatically installed using the `<LocalLeader>ip` (install
 packages) key binding.
 
+
 ------------------------------------------------------------------------------
-6.38. Split file paths and URLs                                   *split_path
+6.40. Split file paths and URLs                                   *split_path
 
 You can split the path of the current file, directory, or a URL under the
 cursor into its components (e.g., directory, file name, extension) using the
@@ -1878,8 +2088,52 @@ Current available functions are:
 If the target string is detected as a URL, it will be split using the '/' character.
 will be handled using the `paste0()` function.
 
+
+------------------------------------------------------------------------------
+6.41. Tree-sitter parser for Quarto and RMarkdown        *register_treesitter*
+
+R.nvim registers the Markdown parser to both Quarto and RMarkdown documents.
+This will change in the future if dedicated parsers are written for them.
+You can disable this feature in your R.nvim config:
+>lua
+  register_treesitter = false
+
+
+------------------------------------------------------------------------------
+6.42. Set `params` based on the YAML header                       *set_params*
+
+Set `params` based on the YAML header for R Markdown and Quarto documents.
+Defaults to `"yes"`. Valid values:
+
+   `"no"`:          Don't create the object `params` in the `.GlobalEnv`.
+   `"no_override"`: Create the object `params` only if it doesn't exist yet.
+   `"yes"`:         Create and override the object `params` whenever the
+                  corresponding YAML field changes.
+
+
 ==============================================================================
-7. Custom key bindings                                   *R.nvim-key-bindings*
+7. Public Lua API                                             *public-lua-api*
+
+The Lua internals for R.nvim should be considered generally unstable and
+subject to change without notice. There are some exceptions to this rule,
+which are declared stable for the benefit of users:
+
+r.run.action(rcmd, mode, args)                                 *r.run.action()*
+    Calls an R function on the word currently under the cursor
+
+    Parameters: ~
+        {rcmd} (string)     The name of an R function
+        {mode} (string)     The current mode (`"n"` or `"v"`)
+        {args} (string)     Extra arguments to pass to `rcmd`
+
+r.send.cmd(command)                                              *r.send.cmd()*
+    Calls an R function on the word currently under the cursor
+
+    Parameters: ~
+        {command} (string)  Code to send to the current R session
+
+==============================================================================
+8. Custom key bindings                                   *R.nvim-key-bindings*
 
 See |user_maps_only| if you want to inhibit the creation of default mappings.
 See |disable_cmds| if you only want to avoid the creation of some of them.
@@ -1891,7 +2145,8 @@ mapped in the current session, do in Normal mode:
 >vim
    :RMapsDesc
 <
-The prefix "RD" in the labels means "cursor down".
+You may close the window opened by `:RMapsDesc` by simply pressing `q`. The
+prefix "RD" in the labels means "cursor down".
 
 The plugin contains a function called `action` in the Lua module `r.run`
 which allows you to build ad-hoc commands to R. This function takes the name
@@ -1926,7 +2181,15 @@ insinde the function passed to `hook.on_filetype` as in the examples below
 
 
 ==============================================================================
-8. History                                                    *R.nvim-history*
+9. roxygen2 support                                          *R.nvim-roxygen2*
+
+R.nvim has supports to insert roxygen2 skeletons in R scripts. To insert a new
+roxygen2 block, you can use the `Roxygenize` function while the cursor is
+inside a function definition. If a block of roxygen2 is already present, no
+modification will be made.
+
+==============================================================================
+10. History                                                   *R.nvim-history*
 
 See: https://www.vim.org/scripts/script.php?script_id=2628
      https://groups.google.com/g/vim-r-plugin

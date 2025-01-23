@@ -1,10 +1,10 @@
 local config = require("r.config").get_config()
 local utils = require("r.utils")
-local uv = vim.loop
-local warn = require("r").warn
+local uv = vim.uv
+local warn = require("r.log").warn
 
 local term_name = nil
-local term_cmd = nil
+local term_cmd = ""
 local tmuxsname = nil
 
 -- local global_option_value = TmuxOption("some_option", "global")
@@ -16,20 +16,18 @@ local external_term_config = function()
 
     tmuxsname = "Rnvim-" .. tostring(vim.fn.localtime()):gsub(".*(...)", "%1")
 
-    if type(config.external_term) == "string" then
+    if config.external_term ~= "" and config.external_term ~= "default" then
         -- User defined terminal
-        term_name = string.gsub(tostring(config.external_term), " .*", "")
-        if string.find(tostring(config.external_term), " ") then
+        term_name = config.external_term:gsub(" .*", "")
+        if config.external_term:find(" ") then
             -- Complete command defined by the user
             term_cmd = config.external_term
             return
         end
     end
 
-    if config.is_darwin then return end
-
     local etime = uv.hrtime()
-    if type(config.external_term) == "boolean" then
+    if config.external_term == "default" then
         -- Terminal name not defined. Try to find a known one.
         local terminals = {
             "kitty",

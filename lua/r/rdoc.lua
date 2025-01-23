@@ -14,6 +14,7 @@ M.set_buf_options = function()
     vim.api.nvim_set_option_value("iskeyword", "@,48-57,_,.", { scope = "local" })
     vim.api.nvim_set_option_value("signcolumn", "no", { scope = "local" })
     vim.api.nvim_set_option_value("foldcolumn", "0", { scope = "local" })
+    vim.api.nvim_set_option_value("conceallevel", 2, { scope = "local" })
     if vim.bo.filetype ~= "rmd" then
         vim.api.nvim_set_option_value("filetype", "rmd", { scope = "local" })
     end

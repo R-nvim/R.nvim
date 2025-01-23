@@ -1,5 +1,5 @@
 local config = require("r.config").get_config()
-local warn = require("r").warn
+local warn = require("r.log").warn
 local r64app = nil
 
 local M = {}
@@ -18,7 +18,7 @@ M.start_Rapp = function()
         warn(
             'R.app does not support command line arguments. To pass "'
                 .. args_str
-                .. '" to R, you must put "applescript = 0" in your config to run R in a terminal emulator.'
+                .. '" to R, you must put "applescript = false" in your config to run R in a terminal emulator.'
         )
     end
     local rlog = vim.fn.system("open " .. rcmd)

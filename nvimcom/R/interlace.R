@@ -227,7 +227,7 @@ nvim.interlace.rnoweb <- function(rnwf, rnwdir, latexcmd = "latexmk",
     # Compile the .tex file
     if (is.na(tdiff) || tdiff > 0 || !buildpdf) {
         if (knit) {
-            if (!require(knitr))
+            if (!require(knitr, quietly = TRUE))
                 stop("Please, install the 'knitr' package.")
             if (synctex)
                 knitr::opts_knit$set(concordance = TRUE)
@@ -327,7 +327,7 @@ nvim.interlace.rnoweb <- function(rnwf, rnwdir, latexcmd = "latexmk",
 #' @param rmddir Directory where the Rmd file is.
 #' @param ... Further arguments passed to `rmarkdown::render()`.
 nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
-    if (!require(rmarkdown))
+    if (!require(rmarkdown, quietly = TRUE))
         stop("Please, install the 'rmarkdown' package.")
 
     oldwd <- getwd()
@@ -335,7 +335,7 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
     setwd(rmddir)
 
     if (grepl("\\.qmd$", Rmdfile, ignore.case = TRUE)) {
-        if (!require(quarto))
+        if (!require(quarto, quietly = TRUE))
             stop("Please, install the 'quarto' package.")
         if (is.null(outform)) {
             cfg <- quarto::quarto_inspect(Rmdfile)
@@ -354,13 +354,28 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
         if (is.na(mtime2) || (!is.na(mtime1) && mtime2 <= mtime1))
             res <- ""
     } else {
+        if (exists("params", envir = .GlobalEnv)) {
+            old_params <- get("params", envir = .GlobalEnv)
+            rm(params, envir = .GlobalEnv)
+        }
         res <- rmarkdown::render(Rmdfile, outform, ...)
+        if (exists("old_params", inherits = FALSE)) {
+            assign(
+                "params",
+                old_params,
+                envir = .GlobalEnv
+            )
+        }
     }
     brwsr <- ""
-    if (grepl("\\.html$", res)) {
+    if (endsWith(res, ".html")) {
         brwsr <- getOption("browser")
-        if (!is.character(brwsr))
-            brwsr <- ""
+        if (is.function(brwsr)) {
+            brwsr <- "RbrowseURLfun"
+        } else {
+            if (!is.character(brwsr))
+                brwsr <- ""
+        }
     }
     .C("nvimcom_msg_to_nvim",
        paste0("lua require('r.doc').open('", res, "', '", brwsr, "')"),

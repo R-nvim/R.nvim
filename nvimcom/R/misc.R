@@ -62,10 +62,9 @@ nvim_dput <- function(oname, howto = "tabnew") {
 #' @param oname The name of the object (`data.frame` or `matrix`).
 #' @param fenc File encoding to be used.
 #' @param nrows How many lines to show.
-#' @param howto How to display the output in Vim.
-#' @param R_df_viewer R function to be called to show the `data.frame` or
-#' `matrix`.
-nvim_viewobj <- function(oname, fenc = "", nrows = NULL, howto = "tabnew", R_df_viewer = NULL) {
+#' @param R_df_viewer R function to be called to show the `data.frame`.
+#' @param save_fun R function to be called to save the CSV file.
+nvim_viewobj <- function(oname, fenc = "", nrows = -1, R_df_viewer = NULL, save_fun = NULL) {
     if (is.data.frame(oname) || is.matrix(oname)) {
         # Only when the rkeyword includes "::"
         o <- oname
@@ -87,35 +86,44 @@ nvim_viewobj <- function(oname, fenc = "", nrows = NULL, howto = "tabnew", R_df_
         }
         if (inherits(ok, "try-error")) {
             .C("nvimcom_msg_to_nvim",
-               paste0("lua require('r').warn('", '"', oname, '"', " not found in .GlobalEnv')"),
+               paste0("lua require('r.log').warn('", '"', oname, '"', " not found in .GlobalEnv')"),
                PACKAGE = "nvimcom")
             return(invisible(NULL))
         }
     }
     if (is.data.frame(o) || is.matrix(o)) {
-        if (!is.null(nrows)) {
-          o <- utils::head(o, n = nrows)
+        if (nrows < 0)
+            nrows <- ceiling(10000 / ncol(o))
+        if (nrows != 0 && nrows < nrow(o)) {
+          o <- o[1:nrows, ]
         }
         if (!is.null(R_df_viewer)) {
+            cmd <- gsub("'", "\x13", R_df_viewer)
             .C("nvimcom_msg_to_nvim",
-               paste0("lua require('r.send').cmd(require('r.config').get_config().df_viewer .. '(\"", oname, "\"))"),
+               paste0("lua vim.schedule(function() require('r.send').cmd('", cmd, "') end)"),
                PACKAGE = "nvimcom")
             return(invisible(NULL))
         }
-        if (getOption("nvimcom.delim") == "\t") {
-            txt <- capture.output(write.table(o, sep = "\t", row.names = FALSE, quote = FALSE,
-                                              fileEncoding = fenc))
+        if (is.null(save_fun)) {
+            if (getOption("nvimcom.delim") == "\t") {
+                txt <- capture.output(write.table(o, sep = "\t", row.names = FALSE, quote = FALSE,
+                                                  fileEncoding = fenc))
+            } else {
+                txt <- capture.output(write.table(o, sep = getOption("nvimcom.delim"), row.names = FALSE,
+                                                  fileEncoding = fenc))
+            }
+            txt <- paste0(txt, collapse = "\x14")
+            txt <- gsub("'", "\x13", txt)
         } else {
-            txt <- capture.output(write.table(o, sep = getOption("nvimcom.delim"), row.names = FALSE,
-                                              fileEncoding = fenc))
+            txt <- save_fun(o, oname)
+            if (is.null(txt))
+                txt <- oname
         }
-        txt <- paste0(txt, collapse = "\x14")
-        txt <- gsub("'", "\x13", txt)
         .C("nvimcom_msg_to_nvim",
-           paste0("lua require('r.edit').view_df('", oname, "', '", howto, "', '", txt, "')"),
+           paste0("lua require('r.edit').view_df('", oname, "', '", txt, "')"),
            PACKAGE = "nvimcom")
     } else {
-        nvim_dput(oname, howto)
+        nvim_dput(oname)
     }
     return(invisible(NULL))
 }
@@ -168,59 +176,6 @@ source.and.clean <- function(f, print.eval = TRUE, spaced = FALSE, ...) {
     base::source(f, print.eval = print.eval, spaced = spaced, ...)
 }
 
-#' Format R code.
-#' Sent to nvimcom through rnvimserver by R.nvim when the user runs the
-#' `Rformat` command.
-#' @param l1 First line of selection. R.nvim needs the information to know
-#' what lines to replace.
-#' @param l2 Last line of selection. R.nvim needs the information to know
-#' what lines to replace.
-#' @param wco Text width, based on Vim option 'textwidth'.
-#' @param sw Vim option 'shiftwidth'.
-#' @param txt Text to be formatted.
-nvim_format <- function(l1, l2, wco, sw, txt) {
-    if (is.null(getOption("nvimcom.formatfun"))) {
-        if (length(find.package("styler", quiet = TRUE, verbose = FALSE)) > 0) {
-           options(nvimcom.formatfun = "style_text")
-        } else {
-            if (length(find.package("formatR", quiet = TRUE, verbose = FALSE)) > 0) {
-                options(nvimcom.formatfun = "tidy_source")
-            } else {
-                .C("nvimcom_msg_to_nvim",
-                   "lua require('r').warn('You have to install either formatR or styler in order to run :Rformat')",
-                   PACKAGE = "nvimcom")
-                return(invisible(NULL))
-            }
-        }
-    }
-
-    txt <- strsplit(gsub("\x13", "'", txt), "\x14")[[1]]
-    if (getOption("nvimcom.formatfun") == "tidy_source") {
-        ok <- formatR::tidy_source(text = txt, width.cutoff = wco, output = FALSE)
-        if (inherits(ok, "try-error")) {
-            .C("nvimcom_msg_to_nvim",
-               "lua require('r').warn('Error trying to execute the function formatR::tidy_source()')",
-               PACKAGE = "nvimcom")
-            return(invisible(NULL))
-        }
-        txt <- gsub("'", "\x13", paste0(ok$text.tidy, collapse = "\x14"))
-    } else if (getOption("nvimcom.formatfun") == "style_text") {
-        ok <- try(styler::style_text(txt, indent_by = sw))
-        if (inherits(ok, "try-error")) {
-            .C("nvimcom_msg_to_nvim",
-               "lua require('r').warn('Error trying to execute the function styler::style_text()')",
-               PACKAGE = "nvimcom")
-            return(invisible(NULL))
-        }
-        txt <- gsub("'", "\x13", paste0(ok, collapse = "\x14"))
-    }
-
-    .C("nvimcom_msg_to_nvim",
-       paste0("lua require('r.edit').finish_code_formatting(", l1, ", ", l2, ", '", txt, "')"),
-       PACKAGE = "nvimcom")
-    return(invisible(NULL))
-}
-
 #' Returns the output of command to be inserted by R.nvim.
 #' The function is called when the user runs the command `:Rinsert`.
 #' @param cmd Command to be executed.
@@ -229,7 +184,7 @@ nvim_insert <- function(cmd, howto = "tabnew") {
     try(o <- capture.output(cmd))
     if (inherits(o, "try-error")) {
         .C("nvimcom_msg_to_nvim",
-           paste0("lua require('r').warn('Error trying to execute the command \"", cmd, "\"')"),
+           paste0("lua require('r.log').warn('Error trying to execute the command \"", cmd, "\"')"),
            PACKAGE = "nvimcom")
     } else {
         o <- gsub("\\\\", "\\\\\\\\", o)
@@ -508,5 +463,34 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
         msg <- paste0("+C", id, ";", argkey, ";", lib, "::", rkeyword, ";;")
     }
     .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
+    return(invisible(NULL))
+}
+
+update_params <- function(fname) {
+    if (
+        getOption("nvimcom.set_params") == "no" ||
+          (
+            getOption("nvimcom.set_params") == "no_override" &&
+                exists("params", envir = .GlobalEnv)
+          )
+    ) {
+      return(invisible(NULL))
+    }
+    if (fname == "DeleteOldParams") {
+        if (exists("params", envir = .GlobalEnv)) {
+            rm(params, envir = .GlobalEnv)
+        }
+    } else {
+        if (!require(knitr, quietly = TRUE))
+            stop("Please, install the 'knitr' package.")
+        flines <- readLines(fname)
+        params <- knitr::knit_params(flines)
+        assign(
+            "params",
+            lapply(params, \(x) x$value),
+            envir = .GlobalEnv
+        )
+    }
+    .C("nvimcom_task", PACKAGE = "nvimcom")
     return(invisible(NULL))
 }

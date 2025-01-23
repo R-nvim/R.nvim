@@ -3,7 +3,7 @@
 
 local M = {}
 local jobs = {}
-local warn = require("r").warn
+local warn = require("r.log").warn
 
 -- Structure to keep track of incomplete input data.
 local incomplete_input = { size = 0, received = 0, str = "" }
@@ -139,9 +139,14 @@ end
 --- Opens an R terminal with the specified command.
 ---@param cmd string The command to start the R terminal with.
 M.R_term_open = function(cmd)
-    local jobid = vim.fn.termopen(cmd, { on_exit = M.on_exit })
+    local jobid = 0
+    if vim.fn.has("nvim-0.12") == 1 then
+        jobid = vim.fn.jobstart(cmd, { on_exit = M.on_exit, term = true })
+    else
+        jobid = vim.fn.termopen(cmd, { on_exit = M.on_exit })
+    end
     if jobid == 0 then
-        warn("Invalid arguments R in built-in terminal: " .. tostring(cmd))
+        warn("Invalid arguments to run R in built-in terminal: " .. tostring(cmd))
     elseif jobid == -1 then
         warn("Command not executable: " .. tostring(cmd))
     else

@@ -1,8 +1,8 @@
-local inform = require("r").inform
+local inform = require("r.log").inform
 local config = require("r.config").get_config()
 local send = require("r.send")
 local get_lang = require("r.utils").get_lang
-local uv = vim.loop
+local uv = vim.uv
 
 local M = {}
 
@@ -27,7 +27,7 @@ M.write_chunk = function()
             return
         else
             -- inline R code within markdown text
-            if config.rmdchunk == 2 then
+            if config.rmdchunk == "both" then
                 local pos = vim.api.nvim_win_get_cursor(0)
                 local next_char =
                     vim.api.nvim_get_current_line():sub(pos[2] + 1, pos[2] + 1)
@@ -147,6 +147,65 @@ M.next_chunk = function()
     end
 end
 
+local last_params = ""
+
+--- Check if the YAML field params exists and if it is new
+--- @return string
+M.params_status = function()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
+    if lines[1] ~= "---" then
+        if last_params == "" then return "unchanged" end
+        last_params = ""
+        return "deleted"
+    end
+
+    local i = 2
+    while i < #lines do
+        if lines[i] == "params:" then
+            local cp = ""
+            i = i + 1
+            while i < #lines and lines[i]:sub(1, 1) == " " do
+                cp = cp .. lines[i]
+                i = i + 1
+            end
+            if last_params == cp then return "unchanged" end
+            last_params = cp
+            return "new"
+        end
+        if lines[i] == "---" then break end
+        i = i + 1
+    end
+    if last_params ~= "" then
+        last_params = ""
+        return "deleted"
+    end
+    return "unchanged"
+end
+
+--- Get the params variable from the YAML metadata and send it to nvimcom which
+--- will create the params list in the .GlobalEnv.
+M.update_params = function()
+    if not vim.g.R_Nvim_status then return end
+    if vim.g.R_Nvim_status < 7 then return end
+    if config.set_params == "no" then return end
+
+    local p = M.params_status()
+    if p == "new" then
+        require("r.run").send_to_nvimcom(
+            "E",
+            "nvimcom:::update_params('" .. vim.api.nvim_buf_get_name(0) .. "')"
+        )
+    elseif p == "deleted" then
+        require("r.run").send_to_nvimcom(
+            "E",
+            "nvimcom:::update_params('DeleteOldParams')"
+        )
+    end
+end
+
+-- Register params as empty. This function is called when R quits.
+M.clean_params = function() last_params = "" end
+
 --- Setup function for initializing module functionality.
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.
 M.setup = function()
@@ -154,7 +213,7 @@ M.setup = function()
     local cfg = require("r.config").get_config()
 
     -- Configure key mapping for writing chunks based on configuration settings
-    if type(cfg.rmdchunk) == "number" and (cfg.rmdchunk == 1 or cfg.rmdchunk == 2) then
+    if cfg.rmdchunk == "`" or cfg.rmdchunk == "both" then
         vim.api.nvim_buf_set_keymap(
             0,
             "i",
@@ -162,11 +221,11 @@ M.setup = function()
             "<Cmd>lua require('r.rmd').write_chunk()<CR>",
             { silent = true }
         )
-    elseif type(cfg.rmdchunk) == "string" then
+    elseif cfg.rmdchunk ~= "" then
         vim.api.nvim_buf_set_keymap(
             0,
             "i",
-            cfg.rmdchunk,
+            tostring(cfg.rmdchunk),
             "<Cmd>lua require('r.rmd').write_chunk()<CR>",
             { silent = true }
         )
@@ -184,6 +243,7 @@ M.setup = function()
     -- Record setup time for debugging
     rmdtime = (uv.hrtime() - rmdtime) / 1000000000
     require("r.edit").add_to_debug_info("rmd setup", rmdtime, "Time")
+    vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
 end
 
 --- Compiles the current R Markdown document into a specified output format.

@@ -49,7 +49,7 @@ nvim.help <- function(topic, w, firstobj, package) {
 
     warn <- function(msg) {
         .C("nvimcom_msg_to_nvim",
-           paste0("lua require('r').warn('", as.character(msg), "')"),
+           paste0("lua require('r.log').warn('", as.character(msg), "')"),
            PACKAGE = "nvimcom")
     }
 
@@ -84,7 +84,7 @@ nvim.help <- function(topic, w, firstobj, package) {
 
     if (length(h) == 0) {
         msg <- paste0('No documentation for "', topic, '" in loaded packages and libraries.')
-        .C("nvimcom_msg_to_nvim", paste0("lua require('r').warn('", msg, "')"), PACKAGE = "nvimcom")
+        .C("nvimcom_msg_to_nvim", paste0("lua require('r.log').warn('", msg, "')"), PACKAGE = "nvimcom")
         return(invisible(NULL))
     }
     if (length(h) > 1) {
@@ -99,7 +99,7 @@ nvim.help <- function(topic, w, firstobj, package) {
             h <- h[grep(paste0("/", package, "/"), h)]
             if (length(h) == 0) {
                 msg <- paste0("Package '", package, "' has no documentation for '", topic, "'")
-                .C("nvimcom_msg_to_nvim", paste0("lua require('r').warn('", msg, "')"), PACKAGE = "nvimcom")
+                .C("nvimcom_msg_to_nvim", paste0("lua require('r.log').warn('", msg, "')"), PACKAGE = "nvimcom")
                 return(invisible(NULL))
             }
         }
@@ -119,7 +119,7 @@ nvim.example <- function(topic) {
                        package = NULL), silent = TRUE)
     if (inherits(ret, "try-error")) {
         .C("nvimcom_msg_to_nvim",
-           paste0("lua require('r').warn('", as.character(ret), "')"), PACKAGE = "nvimcom")
+           paste0("lua require('r.log').warn('", as.character(ret), "')"), PACKAGE = "nvimcom")
     } else {
         if (is.character(ret)) {
             if (length(ret) > 0) {
@@ -127,12 +127,12 @@ nvim.example <- function(topic) {
                 .C("nvimcom_msg_to_nvim", "lua require('r.edit').open_example()", PACKAGE = "nvimcom")
             } else {
                 .C("nvimcom_msg_to_nvim",
-                   paste0("lua require('r').warn('There is no example for \"", topic, "\"')"),
+                   paste0("lua require('r.log').warn('There is no example for \"", topic, "\"')"),
                    PACKAGE = "nvimcom")
             }
         } else {
             .C("nvimcom_msg_to_nvim",
-               paste0("lua require('r').warn('There is no help for \"", topic, "\".')"),
+               paste0("lua require('r.log').warn('There is no help for \"", topic, "\".')"),
                PACKAGE = "nvimcom")
         }
     }
