@@ -1,19 +1,15 @@
--- TODO: Check if still ok
 -- There are two types of subsetting expressions in R: $ and [.
 -- These functions are used to replace the subsetting expressions in R.
 -- First case, when using the $ operator: df$var -> df[["var"]]
 -- Second case, when using the [ operator: vec[1] -> vec[[1]]
--- It supports multiple subsetting and nested expressions: df$var[1] -> df[["var"]][[1]]
-
 local warn = require("r.log").warn
 local M = {}
 
---- Formats subsetting expressions in the current buffer using Treesitter.
---- Parses the buffer to find and replace specific patterns defined in a Treesitter query.
----@param bufnr number: (optional) The buffer number to operate on; defaults to the current buffer if not provided
-local ts_utils = require("nvim-treesitter.ts_utils")
-
+--- Formats subsetting in R files by replacing extraction operators and subsets.
+-- @param bufnr The buffer number to format. Defaults to the current buffer.
 M.formatsubsetting = function(bufnr)
+    --- Replaces the extraction operator with the appropriate format.
+    -- @param node The tree-sitter node representing the extraction operator.
     local function replace_extract_operator(node)
         local lhs_node = node:field("lhs")[1]
         local rhs_node = node:field("rhs")[1]
@@ -36,6 +32,8 @@ M.formatsubsetting = function(bufnr)
         end
     end
 
+    --- Replaces the subset with the appropriate format.
+    -- @param node The tree-sitter node representing the subset.
     local function replace_subset(node)
         local function_node = node:field("function")[1]
         local arguments_node = node:field("arguments")[1]
@@ -101,5 +99,4 @@ M.formatsubsetting = function(bufnr)
         if parent and parent:type() == "subset" then replace_subset(parent) end
     end
 end
-
 return M
