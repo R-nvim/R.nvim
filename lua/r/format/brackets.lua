@@ -71,15 +71,15 @@ M.formatsubsetting = function(bufnr)
 
     local diagnostics = vim.diagnostic.get(bufnr, { lnum = line, col = col })
 
-    local cursor_at_diagnostic = false
     for _, diagnostic in ipairs(diagnostics) do
         if
             diagnostic.lnum == line
             and diagnostic.col == col
             and diagnostic.code == "extraction_operator_linter"
         then
-            cursor_at_diagnostic = true
             break
+        else
+            warn("Cursor is not at an extraction operator.")
         end
     end
 
