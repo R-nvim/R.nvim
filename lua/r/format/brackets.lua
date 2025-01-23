@@ -19,7 +19,7 @@ M.formatsubsetting = function(bufnr)
             local rhs_text = vim.treesitter.get_node_text(rhs_node, bufnr)
 
             local start_row, start_col, end_row, end_col = node:range()
-            local new_text = lhs_text .. '[["' .. rhs_text .. '"]]'
+            local new_text = string.format('%s[["%s"]]', lhs_text, rhs_text)
 
             vim.api.nvim_buf_set_text(
                 bufnr,
@@ -45,7 +45,7 @@ M.formatsubsetting = function(bufnr)
             local value_text = vim.treesitter.get_node_text(value_node, bufnr)
 
             local start_row, start_col, end_row, end_col = node:range()
-            local new_text = function_text .. "[[" .. value_text .. "]]"
+            local new_text = string.format("%s[[%s]]", function_text, value_text)
 
             vim.api.nvim_buf_set_text(
                 bufnr,
@@ -84,8 +84,7 @@ M.formatsubsetting = function(bufnr)
     end
 
     local parser = vim.treesitter.get_parser(bufnr)
-
-    if not parser then return nil end
+    if not parser then return end
 
     local ts_utils = require("nvim-treesitter.ts_utils")
     local node = ts_utils.get_node_at_cursor()
@@ -97,4 +96,5 @@ M.formatsubsetting = function(bufnr)
         if parent and parent:type() == "subset" then replace_subset(parent) end
     end
 end
+
 return M
