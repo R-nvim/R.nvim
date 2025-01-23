@@ -91,8 +91,6 @@ M.formatsubsetting = function(bufnr)
 
     local tree = parser:parse()[1]
 
-    local root = tree:root()
-
     local node = ts_utils.get_node_at_cursor()
     if node:type() == "extract_operator" then
         replace_extract_operator(node)
