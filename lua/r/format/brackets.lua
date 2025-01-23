@@ -1,3 +1,4 @@
+-- TODO: Check if still ok
 -- There are two types of subsetting expressions in R: $ and [.
 -- These functions are used to replace the subsetting expressions in R.
 -- First case, when using the $ operator: df$var -> df[["var"]]
@@ -7,72 +8,58 @@
 local warn = require("r.log").warn
 local M = {}
 
-local parsers = require("nvim-treesitter.parsers")
-
--- Define the Treesitter query for capturing nodes
-local query = [[
-(extract_operator) @extract_operator
-
-(subset
-    (identifier)*
-    (arguments
-      (argument
-        (_) )) @single_bracket)
-]]
-
---- Build a replacement string for extract_operator nodes.
---- This function formats subsetting expressions using the $ operator.
----@param node TSNode: The Treesitter node to process
----@param bufnr number: The buffer number
----@return table: Replacement information for the node
-local function build_extract_operator_replacement(node, bufnr)
-    local rhs_node = node:field("rhs")[1]
-
-    if not rhs_node then return {} end
-
-    local rhs_text = vim.treesitter.get_node_text(rhs_node, bufnr)
-    local replacement_rhs = string.format('[["%s"]]', rhs_text)
-
-    local start_row_rhs, start_col_rhs, end_row_rhs, end_col_rhs = rhs_node:range()
-
-    return {
-        start_row = start_row_rhs,
-        start_col = start_col_rhs - 1,
-        end_row = end_row_rhs,
-        end_col = end_col_rhs,
-        text = replacement_rhs,
-    }
-end
-
---- Format subset subsetting expressions
----@param node TSNode: The Treesitter node to process
----@param bufnr number: The buffer number
----@return table: Replacement information for the node
-local function build_subset_replacement(node, bufnr)
-    local value_node = node:named_child(0)
-
-    if not value_node then return {} end
-
-    if node:named_child_count() == 1 then
-        local value = vim.treesitter.get_node_text(value_node, bufnr)
-        local replacement = string.format("[[%s]]", value)
-        local start_row, start_col, end_row, end_col = node:range()
-        return {
-            start_row = start_row,
-            start_col = start_col,
-            end_row = end_row,
-            end_col = end_col,
-            text = replacement,
-        }
-    end
-
-    return {}
-end
-
 --- Formats subsetting expressions in the current buffer using Treesitter.
 --- Parses the buffer to find and replace specific patterns defined in a Treesitter query.
 ---@param bufnr number: (optional) The buffer number to operate on; defaults to the current buffer if not provided
+local ts_utils = require("nvim-treesitter.ts_utils")
+
 M.formatsubsetting = function(bufnr)
+    local function replace_extract_operator(node)
+        local lhs_node = node:field("lhs")[1]
+        local rhs_node = node:field("rhs")[1]
+
+        if lhs_node and rhs_node then
+            local lhs_text = ts_utils.get_node_text(lhs_node, bufnr)[1]
+            local rhs_text = ts_utils.get_node_text(rhs_node, bufnr)[1]
+
+            local start_row, start_col, end_row, end_col = node:range()
+            local new_text = lhs_text .. '[["' .. rhs_text .. '"]]'
+
+            vim.api.nvim_buf_set_text(
+                bufnr,
+                start_row,
+                start_col,
+                end_row,
+                end_col,
+                { new_text }
+            )
+        end
+    end
+
+    local function replace_subset(node)
+        local function_node = node:field("function")[1]
+        local arguments_node = node:field("arguments")[1]
+
+        if function_node and arguments_node then
+            local function_text = ts_utils.get_node_text(function_node, bufnr)[1]
+            local argument_node = arguments_node:named_child(0)
+            local value_node = argument_node:field("value")[1]
+            local value_text = ts_utils.get_node_text(value_node, bufnr)[1]
+
+            local start_row, start_col, end_row, end_col = node:range()
+            local new_text = function_text .. "[[" .. value_text .. "]]"
+
+            vim.api.nvim_buf_set_text(
+                bufnr,
+                start_row,
+                start_col,
+                end_row,
+                end_col,
+                { new_text }
+            )
+        end
+    end
+
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
     if vim.bo[bufnr].filetype ~= "r" then
@@ -80,67 +67,38 @@ M.formatsubsetting = function(bufnr)
         return
     end
 
-    local lang = parsers.get_buf_lang(bufnr)
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local line = cursor[1] - 1
+    local col = cursor[2]
 
-    if not lang then return end
+    local diagnostics = vim.diagnostic.get(bufnr, { lnum = line, col = col })
 
-    local parser = parsers.get_parser(bufnr, lang)
+    local cursor_at_diagnostic = false
+    for _, diagnostic in ipairs(diagnostics) do
+        if
+            diagnostic.lnum == line
+            and diagnostic.col == col
+            and diagnostic.code == "extraction_operator_linter"
+        then
+            cursor_at_diagnostic = true
+            break
+        end
+    end
+
+    local parser = vim.treesitter.get_parser(bufnr)
+
+    if not parser then return nil end
+
     local tree = parser:parse()[1]
+
     local root = tree:root()
 
-    -- Parse the query
-    local query_obj = vim.treesitter.query.parse(lang, query)
-
-    local replacements = {}
-
-    -- Process extract_operator nodes
-    for id, node, _ in query_obj:iter_captures(root, bufnr, 0, -1) do
-        if query_obj.captures[id] == "extract_operator" then
-            local replacement = build_extract_operator_replacement(node, bufnr)
-            if next(replacement) then table.insert(replacements, replacement) end
-        end
-    end
-
-    -- Sort replacements to apply the farthest right first
-    table.sort(replacements, function(a, b)
-        if a.start_row == b.start_row then return a.start_col > b.start_col end
-        return a.start_row > b.start_row
-    end)
-
-    -- Apply the replacements for extract_operator
-    for i = 1, #replacements do
-        local r = replacements[i]
-        vim.api.nvim_buf_set_text(
-            bufnr,
-            r.start_row,
-            r.start_col,
-            r.end_row,
-            r.end_col,
-            { r.text }
-        )
-    end
-
-    -- Clear replacements and handle subset nodes
-    replacements = {}
-
-    for id, node, _ in query_obj:iter_captures(root, bufnr, 0, -1) do
-        if query_obj.captures[id] == "single_bracket" then
-            local replacement = build_subset_replacement(node, bufnr)
-            if next(replacement) then table.insert(replacements, replacement) end
-        end
-    end
-
-    -- Apply the replacements for subset
-    for i = #replacements, 1, -1 do
-        local r = replacements[i]
-        vim.api.nvim_buf_set_text(
-            bufnr,
-            r.start_row,
-            r.start_col,
-            r.end_row,
-            r.end_col,
-            { r.text }
-        )
+    local node = ts_utils.get_node_at_cursor()
+    if node:type() == "extract_operator" then
+        replace_extract_operator(node)
+    elseif node:type() == "arguments" then
+        local parent = node:parent()
+        if parent and parent:type() == "subset" then replace_subset(parent) end
     end
 end
 
