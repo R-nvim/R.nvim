@@ -2054,8 +2054,6 @@ allows to convert the subsetting operators `[` and `$` to `[[`.
 
    1. First case, when using the `$` operator: `df$var -> df[["var"]]`.
    2. Second case, when using the `[` operator: `vec[1] -> vec[[1]]`.
-   3. It supports multiple chained subsetting and nested expressions:
-         `df$var[1] -> df[["var"]][[1]]
 
 The default key binding for this functionally is `<LocalLeader>cs` (change
 subsetting).
