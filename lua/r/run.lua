@@ -78,10 +78,9 @@ start_R2 = function()
         and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
         and require("r.rmd").params_status() == "new"
     then
-        table.insert(
-            start_options,
-            'nvimcom:::update_params("' .. vim.api.nvim_buf_get_name(0) .. '")'
-        )
+        local bn = vim.api.nvim_buf_get_name(0)
+        if config.is_windows then bn = bn:gsub("\\", "\\\\") end
+        table.insert( start_options, 'nvimcom:::update_params("' .. bn .. '")')
     end
     if config.objbr_allnames then
         table.insert(start_options, "options(nvimcom.allnames = TRUE)")
