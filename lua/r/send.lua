@@ -6,6 +6,7 @@ local get_lang = require("r.utils").get_lang
 local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
+local get_r_chunks_from_quarto = require("r.quarto").get_r_chunks_from_quarto
 
 --- Check if line is a comment
 ---@param line string
@@ -738,58 +739,114 @@ M.chain = function()
     M.source_lines(chain, nil)
 end
 
-local get_root_node = function(bufnr)
-    local parser = vim.treesitter.get_parser(bufnr, "r", {})
+-- local get_root_node = function(bufnr)
+--     local parser = vim.treesitter.get_parser(bufnr, "r", {})
+--     if not parser then return nil end
+--     local tree = parser:parse()[1]
+--     return tree:root()
+-- end
+
+-- Helper function to get the root node
+local function get_root_node(bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+    local parser = vim.treesitter.get_parser(bufnr)
+
     if not parser then return nil end
+
     local tree = parser:parse()[1]
+
     return tree:root()
 end
 
--- Send all or the current function to R
-M.funs = function(bufnr, capture_all, move_down)
+--- Extracts R functions from the given R content based on the query and cursor position.
+-- @param r_content The R content as a string.
+-- @param capture_all Boolean indicating whether to capture all functions.
+-- @param cursor_pos The current cursor position.
+-- @param chunk_start_row The starting row of the chunk.
+-- @return A table containing the extracted function lines.
+local extract_r_functions = function(r_content, capture_all, cursor_pos, chunk_start_row)
+    local r_parser = vim.treesitter.get_string_parser(r_content, "r")
+    local r_tree = r_parser:parse()[1]
+    local r_root = r_tree:root()
+
     local r_fun_query = vim.treesitter.query.parse(
         "r",
         [[
-    (binary_operator
-      (function_definition)) @rfun
-    ]]
+        (binary_operator
+          (function_definition)) @rfun
+        ]]
     )
 
+    local lines = {}
+
+    for _, node in r_fun_query:iter_captures(r_root, r_content) do
+        local start_row, _, end_row, _ = node:range()
+
+        -- Adjust the cursor position relative to the chunk start
+        local adjusted_cursor_pos = cursor_pos - (chunk_start_row or 0)
+
+        if
+            capture_all
+            or (
+                adjusted_cursor_pos >= start_row + 1
+                and adjusted_cursor_pos <= end_row + 1
+            )
+        then
+            local function_lines = vim.treesitter.get_node_text(node, r_content)
+            vim.list_extend(lines, { function_lines })
+        end
+    end
+
+    return lines
+end
+
+-- TODO: Test with Rmd files
+M.funs = function(bufnr, capture_all, move_down)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
-    if vim.bo[bufnr].filetype ~= "r" and vim.bo[bufnr].filetype ~= "rnoweb" then
-        inform("Not yet supported in '" .. vim.bo[bufnr].filetype .. "' files.")
+    local filetype = vim.bo[bufnr].filetype
+    if filetype ~= "r" and filetype ~= "rnoweb" and filetype ~= "quarto" then
+        vim.notify(
+            "Not yet supported in '" .. filetype .. "' files.",
+            vim.log.levels.WARN
+        )
         return
     end
 
     local root_node = get_root_node(bufnr)
     if not root_node then return end
+
     local cursor_pos = vim.api.nvim_win_get_cursor(0)[1]
 
     local lines = {}
 
-    for id, node in r_fun_query:iter_captures(root_node, bufnr, 0, -1) do
-        local name = r_fun_query.captures[id]
+    if filetype == "quarto" then
+        local r_chunks_content = get_r_chunks_from_quarto(root_node, bufnr)
 
-        if name == "rfun" and node:parent() == root_node then
-            local start_row, _, end_row, _ = node:range()
-
-            if
-                capture_all or (cursor_pos >= start_row + 1 and cursor_pos <= end_row + 1)
-            then
-                lines = vim.fn.extend(
-                    lines,
-                    vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
-                )
-                if move_down == true then
-                    vim.api.nvim_win_set_cursor(bufnr, { end_row + 1, 0 })
-                    cursor.move_next_line()
-                end
-            end
+        for _, r_chunk in ipairs(r_chunks_content) do
+            local chunk_lines = extract_r_functions(
+                r_chunk.content,
+                capture_all,
+                cursor_pos,
+                r_chunk.start_row
+            )
+            vim.list_extend(lines, chunk_lines)
         end
+    else
+        local buffer_content =
+            table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
+        lines = extract_r_functions(buffer_content, capture_all, cursor_pos)
     end
 
-    if #lines then M.source_lines(lines) end
+    if #lines > 0 then
+        M.source_lines(lines)
+        if move_down == true then
+            local last_function = lines[#lines]
+            local function_lines = vim.split(last_function, "\n")
+            local end_row = vim.api.nvim_win_get_cursor(0)[1] + #function_lines
+            vim.api.nvim_win_set_cursor(0, { end_row, 0 })
+            vim.cmd("normal! j")
+        end
+    end
 end
-
 return M
