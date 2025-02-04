@@ -800,16 +800,18 @@ local extract_r_functions = function(r_content, capture_all, cursor_pos, chunk_s
     return lines
 end
 
--- TODO: Test with Rmd files
 M.funs = function(bufnr, capture_all, move_down)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
     local filetype = vim.bo[bufnr].filetype
-    if filetype ~= "r" and filetype ~= "rnoweb" and filetype ~= "quarto" then
-        vim.notify(
-            "Not yet supported in '" .. filetype .. "' files.",
-            vim.log.levels.WARN
-        )
+
+    if
+        filetype ~= "r"
+        and filetype ~= "rnoweb"
+        and filetype ~= "quarto"
+        and filetype ~= "rmd"
+    then
+        inform("Not yet supported in '" .. filetype .. "' files.")
         return
     end
 
@@ -820,7 +822,7 @@ M.funs = function(bufnr, capture_all, move_down)
 
     local lines = {}
 
-    if filetype == "quarto" then
+    if filetype == "quarto" or filetype == "rmd" then
         local r_chunks_content = get_r_chunks_from_quarto(root_node, bufnr)
 
         for _, r_chunk in ipairs(r_chunks_content) do
