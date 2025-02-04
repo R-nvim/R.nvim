@@ -360,11 +360,7 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
         }
         res <- rmarkdown::render(Rmdfile, outform, ...)
         if (exists("old_params", inherits = FALSE)) {
-            assign(
-                "params",
-                old_params,
-                envir = .GlobalEnv
-            )
+            assign("params", old_params, envir = .GlobalEnv)
         }
     }
     brwsr <- ""

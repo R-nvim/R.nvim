@@ -3,27 +3,22 @@ local M = {}
 M.command = function(what)
     local config = require("r.config").get_config()
     local send_cmd = require("r.send").cmd
-    if what == "render" then
-        vim.cmd("update")
-        send_cmd(
-            'quarto::quarto_render("'
-                .. vim.fn.expand("%"):gsub("\\", "/")
-                .. '"'
-                .. config.quarto_render_args
-                .. ")"
-        )
-    elseif what == "preview" then
-        vim.cmd("update")
-        send_cmd(
-            'quarto::quarto_preview("'
-                .. vim.fn.expand("%"):gsub("\\", "/")
-                .. '"'
-                .. config.quarto_preview_args
-                .. ")"
-        )
-    else
+    if what == "stop" then
         send_cmd("quarto::quarto_preview_stop()")
+        return
     end
+
+    vim.cmd("update")
+    local qa = what == "render" and config.quarto_render_args
+        or config.quarto_preview_args
+    local cmd = "quarto::quarto_"
+        .. what
+        .. '("'
+        .. vim.fn.expand("%"):gsub("\\", "/")
+        .. '"'
+        .. qa
+        .. ")"
+    send_cmd(cmd)
 end
 
 -- Helper function to get R content/code block from Quarto document

@@ -862,10 +862,7 @@ local do_common_global = function()
     config.source_write = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
 
     -- Default values of some variables
-    if
-        config.RStudio_cmd ~= ""
-        or (config.is_windows and config.external_term ~= "")
-    then
+    if config.RStudio_cmd ~= "" or (config.is_windows and config.external_term ~= "") then
         -- Sending multiple lines at once to either Rgui on Windows or RStudio does not work.
         config.max_paste_lines = 1
         config.bracketed_paste = false
