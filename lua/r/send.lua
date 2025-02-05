@@ -7,6 +7,7 @@ local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
 local get_r_chunks_from_quarto = require("r.quarto").get_r_chunks_from_quarto
+local get_root_node = require("r.utils").get_root_node
 
 --- Check if line is a comment
 ---@param line string
@@ -737,25 +738,6 @@ M.chain = function()
     chain = sanatize_text(chain)
 
     M.source_lines(chain, nil)
-end
-
--- local get_root_node = function(bufnr)
---     local parser = vim.treesitter.get_parser(bufnr, "r", {})
---     if not parser then return nil end
---     local tree = parser:parse()[1]
---     return tree:root()
--- end
-
--- Helper function to get the root node
-local function get_root_node(bufnr)
-    bufnr = bufnr or vim.api.nvim_get_current_buf()
-    local parser = vim.treesitter.get_parser(bufnr)
-
-    if not parser then return nil end
-
-    local tree = parser:parse()[1]
-
-    return tree:root()
 end
 
 --- Extracts R functions from the given R content based on the query and cursor position.

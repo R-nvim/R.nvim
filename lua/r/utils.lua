@@ -501,4 +501,18 @@ function M.msg_join(x, sep, last, quote)
     return msg
 end
 
+--- Get the root node of the syntax tree for the given buffer.
+-- @param bufnr The buffer number (optional).
+-- @return The root node of the syntax tree, or nil if no parser is found.
+M.get_root_node = function(bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+    local parser = vim.treesitter.get_parser(bufnr)
+
+    if not parser then return nil end
+
+    local tree = parser:parse()[1]
+
+    return tree:root()
+end
+
 return M
