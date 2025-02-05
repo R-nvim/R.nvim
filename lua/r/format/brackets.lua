@@ -60,8 +60,9 @@ M.formatsubsetting = function(bufnr)
 
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
-    if vim.bo[bufnr].filetype ~= "r" then
-        warn("This function is only available for R files.")
+    local filetype = vim.bo[bufnr].filetype
+    if filetype ~= "r" and filetype ~= "quarto" and filetype ~= "rmd" then
+        warn("This function is not available for " .. filetype .. " files.")
         return
     end
 
