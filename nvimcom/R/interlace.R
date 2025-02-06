@@ -347,7 +347,7 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
                 fmt <- outform
             }
         }
-        res <- sub("qmd$", fmt, Rmdfile)
+        res <- normalizePath(sub("qmd$", fmt, Rmdfile), mustWork = FALSE)
         mtime1 <- file.info(res)$mtime
         quarto::quarto_render(Rmdfile, outform)
         mtime2 <- file.info(res)$mtime
