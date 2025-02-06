@@ -1744,7 +1744,7 @@ will consider that the browser was closed and will to open it again.
 For Quarto documents, the available key bindings are <LocalLeader>qr (render
 document), <LocalLeader>qp (preview document), and <LocalLeader>qs (stop
 previewing). The command <LocalLeader>kr achieves basically the same result of
-<LocalLeader>kr. The difference is that the generated document is open after
+<LocalLeader>qr. The difference is that the generated document is open after
 <LocalLeader>kr, and <LocalLeader>qr allows Quarto specific
 options (see |quarto_render_args|).
 

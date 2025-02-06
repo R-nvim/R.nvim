@@ -193,7 +193,7 @@ M.update_params = function()
     if p == "new" then
         local bn = vim.api.nvim_buf_get_name(0)
         if config.is_windows then bn = bn:gsub("\\", "\\\\") end
-        require("r.run").send_to_nvimcom( "E", "nvimcom:::update_params('" .. bn .. "')")
+        require("r.run").send_to_nvimcom("E", "nvimcom:::update_params('" .. bn .. "')")
     elseif p == "deleted" then
         require("r.run").send_to_nvimcom(
             "E",

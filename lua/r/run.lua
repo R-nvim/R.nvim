@@ -49,39 +49,15 @@ start_R2 = function()
         rdp = "datasets,utils,grDevices,graphics,stats,methods,nvimcom"
     end
     vim.env.R_DEFAULT_PACKAGES = rdp
-    local start_options = {
-        'Sys.setenv("R_DEFAULT_PACKAGES" = "' .. rdp .. '")',
-    }
 
-    table.insert(
-        start_options,
-        'Sys.setenv(RNVIM_RSLV_CB = "' .. vim.env.RNVIM_RSLV_CB .. '")'
-    )
-    table.insert(
-        start_options,
-        "options(nvimcom.max_depth = " .. tostring(config.compl_data.max_depth) .. ")"
-    )
-    table.insert(
-        start_options,
-        "options(nvimcom.max_size = " .. tostring(config.compl_data.max_size) .. ")"
-    )
-    table.insert(
-        start_options,
-        "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")"
-    )
-    table.insert(
-        start_options,
-        'options(nvimcom.set_params = "' .. config.set_params .. '")'
-    )
-    if
-        config.set_params ~= "no"
-        and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
-        and require("r.rmd").params_status() == "new"
-    then
-        local bn = vim.api.nvim_buf_get_name(0)
-        if config.is_windows then bn = bn:gsub("\\", "\\\\") end
-        table.insert( start_options, 'nvimcom:::update_params("' .. bn .. '")')
-    end
+    local start_options = {
+        'Sys.setenv(R_DEFAULT_PACKAGES = "' .. rdp:gsub(",nvimcom", "") .. '")',
+        'Sys.setenv(RNVIM_RSLV_CB = "' .. vim.env.RNVIM_RSLV_CB .. '")',
+        "options(nvimcom.max_depth = " .. tostring(config.compl_data.max_depth) .. ")",
+        "options(nvimcom.max_size = " .. tostring(config.compl_data.max_size) .. ")",
+        "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")",
+        'options(nvimcom.set_params = "' .. config.set_params .. '")',
+    }
     if config.objbr_allnames then
         table.insert(start_options, "options(nvimcom.allnames = TRUE)")
     else
@@ -120,11 +96,19 @@ start_R2 = function()
     end
     local sep = config.view_df.csv_sep or "\t"
     table.insert(start_options, 'options(nvimcom.delim = "' .. sep .. '")')
-
     table.insert(
         start_options,
         'options(nvimcom.source.path = "' .. config.source_read .. '")'
     )
+    if
+        config.set_params ~= "no"
+        and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
+        and require("r.rmd").params_status() == "new"
+    then
+        local bn = vim.api.nvim_buf_get_name(0)
+        if config.is_windows then bn = bn:gsub("\\", "\\\\") end
+        table.insert(start_options, 'nvimcom:::update_params("' .. bn .. '")')
+    end
 
     local rsd = M.get_R_start_dir()
     if rsd then
@@ -153,13 +137,17 @@ start_R2 = function()
     end
 
     if config.applescript then
-        warn("Support for running R.app may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/309")
+        warn(
+            "Support for running R.app may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/309"
+        )
         require("r.osx").start_Rapp()
         return
     end
 
     if config.is_windows then
-        warn("Support for running Rgui.exe may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/308")
+        warn(
+            "Support for running Rgui.exe may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/308"
+        )
         require("r.windows").start_Rgui()
         return
     end
