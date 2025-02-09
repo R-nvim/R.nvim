@@ -15,9 +15,8 @@ nvim.edit <- function(name, file, title) {
     dput(name)
     sink()
 
-    .C("nvimcom_msg_to_nvim",
-       paste0("lua require('r.edit').obj('", editf, "')"),
-       PACKAGE = "nvimcom")
+    .C(nvimcom_msg_to_nvim,
+       paste0("lua require('r.edit').obj('", editf, "')"))
 
     while (file.exists(waitf))
         Sys.sleep(1)
@@ -40,8 +39,7 @@ nvim_capture_source_output <- function(s, nm) {
     o <- capture.output(base::source(s, echo = TRUE), file = NULL)
     o <- paste0(o, collapse = "\x14")
     o <- gsub("'", "\x13", o)
-    .C("nvimcom_msg_to_nvim", paste0("lua require('r.edit').get_output('", nm, "', '", o, "')"),
-       PACKAGE = "nvimcom")
+    .C(nvimcom_msg_to_nvim, paste0("lua require('r.edit').get_output('", nm, "', '", o, "')"))
 }
 
 #' Function called by R.nvim when the user wants to run the command `dput()`
@@ -52,9 +50,8 @@ nvim_dput <- function(oname, howto = "tabnew") {
     o <- capture.output(eval(parse(text = paste0("dput(", oname, ")"))))
     o <- paste0(o, collapse = "\x14")
     o <- gsub("'", "\x13", o)
-    .C("nvimcom_msg_to_nvim",
-       paste0("lua require('r.run').show_obj('", howto, "', '", oname, "', 'r', '", o, "')"),
-       PACKAGE = "nvimcom")
+    .C(nvimcom_msg_to_nvim,
+       paste0("lua require('r.run').show_obj('", howto, "', '", oname, "', 'r', '", o, "')"))
 }
 
 #' Function called by R.nvim when the user wants to see a `data.frame` or
@@ -85,9 +82,8 @@ nvim_viewobj <- function(oname, fenc = "", nrows = -1, R_df_viewer = NULL, save_
             }
         }
         if (inherits(ok, "try-error")) {
-            .C("nvimcom_msg_to_nvim",
-               paste0("lua require('r.log').warn('", '"', oname, '"', " not found in .GlobalEnv')"),
-               PACKAGE = "nvimcom")
+            .C(nvimcom_msg_to_nvim,
+               paste0("lua require('r.log').warn('", '"', oname, '"', " not found in .GlobalEnv')"))
             return(invisible(NULL))
         }
     }
@@ -99,9 +95,8 @@ nvim_viewobj <- function(oname, fenc = "", nrows = -1, R_df_viewer = NULL, save_
         }
         if (!is.null(R_df_viewer)) {
             cmd <- gsub("'", "\x13", R_df_viewer)
-            .C("nvimcom_msg_to_nvim",
-               paste0("lua vim.schedule(function() require('r.send').cmd('", cmd, "') end)"),
-               PACKAGE = "nvimcom")
+            .C(nvimcom_msg_to_nvim,
+               paste0("lua vim.schedule(function() require('r.send').cmd('", cmd, "') end)"))
             return(invisible(NULL))
         }
         if (is.null(save_fun)) {
@@ -119,9 +114,8 @@ nvim_viewobj <- function(oname, fenc = "", nrows = -1, R_df_viewer = NULL, save_
             if (is.null(txt))
                 txt <- oname
         }
-        .C("nvimcom_msg_to_nvim",
-           paste0("lua require('r.edit').view_df('", oname, "', '", txt, "')"),
-           PACKAGE = "nvimcom")
+        .C(nvimcom_msg_to_nvim,
+           paste0("lua require('r.edit').view_df('", oname, "', '", txt, "')"))
     } else {
         nvim_dput(oname)
     }
@@ -183,27 +177,25 @@ source.and.clean <- function(f, print.eval = TRUE, spaced = FALSE, ...) {
 nvim_insert <- function(cmd, howto = "tabnew") {
     try(o <- capture.output(cmd))
     if (inherits(o, "try-error")) {
-        .C("nvimcom_msg_to_nvim",
-           paste0("lua require('r.log').warn('Error trying to execute the command \"", cmd, "\"')"),
-           PACKAGE = "nvimcom")
+        .C(nvimcom_msg_to_nvim,
+           paste0("lua require('r.log').warn('Error trying to execute the command \"", cmd, "\"')"))
     } else {
         o <- gsub("\\\\", "\\\\\\\\", o)
         o <- gsub("'", "\\\\'", o)
         o <- paste0(o, collapse = "\x14")
-        .C("nvimcom_msg_to_nvim",
-           paste0("lua require('r.edit').finish_inserting('", howto, "', '", o, "')"),
-           PACKAGE = "nvimcom")
+        .C(nvimcom_msg_to_nvim,
+           paste0("lua require('r.edit').finish_inserting('", howto, "', '", o, "')"))
     }
     return(invisible(NULL))
 }
 
 format_text <- function(txt, delim, nl) {
-    txt <- .Call("fmt_txt", txt, delim, nl, PACKAGE = "nvimcom")
+    txt <- .Call(fmt_txt, txt, delim, nl)
     txt
 }
 
 format_usage <- function(fnm, args) {
-    txt <- .Call("fmt_usage", fnm, args, PACKAGE = "nvimcom")
+    txt <- .Call(fmt_usage, fnm, args)
     txt
 }
 
@@ -218,9 +210,8 @@ nvim.GlobalEnv.fun.args <- function(funcname) {
     # txt <- gsub("\\\\", "\\\\\\\\", txt)
     txt <- format_usage(funcname, txt)
     txt <- paste0("function [.GlobalEnv]", txt)
-    .C("nvimcom_msg_to_nvim",
-       paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')"),
-       PACKAGE = "nvimcom")
+    .C(nvimcom_msg_to_nvim,
+       paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')"))
     return(invisible(NULL))
 }
 
@@ -231,7 +222,7 @@ nvim.min.info <- function(obj, prnt) {
     isnull <- try(is.null(obj), silent = TRUE)
     if (class(isnull)[1] != "logical")
         return(invisible(NULL))
-    if (isnull == TRUE)
+    if (isnull[1])
         return(invisible(NULL))
 
     txt <- paste0(class(obj)[1], " [", prnt, "]")
@@ -247,9 +238,8 @@ nvim.min.info <- function(obj, prnt) {
     txt <- gsub("'", "\x13", txt)
     txt <- paste0(txt, collapse = "\x14")
 
-    .C("nvimcom_msg_to_nvim",
-       paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')"),
-       PACKAGE = "nvimcom")
+    .C(nvimcom_msg_to_nvim,
+       paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')"))
     return(invisible(NULL))
 }
 
@@ -260,13 +250,13 @@ nvim.get.summary <- function(obj, prnt) {
     isnull <- try(is.null(obj), silent = TRUE)
     if (class(isnull)[1] != "logical")
         return(invisible(NULL))
-    if (isnull == TRUE)
+    if (isnull[1])
         return(invisible(NULL))
 
     owd <- getOption("width")
     width <- as.integer(Sys.getenv("CMPR_DOC_WIDTH"))
     if (is.na(width)) {
-        width = 58
+        width <- 58
     }
     options(width = width)
     txt <- paste0(class(obj)[1], " [", prnt, "]")
@@ -290,9 +280,8 @@ nvim.get.summary <- function(obj, prnt) {
     txt <- gsub("'", "\x13", txt)
     txt <- paste0(txt, collapse = "\x14")
 
-    .C("nvimcom_msg_to_nvim",
-       paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')"),
-       PACKAGE = "nvimcom")
+    .C(nvimcom_msg_to_nvim,
+       paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')"))
     return(invisible(NULL))
 }
 
@@ -324,7 +313,7 @@ nvim.list.args <- function(ff) {
 #' @param x The object under cursor.
 nvim.plot <- function(x) {
     xname <- deparse(substitute(x))
-    if (length(grep("numeric", class(x))) > 0 || length(grep("integer", class(x))) > 0) {
+    if (inherits(x, "numeric") || inherits(x, "integer")) {
         oldpar <- par(no.readonly = TRUE)
         par(mfrow = c(2, 1))
         hist(x, col = "lightgray", main = paste("Histogram of", xname), xlab = xname)
@@ -381,7 +370,7 @@ nvim.getmethod <- function(fname, objclass) {
         for (obc in objclass) {
             fnm <- paste0(fname, ".", obc)
             idx <- grep(paste0("^", fnm, "$"), mtd)
-            if(length(idx) == 1) {
+            if (length(idx) == 1) {
                 fun <- NULL
                 try(fun <- getS3method(fname, obc))
                 if (is.function(fun)) {
@@ -394,7 +383,7 @@ nvim.getmethod <- function(fname, objclass) {
                                              return(" = ")
                                          })
                     env <- paste0("#\x02", fnm)
-                    clpstr <- paste0( "', cls = 'a', env = '", env, "'}, {label = '")
+                    clpstr <- paste0("', cls = 'a', env = '", env, "'}, {label = '")
                     luastr <- paste0(names(luatbl), unname(luatbl),
                                      collapse = clpstr)
                     luastr <- paste0("{label = '", luastr, "', cls = 'a', env = '", env, "'}")
@@ -418,7 +407,7 @@ nvim.getmethod <- function(fname, objclass) {
 nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, ldf = FALSE) {
 
     # Check if rkeyword is a .GlobalEnv function:
-    if(length(grep(paste0("^", rkeyword, "$"), objects(.GlobalEnv))) == 1) {
+    if (length(grep(paste0("^", rkeyword, "$"), objects(.GlobalEnv))) == 1) {
         args <- nvim.args(rkeyword, txt = argkey)
         args <- gsub("\005$", "", args)
         argsl <- strsplit(args, "\005")[[1]]
@@ -428,7 +417,7 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
                              collapse = "', cls = 'a', env = '.GlobalEnv'}, {label = '"),
                        "', cls = 'a', env = '.GlobalEnv'}")
         msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";;", args)
-        .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
+        .C(nvimcom_msg_to_nvim, msg)
         return(invisible(NULL))
     }
 
@@ -440,7 +429,7 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
             } else {
                 msg <- paste0("+C", id, ";", argkey, ";", lib, "::", rkeyword, ";", firstobj, ";")
             }
-            .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
+            .C(nvimcom_msg_to_nvim, msg)
             return(invisible(NULL))
         }
 
@@ -450,7 +439,7 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
             mthd <- nvim.getmethod(rkeyword, objclass)
             if (mthd != rkeyword) {
                 msg <- paste0("+C", id, ";", argkey, ";;;", mthd, ", ")
-                .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
+                .C(nvimcom_msg_to_nvim, msg)
                 return(invisible(NULL))
             }
         }
@@ -462,7 +451,7 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
     } else {
         msg <- paste0("+C", id, ";", argkey, ";", lib, "::", rkeyword, ";;")
     }
-    .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
+    .C(nvimcom_msg_to_nvim, msg)
     return(invisible(NULL))
 }
 
@@ -491,6 +480,6 @@ update_params <- function(fname) {
             envir = .GlobalEnv
         )
     }
-    .C("nvimcom_task", PACKAGE = "nvimcom")
+    .C(nvimcom_task)
     return(invisible(NULL))
 }

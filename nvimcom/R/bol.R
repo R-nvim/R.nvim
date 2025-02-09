@@ -18,13 +18,13 @@ nvim.fix.string <- function(x, edq = FALSE) {
 #' @param txt Begin of parameter name.
 #' @param pkg Library name. If not NULL, restrict the search to `pkg`.
 #' @param objclass Class of first argument of the function.
-nvim.args <- function(funcname, txt = "", pkg = NULL, objclass) {
+nvim.args <- function(funcname, txt = "", pkg = NULL, objclass = NULL) {
     # Adapted from: https://stat.ethz.ch/pipermail/ess-help/2011-March/006791.html
     if (!exists(funcname))
         return("")
     frm <- NA
     funcmeth <- NA
-    if (!missing(objclass) && nvim.grepl("[[:punct:]]", funcname) == FALSE) {
+    if (!is.null(objclass) && !nvim.grepl("[[:punct:]]", funcname)) {
         saved.warn <- getOption("warn")
         options(warn = -1)
         on.exit(options(warn = saved.warn))
@@ -78,8 +78,9 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass) {
                     if (is.null(a))
                         return("")
                     frm <- formals(a)
-                } else
+                } else {
                     frm <- formals(ff)
+                }
             } else {
                 if (!isNamespaceLoaded(pkg))
                     loadNamespace(pkg)
@@ -110,7 +111,7 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass) {
             res <- append(res, paste0(field, "\x04list()\x05"))
         } else {
             res <- append(res, paste0(field, "\x05"))
-            warning(paste0("nvim.args: ", funcname, " [", field, "]", " (typeof = ", type, ")"))
+            warning("nvim.args: ", funcname, " [", field, "]", " (typeof = ", type, ")")
         }
     }
 
@@ -279,9 +280,8 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
                 info <- nvim.getInfo(printenv, x)
                 if (info == "\006\006") {
                     xattr <- try(attr(xx, "label"), silent = TRUE)
-                    if (!inherits(xattr, "try-error"))
-                        if (!is.null(xattr) && length(xattr) == 1)
-                            info <- paste0("\006\006", nvim.fix.string(.Call("rd2md", xattr, PACKAGE = "nvimcom")))
+                    if (!inherits(xattr, "try-error") && !is.null(xattr) && length(xattr) == 1)
+                        info <- paste0("\006\006", nvim.fix.string(.Call(rd2md, xattr)))
                 }
                 cat(n, "\006", x.group, "\006", x.class, "\006", printenv,
                     "\006[]", info, "\006\n", sep = "")
@@ -295,7 +295,7 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
         xxl <- length(xx)
         if (!is.null(xxl) && xxl > 0) {
             for (k in obj.names) {
-                nvim.cmpl.line(paste(x, "$", k, sep = ""), envir, printenv, curlevel, maxlevel)
+                nvim.cmpl.line(paste0(x, "$", k), envir, printenv, curlevel, maxlevel)
             }
         }
     } else if (isS4(xx) && curlevel <= maxlevel) {
@@ -304,7 +304,7 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
         xxl <- length(xx)
         if (!is.null(xxl) && xxl > 0) {
             for (k in obj.names) {
-                nvim.cmpl.line(paste(x, "@", k, sep = ""), envir, printenv, curlevel, maxlevel)
+                nvim.cmpl.line(paste0(x, "@", k), envir, printenv, curlevel, maxlevel)
             }
         }
     }
@@ -338,8 +338,8 @@ GetFunDescription <- function(pkg) {
         tags <- tools:::RdTags(x)
         x[which(!(tags %in% c(c("\\title", "\\name", "\\description"))))] <-  NULL
         x <- paste0(x, collapse = "")
-        ttl <- .Call("get_section", x, "title", PACKAGE = "nvimcom")
-        dsc <- .Call("get_section", x, "description", PACKAGE = "nvimcom")
+        ttl <- .Call(get_section, x, "title")
+        dsc <- .Call(get_section, x, "description")
         ttl <- nvim.fix.string(ttl)
         dsc <- nvim.fix.string(dsc)
         x <- paste0("\006", ttl, "\006", dsc)
@@ -351,7 +351,7 @@ GetFunDescription <- function(pkg) {
 
 #' @param x
 filter.objlist <- function(x) {
-    x[!grepl("^[\\[\\(\\{:-@%/=+\\$<>\\|~\\*&!\\^\\-]", x) & !grepl("^\\.__", x)]
+    x[!grepl("^[\\[\\(\\{:-@%/=+\\$<>\\|~\\*&!\\^\\-]", x) & !startsWith(x, ".__")]
 }
 
 get_arg_doc_list <- function(fun, pkg) {
@@ -368,7 +368,7 @@ get_arg_doc_list <- function(fun, pkg) {
     args <- apply(atbl, 1,
                   function(x)
                       paste0(x[1], "\x05`", gsub(", ", "`, `", x[1]), "`: ",
-                             .Call("rd2md", x[2], PACKAGE = "nvimcom"), "\x06"))
+                             .Call(rd2md, x[2]), "\x06"))
     line <- nvim.fix.string(paste0(fun, "\x06", paste0(args, collapse = "")))
     cat(line, sep = "", "\n")
 }

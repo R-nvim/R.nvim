@@ -4,7 +4,8 @@
 nvim.print <- function(object, firstobj) {
     # detect if object is a function with namespace prefix
     exp <- parse(text = object, keep.source = FALSE)[[1L]]
-    if (has_ns <- is.call(exp) && deparse(exp[[1L]], nlines = 1L) %in% c("::", ":::")) {
+    has_ns <- is.call(exp)
+    if (has_ns && deparse(exp[[1L]], nlines = 1L) %in% c("::", ":::")) {
         ns <- asNamespace(exp[[2L]])
         object <- deparse(exp[[3L]])
     } else {
@@ -34,7 +35,7 @@ nvim.print <- function(object, firstobj) {
                 for (cls in objclass) {
                     if (exists(paste0(object, ".", cls), ns)) {
                         .newobj <- get(paste0(object, ".", cls), ns)
-                        message(paste0("Note: Printing ", object, ".", cls))
+                        message("Note: Printing ", object, ".", cls)
                         break
                     }
                 }

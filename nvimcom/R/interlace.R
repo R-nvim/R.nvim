@@ -308,9 +308,8 @@ nvim.interlace.rnoweb <- function(rnwf, rnwdir, latexcmd = "latexmk",
         if (pdff != "") {
             if (!grepl("^/", pdff))
                 pdff <- paste0(getwd(), "/", pdff)
-            .C("nvimcom_msg_to_nvim",
-               paste0("lua require('r.doc').open('", pdff, "', '')"),
-               PACKAGE = "nvimcom")
+            .C(nvimcom_msg_to_nvim,
+               paste0("lua require('r.doc').open('", pdff, "', '')"))
         }
     }
 
@@ -373,8 +372,7 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
                 brwsr <- ""
         }
     }
-    .C("nvimcom_msg_to_nvim",
-       paste0("lua require('r.doc').open('", res, "', '", brwsr, "')"),
-       PACKAGE = "nvimcom")
+    .C(nvimcom_msg_to_nvim,
+       paste0("lua require('r.doc').open('", res, "', '", brwsr, "')"))
     return(invisible(NULL))
 }
