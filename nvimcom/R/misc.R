@@ -364,7 +364,7 @@ nvim.getclass <- function(x) {
 }
 
 nvim.getmethod <- function(fname, objclass) {
-    if (exists(fname) && is.function(get(fname)) &&
+    if (exists(fname, where = 1) && is.function(get(fname, pos = 1)) &&
         (isGeneric(fname) || isS3stdGeneric(fname))) {
         mtd <- rownames(attr(methods(fname), "info"))
         for (obc in objclass) {
@@ -421,7 +421,7 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
         return(invisible(NULL))
     }
 
-    if (firstobj != "" && exists(firstobj)) {
+    if (firstobj != "" && exists(firstobj, where = 1)) {
         # Completion of columns of data.frame
         if (ldf && is.data.frame(get(firstobj))) {
             if (is.null(lib)) {

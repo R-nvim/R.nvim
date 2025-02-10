@@ -20,7 +20,7 @@ nvim.fix.string <- function(x, edq = FALSE) {
 #' @param objclass Class of first argument of the function.
 nvim.args <- function(funcname, txt = "", pkg = NULL, objclass = NULL) {
     # Adapted from: https://stat.ethz.ch/pipermail/ess-help/2011-March/006791.html
-    if (!exists(funcname))
+    if (!exists(funcname, where = 1))
         return("")
     frm <- NA
     funcmeth <- NA
