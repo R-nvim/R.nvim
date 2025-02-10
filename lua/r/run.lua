@@ -386,7 +386,7 @@ end
 
 ---Request R to format code
 ---@param tbl table Table sent by Neovim's mapping function
-M.formart_code = function(tbl)
+M.format_code = function(tbl)
     if vim.g.R_Nvim_status < 7 then return end
 
     local wco = vim.o.textwidth
