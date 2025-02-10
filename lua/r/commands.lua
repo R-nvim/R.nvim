@@ -59,7 +59,7 @@ function M.create_user_commands()
 
     vim.api.nvim_create_user_command(
         "RFormat",
-        require("r.run").formart_code,
+        require("r.run").format_code,
         { range = "%" }
     )
 
