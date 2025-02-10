@@ -727,7 +727,7 @@ static void nvimcom_globalenv_list(void) {
         if (verbose)
             REprintf(
                 "nvimcom:\n"
-                "    Time to buiild list of objects: %g ms (max_time = %g ms)\n"
+                "    Time to build list of objects: %g ms (max_time = %g ms)\n"
                 "    List size: %zu bytes (max_size = %d bytes)\n"
                 "    New max_depth: %d\n",
                 tmdiff, timelimit, strlen(glbnvbuf1), sizelimit, maxdepth);

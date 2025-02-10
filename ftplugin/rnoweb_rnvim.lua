@@ -10,18 +10,16 @@ require("r.config").real_setup()
 
 local config = require("r.config").get_config()
 
-if config.rnowebchunk then
+if config.rnw_chunk_keymap ~= "" then
     -- Write code chunk in rnoweb files
     vim.api.nvim_buf_set_keymap(
         0,
         "i",
-        "<",
+        config.rnw_chunk_keymap,
         "<Cmd>:lua require('r.rnw').write_chunk()<CR>",
         { silent = true }
     )
 end
-
-vim.api.nvim_buf_set_var(0, "rplugin_knitr_pattern", "^<<.*>>=$")
 
 -- Key bindings
 require("r.maps").create("rnoweb")

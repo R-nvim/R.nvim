@@ -7,50 +7,36 @@ local uv = vim.uv
 local M = {}
 
 --- Writes a new R code chunk at the current cursor position
--- This function checks if the cursor is in an empty line and not in an R code chunk
--- it then inserts a new R code chunk template.
--- Different templates are used based on the file type (e.g., Quarto).
 M.write_chunk = function()
+    local curpos = vim.api.nvim_win_get_cursor(0)
+    local curline = vim.api.nvim_get_current_line()
     local lang = get_lang()
-    if lang == "markdown" then
-        if vim.api.nvim_get_current_line() == "" then -- Check if cursor is in an empty line
-            local curline = vim.api.nvim_win_get_cursor(0)[1]
-            -- Insert new R code chunk template
-            vim.api.nvim_buf_set_lines(
-                0,
-                curline - 1,
-                curline - 1,
-                true,
-                { "```{r}", "", "```", "" }
-            )
-            vim.api.nvim_win_set_cursor(0, { curline + 1, 1 })
-            return
-        else
-            -- inline R code within markdown text
-            if config.rmdchunk == "both" then
-                local pos = vim.api.nvim_win_get_cursor(0)
-                local next_char =
-                    vim.api.nvim_get_current_line():sub(pos[2] + 1, pos[2] + 1)
-                if next_char == "`" then
-                    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 1 })
-                elseif vim.fn.col(".") == vim.fn.col("$") then
-                    vim.cmd([[normal! a`r `]])
-                    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 3 })
-                else
-                    vim.cmd([[normal! i`r `]])
-                    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 3 })
-                end
-                return
-            end
-        end
+
+    -- Check if cursor is in an empty Markdown line
+    if lang == "markdown" and curline == "" then
+        -- Insert new R code chunk template
+        vim.api.nvim_buf_set_lines(
+            0,
+            curpos[1] - 1,
+            curpos[1] - 1,
+            true,
+            { "```{r}", "", "```", "" }
+        )
+        vim.api.nvim_win_set_cursor(0, { curpos[1] + 1, 1 })
+        return
     end
 
-    -- Just insert the backtick
-    if vim.fn.col(".") == 1 then
-        vim.cmd("normal! i`")
-    else
-        vim.cmd("normal! a`")
+    -- Check if cursor is in an Markdown region
+    if lang == "markdown" or lang == "markdown_inline" then
+        -- inline R code within markdown text
+        vim.api.nvim_set_current_line(curline:sub(1, curpos[2]) .. "`r `" .. curline:sub(curpos[2] + 1))
+        vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + 3 })
+        return
     end
+
+    -- Just insert the mapped key stroke
+    vim.api.nvim_set_current_line(curline:sub(1, curpos[2]) .. config.rmd_chunk_keymap .. curline:sub(curpos[2] + 1))
+    vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + #config.rmd_chunk_keymap })
 end
 
 -- Internal function to send a Python code chunk to R for execution.
@@ -212,25 +198,15 @@ M.setup = function()
     local cfg = require("r.config").get_config()
 
     -- Configure key mapping for writing chunks based on configuration settings
-    if cfg.rmdchunk == "`" or cfg.rmdchunk == "both" then
+    if cfg.rmd_chunk_keymap ~= "" then
         vim.api.nvim_buf_set_keymap(
             0,
             "i",
-            "`",
-            "<Cmd>lua require('r.rmd').write_chunk()<CR>",
-            { silent = true }
-        )
-    elseif cfg.rmdchunk ~= "" then
-        vim.api.nvim_buf_set_keymap(
-            0,
-            "i",
-            tostring(cfg.rmdchunk),
+            tostring(cfg.rmd_chunk_keymap),
             "<Cmd>lua require('r.rmd').write_chunk()<CR>",
             { silent = true }
         )
     end
-
-    vim.api.nvim_buf_set_var(0, "rplugin_knitr_pattern", "^``` *{.*}$")
 
     -- Key bindings
     require("r.maps").create(vim.o.filetype)
