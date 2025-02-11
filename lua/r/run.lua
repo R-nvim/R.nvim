@@ -313,7 +313,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     end
 
     vim.g.R_Nvim_status = 7
-    hooks.run(config, "after_R_start")
+    hooks.run(config, "after_R_start", true)
     send.set_send_cmd_fun()
 end
 

@@ -9,19 +9,21 @@ local map_desc = {
     RSaveClose          = { m = "", k = "", c = "Start",    d = "Quit R, saving the workspace" },
     RClose              = { m = "", k = "", c = "Start",    d = "Send to R: quit(save = 'no')" },
     RStart              = { m = "", k = "", c = "Start",    d = "Start R with default configuration or reopen terminal window" },
-    RAssign             = { m = "", k = "", c = "Edit",     d = "Replace `config.assignment_keymap` with ` <- `" },
-    RPipe               = { m = "", k = "", c = "Edit",     d = "Replace `config.pipe_keymap` with ` |>` (or ` %>%`)" },
+    RInsertAssign       = { m = "", k = "", c = "Edit",     d = "Insert ` <- `" },
+    RInsertPipe         = { m = "", k = "", c = "Edit",     d = "Insert ` |>` (or ` %>%`)" },
     ROpenPDF            = { m = "", k = "", c = "Edit",     d = "Open the PDF generated from the current document" },
     RDputObj            = { m = "", k = "", c = "Edit",     d = "Run dput(<cword>) and show the output in a new tab" },
     RViewDF             = { m = "", k = "", c = "Edit",     d = "View the data.frame or matrix under cursor in a new tab" },
     RShowEx             = { m = "", k = "", c = "Edit",     d = "Extract the Examples section and paste it in a split window" },
     RSeparatePath       = { m = "", k = "", c = "Edit",     d = "Split the file path or the url under the cursor" },
-    RFormatNumbers      = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers to explicitly indicate them as integers" },
-    RFormatSubsetting   = { m = "", k = "", c = "Edit",     d = "Replace all the `$` subsetting operators with `[[` in the current buffer" },
+    RFormatNumbers      = { m = "", k = "", c = "Edit",     d = "Add an 'L' suffix after numbers" },
+    RFormatSubsetting   = { m = "", k = "", c = "Edit",     d = "Replace all the `$` subsetting operators with `[[`" },
+    RmdInsertChunk      = { m = "", k = "", c = "Edit",     d = "Insert chunk delimiter" },
+    RnwInsertChunk      = { m = "", k = "", c = "Edit",     d = "Insert chunk delimiter" },
     RNextRChunk         = { m = "", k = "", c = "Navigate", d = "Go to the next chunk of R code" },
     RGoToTeX            = { m = "", k = "", c = "Navigate", d = "Go the corresponding line in the generated LaTeX document" },
     RPreviousRChunk     = { m = "", k = "", c = "Navigate", d = "Go to the previous chunk of R code" },
-    RSyncFor            = { m = "", k = "", c = "Navigate", d = "SyncTeX forward (move from Rnoweb to the corresponding line in the PDF)" },
+    RSyncFor            = { m = "", k = "", c = "Navigate", d = "SyncTeX forward" },
     RInsertLineOutput   = { m = "", k = "", c = "Send",     d = "Ask R to evaluate the line and insert the output" },
     RSendChunkFH        = { m = "", k = "", c = "Send",     d = "Send all chunks of R code from the document's begin up to here" },
     RSendChunk          = { m = "", k = "", c = "Send",     d = "Send the current chunk of code to R" },
@@ -80,41 +82,52 @@ local map_desc = {
     ROBToggle =     { m = "", k = "", c = "Object_Browser", d = "Toggle the Object Browser" },
 }
 
+local map_it = function(plug, mode, plg, tgt, cmd, opts)
+    if not string.find(map_desc[plug].m, mode) then
+        map_desc[plug].m = map_desc[plug].m .. mode
+    end
+    vim.api.nvim_buf_set_keymap(0, mode, plg, tgt, opts)
+
+    if vim.fn.hasmapto(plg, mode) == 1 then
+        map_desc[plug].k = "custom"
+        return
+    end
+
+    if config.user_maps_only then
+        map_desc[plug].k = "disabled"
+        return
+    end
+
+    vim.api.nvim_buf_set_keymap(0, mode, cmd, plg, opts)
+    map_desc[plug].k = cmd
+end
+
 --- Create maps.
 ---@param mode string Modes to which create maps (normal, visual and insert)
 --- and whether the cursor have to go the beginning of the line
 ---@param plug string The "<Plug>" name.
 ---@param combo string Key combination.
 ---@param target string The command or function to be called.
----@param nocr boolean? Don't append "<CR>" to target.
-local create_maps = function(mode, plug, combo, target, nocr)
-    if vim.fn.index(config.disable_cmds, plug) > -1 then return end
-    local tgt = nocr and target or target .. "<CR>"
-    local plg = "<Plug>" .. plug
-    local cmd = "<LocalLeader>" .. combo
-    local opts = { silent = true, noremap = true, expr = false }
-    if map_desc[plug] then
-        opts.desc = map_desc[plug].d
-    else
+---@param esp number? Especial treatment: 1 (no <CR>), 2 (exceptional Insert mode command), or 3 no <LocalLeader>).
+local create_maps = function(mode, plug, combo, target, esp)
+    if not map_desc[plug] then
         warn("Missing <Plug> label in description table: '" .. plug .. "'")
+        return
     end
-    if mode:find("n") then
-        vim.api.nvim_buf_set_keymap(0, "n", plg, tgt, opts)
-        if not config.user_maps_only and vim.fn.hasmapto(plg, "n") == 0 then
-            vim.api.nvim_buf_set_keymap(0, "n", cmd, plg, opts)
-        end
+    if vim.fn.index(config.disable_cmds, plug) > -1 then
+        map_desc[plug].k = "disabled"
+        return
     end
-    if mode:find("v") then
-        vim.api.nvim_buf_set_keymap(0, "v", plg, tgt, opts)
-        if not config.user_maps_only and vim.fn.hasmapto(plg, "v") == 0 then
-            vim.api.nvim_buf_set_keymap(0, "v", cmd, tgt, opts)
-        end
-    end
-    if config.insert_mode_cmds and mode:find("i") then
-        vim.api.nvim_buf_set_keymap(0, "i", plg, tgt, opts)
-        if not config.user_maps_only and vim.fn.hasmapto(plg, "i") == 0 then
-            vim.api.nvim_buf_set_keymap(0, "i", cmd, tgt, opts)
-        end
+
+    local tgt = (esp and esp == 1) and target or target .. "<CR>"
+    local plg = "<Plug>" .. plug
+    local cmd = (esp and esp == 3) and combo or "<LocalLeader>" .. combo
+    local opts = { silent = true, noremap = true, expr = false, desc = map_desc[plug].d }
+
+    if mode:find("n") then map_it(plug, "n", plg, tgt, cmd, opts) end
+    if mode:find("v") then map_it(plug, "v", plg, tgt, cmd, opts) end
+    if (config.insert_mode_cmds or (esp and esp > 1)) and mode:find("i") then
+        map_it(plug, "i", plg, tgt, cmd, opts)
     end
 end
 
@@ -188,17 +201,14 @@ local start = function()
     create_maps("nvi", "RSaveClose",   "rw", "<Cmd>lua require('r.run').quit_R('save')")
 end
 
-local edit = function()
-    -- Replace <M--> with ' <- '
-    -- Must be here because it's the only one that doesn't have <LocalLeader>
-    local opts = { silent = true, noremap = true, expr = false }
-    if config.assignment_keymap ~= "" then
-        vim.api.nvim_buf_set_keymap(0, "i", "<Plug>RAssign", '<Cmd>lua require("r.edit").assign()<CR>', opts)
-        vim.api.nvim_buf_set_keymap(0, "i", config.assignment_keymap, "<Plug>RAssign", opts)
+local edit = function(file_type)
+    create_maps("i", "RInsertPipe", ",", "<Cmd>lua require('r.edit').pipe()", 2)
+    create_maps("i", "RInsertAssign", "<M-->", "<Cmd>lua require('r.edit').assign()", 3)
+    if file_type == "rmd" or file_type == "quarto" then
+        create_maps("i", "RmdInsertChunk", "<M-r>", "<Cmd>lua require('r.rmd').write_chunk()", 3)
     end
-    if config.pipe_keymap ~= "" then
-        vim.api.nvim_buf_set_keymap(0, "i", "<Plug>RPipe", '<Cmd>lua require("r.edit").pipe()<CR>', opts)
-        vim.api.nvim_buf_set_keymap(0, "i", config.pipe_keymap, "<Plug>RPipe", opts)
+    if file_type == "rnoweb" then
+        create_maps("i", "RnwInsertChunk", "<M-r>", "<Cmd>lua require('r.rnw').write_chunk()", 3)
     end
     create_maps("nvi", "RSetwd", "rd", "<Cmd>lua require('r.run').setwd()")
 
@@ -236,7 +246,7 @@ local send = function(file_type)
     create_maps("ni",  "RInsertLineOutput",   "o",        "<Cmd>lua require('r.run').insert_commented()")
     create_maps("v",   "RInsertLineOutput",   "o",        "<Cmd>lua require('r').warn('This command does not work over a selection of lines.')")
     create_maps("i",   "RSendLAndOpenNewOne", "q",        "<Cmd>lua require('r.send').line('newline')")
-    create_maps("ni.", "RSendMotion",         "m",        "<Cmd>set opfunc=v:lua.require'r.send'.motion<CR>g@", true)
+    create_maps("ni.", "RSendMotion",         "m",        "<Cmd>set opfunc=v:lua.require'r.send'.motion<CR>g@", 1)
     create_maps("n",   "RNLeftPart",          "r<left>",  "<Cmd>lua require('r.send').line_part('left',  false)")
     create_maps("n",   "RNRightPart",         "r<right>", "<Cmd>lua require('r.send').line_part('right', false)")
     create_maps("i",   "RILeftPart",          "r<left>",  "<Cmd>lua require('r.send').line_part('left',  true)")
@@ -297,37 +307,12 @@ M.create = function(file_type)
     send(file_type)
     if file_type == "rdoc" then return end
     start()
-    edit()
-end
-
-local fill_k2 = function(mlist, m)
-    local km
-    local lbl
-    for _, v in pairs(mlist) do
-        if v:find("@<Plug>R") then
-            lbl = v:gsub(".*@<Plug>", "")
-            lbl = lbl:gsub(" .*", "") -- See issue #288
-            km = v:gsub("^" .. m .. "%s*", "")
-            km = km:gsub(" .*", "")
-            if not map_desc[lbl].m:find(m) then map_desc[lbl].m = map_desc[lbl].m .. m end
-            if map_desc[lbl] and map_desc[lbl].k == "" then map_desc[lbl].k = km end
-        end
-    end
-end
-
-local fill_k = function()
-    local nlist = vim.split(vim.fn.execute("nmap", "silent!") or "", "\n")
-    local vlist = vim.split(vim.fn.execute("vmap", "silent!") or "", "\n")
-    local ilist = vim.split(vim.fn.execute("imap", "silent!") or "", "\n")
-    fill_k2(nlist, "n")
-    fill_k2(vlist, "v")
-    fill_k2(ilist, "i")
+    edit(file_type)
 end
 
 M.show_map_desc = function()
     local label_w = 1
     local key_w = 1
-    fill_k()
     for k, v in pairs(map_desc) do
         if #k >= label_w then label_w = #k + 1 end
         if #v.k >= key_w then key_w = #v.k + 1 end
@@ -362,24 +347,19 @@ M.show_map_desc = function()
             )
             table.insert(map_key_desc, { string.format("  %-04s", v[2]), "Type" })
             local keymap = v[3] or " "
-            for _, d in pairs(config.disable_cmds) do
-                if d == v[1] then
-                    keymap = "disabled"
-                    break
-                end
-            end
             table.insert(map_key_desc, {
                 string.format("%-0" .. kw .. "s", keymap),
-                keymap == "disabled" and "Comment" or "Special",
+                (keymap == "custom" or keymap == "disabled") and "Comment" or "Special",
             })
             table.insert(map_key_desc, { v[4] .. "\n" })
         end
     end
 
     local buf = vim.api.nvim_create_buf(false, true) -- no file, scratch buffer
+    local ns = vim.api.nvim_create_namespace("RMapsDesc")
     local row = -1
-    local col_start = {}
-    local col_end = {}
+    local cs = {}
+    local ce = {}
     local line = ""
     local hls = {}
     for _, text_hl in pairs(map_key_desc) do
@@ -391,21 +371,31 @@ M.show_map_desc = function()
         end
         if hl == "Title" then -- on "Title" write to buffer
             vim.api.nvim_buf_set_lines(buf, row, row, false, { line })
-            vim.api.nvim_buf_add_highlight(buf, -1, hl, row, 0, #line)
+            if vim.fn.has("nvim-0.11") == 1 then
+                vim.hl.range(buf, ns, hl, { row, 0 }, { row, #line }, {})
+            else
+                vim.api.nvim_buf_add_highlight(buf, -1, hl, row, 0, #line)
+            end
             line = ""
         elseif hl == "Identifier" then
-            col_start = { 0 }
-            col_end = { #text }
+            cs = { 0 }
+            ce = { #text }
             table.insert(hls, hl)
         elseif hl then
-            table.insert(col_start, col_end[#col_end])
-            table.insert(col_end, #line)
+            table.insert(cs, ce[#ce])
+            table.insert(ce, #line)
             table.insert(hls, hl)
         else -- hl is nil so it is the description so it's eol so write to buffer with appropriate highlights
             vim.api.nvim_buf_set_lines(buf, row, row, false, { line })
-            vim.api.nvim_buf_add_highlight(buf, -1, hls[1], row, col_start[1], col_end[1])
-            vim.api.nvim_buf_add_highlight(buf, -1, hls[2], row, col_start[2], col_end[2])
-            vim.api.nvim_buf_add_highlight(buf, -1, hls[3], row, col_start[3], col_end[3])
+            if vim.fn.has("nvim-0.11") == 1 then
+                vim.hl.range(buf, ns, hls[1], { row, cs[1] }, { row, ce[1] }, {})
+                vim.hl.range(buf, ns, hls[2], { row, cs[2] }, { row, ce[2] }, {})
+                vim.hl.range(buf, ns, hls[3], { row, cs[3] }, { row, ce[3] }, {})
+            else
+                vim.api.nvim_buf_add_highlight(buf, -1, hls[1], row, cs[1], ce[1])
+                vim.api.nvim_buf_add_highlight(buf, -1, hls[2], row, cs[2], ce[2])
+                vim.api.nvim_buf_add_highlight(buf, -1, hls[3], row, cs[3], ce[3])
+            end
             hls = {}
             line = ""
         end

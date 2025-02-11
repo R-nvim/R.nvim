@@ -42,15 +42,7 @@ local hooks = require("r.hooks")
 ---Do `:help arrange_windows` for more information.
 ---@field arrange_windows? boolean
 ---
----The keymap used to insert `<-`; defaults to `<M-->`, i.e. Alt + M in most
----terminals. Do `:help assignment_keymap` for more information.
----@field assignment_keymap? string
----
----The keymap used to insert the pipe operator; defaults to `<localleader>,`.
----Do `:help pipe_keymap` for more information.
----@field pipe_keymap? string
----
----The version of the pipe operator to insert on `pipe_keymap`; defaults to
+---The version of the pipe operator to insert on pipe keymap; defaults to
 ---`"native"`. Do `:help pipe_version` for more information.
 ---@field pipe_version? '"native"' | '"|>"' | '"magrittr"' | '"%>%"'
 ---
@@ -285,18 +277,9 @@ local hooks = require("r.hooks")
 ---`".GlobalEnv"`. Do `:help rmd_environment` for more information.
 ---@field rmd_environment? string
 ---
----Controls if and how backticks are replaced with code chunk/inline code
----delimiters when writing R Markdown and Quarto files.
----Do `:help rmd_chunk_keymap` for more information.
----@field rmd_chunk_keymap? string
----
 ---Whether to remove hidden objects from the workspace on `<LocalLeader>rm`;
 ---defaults to `false`. Do `:help rmhidden` for more information.
 ---@field rmhidden? boolean
----S
----Whether to replace `<` with `<<>>=\n@` when writing Rnoweb files; defaults
----to `true`. Do `:help rnw_chunk_keymap` for more information.
----@field rnw_chunk_keymap? string
 ---
 ---Controls whether the resulting `.Rout` file is not opened in a new tab when
 ---running `R CMD BATCH`; defaults to `false`. Do `:help routnotab` for more
@@ -403,8 +386,6 @@ local config = {
     Rout_more_colors    = false,
     applescript         = false,
     arrange_windows     = true,
-    assignment_keymap   = "<M-->",
-    pipe_keymap         = "<localleader>,",
     pipe_version        = "native",
     auto_scroll         = true,
     auto_start          = "no",
@@ -472,9 +453,7 @@ local config = {
     rm_knit_cache       = false,
     rmarkdown_args      = "",
     rmd_environment     = ".GlobalEnv",
-    rmd_chunk_keymap    = "<M-r>",
     rmhidden            = false,
-    rnw_chunk_keymap    = "<M-r>",
     rnvim_home          = "",
     routnotab           = false,
     rproj_prioritise    = {
@@ -995,7 +974,7 @@ local global_setup = function()
     vim.fn.timer_start(1, require("r.config").check_health)
     vim.schedule(function() require("r.server").check_nvimcom_version() end)
 
-    hooks.run(config, "after_config")
+    hooks.run(config, "after_config", true)
 
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
@@ -1028,7 +1007,11 @@ M.real_setup = function()
         did_real_setup = true
         global_setup()
     end
-    hooks.run(config, "on_filetype")
+
+    -- The third argument must be `false`, otherwise :RMapsDesc will not display
+    -- custom key mappings.
+    hooks.run(config, "on_filetype", false)
+
     require("r.rproj").apply_settings(config)
 
     if config.register_treesitter then

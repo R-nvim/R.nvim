@@ -334,7 +334,7 @@ function M.start(_)
     start_OB()
     state.is_running = false
 
-    hooks.run(config, "after_ob_open")
+    hooks.run(config, "after_ob_open", true)
 end
 
 --- Return the active pane of the Object Browser
