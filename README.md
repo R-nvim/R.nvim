@@ -197,7 +197,7 @@ firm commitment to backwards compatibility.
 
 - `setwd` replaces `nvim_wd`. The new default value is `"no"`.
 
-- Only strings are valid values for `external_term` and `rmdchunk`.
+- Only strings are valid values for `external_term`.
 
 - `config_tmux` replaces `notmuxconf`. The new default value is `true`.
 
@@ -208,6 +208,12 @@ firm commitment to backwards compatibility.
   `csv_delim`, and `df_viewer`. The commands to see a `data.frame`
   or `matrix` in a split window were eliminated. See the documentation
   on `view_df` for alternative ways of getting similar results.
+
+- `rmdchunk` have been replaced with `rmd_chunk_keymap` and default keymap now
+  is `<M-r>`.
+
+- `rnowebchunk` have been replaced with `rnw_chunk_keymap` and default keymap
+  now is `<M-r>`.
 
 ### New features
 

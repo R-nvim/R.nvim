@@ -590,7 +590,7 @@ on your system.
 5.3. Object Browser and auto-completion limitations
 
 New lines in list names (which includes column names in data frames and
-matrixes) are replaced with blank spaces in the data used by `cmp-r` and the
+matrices) are replaced with blank spaces in the data used by `cmp-r` and the
 Object Browser.
 
 Objects from environments accessed with the `browser()` function are not
@@ -702,7 +702,7 @@ The compilation of `nvimcom` during R startup will fail on Windows if your
 Send commands to Radian doesn't work well
 
 If you use `radian` as |R_app|, multiple lines will not be correctly
-interpreted because `bracketed_paste` is not recogenized by terminals on
+interpreted because `bracketed_paste` is not recognized by terminals on
 Windows.
 
 
@@ -727,8 +727,8 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |assignment_keymap|   Choose what to convert into ' <- '
 |pipe_keymap|         Choose what to convert into ' |> ' (or ' %>% ')
 |pipe_version|        Either "native"/"|>" or "magrittr"/"%>%"
-|rnowebchunk|         Convert '<' into '<<>>=\n@' in Rnoweb files
-|rmdchunk|            Convert grave accent chunk into delimiters
+|rnw_chunk_keymap|    Choose what to convert to R chunk delimiters
+|rmd_chunk_keymap|    Choose what to convert to R chunk delimiters
 |rproj_prioritise|    Use .Rproj file to override options
 |objbr_place|         Placement of Object Browser
 |objbr_w|             Initial width of Object Browser window
@@ -1053,29 +1053,25 @@ change whether they should affect things at all.
 
 
 ------------------------------------------------------------------------------
-6.6. Rnoweb completion of code block                             *rnowebchunk*
-                                                                    *rmdchunk*
+6.6. Rnoweb completion of code block                        *rnw_chunk_keymap*
+                                                            *rmd_chunk_keymap*
 
-In Rnoweb files, a `<` is replaced with `<<>>=\n@`. To disable this feature,
-put in your config:
+In Rnoweb files, if the cursor is in an empty line in Insert mode, pressing
+`<M-r>`  will insert `<<>>=\n@`. If the line is not empty, it will insert
+`\Sexpr{}`. You can change the keymap to a "less than" symbol to emulate
+Nvim-R behavior:
 >lua
-   rnowebchunk = false
+   rnw_chunk_keymap = "<"
 <
-Similarly, in Rmd and Quarto files, the grave accent (backtick) is replaced
-with chunk delimiters unless you put in your config:
+In Rmd and Quarto files, the option `rmd_chunk_keymap` controls what key
+strokes will be replaced with chunk delimiters. In addition to creating an
+empty chunk block, the key strokes will be converted to inline R delimiters if
+the cursor is not at the beginning of the line. The default value of
+`rmd_chunk_keymap` is `<M-r>`, but you can change it to a single backtick to
+emulate the default behavior of Nvim-R:
 >lua
-   rmdchunk = ""
+   rmd_chunk_keymap = "`"
 <
-You can also define a different shortcut for `rmdchunk`. For example, to use
-two backticks instead of one to trigger the completion of the chunk delimiter,
-put in your config:
->lua
-   rmdchunk = "``"
-<
-If `rmdchunk = "both"` (the default), in addition to creating an empty chunk
-block, a single backtick will be converted to inline R delimiters if the
-cursor is not at the beginning of the line.
-
 
 ------------------------------------------------------------------------------
 6.7. Object Browser and completion options                    *objbr_w*
@@ -1139,7 +1135,7 @@ inspection, if `nvimcom.verbose` is > 1, it outputs information like the
 following on R Console:
 
    nvimcom:
-       Time to buiild list of objects: 7.582 ms (max_time = 100 ms)
+       Time to build list of objects: 7.582 ms (max_time = 100 ms)
        List size: 1611734 bytes (max_size = 1000000 bytes)
        New max_depth: 9
 
@@ -1166,7 +1162,7 @@ please, put `options(nvimcom.verbose = 1)` in your `~/.Rprofile` and use the
 information output by `nvimcom` to decide what parameter to change.
 
 It is possible to add a custom keymap through `objbr_mappings` table. The
-keymap defined in this table will be availble in the object browser only.
+keymap defined in this table will be available in the object browser only.
 Using this method, you can set keymaps that run Lua functions or R code. The
 following paragraphs documents how this feature works.
 
@@ -2153,7 +2149,7 @@ and passes them to R as a command. For example, if your cursor is over the
 object called "gender" and you call the `action` function, with the argument
 "levels", Neovim will pass the command `levels(gender)` to R. To make it even
 easier to use this and other functions, you could write custom key bindings
-insinde the function passed to `hook.on_filetype` as in the examples below
+inside the function passed to `hook.on_filetype` as in the examples below
 (see |hook|):
 >lua
    hook = {

@@ -286,17 +286,17 @@ local hooks = require("r.hooks")
 ---@field rmd_environment? string
 ---
 ---Controls if and how backticks are replaced with code chunk/inline code
----delimiters when writing R Markdown and Quarto files. Do `:help rmdchunk`
----for more information.
----@field rmdchunk? string
+---delimiters when writing R Markdown and Quarto files.
+---Do `:help rmd_chunk_keymap` for more information.
+---@field rmd_chunk_keymap? string
 ---
 ---Whether to remove hidden objects from the workspace on `<LocalLeader>rm`;
 ---defaults to `false`. Do `:help rmhidden` for more information.
 ---@field rmhidden? boolean
 ---S
 ---Whether to replace `<` with `<<>>=\n@` when writing Rnoweb files; defaults
----to `true`. Do `:help rnowebchunk` for more information.
----@field rnowebchunk? boolean
+---to `true`. Do `:help rnw_chunk_keymap` for more information.
+---@field rnw_chunk_keymap? string
 ---
 ---Controls whether the resulting `.Rout` file is not opened in a new tab when
 ---running `R CMD BATCH`; defaults to `false`. Do `:help routnotab` for more
@@ -472,9 +472,9 @@ local config = {
     rm_knit_cache       = false,
     rmarkdown_args      = "",
     rmd_environment     = ".GlobalEnv",
-    rmdchunk            = "both",
+    rmd_chunk_keymap    = "<M-r>",
     rmhidden            = false,
-    rnowebchunk         = true,
+    rnw_chunk_keymap    = "<M-r>",
     rnvim_home          = "",
     routnotab           = false,
     rproj_prioritise    = {

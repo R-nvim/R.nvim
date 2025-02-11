@@ -153,22 +153,33 @@ end
 local M = {}
 
 M.write_chunk = function()
-    if vim.api.nvim_get_current_line() == "" then
-        local lang = get_lang()
-        if lang == "rnoweb" or lang == "latex" then
-            local curline = vim.api.nvim_win_get_cursor(0)[1]
+    local curpos = vim.api.nvim_win_get_cursor(0)
+    local curline = vim.api.nvim_get_current_line()
+    local lang = get_lang()
+
+    -- Check if cursor is in an empty LaTeX line
+    if lang == "latex" then
+        if curline == "" then
+            -- Insert new R code chunk template
             vim.api.nvim_buf_set_lines(
                 0,
-                curline - 1,
-                curline - 1,
+                curpos[1] - 1,
+                curpos[1] - 1,
                 true,
                 { "<<>>=", "@", "" }
             )
-            vim.api.nvim_win_set_cursor(0, { curline, 2 })
-            return
+            vim.api.nvim_win_set_cursor(0, { curpos[1], 2 })
+        else
+            -- \Sexpr{}
+            vim.api.nvim_set_current_line(curline:sub(1, curpos[2]) .. "\\Sexpr{}" .. curline:sub(curpos[2] + 1))
+            vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + 7 })
         end
+        return
     end
-    vim.fn.feedkeys("<", "n")
+
+    -- Just insert the mapped key stroke
+    vim.api.nvim_set_current_line(curline:sub(1, curpos[2]) .. config.rnw_chunk_keymap .. curline:sub(curpos[2] + 1))
+    vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + #config.rnw_chunk_keymap })
 end
 
 --- Move the cursor to the previous chunk
