@@ -828,7 +828,8 @@ M.funs = function(bufnr, capture_all, move_down)
             local last_function = lines[#lines]
             local function_lines = vim.split(last_function, "\n")
             local end_row = vim.api.nvim_win_get_cursor(0)[1] + #function_lines
-            vim.api.nvim_win_set_cursor(0, { end_row, 0 })
+            local last_line = vim.api.nvim_buf_line_count(0)
+            vim.api.nvim_win_set_cursor(0, { math.min(end_row, last_line), 0 })
             vim.cmd("normal! j")
         end
     end
