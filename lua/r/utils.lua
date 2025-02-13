@@ -515,4 +515,18 @@ M.get_root_node = function(bufnr)
     return tree:root()
 end
 
+---Get the left hand side of a keymap
+---@param name  string The `<Plug>` name of the key binding
+---@return string|nil
+M.get_mapped_key = function(name)
+    local ilist = vim.split(vim.fn.execute("imap", "silent!") or "", "\n")
+    for _, v in pairs(ilist) do
+        if v:find(name .. "$") then
+            local km = v:gsub("^i%s*", ""):gsub("%s.*", "")
+            return km
+        end
+    end
+    return nil
+end
+
 return M

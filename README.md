@@ -182,8 +182,8 @@ firm commitment to backwards compatibility.
 
 ### Changes:
 
-- `<M-->` (i.e. `Alt + -`) is now used to insert `<-`. This can be configured
-    using `assignment_keymap`.
+- `<M-->` (i.e. `Alt + -`) is now used to insert `<-`. See the documentation
+  on how to create custom key bindings.
 
 - `R_source` and `after_R_start` have been replaced with more powerful `hook`
     options.
@@ -209,11 +209,9 @@ firm commitment to backwards compatibility.
   or `matrix` in a split window were eliminated. See the documentation
   on `view_df` for alternative ways of getting similar results.
 
-- `rmdchunk` have been replaced with `rmd_chunk_keymap` and default keymap now
-  is `<M-r>`.
-
-- `rnowebchunk` have been replaced with `rnw_chunk_keymap` and default keymap
-  now is `<M-r>`.
+- `rmdchunk` and `rnowebchunk` were removed. In Insert mode, press `<M-r>` to
+  insert chunks of R code in Rmd, Quarto or Rnoweb. See the documentation on
+  how to create custom key bindings.
 
 ### New features
 
@@ -239,8 +237,7 @@ firm commitment to backwards compatibility.
     [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
     installed).
 
-- `<LocalLeader>,` inserts a pipe operator (`|>`). This keybinding is
-    configurable using `pipe_keymap`.
+- `<LocalLeader>,` inserts a pipe operator (`|>`).
 
 #### New options
 

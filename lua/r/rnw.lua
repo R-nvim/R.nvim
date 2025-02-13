@@ -6,6 +6,7 @@ local get_lang = require("r.utils").get_lang
 local job = require("r.job")
 local config = require("r.config").get_config()
 local check_latexcmd = true
+local chunk_key = nil
 
 local check_latex_cmd = function()
     check_latexcmd = false
@@ -171,15 +172,24 @@ M.write_chunk = function()
             vim.api.nvim_win_set_cursor(0, { curpos[1], 2 })
         else
             -- \Sexpr{}
-            vim.api.nvim_set_current_line(curline:sub(1, curpos[2]) .. "\\Sexpr{}" .. curline:sub(curpos[2] + 1))
+            vim.api.nvim_set_current_line(
+                curline:sub(1, curpos[2]) .. "\\Sexpr{}" .. curline:sub(curpos[2] + 1)
+            )
             vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + 7 })
         end
         return
     end
 
     -- Just insert the mapped key stroke
-    vim.api.nvim_set_current_line(curline:sub(1, curpos[2]) .. config.rnw_chunk_keymap .. curline:sub(curpos[2] + 1))
-    vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + #config.rnw_chunk_keymap })
+    if not chunk_key then
+        chunk_key = require("r.utils").get_mapped_key("RnwInsertChunk")
+    end
+    if chunk_key then
+        vim.api.nvim_set_current_line(
+            curline:sub(1, curpos[2]) .. chunk_key .. curline:sub(curpos[2] + 1)
+        )
+        vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + #chunk_key })
+    end
 end
 
 --- Move the cursor to the previous chunk

@@ -4,12 +4,17 @@ local warn = require("r.log").warn
 local del_list = {}
 local rscript_buf = 0
 local debug_info = { Time = {} }
+local assign_key = nil
+local pipe_key = nil
 
 local M = {}
 
 M.assign = function()
+    if not assign_key then
+        assign_key = require("r.utils").get_mapped_key("RInsertAssign")
+    end
     if get_lang() == "r" then
-        if config.assignment_keymap == "_" then
+        if assign_key == "_" then
             local line = vim.api.nvim_get_current_line()
             local pos = vim.api.nvim_win_get_cursor(0)
             if line:len() > 4 and line:sub(pos[2] - 3, pos[2]) == " <- " then
@@ -21,7 +26,7 @@ M.assign = function()
         end
         vim.fn.feedkeys(" <- ", "n")
     else
-        vim.fn.feedkeys(config.assignment_keymap, "n")
+        vim.fn.feedkeys(tostring(assign_key), "n")
     end
 end
 
@@ -41,10 +46,12 @@ M.pipe = function()
     local pipe_version = buf_pipe_version or config.pipe_version
     local pipe_symbol = pipe_opts[pipe_version]
 
+    if not pipe_key then pipe_key = require("r.utils").get_mapped_key("RInsertPipe") end
+
     if get_lang() == "r" then
         vim.fn.feedkeys(pipe_symbol, "n")
     else
-        vim.fn.feedkeys(config.pipe_keymap, "n")
+        vim.fn.feedkeys(tostring(pipe_key), "n")
     end
 
     ---------------------------------------------------------------------------

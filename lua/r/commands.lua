@@ -19,10 +19,15 @@ local function show_config(tbl)
     local buf = vim.api.nvim_create_buf(false, true) -- no file, scratch buffer
     vim.api.nvim_buf_set_lines(buf, 0, 0, false, out_buf)
 
+    local ns = vim.api.nvim_create_namespace("RConfigShow")
     for row, line in ipairs(out_buf) do -- add highlighting to keywords
         local col = line:find("=")
         if col ~= nil then
-            vim.api.nvim_buf_add_highlight(buf, -1, "Type", row - 1, 0, col - 2)
+            if vim.fn.has("nvim-0.11") == 1 then
+                vim.hl.range(buf, ns, "Type", { row - 1, 1 }, { row - 1, col - 2 }, {})
+            else
+                vim.api.nvim_buf_add_highlight(buf, -1, "Type", row - 1, 0, col - 2)
+            end
         end
     end
 

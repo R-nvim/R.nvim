@@ -3,6 +3,7 @@ local config = require("r.config").get_config()
 local send = require("r.send")
 local get_lang = require("r.utils").get_lang
 local uv = vim.uv
+local chunk_key = nil
 
 local M = {}
 
@@ -29,14 +30,23 @@ M.write_chunk = function()
     -- Check if cursor is in an Markdown region
     if lang == "markdown" or lang == "markdown_inline" then
         -- inline R code within markdown text
-        vim.api.nvim_set_current_line(curline:sub(1, curpos[2]) .. "`r `" .. curline:sub(curpos[2] + 1))
+        vim.api.nvim_set_current_line(
+            curline:sub(1, curpos[2]) .. "`r `" .. curline:sub(curpos[2] + 1)
+        )
         vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + 3 })
         return
     end
 
     -- Just insert the mapped key stroke
-    vim.api.nvim_set_current_line(curline:sub(1, curpos[2]) .. config.rmd_chunk_keymap .. curline:sub(curpos[2] + 1))
-    vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + #config.rmd_chunk_keymap })
+    if not chunk_key then
+        chunk_key = require("r.utils").get_mapped_key("RmdInsertChunk")
+    end
+    if chunk_key then
+        vim.api.nvim_set_current_line(
+            curline:sub(1, curpos[2]) .. chunk_key .. curline:sub(curpos[2] + 1)
+        )
+        vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + #chunk_key })
+    end
 end
 
 -- Internal function to send a Python code chunk to R for execution.
@@ -195,18 +205,6 @@ M.clean_params = function() last_params = "" end
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.
 M.setup = function()
     local rmdtime = uv.hrtime() -- Track setup time
-    local cfg = require("r.config").get_config()
-
-    -- Configure key mapping for writing chunks based on configuration settings
-    if cfg.rmd_chunk_keymap ~= "" then
-        vim.api.nvim_buf_set_keymap(
-            0,
-            "i",
-            tostring(cfg.rmd_chunk_keymap),
-            "<Cmd>lua require('r.rmd').write_chunk()<CR>",
-            { silent = true }
-        )
-    end
 
     -- Key bindings
     require("r.maps").create(vim.o.filetype)
