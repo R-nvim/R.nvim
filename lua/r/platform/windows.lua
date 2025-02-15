@@ -39,7 +39,7 @@ function M.configure(config)
         end
 
         local get_rip = function(run_cmd)
-            local resp = utils.system(run_cmd, { text = true }):wait()
+            local resp = vim.system(run_cmd, { text = true }):wait()
             local rout = vim.split(resp.stdout, "\n")
             local rip = {}
             for _, v in pairs(rout) do

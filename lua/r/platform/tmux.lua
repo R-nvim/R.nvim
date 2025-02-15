@@ -16,9 +16,9 @@ function M.configure(config)
         -- Tmux does not have -V option on OpenBSD: https://github.com/jcfaria/Vim-R-plugin/issues/200
         tmuxversion = "0.0"
     else
-        tmuxversion = vim.fn.system("tmux -V")
-        if tmuxversion then
-            tmuxversion = tmuxversion:gsub(".* ([0-9]%.[0-9]).*", "%1")
+        local obj = vim.system({ "tmux", "-V" }, { text = true }):wait()
+        tmuxversion = obj.stdout:gsub(".* ([0-9]%.[0-9]).*", "%1")
+        if tmuxversion ~= "" then
             if #tmuxversion ~= 3 then tmuxversion = "1.0" end
             if tmuxversion < "3.0" then log.warn("R.nvim requires Tmux >= 3.0") end
         end

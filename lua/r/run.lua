@@ -213,9 +213,7 @@ end
 ---Send signal to R
 ---@param signal string | number
 M.signal_to_R = function(signal)
-    if R_pid ~= 0 then
-        utils.system({ "kill", "-s", tostring(signal), tostring(R_pid) })
-    end
+    if R_pid ~= 0 then vim.system({ "kill", "-s", tostring(signal), tostring(R_pid) }) end
 end
 
 M.check_nvimcom_running = function()
