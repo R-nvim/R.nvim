@@ -162,8 +162,6 @@ M.set_send_cmd_fun = function()
         M.cmd = require("r.term").send_cmd_to_term
     elseif config.is_windows then
         M.cmd = require("r.windows").send_cmd_to_Rgui
-    elseif config.is_darwin and config.applescript then
-        M.cmd = require("r.osx").send_cmd_to_Rapp
     else
         M.cmd = require("r.external_term").send_cmd_to_external_term
     end

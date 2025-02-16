@@ -663,8 +663,8 @@ You should write:
 ------------------------------------------------------------------------------
 5.6 You can't put `syntax enable` in your `init.vim` (macOS only)
 
-It seems that if you put the command `syntax enable` in your `init.vim` on OS
-X, file type plugins are immediately sourced. Consequently, all R.nvim
+It seems that if you put the command `syntax enable` in your `init.vim` on
+macOS, file type plugins are immediately sourced. Consequently, all R.nvim
 variables will be used at their default values. The workaround is do not
 include the superfluous command `syntax enable` in the `init.vim`. For
 details, please, access:
@@ -761,7 +761,6 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |rconsole_width|      Number of columns of R Console
 |register_treesitter| Register treesitter parsers for quarto and rmd files
 |min_editor_width|    Minimum number of columns of editor after R start
-|applescript|         Use osascript in macOS to run R.app
 |RStudio_cmd|         Run RStudio instead of R.
 |listmethods|         Do `nvim.list.args()` instead of `args()`
 |specialplot|         Do `nvim.plot()` instead of `plot()`
@@ -1457,14 +1456,8 @@ window.
 
 
 ------------------------------------------------------------------------------
-6.15. Integration with R.app (macOS only) and RStudio             *applescript*
-                                                                 *RStudio_cmd*
+6.15. Integration with RStudio                                   *RStudio_cmd*
 
-If you are on macOS and want to use the R.app graphical application, put in
-your config:
->lua
-   applescript = true
-<
 If you want to run RStudio instead of R, set in your config the value of
 `RStudio_cmd` to the complete path of the RStudio_cmd binary. Example:
 >lua

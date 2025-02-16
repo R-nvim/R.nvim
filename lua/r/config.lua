@@ -34,10 +34,6 @@ local hooks = require("r.hooks")
 ---Do `:help Rout_more_colors` for more information.
 ---@field Rout_more_colors? boolean
 ---
----Whether to use the R.app graphical application on Mac OS X. Defaults
----to `false`. Do `:help applescript` for more information.
----@field applescript? boolean
----
 ---Whether to remember the window layout when quitting R; defaults to `true`.
 ---Do `:help arrange_windows` for more information.
 ---@field arrange_windows? boolean
@@ -384,7 +380,6 @@ local config = {
     R_cmd               = "R",
     R_path              = "",
     Rout_more_colors    = false,
-    applescript         = false,
     arrange_windows     = true,
     pipe_version        = "native",
     auto_scroll         = true,

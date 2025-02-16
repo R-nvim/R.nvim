@@ -180,6 +180,8 @@ firm commitment to backwards compatibility.
   strings as is common in Quarto documents. See
   [execution-options](https://quarto.org/docs/computations/execution-options.html).
 
+- Integration with `Rapp` on macOS was removed (option `applescript`).
+
 ### Changes:
 
 - `<M-->` (i.e. `Alt + -`) is now used to insert `<-`. See the documentation
