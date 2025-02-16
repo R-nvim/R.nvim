@@ -3,7 +3,7 @@
 Authors: R.nvim team (see: https://github.com/R-nvim)
 
 Version: 0.9.0
-For Neovim >= 0.9.5
+For Neovim >= 0.10.4
 
  1. Overview                                    |R.nvim-overview|
  2. Main features                               |R.nvim-features|
@@ -81,7 +81,7 @@ Before installing the plugin, you should install its dependencies:
 
 Main dependencies:
 
-   Neovim >= 0.9.5:
+   Neovim >= 0.10.4:
       https://github.com/neovim/neovim/releases
       See also: https://github.com/neovim/neovim/wiki/Installing-Neovim
 

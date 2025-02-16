@@ -233,7 +233,7 @@ M.open = function(fullpath, browser)
         return
     end
     if fullpath:match(".odt$") or fullpath:match(".docx$") then
-        vim.fn.system("lowriter " .. fullpath .. " &")
+        vim.system({ "lowriter ", fullpath })
     elseif fullpath:match(".pdf$") then
         require("r.pdf").open(fullpath)
     elseif fullpath:match(".html$") then

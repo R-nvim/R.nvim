@@ -682,7 +682,13 @@ local do_common_global = function()
         elseif vim.env.HOME then
             config.user_login = vim.fn.escape(vim.env.HOME, "\\"):gsub("\\", "")
         elseif vim.fn.executable("whoami") ~= 0 then
-            config.user_login = vim.fn.system("whoami")
+            local obj = vim.system({ "whoami" }, { text = true }):wait()
+            if obj and obj.stdout ~= "" then
+                config.user_login = obj.stdout:gsub("\n", "")
+            else
+                config.user_login = "WhoAmI"
+                swarn("The command whoami failled.")
+            end
         else
             config.user_login = "NoLoginName"
             swarn("Could not determine user name.")
@@ -1050,7 +1056,7 @@ M.check_health = function()
         end)
     end
 
-    if vim.fn.has("nvim-0.9.5") ~= 1 then swarn("R.nvim requires Neovim >= 0.9.5") end
+    if vim.fn.has("nvim-0.10.4") ~= 1 then swarn("R.nvim requires Neovim >= 0.10.4") end
 
     -- Check if treesitter is available
     local function has_parser(parser_name, parsers)

@@ -37,7 +37,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
         "--synctex-pid=" .. job.get_pid(ppath),
         pdfname,
     }
-    local obj = utils.system(zfcmd, { text = true }):wait()
+    local obj = vim.system(zfcmd, { text = true }):wait()
     if obj.code ~= 0 then
         warn(obj.stderr)
         return
