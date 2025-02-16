@@ -136,14 +136,6 @@ start_R2 = function()
         return
     end
 
-    if config.applescript then
-        warn(
-            "Support for running R.app may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/309"
-        )
-        require("r.osx").start_Rapp()
-        return
-    end
-
     if config.is_windows then
         warn(
             "Support for running Rgui.exe may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/308"
@@ -291,14 +283,6 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         then
             job.stdin("Server", "85" .. config.compldir .. "\n")
         end
-    elseif config.applescript then
-        vim.fn.foreground()
-        vim.wait(200)
-    else
-        vim.fn.delete(
-            config.tmpdir .. "/initterm_" .. vim.fn.string(vim.env.RNVIM_ID) .. ".sh"
-        )
-        vim.fn.delete(config.tmpdir .. "/openR")
     end
 
     if config.objbr_auto_start then
