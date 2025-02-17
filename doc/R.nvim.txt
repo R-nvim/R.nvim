@@ -584,7 +584,7 @@ following:
       in the R Console, run either `debug(funcname)` or `debugonce(funcname)`
       where `funcname` is the name of the function (not quoted). R.nvim will
       send this command to R Console if you press <LocalLeader>bg in Normal
-      mode with the cursor over the function name. An example of using
+      mode with the cursor over the function name. Use `<LocalLeader>ud` with the cursor on a function to undebug it. An example of using
       `browser` is shown later in the documentation.
 
    3. Call the function.
