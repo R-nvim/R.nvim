@@ -60,8 +60,13 @@ local find_func = function(srcref)
             "-t",
             require("r.external_term").get_tmuxsname(),
         }
-        local resp = vim.system(run_cmd, { text = true }):wait()
-        rlines = vim.split(resp.stdout, "\n")
+        local obj = vim.system(run_cmd, { text = true }):wait()
+        if obj.code == 0 then
+            rlines = vim.split(obj.stdout, "\n")
+        else
+            warn("Error running `" .. table.concat(run_cmd, " ") .. "`:\n" .. obj.stderr)
+            return
+        end
     end
 
     local idx = #rlines - 1
