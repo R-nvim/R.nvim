@@ -42,7 +42,7 @@ local find_func = function(srcref)
     s.func_offset = -1 -- Not found
 
     vim.wait(300)
-    if type(config.external_term) == "boolean" and not config.external_term then
+    if config.external_term == "" then
         local rbn = require("r.term").get_buf_nr()
         if rbn then
             rlines = vim.api.nvim_buf_get_lines(rbn, 0, -1, false)
@@ -192,8 +192,7 @@ M.jump = function(fnm, lnum)
 
     if
         config.debug_jump
-        and type(config.external_term) == "boolean"
-        and not config.external_term
+        and config.external_term == ""
         and vim.api.nvim_get_current_buf() ~= require("r.term").get_buf_nr()
     then
         vim.cmd("sb " .. tostring(require("r.term").get_buf_nr()))
