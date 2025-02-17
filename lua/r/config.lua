@@ -95,6 +95,16 @@ local hooks = require("r.hooks")
 ---Defaults to `true`. Do `:help config_tmux` for more information.
 ---@field config_tmux? boolean
 ---
+---Whether to enable support for debugging functions.
+---@field debug? boolean
+---
+---Whether to scroll the buffer to center the cursor on the window when
+---debugging jumping.
+---@field debug_center? boolean
+---
+---Whether to jump to R buffer while debugging a function.
+---@field debug_jump? boolean
+---
 ---Control the program to use when viewing CSV files; defaults to `""`, i.e.
 ---to open these in a normal Neovim buffer. Do `:help view_df` for more
 ---information.
@@ -398,6 +408,9 @@ local config = {
         max_time = 100,
     },
     config_tmux         = true,
+    debug               = true,
+    debug_center        = false,
+    debug_jump          = true,
     disable_cmds        = { "" },
     editing_mode        = "",
     esc_term            = true,

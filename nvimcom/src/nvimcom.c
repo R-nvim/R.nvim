@@ -35,6 +35,19 @@
 #include <sys/socket.h>
 #endif
 
+#ifndef WIN32
+// Needed to know what is the prompt
+#include <Rinterface.h>
+#define R_INTERFACE_PTRS 1
+extern int (*ptr_R_ReadConsole)(const char *, unsigned char *, int, int);
+static int (*save_ptr_R_ReadConsole)(const char *, unsigned char *, int, int);
+static int debugging;           // Is debugging a function now?
+LibExtern SEXP R_SrcfileSymbol; // R internal variable defined in Defn.h.
+static void SrcrefInfo(void);
+#endif
+
+static int debug_r; // Should detect when `browser()` is running and start
+                    // debugging mode?
 #include "common.h"
 
 static int initialized = 0; // TCP client successfully connected to the server.
@@ -92,6 +105,8 @@ static int ofd;       // output file descriptor
 static InputHandler *ih;
 static char flag_eval[512]; // Do we have an R expression to evaluate?
 static int flag_glbenv = 0; // Do we have to list objects from .GlobalEnv?
+static int flag_debug = 0;  // Do we need to get file name and line information
+                            // of debugging function?
 #endif
 
 /**
@@ -921,6 +936,10 @@ static void nvimcom_exec(__attribute__((unused)) void *nothing) {
         nvimcom_globalenv_list();
         flag_glbenv = 0;
     }
+    if (flag_debug) {
+        SrcrefInfo();
+        flag_debug = 0;
+    }
 }
 
 /**
@@ -958,6 +977,67 @@ static void nvimcom_fire(void) {
     *buf = 0;
     if (write(ofd, buf, 1) <= 0)
         REprintf("nvimcom error: write <= 0\n");
+}
+
+/**
+ * @brief Read an R's internal variable to get file name and line number of
+ * function currently being debugged.
+ */
+static void SrcrefInfo(void) {
+    // Adapted from SrcrefPrompt(), at src/main/eval.c
+    if (debugging == 0) {
+        send_to_nvim("lua require('r.debug').stop()");
+        return;
+    }
+
+    /* If we have a valid R_Srcref, use it */
+    if (R_Srcref && R_Srcref != R_NilValue) {
+        SEXP filename = R_GetSrcFilename(R_Srcref);
+        if (isString(filename) && length(filename)) {
+            size_t slen = strlen(CHAR(STRING_ELT(filename, 0)));
+            char *buf = calloc(sizeof(char), (2 * slen + 56));
+            char *buf2 = calloc(sizeof(char), (2 * slen + 56));
+            snprintf(buf, 2 * slen + 1, "%s",
+                    CHAR(STRING_ELT(filename, 0)));
+            nvimcom_squo(buf, buf2, 2 * slen + 32);
+            snprintf(buf, 2 * slen + 55,
+                    "lua require('r.debug').jump('%s', %d)", buf2,
+                    asInteger(R_Srcref));
+            send_to_nvim(buf);
+            free(buf);
+            free(buf2);
+        }
+    }
+}
+
+/**
+ * @brief This function is called by R to process user input. The function
+ * monitor R input and checks if we are within the `browser()` function before
+ * passing the data to the R function that really process the input.
+ *
+ * @param prompt R prompt
+ * @param buf Command inserted in the R console
+ * @param len Length of command in bytes
+ * @param addtohistory Should the command be included in `.Rhistory`?
+ * @return The return value is defined and used by R.
+ */
+static int nvimcom_read_console(const char *prompt, unsigned char *buf, int len,
+                                int addtohistory) {
+    if (debugging == 1) {
+        if (prompt[0] != 'B')
+            debugging = 0;
+        flag_debug = 1;
+        nvimcom_fire();
+    } else {
+        if (prompt[0] == 'B' && prompt[1] == 'r' && prompt[2] == 'o' &&
+            prompt[3] == 'w' && prompt[4] == 's' && prompt[5] == 'e' &&
+            prompt[6] == '[') {
+            debugging = 1;
+            flag_debug = 1;
+            nvimcom_fire();
+        }
+    }
+    return save_ptr_R_ReadConsole(prompt, buf, len, addtohistory);
 }
 #endif
 
@@ -1180,7 +1260,7 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
  * @param rinfo Information on R to be passed to nvim.
  */
 SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
-                   SEXP tml, SEXP nvv, SEXP rinfo) {
+                   SEXP tml, SEXP dbg, SEXP nvv, SEXP rinfo) {
     verbose = *INTEGER(vrb);
     allnames = *INTEGER(anm);
     setwidth = *INTEGER(swd);
@@ -1188,6 +1268,7 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
     maxdepth = *INTEGER(imd);
     sizelimit = *INTEGER(szl);
     timelimit = (double)*INTEGER(tml);
+    debug_r = *INTEGER(dbg);
 
     if (getenv("RNVIM_TMPDIR")) {
         strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 500);
@@ -1300,6 +1381,11 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
         initialized = 1;
 #ifdef WIN32
         r_is_busy = 0;
+#else
+        if (debug_r) {
+            save_ptr_R_ReadConsole = ptr_R_ReadConsole;
+            ptr_R_ReadConsole = nvimcom_read_console;
+        }
 #endif
         nvimcom_checklibs();
     }
@@ -1335,6 +1421,8 @@ void nvimcom_Stop(void) {
         TerminateThread(tid, 0);
         CloseHandle(tid);
 #else
+        if (debug_r)
+            ptr_R_ReadConsole = save_ptr_R_ReadConsole;
         close(sfd);
         pthread_cancel(tid);
         pthread_join(tid, NULL);

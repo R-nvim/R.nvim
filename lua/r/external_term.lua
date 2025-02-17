@@ -288,4 +288,8 @@ M.send_cmd_to_external_term = function(command)
     return true
 end
 
+--- Return Tmux target name
+---@return string
+M.get_tmuxsname = function() return tmuxsname end
+
 return M
