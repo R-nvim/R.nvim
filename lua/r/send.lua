@@ -1,9 +1,13 @@
 local config = require("r.config").get_config()
-local warn = require("r").warn
+local warn = require("r.log").warn
+local inform = require("r.log").inform
 local utils = require("r.utils")
+local get_lang = require("r.utils").get_lang
 local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
+local get_r_chunks_from_quarto = require("r.quarto").get_r_chunks_from_quarto
+local get_root_node = require("r.utils").get_root_node
 
 --- Check if line is a comment
 ---@param line string
@@ -19,6 +23,64 @@ local is_blank = function(line) return line:find("^%s*$") ~= nil end
 ---@param line string
 ---@return boolean
 local is_insignificant = function(line) return is_comment(line) or is_blank(line) end
+
+--- Check if line ends with operator symbol
+---@param line string
+---@return boolean
+local ends_with_operator = function(line)
+    local op_pattern = { "&", "|", "+", "-", "%*", "%/", "%=", "~", "%-", "%<", "%>" }
+    local clnline = line:gsub("#.*", "")
+    local has_op = false
+    for _, v in pairs(op_pattern) do
+        if clnline:find(v .. "%s*$") then
+            has_op = true
+            break
+        end
+    end
+    return has_op
+end
+
+--- Check if the number of brackets are balanced
+---@param str string The line to check
+---@return number
+local paren_diff = function(str)
+    local clnln = str
+    clnln = clnln:gsub('\\"', "")
+    clnln = clnln:gsub("\\'", "")
+    clnln = clnln:gsub('".-"', "")
+    clnln = clnln:gsub("'.-'", "")
+    clnln = clnln:gsub("#.*", "")
+    local llen1 = string.len(clnln:gsub("[%{%(%[]", ""))
+    local llen2 = string.len(clnln:gsub("[%}%)%]]", ""))
+    return llen1 - llen2
+end
+
+--- Dumb function to send code without treesitter
+---@param txt string The text for the line the cursor is currently on
+---@param row number The row the cursor is currently on
+---@return table, number
+local function get_rhelp_code_to_send(txt, row)
+    local lines = { txt }
+    local has_op = ends_with_operator(txt)
+    local rpd = paren_diff(txt)
+    if rpd < 0 or has_op then
+        row = row + 1
+        local last_buf_line = vim.api.nvim_buf_line_count(0)
+        while row <= last_buf_line do
+            local line = vim.fn.getline(row)
+            table.insert(lines, line)
+            rpd = rpd + paren_diff(line)
+            has_op = ends_with_operator(line)
+            if rpd < 0 or has_op then
+                row = row + 1
+            else
+                vim.api.nvim_win_set_cursor(0, { row, 0 })
+                break
+            end
+        end
+    end
+    return lines, row - 1
+end
 
 --- Get the full expression the cursor is currently on
 ---@param txt string The text for the line the cursor is currently on
@@ -42,27 +104,39 @@ local function get_code_to_send(txt, row)
 
     local col = txt:find("%S")
 
+    if vim.o.filetype == "rhelp" then return get_rhelp_code_to_send(txt, row) end
+
     -- Find the 'root' node for the current expression --------------------
-    local n_lang = vim.o.filetype == "rnoweb" and "r" or nil
     local node = vim.treesitter.get_node({
         bufnr = 0,
         pos = { row - 1, col - 1 },
-        lang = n_lang,
         -- Required for quarto/rmd/rnoweb; harmless for r.
         ignore_injections = false,
     })
 
+    -- This is a strange fix for https://github.com/R-nvim/R.nvim/issues/298
+    if node then vim.schedule(function() end) end
+
+    if node and node:type() == "program" then node = node:child(0) end
+
     while node do
         local parent = node:parent()
-        if parent and (parent:type() == "program" or parent:type() == "brace_list") then
+        if
+            parent
+            and (parent:type() == "program" or parent:type() == "braced_expression")
+        then
             break
         end
         node = parent
     end
 
     if node then
-        row = node:end_()
-        table.insert(lines, vim.treesitter.get_node_text(node, 0))
+        local start_row, _, end_row, _ = node:range()
+        for i = start_row, end_row do
+            local line_txt = vim.fn.getline(i + 1)
+            table.insert(lines, line_txt)
+        end
+        row = end_row
     end
 
     return lines, row
@@ -84,12 +158,10 @@ M.set_send_cmd_fun = function()
 
     if config.RStudio_cmd ~= "" then
         M.cmd = require("r.rstudio").send_cmd_to_RStudio
-    elseif type(config.external_term) == "boolean" and config.external_term == false then
+    elseif config.external_term == "" then
         M.cmd = require("r.term").send_cmd_to_term
     elseif config.is_windows then
         M.cmd = require("r.windows").send_cmd_to_Rgui
-    elseif config.is_darwin and config.applescript then
-        M.cmd = require("r.osx").send_cmd_to_Rapp
     else
         M.cmd = require("r.external_term").send_cmd_to_external_term
     end
@@ -135,7 +207,7 @@ M.source_lines = function(lines, what)
         rcmd = table.concat(lines, "\n")
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_code_chunk("python", false)
+            and get_lang() == "python"
         then
             rcmd = rcmd:gsub('"', '\\"')
             rcmd = 'reticulate::py_run_string("' .. rcmd .. '")'
@@ -262,23 +334,23 @@ M.chunks_up_to_here = function()
     local curbuf = vim.fn.getline(1, "$")
     local idx = 0
 
+    local begchk, endchk, chdchk
+
+    if filetype == "rnoweb" then
+        begchk = "^<<.*>>=$"
+        endchk = "^@"
+        chdchk = "^<<.*child *= *"
+    elseif filetype == "rmd" or filetype == "quarto" then
+        begchk = "^[ \t]*```[ ]*{"
+        endchk = "^[ \t]*```$"
+        chdchk = "^```.*child *= *"
+    else
+        -- Should never happen
+        warn('Strange filetype (SendFHChunkToR): "' .. filetype .. '"')
+        return
+    end
+
     while idx < here do
-        local begchk, endchk, chdchk
-
-        if filetype == "rnoweb" then
-            begchk = "^<<.*>>=$"
-            endchk = "^@"
-            chdchk = "^<<.*child *= *"
-        elseif filetype == "rmd" or filetype == "quarto" then
-            begchk = "^[ \t]*```[ ]*{r"
-            endchk = "^[ \t]*```$"
-            chdchk = "^```.*child *= *"
-        else
-            -- Should never happen
-            warn('Strange filetype (SendFHChunkToR): "' .. filetype .. '"')
-            return
-        end
-
         if
             curbuf[idx + 1]:find(begchk) and not curbuf[idx + 1]:find("[<, ]eval *= *F")
         then
@@ -292,6 +364,14 @@ M.chunks_up_to_here = function()
                 knit_child(curbuf[idx + 1], false)
                 idx = idx + 1
             else
+                local lang = "R"
+                if filetype == "rmd" or filetype == "quarto" then
+                    if curbuf[idx + 1]:find("{python") then
+                        lang = "python"
+                    elseif not curbuf[idx + 1]:find("{r") then
+                        lang = "other"
+                    end
+                end
                 idx = idx + 1
                 local i = idx + 1
                 local j = idx + 1
@@ -310,8 +390,21 @@ M.chunks_up_to_here = function()
                     idx = idx + 1
                     j = idx
                 end
+                local chunklines = {}
                 for k = i, j, 1 do
-                    table.insert(codelines, curbuf[k])
+                    table.insert(chunklines, curbuf[k])
+                end
+                if lang == "python" then
+                    table.insert(
+                        codelines,
+                        'reticulate::py_run_string("'
+                            .. table.concat(chunklines, "\n"):gsub('"', '\\"')
+                            .. '")'
+                    )
+                else
+                    for _, v in pairs(chunklines) do
+                        table.insert(codelines, v)
+                    end
                 end
             end
         else
@@ -357,7 +450,10 @@ end
 -- Function to get the marks which the cursor is between
 ---@param m boolean True if should move to the next line.
 M.marked_block = function(m)
-    if not vim.b.IsInRCode(true) then return end
+    if get_lang() ~= "r" then
+        inform("Not in R code.")
+        return
+    end
 
     local last_line = vim.api.nvim_buf_line_count(0)
 
@@ -381,7 +477,7 @@ M.marked_block = function(m)
     end
 
     if lineA == 1 and lineB == last_line then
-        warn("The file has no mark!")
+        inform("The file has no mark!")
         return
     end
 
@@ -401,27 +497,25 @@ end
 --- Send to R Console the selected lines
 ---@param m boolean True if should move to the next line.
 M.selection = function(m)
-    local ispy = false
+    local lang = get_lang()
 
-    if vim.o.filetype ~= "r" then
-        if
-            (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and require("r.rmd").is_in_code_chunk("python", false)
-        then
-            ispy = true
-        elseif not vim.b.IsInRCode(false) then
-            local cline = vim.api.nvim_get_current_line()
-            if
-                (vim.o.filetype == "rnoweb" and not cline:find("\\Sexpr{"))
-                or (
-                    (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-                    and not cline:find("`r ")
-                )
-            then
-                warn("Not inside an R code chunk.")
-                return
-            end
-        end
+    if
+        (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
+        and lang ~= "r"
+        and lang ~= "python"
+        and not vim.api.nvim_get_current_line():find("`r ")
+    then
+        inform("Not inside R or Python code chunk.")
+        return
+    end
+
+    if
+        vim.o.filetype == "rnoweb"
+        and lang ~= "r"
+        and not vim.api.nvim_get_current_line():find("\\Sexpr{")
+    then
+        inform("Not inside R code chunk.")
+        return
     end
 
     -- Leave visual mode
@@ -462,7 +556,7 @@ M.selection = function(m)
     end
 
     local ok
-    if ispy then
+    if lang == "python" then
         ok = M.source_lines(lines, "PythonCode")
     else
         ok = M.source_lines(lines, "selection")
@@ -478,69 +572,66 @@ end
 
 --- Send current line to R Console
 ---@param m boolean|string Movement to do after sending the line.
----@param lnum number Number of line to send (optional).
-M.line = function(m, lnum)
-    if not lnum then lnum = vim.api.nvim_win_get_cursor(0)[1] end
+M.line = function(m)
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
     local line = vim.fn.getline(lnum)
+    local lang = get_lang()
+    if lang == "chunk_child" then
+        if type(m) == "boolean" and m then
+            knit_child(line, true)
+        else
+            knit_child(line, false)
+        end
+        return
+    elseif lang == "chunk_end" then
+        if m == true then
+            if vim.bo.filetype == "rnoweb" then
+                require("r.rnw").next_chunk()
+            else
+                require("r.rmd").next_chunk()
+            end
+        end
+        return
+    end
 
+    local ok = false
     if
-        vim.o.filetype == "rnoweb"
-        or vim.o.filetype == "rmd"
-        or vim.o.filetype == "quarto"
+        vim.bo.filetype == "rnoweb"
+        or vim.bo.filetype == "rmd"
+        or vim.bo.filetype == "quarto"
     then
-        if line:find("^<<.*child *= *") or line:find("^```.*child *= *") then
-            if type(m) == "boolean" and m then
-                knit_child(line, true)
-            else
-                knit_child(line, false)
-            end
+        if lang == "python" then
+            line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
+            ok = M.cmd(line)
+            if ok and m == true then cursor.move_next_line() end
+            return
+        end
+        if lang ~= "r" then
+            inform("Not inside R or Python code chunk [within " .. lang .. "]")
             return
         end
     end
 
-    if vim.o.filetype == "rnoweb" then
-        if line == "@" then
-            if m == true then cursor.move_next_line() end
-            return
-        end
-        if not require("r.rnw").is_in_R_code(true) then return end
-    end
-
-    if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
-        if line == "```" then
-            if m == true then cursor.move_next_line() end
-            return
-        end
-        if not require("r.rmd").is_in_code_chunk("r", false) then
-            if not require("r.rmd").is_in_code_chunk("python", false) then
-                warn("Not inside either R or Python code chunk.")
-            else
-                line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
-                M.cmd(line)
-                if m == true then cursor.move_next_line() end
-            end
-            return
-        end
-    end
-
-    if vim.o.filetype == "rhelp" and not require("r.rhelp").is_in_R_code(true) then
+    if vim.bo.filetype == "rhelp" and lang ~= "r" then
+        inform("Not inside an R section.")
         return
     end
 
     local lines
     lines, lnum = get_code_to_send(line, lnum)
 
-    if #lines > 0 then
-        M.source_lines(lines, nil)
+    if #lines > 1 then
+        ok = M.source_lines(lines, nil)
     else
+        if #lines == 1 then line = lines[1] end
         if config.bracketed_paste then
-            M.cmd("\027[200~" .. line .. "\027[201~")
+            ok = M.cmd("\027[200~" .. line .. "\027[201~")
         else
-            M.cmd(line)
+            ok = M.cmd(line)
         end
     end
 
-    if m == true then
+    if ok and m == true then
         local last_line = vim.api.nvim_buf_line_count(0)
         -- Move to the last line of the sent expression
         vim.api.nvim_win_set_cursor(0, { math.min(lnum + 1, last_line), 0 })
@@ -647,68 +738,98 @@ M.chain = function()
     M.source_lines(chain, nil)
 end
 
-local get_root_node = function(bufnr)
-    local parser = vim.treesitter.get_parser(bufnr, "r", {})
-    local tree = parser:parse()[1]
-    return tree:root()
-end
+--- Extracts R functions from the given R content based on the query and cursor position.
+-- @param r_content The R content as a string.
+-- @param capture_all Boolean indicating whether to capture all functions.
+-- @param cursor_pos The current cursor position.
+-- @param chunk_start_row The starting row of the chunk.
+-- @return A table containing the extracted function lines.
+local extract_r_functions = function(r_content, capture_all, cursor_pos, chunk_start_row)
+    local r_parser = vim.treesitter.get_string_parser(r_content, "r")
+    local r_tree = r_parser:parse()[1]
+    local r_root = r_tree:root()
 
--- Send all or the current function to R
-M.funs = function(bufnr, capture_all, move_down)
     local r_fun_query = vim.treesitter.query.parse(
         "r",
         [[
-    (left_assignment
-      (function_definition)) @rfun
-
-    (equals_assignment
-      (function_definition)) @rfun
-    ]]
+        (binary_operator
+          (function_definition)) @rfun
+        ]]
     )
 
-    bufnr = bufnr or vim.api.nvim_get_current_buf()
+    local lines = {}
 
-    if vim.bo[bufnr].filetype == "quarto" or vim.bo[bufnr].filetype == "rmd" then
-        vim.notify("Not yet supported in Rmd or Quarto files.")
-        return
+    for _, node in r_fun_query:iter_captures(r_root, r_content) do
+        local start_row, _, end_row, _ = node:range()
+
+        -- Adjust the cursor position relative to the chunk start
+        local adjusted_cursor_pos = cursor_pos - (chunk_start_row or 0)
+
+        if
+            capture_all
+            or (
+                adjusted_cursor_pos >= start_row + 1
+                and adjusted_cursor_pos <= end_row + 1
+            )
+        then
+            local function_lines = vim.treesitter.get_node_text(node, r_content)
+            vim.list_extend(lines, { function_lines })
+        end
     end
 
-    if vim.bo[bufnr].filetype ~= "r" then
-        vim.notify("Not an R file.")
+    return lines
+end
+
+M.funs = function(bufnr, capture_all, move_down)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+    local filetype = vim.bo[bufnr].filetype
+
+    if
+        filetype ~= "r"
+        and filetype ~= "rnoweb"
+        and filetype ~= "quarto"
+        and filetype ~= "rmd"
+    then
+        inform("Not yet supported in '" .. filetype .. "' files.")
         return
     end
 
     local root_node = get_root_node(bufnr)
+    if not root_node then return end
+
     local cursor_pos = vim.api.nvim_win_get_cursor(0)[1]
 
     local lines = {}
 
-    for id, node in r_fun_query:iter_captures(root_node, bufnr, 0, -1) do
-        local name = r_fun_query.captures[id]
+    if filetype == "quarto" or filetype == "rmd" then
+        local r_chunks_content = get_r_chunks_from_quarto(root_node, bufnr)
 
-        -- Kinda hacky, but it works. Check if the parent of the function is
-        -- the root node, if so, it's a top level function
-        local s, _, _, _ = node:parent():range()
+        for _, r_chunk in ipairs(r_chunks_content) do
+            local chunk_lines = extract_r_functions(
+                r_chunk.content,
+                capture_all,
+                cursor_pos,
+                r_chunk.start_row
+            )
+            vim.list_extend(lines, chunk_lines)
+        end
+    else
+        local buffer_content =
+            table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
+        lines = extract_r_functions(buffer_content, capture_all, cursor_pos)
+    end
 
-        if name == "rfun" and s == 0 then
-            local start_row, _, end_row, _ = node:range()
-
-            if
-                capture_all or (cursor_pos >= start_row + 1 and cursor_pos <= end_row + 1)
-            then
-                M.source_lines(lines, nil)
-                lines = vim.fn.extend(
-                    lines,
-                    vim.api.nvim_buf_get_lines(bufnr, start_row, end_row + 1, false)
-                )
-                if move_down == true then
-                    vim.api.nvim_win_set_cursor(bufnr, { end_row + 1, 0 })
-                    cursor.move_next_line()
-                end
-            end
+    if #lines > 0 then
+        M.source_lines(lines)
+        if move_down == true then
+            local last_function = lines[#lines]
+            local function_lines = vim.split(last_function, "\n")
+            local end_row = vim.api.nvim_win_get_cursor(0)[1] + #function_lines
+            local last_line = vim.api.nvim_buf_line_count(0)
+            vim.api.nvim_win_set_cursor(0, { math.min(end_row, last_line), 0 })
+            vim.cmd("normal! j")
         end
     end
-    if #lines then M.source_lines(lines) end
 end
-
 return M

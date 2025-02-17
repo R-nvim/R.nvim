@@ -1,89 +1,51 @@
-local warn = require("r").warn
+local inform = require("r.log").inform
 local config = require("r.config").get_config()
 local send = require("r.send")
-local uv = vim.loop
+local get_lang = require("r.utils").get_lang
+local uv = vim.uv
+local chunk_key = nil
 
 local M = {}
 
---- Checks if the cursor is currently positioned inside a code block within a document for a specified language.
--- This function searches backwards for the start of a code chunk indicated by ```{language
--- and forwards for the end of any code chunk indicated by ```. It then compares these positions
--- to determine if the cursor is inside a code block of the specified language.
----@param language string The programming language to check for (e.g., 'r', 'python').
----@param verbose boolean If true, it will display a warning message when the cursor is not inside a code chunk of the specified language.
----@return boolean Returns true if inside a code chunk of the specified language, false otherwise.
-M.is_in_code_chunk = function(language, verbose)
-    local chunkStartPattern = "^[ \t]*```[ ]*{" .. language
-    -- bncW: search backwards, don't move cursor, also match at cursor, no wrap around the end of the buffer
-    local chunkline = vim.fn.search(chunkStartPattern, "bncW") -- Search for chunk start
-    local docline = vim.fn.search("^[ \t]*```$", "bncW") -- Search for any code chunk end
-    if chunkline > docline and chunkline ~= vim.api.nvim_win_get_cursor(0)[1] then
-        return true
-    else
-        if verbose then warn("Not inside a " .. language .. " code chunk.") end -- Warn if not in chunk and verbose is true
-        return false
-    end
-end
-
---- Checks if the cursor is currently positioned inside a R code block within a document.
--- This function is now a wrapper around the generalized `is_in_code_chunk` function.
----@param vrb boolean If true, it will display a warning message when the cursor is not inside an R code chunk.
----@return boolean Returns true if inside an R code chunk, false otherwise.
-M.is_in_R_code = function(vrb) return M.is_in_code_chunk("r", vrb) end
-
 --- Writes a new R code chunk at the current cursor position
--- This function checks if the cursor is in an empty line and not in an R code chunk
--- it then inserts a new R code chunk template.
--- Different templates are used based on the file type (e.g., Quarto).
 M.write_chunk = function()
-    if not M.is_in_code_chunk("r", false) then -- Check if cursor is inside an R code chunk
-        if vim.api.nvim_get_current_line():find("^%s*$") then -- Check if cursor is in an empty line
-            local curline = vim.api.nvim_win_get_cursor(0)[1]
-            -- Insert new R code chunk template based on filetype
-            if vim.o.filetype == "quarto" then -- Quarto
-                vim.api.nvim_buf_set_lines(
-                    0,
-                    curline - 1,
-                    curline - 1,
-                    true,
-                    { "```{r}", "", "```", "" }
-                )
-                vim.api.nvim_win_set_cursor(0, { curline + 1, 1 })
-            else -- not Quarto (R Markdown)
-                vim.api.nvim_buf_set_lines(
-                    0,
-                    curline - 1,
-                    curline - 1,
-                    true,
-                    { "```{r}", "```", "" }
-                )
-                vim.api.nvim_win_set_cursor(0, { curline, 5 })
-            end
-            return
-        else
-            -- inline R code within markdown text
-            if config.rmdchunk == 2 then
-                local pos = vim.api.nvim_win_get_cursor(0)
-                local next_char =
-                    vim.api.nvim_get_current_line():sub(pos[2] + 1, pos[2] + 1)
-                if next_char == "`" then
-                    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 1 })
-                elseif vim.fn.col(".") == vim.fn.col("$") then
-                    vim.cmd([[normal! a`r `]])
-                    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 3 })
-                else
-                    vim.cmd([[normal! i`r `]])
-                    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] + 3 })
-                end
-                return
-            end
-        end
+    local curpos = vim.api.nvim_win_get_cursor(0)
+    local curline = vim.api.nvim_get_current_line()
+    local lang = get_lang()
+
+    -- Check if cursor is in an empty Markdown line
+    if lang == "markdown" and curline == "" then
+        -- Insert new R code chunk template
+        vim.api.nvim_buf_set_lines(
+            0,
+            curpos[1] - 1,
+            curpos[1] - 1,
+            true,
+            { "```{r}", "", "```", "" }
+        )
+        vim.api.nvim_win_set_cursor(0, { curpos[1] + 1, 1 })
+        return
     end
-    -- R code: just insert the backtick
-    if vim.fn.col(".") == 1 then
-        vim.cmd("normal! i`")
-    else
-        vim.cmd("normal! a`")
+
+    -- Check if cursor is in an Markdown region
+    if lang == "markdown" or lang == "markdown_inline" then
+        -- inline R code within markdown text
+        vim.api.nvim_set_current_line(
+            curline:sub(1, curpos[2]) .. "`r `" .. curline:sub(curpos[2] + 1)
+        )
+        vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + 3 })
+        return
+    end
+
+    -- Just insert the mapped key stroke
+    if not chunk_key then
+        chunk_key = require("r.utils").get_mapped_key("RmdInsertChunk")
+    end
+    if chunk_key then
+        vim.api.nvim_set_current_line(
+            curline:sub(1, curpos[2]) .. chunk_key .. curline:sub(curpos[2] + 1)
+        )
+        vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + #chunk_key })
     end
 end
 
@@ -111,9 +73,10 @@ M.send_R_chunk = function(m)
         vim.api.nvim_win_set_cursor(0, { lnum + 1, 0 })
     end
     -- Check for R code chunk; if not, check for Python code chunk
-    if not M.is_in_code_chunk("r", false) then
-        if not M.is_in_code_chunk("python", false) then
-            warn("Not inside an R code chunk.")
+    local lang = get_lang()
+    if lang ~= "r" then
+        if lang ~= "python" then
+            inform("Not inside an R code chunk.")
         else
             send_py_chunk(m)
         end
@@ -134,14 +97,15 @@ end
 ---@return boolean
 local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
-    if M.is_in_code_chunk("r", false) or M.is_in_code_chunk("python", false) then
+    local lang = get_lang()
+    if lang == "r" or lang == "python" then
         local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- search for chunk start
         if i ~= 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end -- if found, move cursor at chunk
     end
     local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- Search again for chunk start
     if i == 0 then
         vim.api.nvim_win_set_cursor(0, { curline, 0 })
-        warn("There is no previous R code chunk to go.")
+        inform("There is no previous R code chunk to go.")
         return false
     end
     vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the chunk
@@ -163,7 +127,7 @@ end
 local go_to_next = function()
     local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "nW") -- Search for the next chunk start
     if i == 0 then
-        warn("There is no next R code chunk to go.")
+        inform("There is no next R code chunk to go.")
         return false
     end
     vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the next chunk
@@ -179,36 +143,68 @@ M.next_chunk = function()
     end
 end
 
+local last_params = ""
+
+--- Check if the YAML field params exists and if it is new
+--- @return string
+M.params_status = function()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
+    if lines[1] ~= "---" then
+        if last_params == "" then return "unchanged" end
+        last_params = ""
+        return "deleted"
+    end
+
+    local i = 2
+    while i < #lines do
+        if lines[i] == "params:" then
+            local cp = ""
+            i = i + 1
+            while i < #lines and lines[i]:sub(1, 1) == " " do
+                cp = cp .. lines[i]
+                i = i + 1
+            end
+            if last_params == cp then return "unchanged" end
+            last_params = cp
+            return "new"
+        end
+        if lines[i] == "---" then break end
+        i = i + 1
+    end
+    if last_params ~= "" then
+        last_params = ""
+        return "deleted"
+    end
+    return "unchanged"
+end
+
+--- Get the params variable from the YAML metadata and send it to nvimcom which
+--- will create the params list in the .GlobalEnv.
+M.update_params = function()
+    if not vim.g.R_Nvim_status then return end
+    if vim.g.R_Nvim_status < 7 then return end
+    if config.set_params == "no" then return end
+
+    local p = M.params_status()
+    if p == "new" then
+        local bn = vim.api.nvim_buf_get_name(0)
+        if config.is_windows then bn = bn:gsub("\\", "\\\\") end
+        require("r.run").send_to_nvimcom("E", "nvimcom:::update_params('" .. bn .. "')")
+    elseif p == "deleted" then
+        require("r.run").send_to_nvimcom(
+            "E",
+            "nvimcom:::update_params('DeleteOldParams')"
+        )
+    end
+end
+
+-- Register params as empty. This function is called when R quits.
+M.clean_params = function() last_params = "" end
+
 --- Setup function for initializing module functionality.
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.
 M.setup = function()
     local rmdtime = uv.hrtime() -- Track setup time
-    local cfg = require("r.config").get_config()
-
-    -- Configure key mapping for writing chunks based on configuration settings
-    if type(cfg.rmdchunk) == "number" and (cfg.rmdchunk == 1 or cfg.rmdchunk == 2) then
-        vim.api.nvim_buf_set_keymap(
-            0,
-            "i",
-            "`",
-            "<Cmd>lua require('r.rmd').write_chunk()<CR>",
-            { silent = true }
-        )
-    elseif type(cfg.rmdchunk) == "string" then
-        vim.api.nvim_buf_set_keymap(
-            0,
-            "i",
-            cfg.rmdchunk,
-            "<Cmd>lua require('r.rmd').write_chunk()<CR>",
-            { silent = true }
-        )
-    end
-
-    vim.api.nvim_buf_set_var(0, "rplugin_knitr_pattern", "^``` *{.*}$")
-
-    -- Pointer to function called by generic functions
-    -- TODO: replace with M.is_in_code_chunk then remove is_in_R_code definition
-    vim.api.nvim_buf_set_var(0, "IsInRCode", M.is_in_R_code)
 
     -- Key bindings
     require("r.maps").create(vim.o.filetype)
@@ -217,17 +213,10 @@ M.setup = function()
     -- Schedule additional setup tasks for PDF viewing and undo functionality
     vim.schedule(function() require("r.pdf").setup() end)
 
-    vim.schedule(function()
-        if vim.b.undo_ftplugin then
-            vim.b.undo_ftplugin = vim.b.undo_ftplugin
-                .. " | unlet! b:IsInRCode b:rplugin_knitr_pattern"
-        else
-            vim.b.undo_ftplugin = "unlet! b:IsInRCode b:rplugin_knitr_pattern"
-        end
-    end)
     -- Record setup time for debugging
     rmdtime = (uv.hrtime() - rmdtime) / 1000000000
     require("r.edit").add_to_debug_info("rmd setup", rmdtime, "Time")
+    vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
 end
 
 --- Compiles the current R Markdown document into a specified output format.

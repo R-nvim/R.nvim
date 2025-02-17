@@ -143,6 +143,18 @@ static int sfd = -1;  // File descriptor of socket used in the TCP connection
 static pthread_t tid; // Identifier of thread running TCP connection loop.
 #endif
 
+static void escape_str(char *s) {
+    while (*s) {
+        if (*s == '\n') // It would prematurely send the string
+            *s = ' ';
+        if (*s == '\x5c') // Backslash is misinterpreted by Lua
+            *s = '\x12';
+        if (*s == '\'') // Single quote prematurely finishes strings
+            *s = '\x13';
+        s++;
+    }
+}
+
 SEXP fmt_txt(SEXP txt, SEXP delim, SEXP nl) {
     const char *s = CHAR(STRING_ELT(txt, 0));
     const char *d = CHAR(STRING_ELT(delim, 0));
@@ -470,6 +482,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
 
     p = str_cat(p, curenv);
     snprintf(ebuf, 63, "%s", xname);
+    escape_str(ebuf);
     p = str_cat(p, ebuf);
 
     if (Rf_isLogical(*x)) {
@@ -525,18 +538,8 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
     PROTECT(txt = getAttrib(*x, lablab));
     if (length(txt) > 0) {
         if (Rf_isValidString(txt)) {
-            char *ptr;
             snprintf(buf, 159, "\006\006%s", CHAR(STRING_ELT(txt, 0)));
-            ptr = buf;
-            while (*ptr) {
-                if (*ptr == '\n') // It would prematurely send the string
-                    *ptr = ' ';
-                if (*ptr == '\x5c') // Backslash is misinterpreted by Lua
-                    *ptr = '\x12';
-                if (*ptr == '\'') // Single quote prematurely finishes strings
-                    *ptr = '\x13';
-                ptr++;
-            }
+            escape_str(buf);
             p = str_cat(p, buf);
         } else {
             p = str_cat(p, "\006\006Error: label is not a valid string.");
@@ -739,7 +742,7 @@ static void nvimcom_globalenv_list(void) {
         if (verbose)
             REprintf(
                 "nvimcom:\n"
-                "    Time to buiild list of objects: %g ms (max_time = %g ms)\n"
+                "    Time to build list of objects: %g ms (max_time = %g ms)\n"
                 "    List size: %zu bytes (max_size = %d bytes)\n"
                 "    New max_depth: %d\n",
                 tmdiff, timelimit, strlen(glbnvbuf1), sizelimit, maxdepth);
@@ -772,7 +775,7 @@ static void nvimcom_eval_expr(const char *buf) {
          * a semicolon. */
         PROTECT(ans = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
         if (er && verbose > 1) {
-            strcpy(rep, "lua require('r').warn('Error running: ");
+            strcpy(rep, "lua require('r.log').warn('Error running: ");
             strncat(rep, buf2, 80);
             strcat(rep, "')");
             send_to_nvim(rep);
@@ -780,7 +783,7 @@ static void nvimcom_eval_expr(const char *buf) {
         UNPROTECT(1);
     } else {
         if (verbose > 1) {
-            strcpy(rep, "lua require('r').warn('Invalid command: ");
+            strcpy(rep, "lua require('r.log').warn('Invalid command: ");
             strncat(rep, buf2, 80);
             strcat(rep, "')");
             send_to_nvim(rep);
@@ -1080,6 +1083,11 @@ static void nvimcom_parse_received_msg(char *buf) {
     }
 
     switch (buf[0]) {
+#ifdef WIN32
+    case 'B':
+        r_is_busy = 1;
+        break;
+#endif
     case 'A': // Object Browser started
         if (autoglbenv == 0)
             autoglbenv = 1;
@@ -1138,7 +1146,15 @@ static void nvimcom_parse_received_msg(char *buf) {
         }
         break;
     case 'E': // eval expression
+    case 'R': // eval expression and update GlobalEnv list
         p = buf;
+        if (*p == 'R')
+#ifdef WIN32
+            if (!r_is_busy)
+                nvimcom_globalenv_list();
+#else
+            flag_glbenv = 1;
+#endif
         p++;
         if (strstr(p, getenv("RNVIM_ID")) == p) {
             p += strlen(getenv("RNVIM_ID"));
@@ -1342,7 +1358,8 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
 #ifdef WIN32
                 DWORD ti;
                 tid = CreateThread(NULL, 0, client_loop_thread, NULL, 0, &ti);
-                nvimcom_send_running_info(CHAR(STRING_ELT(rinfo, 0)), CHAR(STRING_ELT(nvv, 0)));
+                nvimcom_send_running_info(CHAR(STRING_ELT(rinfo, 0)),
+                                          CHAR(STRING_ELT(nvv, 0)));
 #else
                 pthread_create(&tid, NULL, client_loop_thread, NULL);
                 snprintf(flag_eval, 510, "nvimcom:::send_nvimcom_info('%d')",

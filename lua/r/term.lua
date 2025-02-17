@@ -1,7 +1,7 @@
 local M = {}
 
 local config = require("r.config").get_config()
-local warn = require("r").warn
+local warn = require("r.log").warn
 local r_width = 80
 local number_col
 local r_bufnr = nil
@@ -16,6 +16,8 @@ M.send_cmd_to_term = function(command)
         warn("Is R running?")
         return false
     end
+
+    if config.is_windows then require("r.run").send_to_nvimcom("B", "R is Busy") end
 
     local cmd
     if config.clear_line then
@@ -108,6 +110,7 @@ local split_window = function()
 end
 
 M.reopen_win = function()
+    if not r_bufnr then return end
     local wlist = vim.api.nvim_list_wins()
     for _, wnr in ipairs(wlist) do
         if vim.api.nvim_win_get_buf(wnr) == r_bufnr then
@@ -170,8 +173,8 @@ M.highlight_term = function()
     if r_bufnr then vim.api.nvim_set_option_value("syntax", "rout", { buf = r_bufnr }) end
 end
 
----Return built-in termina buffer number
----@return number
+---Return built-in terminal buffer number
+---@return number | nil
 M.get_buf_nr = function() return r_bufnr end
 
 return M

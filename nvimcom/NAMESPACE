@@ -11,3 +11,4 @@ importFrom("utils", "browseURL", "capture.output", "example", "find",
            "getAnywhere", "getS3method", "isS3stdGeneric",
            "installed.packages", "methods", "packageDescription",
            "read.table", "str", "Sweave", "write.table")
+useDynLib(nvimcom, .registration = TRUE)

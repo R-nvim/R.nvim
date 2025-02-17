@@ -51,7 +51,7 @@ NvimcomEnv$tcb <- FALSE
 
     if (interactive() && termenv != "" && termenv != "dumb" && Sys.getenv("RNVIM_COMPLDIR") != "") {
         dir.create(Sys.getenv("RNVIM_COMPLDIR"), showWarnings = FALSE)
-        ok <- .Call("nvimcom_Start",
+        ok <- .Call(nvimcom_Start,
            as.integer(getOption("nvimcom.verbose")),
            as.integer(getOption("nvimcom.allnames")),
            as.integer(getOption("nvimcom.setwidth")),
@@ -61,8 +61,7 @@ NvimcomEnv$tcb <- FALSE
            as.integer(getOption("nvimcom.max_time")),
            as.integer(getOption("nvimcom.debug_r")),
            NvimcomEnv$info[1],
-           NvimcomEnv$info[2],
-           PACKAGE = "nvimcom")
+           NvimcomEnv$info[2])
         if (ok)
             add_tcb()
     }
@@ -80,8 +79,8 @@ NvimcomEnv$tcb <- FALSE
 #' detach("package:nvimcom", unload = TRUE)
 .onUnload <- function(libpath) {
     NvimcomEnv$tcb <- FALSE
-    if (is.loaded("nvimcom_Stop", PACKAGE = "nvimcom")) {
-        .C("nvimcom_Stop", PACKAGE = "nvimcom")
+    if (is.loaded("nvimcom_Stop")) {
+        .C(nvimcom_Stop)
         if (Sys.getenv("RNVIM_TMPDIR") != "" && .Platform$OS.type == "windows") {
                 unlink(paste0(Sys.getenv("RNVIM_TMPDIR"), "/rconsole_hwnd_",
                               Sys.getenv("RNVIM_SECRET")))
@@ -94,7 +93,7 @@ NvimcomEnv$tcb <- FALSE
 run_tcb <- function(...) {
     if (!NvimcomEnv$tcb)
         return(invisible(FALSE))
-    .C("nvimcom_task", PACKAGE = "nvimcom")
+    .C(nvimcom_task)
     return(invisible(TRUE))
 }
 
@@ -123,17 +122,16 @@ set_running_info <- function() {
 send_nvimcom_info <- function(Rpid) {
     winID <- Sys.getenv("WINDOWID")
     if (winID == "")
-        winID = "0"
+        winID <- "0"
     msg <- paste0("lua require('r.run').set_nvimcom_info('", NvimcomEnv$info[1],
                   "', ", Rpid, ", '", winID, "', ", NvimcomEnv$info[2], ")")
-    .C("nvimcom_msg_to_nvim", msg, PACKAGE = "nvimcom")
+    .C(nvimcom_msg_to_nvim, msg)
 }
 
 # registered by reg.finalizer() to be called when R is quitting. Only
 # necessary if running in a external terminal emulator.
 final_msg <- function(e) {
-    .C("nvimcom_msg_to_nvim",
-       "lua require('r.job').end_of_R_session()",
-       PACKAGE = "nvimcom")
+    .C(nvimcom_msg_to_nvim,
+       "lua require('r.job').end_of_R_session()")
     return(invisible(NULL))
 }

@@ -2,15 +2,16 @@ local M = {}
 local config = require("r.config").get_config()
 local job = require("r.job")
 local edit = require("r.edit")
-local warn = require("r").warn
+local warn = require("r.log").warn
 local utils = require("r.utils")
 local send = require("r.send")
 local cursor = require("r.cursor")
+local hooks = require("r.hooks")
 local what_R = "R"
 local R_pid = 0
 local r_args
 local nseconds
-local uv = vim.loop
+local uv = vim.uv
 
 local start_R2
 start_R2 = function()
@@ -48,26 +49,15 @@ start_R2 = function()
         rdp = "datasets,utils,grDevices,graphics,stats,methods,nvimcom"
     end
     vim.env.R_DEFAULT_PACKAGES = rdp
-    local start_options = {
-        'Sys.setenv("R_DEFAULT_PACKAGES" = "' .. rdp .. '")',
-    }
 
-    table.insert(
-        start_options,
-        ' Sys.setenv(RNVIM_RSLV_CB = "' .. vim.env.RNVIM_RSLV_CB .. '")'
-    )
-    table.insert(
-        start_options,
-        "options(nvimcom.max_depth = " .. tostring(config.compl_data.max_depth) .. ")"
-    )
-    table.insert(
-        start_options,
-        "options(nvimcom.max_size = " .. tostring(config.compl_data.max_size) .. ")"
-    )
-    table.insert(
-        start_options,
-        "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")"
-    )
+    local start_options = {
+        'Sys.setenv(R_DEFAULT_PACKAGES = "' .. rdp:gsub(",nvimcom", "") .. '")',
+        'Sys.setenv(RNVIM_RSLV_CB = "' .. vim.env.RNVIM_RSLV_CB .. '")',
+        "options(nvimcom.max_depth = " .. tostring(config.compl_data.max_depth) .. ")",
+        "options(nvimcom.max_size = " .. tostring(config.compl_data.max_size) .. ")",
+        "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")",
+        'options(nvimcom.set_params = "' .. config.set_params .. '")',
+    }
     if config.debug then
         table.insert(start_options, "options(nvimcom.debug_r = TRUE)")
     else
@@ -90,7 +80,7 @@ start_R2 = function()
     else
         table.insert(start_options, "options(nvimcom.autoglbenv = 0)")
     end
-    if config.setwidth and config.setwidth == 2 then
+    if config.setwidth == 2 then
         table.insert(start_options, "options(nvimcom.setwidth = TRUE)")
     else
         table.insert(start_options, "options(nvimcom.setwidth = FALSE)")
@@ -100,35 +90,30 @@ start_R2 = function()
     else
         table.insert(start_options, "options(nvimcom.nvimpager = TRUE)")
     end
-    if
-        type(config.external_term) == "boolean"
-        and not config.external_term
-        and config.esc_term
-    then
+    if config.external_term == "" and config.esc_term then
         table.insert(start_options, "options(editor = nvimcom:::nvim.edit)")
     end
-    if
-        (type(config.external_term) == "boolean" and config.external_term == true)
-        or type(config.external_term) == "string"
-    then
+    if config.external_term ~= "" then
         table.insert(
             start_options,
             "reg.finalizer(.GlobalEnv, nvimcom:::final_msg, onexit = TRUE)"
         )
     end
-    if config.csv_delim and (config.csv_delim == "," or config.csv_delim == ";") then
-        table.insert(
-            start_options,
-            'options(nvimcom.delim = "' .. config.csv_delim .. '")'
-        )
-    else
-        table.insert(start_options, 'options(nvimcom.delim = "\t")')
-    end
-
+    local sep = config.view_df.csv_sep or "\t"
+    table.insert(start_options, 'options(nvimcom.delim = "' .. sep .. '")')
     table.insert(
         start_options,
         'options(nvimcom.source.path = "' .. config.source_read .. '")'
     )
+    if
+        config.set_params ~= "no"
+        and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
+        and require("r.rmd").params_status() == "new"
+    then
+        local bn = vim.api.nvim_buf_get_name(0)
+        if config.is_windows then bn = bn:gsub("\\", "\\\\") end
+        table.insert(start_options, 'nvimcom:::update_params("' .. bn .. '")')
+    end
 
     local rsd = M.get_R_start_dir()
     if rsd then
@@ -151,17 +136,15 @@ start_R2 = function()
         return
     end
 
-    if type(config.external_term) == "boolean" and config.external_term == false then
+    if config.external_term == "" then
         require("r.term").start_term()
         return
     end
 
-    if config.applescript then
-        require("r.osx").start_Rapp()
-        return
-    end
-
     if config.is_windows then
+        warn(
+            "Support for running Rgui.exe may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/308"
+        )
         require("r.windows").start_Rgui()
         return
     end
@@ -184,17 +167,11 @@ end
 M.start_R = function(whatr)
     -- R started and nvimcom loaded
     if vim.g.R_Nvim_status == 7 then
-        if type(config.external_term) == "boolean" and config.external_term == false then
-            require("r.term").reopen_win()
-        end
+        if config.external_term == "" then require("r.term").reopen_win() end
         return
     end
 
-    if
-        type(config.external_term) == "string"
-        and config.external_term:find("tmux split%-window")
-        and not vim.env.TMUX_PANE
-    then
+    if config.external_term:find("tmux split%-window") and not vim.env.TMUX_PANE then
         warn("Neovim must be running within Tmux to run `tmux split-window`.")
         return
     end
@@ -233,9 +210,7 @@ end
 ---Send signal to R
 ---@param signal string | number
 M.signal_to_R = function(signal)
-    if R_pid ~= 0 then
-        utils.system({ "kill", "-s", tostring(signal), tostring(R_pid) })
-    end
+    if R_pid ~= 0 then vim.system({ "kill", "-s", tostring(signal), tostring(R_pid) }) end
 end
 
 M.check_nvimcom_running = function()
@@ -313,14 +288,6 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         then
             job.stdin("Server", "85" .. config.compldir .. "\n")
         end
-    elseif config.applescript then
-        vim.fn.foreground()
-        vim.wait(200)
-    else
-        vim.fn.delete(
-            config.tmpdir .. "/initterm_" .. vim.fn.string(vim.env.RNVIM_ID) .. ".sh"
-        )
-        vim.fn.delete(config.tmpdir .. "/openR")
     end
 
     if config.objbr_auto_start then
@@ -333,9 +300,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     end
 
     vim.g.R_Nvim_status = 7
-    if config.hook.after_R_start then
-        vim.schedule(function() config.hook.after_R_start() end)
-    end
+    hooks.run(config, "after_R_start", true)
     send.set_send_cmd_fun()
 end
 
@@ -343,9 +308,7 @@ M.clear_R_info = function()
     vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.RNVIM_ID))
     vim.fn.delete(config.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.RNVIM_ID))
     R_pid = 0
-    if type(config.external_term) == "boolean" and config.external_term == false then
-        require("r.term").close_term()
-    end
+    if config.external_term == "" then require("r.term").close_term() end
     if job.is_running("Server") then
         vim.g.R_Nvim_status = 3
         job.stdin("Server", "43\n")
@@ -353,6 +316,7 @@ M.clear_R_info = function()
         vim.g.R_Nvim_status = 1
     end
     send.set_send_cmd_fun()
+    require("r.rmd").clean_params()
 end
 
 -- Background communication with R
@@ -388,7 +352,7 @@ M.quit_R = function(how)
     end
 
     if config.is_windows then
-        if type(config.external_term) == "boolean" and config.external_term then
+        if config.external_term ~= "" then
             -- SaveWinPos
             job.stdin(
                 "Server",
@@ -409,7 +373,7 @@ end
 
 ---Request R to format code
 ---@param tbl table Table sent by Neovim's mapping function
-M.formart_code = function(tbl)
+M.format_code = function(tbl)
     if vim.g.R_Nvim_status < 7 then return end
 
     local wco = vim.o.textwidth
@@ -421,23 +385,37 @@ M.formart_code = function(tbl)
         wco = 180
     end
 
-    local lns = vim.api.nvim_buf_get_lines(0, tbl.line1 - 1, tbl.line2, true)
-    local txt = table.concat(lns, "\020")
-    txt = txt:gsub("\\", "\\\\"):gsub("'", "\019")
-    M.send_to_nvimcom(
-        "E",
-        "nvimcom:::nvim_format("
-            .. tbl.line1
-            .. ", "
-            .. tbl.line2
-            .. ", "
-            .. wco
-            .. ", "
-            .. vim.o.shiftwidth
-            .. ", '"
-            .. txt
-            .. "')"
-    )
+    if tbl.range == 0 then
+        vim.cmd("update")
+        M.send_to_nvimcom(
+            "E",
+            "nvimcom:::nvim_format_file('"
+                .. vim.api.nvim_buf_get_name(0)
+                .. "', "
+                .. wco
+                .. ", "
+                .. vim.o.shiftwidth
+                .. ")"
+        )
+    else
+        local lns = vim.api.nvim_buf_get_lines(0, tbl.line1 - 1, tbl.line2, true)
+        local txt = table.concat(lns, "\020")
+        txt = txt:gsub("\\", "\\\\"):gsub("'", "\019")
+        M.send_to_nvimcom(
+            "E",
+            "nvimcom:::nvim_format_txt("
+                .. tbl.line1
+                .. ", "
+                .. tbl.line2
+                .. ", "
+                .. wco
+                .. ", "
+                .. vim.o.shiftwidth
+                .. ", '"
+                .. txt
+                .. "')"
+        )
+    end
 end
 
 --- Request R to evaluate a command and send its output back
@@ -596,11 +574,24 @@ M.action = function(rcmd, mode, args)
         return
     end
 
-    local argmnts = args or ""
-
     if rcmd == "viewobj" then
-        if config.df_viewer then
-            argmnts = argmnts .. ', R_df_viewer = "' .. config.df_viewer .. '"'
+        local n_lines = config.view_df.n_lines or -1
+        local argmnts = ", nrows = " .. tostring(n_lines)
+        if config.view_df.open_fun and config.view_df.open_fun ~= "" then
+            local cmd = config.view_df.open_fun
+            if cmd:find("%(%)") then
+                cmd = cmd:gsub("()", "(" .. rkeyword .. ")")
+            elseif cmd:find("%%s") then
+                cmd = cmd:gsub("%%s", rkeyword)
+            else
+                cmd = cmd .. "(" .. rkeyword .. ")"
+            end
+            cmd = cmd:gsub("'", '"')
+            cmd = cmd:gsub('"', '\\"')
+            argmnts = argmnts .. ', R_df_viewer = "' .. cmd .. '"'
+        end
+        if config.view_df.save_fun and config.view_df.save_fun ~= "" then
+            argmnts = argmnts .. ", save_fun = " .. config.view_df.save_fun
         end
         if rkeyword:find("::") then
             M.send_to_nvimcom(
@@ -618,7 +609,10 @@ M.action = function(rcmd, mode, args)
             )
         end
         return
-    elseif rcmd == "dputtab" then
+    end
+
+    local argmnts = args or ""
+    if rcmd == "dputtab" then
         M.send_to_nvimcom(
             "E",
             'nvimcom:::nvim_dput("' .. rkeyword .. '"' .. argmnts .. ")"
@@ -676,11 +670,7 @@ end
 M.clear_console = function()
     if config.clear_console == false then return end
 
-    if
-        config.is_windows
-        and type(config.external_term) == "boolean"
-        and config.external_term
-    then
+    if config.is_windows and config.external_term ~= "" then
         job.stdin("Server", "86\n")
         vim.wait(50)
         job.stdin("Server", "87\n")

@@ -14,14 +14,7 @@ end
 ---@param line string
 ---@return string
 M.clean_oxygen_line = function(line)
-    if line:find("^%s*#'") then
-        -- synID, synName, and synIDattr don't work with treesitter.
-        -- local lc = vim.api.nvim_win_get_cursor(0)
-        -- local synID = vim.fn.synID(lc[1], lc[2] + 1, 1)
-        -- local synName = vim.fn.synIDattr(synID, "name")
-        -- if synName == "rOExamples" then line = string.gsub(line, "^%s*#'", "") end
-        line = line:gsub("^%s*#'", "")
-    end
+    if line:find("^%s*#'") then line = line:gsub("^%s*#'", "") end
     return line
 end
 

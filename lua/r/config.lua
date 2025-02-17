@@ -1,8 +1,377 @@
-local warn = require("r").warn
-local uv = vim.loop
+local utils = require("r.utils")
+local uv = vim.uv
+local hooks = require("r.hooks")
+
+
+---@class RConfigUserOpts
+---
+---Used to set R's `OutDec` option; see `?options` in R; do `:help OutDec` for
+---more information.
+---@field OutDec? string
+---
+---Optionally set R.nvim to use RStudio to run R code; do `:help RStudio_cmd`
+---for more information.
+---@field RStudio_cmd? string
+---
+---Optionally override the command used to start R, defaults to `"R"`.
+---Do `:help R_app` for more information.
+---@field R_app? string
+---
+---Additional command line arguments passed to R on startup. Do `:help R_args`
+---for more information.
+---@field R_args? string[]
+---
+---This command will be used to run some background scripts; Defaults to the
+---same value as `R_app`. Do `:help R_cmd` for more information.
+---@field R_cmd? string
+---
+---Optionally set the path to the R executable used by R.nvim. The user's
+---`PATH` environmental variable will be used by default. Do `:help R_path`
+---for more information.
+---@field R_path? string
+---
+---Whether to add additional highlighting to R output; defaults to `false`.
+---Do `:help Rout_more_colors` for more information.
+---@field Rout_more_colors? boolean
+---
+---Whether to remember the window layout when quitting R; defaults to `true`.
+---Do `:help arrange_windows` for more information.
+---@field arrange_windows? boolean
+---
+---The version of the pipe operator to insert on pipe keymap; defaults to
+---`"native"`. Do `:help pipe_version` for more information.
+---@field pipe_version? '"native"' | '"|>"' | '"magrittr"' | '"%>%"'
+---
+---Whether to force auto-scrolling in the R console; defaults to `true`.
+---Do `:help auto_scroll` for more information.
+---@field auto_scroll? boolean
+---
+---Whether to start R automatically when you open an R script; defaults to
+---`"no". Do `:help auto_start` for more information.
+---@field auto_start? '"no"' | '"on startup"' | '"always"'
+---
+---Whether closing Neovim should also quit R; defaults to `true` in Neovim's
+---built-in terminal emulator and `false` otherwise. Do `:help auto_quit` for
+---more information.
+---@field auto_quit? boolean
+---
+---Controls which lines are sent to the R console on `<LocalLeader>pp`;
+---defaults to `false`. Do `:help bracketed_paste` for more information.
+---@field bracketed_paste? boolean
+---
+---Options to control the behaviour of the R console window; defaults to
+---`"winfixwidth winfixheight nobuflisted"`. See Do `:help buffer_opts` for
+---more information.
+---@field buffer_opts? string
+---
+---Whether to set a keymap to clear the console; defaults to `true` but should
+---be set to `false` if your version of R supports this feature out-of-the-box.
+---Do `:help clear_console` for more information.
+---@field clear_console? boolean
+---
+---Set to `true` to add `<C-a><C-k>` to every R command; defaults to `false`.
+---Do `:help clear_line` for more information.
+---@field clear_line? boolean
+---
+---Whether to close the terminal window when R quits; defaults to `true`.
+---Do `:help close_term` for more information.
+---@field close_term? boolean
+---
+---Whether to set a keymap to format all numbers as integers for the current
+---buffer; defaults to `false`. Do `:help convert_range_int` for more
+---information.
+---@field convert_range_int? boolean
+---
+---Optionally you can give a directory where lists used for autocompletion
+---will be stored. Defaults to `""`. Do `:help compldir` for more information.
+---@field compldir? string
+---
+---Options for fine-grained control of the object browser. Do `:help compl_data`
+---for more information.
+---@field compl_data? { max_depth: integer, max_size: integer, max_time: integer }
+---
+---Whether to use R.nvim's configuration for Tmux if running R in an external
+---terminal emulator. Set to `false` if you want to use your own `.tmux.conf`.
+---Defaults to `true`. Do `:help config_tmux` for more information.
+---@field config_tmux? boolean
+---
+---Control the program to use when viewing CSV files; defaults to `""`, i.e.
+---to open these in a normal Neovim buffer. Do `:help view_df` for more
+---information.
+---@field view_df? { open_app: string, how: string, csv_sep: string, n_lines: integer, save_fun: string, open_fun: string }
+---
+---A table of R.nvim commands to disable. Defaults to `{ "" }`.
+---Do `:help disable_cmds` for more information.
+---@field disable_cmds? table<integer, string>
+---
+---Set to `"vi"` if R is running in vi editing mode; defaults to `""`.
+---Do `:help editing_mode` for more information.
+---@field editing_mode? string
+---
+---Whether to use `<Esc>` to leave terminal mode and enter normal mode;
+---defaults to `true`. Do `:help esc_term` for more information.
+---@field esc_term? boolean
+---
+---Whether to run R in an external terminal emulator rather than Neovim's
+---built-in terminal emulator. Do `:help external_term` for more information.
+---@field external_term? string
+---
+---Whether X tools are available; used for window management. By default the
+---availability will be detected from the system, but you can force its use
+---by setting this value to `true` or `false`.
+---@field has_X_tools? boolean
+---
+---Whether to highlight R output using Neovim. Defaults to `false` if the
+---package {colorout} is loaded, or `true` otherwise. Do `:help hl_term` for
+---more information.
+---@field hl_term? boolean
+---
+---Functions to run on various events. Do `:help hook` for more information.
+---@field hook? { on_filetype: RHook, after_config: RHook, after_R_start: RHook, after_ob_open: RHook}
+---
+---Whether to allow R.nvim commands when in insert mode; defaults to `false`.
+---Do `:help insert_mode_cmds` for more information.
+---@field insert_mode_cmds? boolean
+---
+---Command and arguments to use when producing PDFs. Do `:help latexcmd` for
+---more information.
+---@field latexcmd? table<string, string>
+---
+---Directory where the LaTeX log file is expected to be found. Do
+---`:help latex_build_dir` for more information.
+---@field latex_build_dir? string
+---
+---Arguments do `Sweave()`. Do `:help sweaveargs` for more information.
+---@field sweaveargs? string
+---
+---Whether to list arguments for methods on `<localleader>ra`; defaults to
+---`false`. Do `:help listmethods` for more information.
+---@field listmethods? boolean
+---
+---Optionally supply the path to the directory where the {nvimcom} is
+---installed. See `/doc/remote_access.md` for more information.
+---@field local_R_library_dir? string
+---
+---When sending lines to the console, this is the number of lines at which
+---R.nvim will instead create and source a temporary file. Defaults to `20`.
+---Do `:help max_paste_lines` for more information.
+---@field max_paste_lines? integer
+---
+---Used to control how R.nvim splits the window when initialising the R console;
+---defaults to `80`. Do `:help min_editor_width` for more information.
+---@field min_editor_width? integer
+---
+---How to set the working directory when starting R; defaults to `"no"` to not
+---set the working directory. Do `:help setwd` for more information.
+---@field setwd? '"no"' | '"file"' | '"nvim"'
+---
+---How to open R man pages/help documentation; defaults to `"split_h"`.
+---Do `:help nvimpager` for more information.
+---@field nvimpager? '"split_h"' | '"split_v"' | '"tab"' | '"float"' | '"no"'
+---
+---Whether to show hidden objects in the object browser; defaults to `false`.
+---Do `:help objbr_allnames` for more information.
+---@field objbr_allnames? boolean
+---
+---Whether to start the object browser when R starts; defaults to `false`.
+---Do `:help objbr_auto_start` for more information.
+---@field objbr_auto_start? boolean
+---
+---Default height for the object browser; defaults to `10`. Do `:help objbr_h`
+---for more information.
+---@field objbr_h? integer
+---
+---Whether to expand dataframes in the object browser; defaults to `true`.
+---Do `:help objbr_opendf` for more information.
+---@field objbr_opendf? boolean
+---
+---Whether to expand lists in the object browser; defaults to `false`.
+---Do `:help objbr_openlist` for more information.
+---@field objbr_openlist? boolean
+---
+---Where to open the object browser; defaults to `"script,right"`.
+---Do `:help objbr_place` for more information.
+---@field objbr_place? string
+---
+---Default width for the object browser; defaults to `40`. Do `:help objbr_w`
+---for more information.
+---@field objbr_w? integer
+---
+---Keymappings to set for the object browser. Table keys give the keymaps
+---and values give R functions to call for the object under the cursor.
+---Defaults to `{ s = "summary", p = "plot" }`
+---@field objbr_mappings? table<string, string>
+---
+---Optionally a placeholder to use when setting object browser mappings.
+---Defaults to `"{object}"`. Do `:help objbr_placeholder` for more information.
+---@field objbr_placeholder? string
+---
+---Whether to open R examples in a Neovim buffer; defaults to `true`.
+---Do `:help open_example` for more information.
+---@field open_example? boolean
+---
+---How to open HTML files after rendering an R Markdown document; defaults to
+---`"open and focus"`. Do `:help open_html` for more information.
+---@field open_html? '"open and focus"' | '"open"' | '"no"'
+---
+---How to open PDF files after rendering an R Markdown document; defaults to
+---`"open and focus"`. Do `:help open_pdf` for more information.
+---@field open_pdf? '"open and focus"' | '"open"' | '"no"'
+---
+---When sending a line, this controls whether preceding lines are also sent if
+---they're part of the same paragraph. Defaults to `true`.
+---Do `:help paragraph_begin` for more information.
+---@field paragraph_begin? boolean
+---
+---Whether to send the surrounding paragraph when an individual line is
+---sent to the R console; defaults to `true`. Do `:help parenblock` for more
+---information.
+---@field parenblock? boolean
+---
+---The function to use when splitting a filepath; defaults to `"file.path"`.
+---Do `:help path_split_fun` for more information.
+---@field path_split_fun? string
+---
+---The program to use to open PDF files; the default behaviour depends on the
+---platform. Do `:help pdfviewer` for more information.
+---@field pdfviewer? string
+---
+---Additional arguments passed to `quarto::quarto_preview()`; defaults to `""`.
+---Do `:help quarto_preview_args` for more information.
+---@field quarto_preview_args? string
+---
+---Additional arguments passed to `quarto::quarto_render()`; defaults to `""`.
+---Do `:help quarto_render_args` for more information.
+---@field quarto_render_args? string
+---
+---The default height for the R console; defaults to `15`.
+---Do `:help rconsole_height` for more information.
+---@field rconsole_height? integer
+---
+---The default width for the R console; defaults to `80`.
+---Do `:help rconsole_width` for more information.
+---@field rconsole_width? integer
+---
+---Whether to register the Markdown parser for Quarto and RMarkdown documents;
+---defaults to `true`. Do `:help register_treesitter` for more information.
+---@field register_treesitter? boolean
+---
+---Options for accessing a remote R session from local Neovim.
+---Do `:help remote_compldir` for more information.
+---@field remote_compldir? string
+---
+---Whether to automatically remove {knitr} cache files; defaults to `false`.
+---This field is undocumented, but users can still apply it if they really
+---want to.
+---@field rm_knit_cache? boolean
+---
+---Additional arguments passed to `rmarkdown::render()`; defaults to `""`.
+---Do `:help rmarkdown_args` for more information.
+---@field rmarkdown_args? string
+---
+---The environment in which to render R Markdown documents; defaults to
+---`".GlobalEnv"`. Do `:help rmd_environment` for more information.
+---@field rmd_environment? string
+---
+---Whether to remove hidden objects from the workspace on `<LocalLeader>rm`;
+---defaults to `false`. Do `:help rmhidden` for more information.
+---@field rmhidden? boolean
+---
+---Controls whether the resulting `.Rout` file is not opened in a new tab when
+---running `R CMD BATCH`; defaults to `false`. Do `:help routnotab` for more
+---information.
+---@field routnotab? boolean
+---
+---Controls which fields from a `.Rproj` file should influence R.nvim settings.
+---Defaults to `{ "pipe_version" }`. Do `:help rproj_prioritise` for more
+---information.
+---@field rproj_prioritise? table<integer, RprojField>
+---
+---Whether to save the position of the R console on quit; defaults to `true`.
+---Do `:help save_win_pos` for more information.
+---@field save_win_pos? boolean
+---
+---Whether to set the `HOME` environmental variable; defaults to `true`.
+---Do `:help set_home_env` for more information.
+---@field set_home_env? boolean
+---
+---Controls how R's `width` option is set by R.nvim; defaults to `2`,
+---meaning the value will be set according to the initial width of the R
+---console. Do `:help setwidth` for more information.
+---@field setwidth? integer
+---
+---Whether to display terminal error messages as warnings; defaults to
+---`false`. Do `:help silent_term` for more information.
+---@field silent_term? boolean
+---
+---Path to the program Skim which may be used to open PDF files;
+---defaults to '""'.
+---@field skim_app_path? string
+---
+---Additional arguments passed to `source()` when running R code; defaults to
+---`""`. Do `:help source_args` for more information.
+---@field source_args? string
+---
+---Whether to use R.nvim's `nvim.plit()` on `<LocalLeader>rg`; defaults to
+---`false`. Do `:help specialplot` for more information.
+---@field specialplot? boolean
+---
+---Packages for which to built autocompletions when R starts; defaults to
+---`"base,stats,graphics,grDevices,utils,methods"`. Do `:help start_libs` for
+---more information.
+---@field start_libs? string
+---
+---Whether to use SyncTex with R.nvim; defaults to `true`. Do `:help synctex`
+---for more information.
+---@field synctex? boolean
+---
+---Controls the display of LaTeX errors and warnings; defaults to `true`
+---to output these to the console. Do `:help texerr` for more information.
+---@field texerr? boolean
+---
+---Can be used to set a particular directory to use for temporary files;
+---defaults to `""` to use the OS default. Do `:help tmpdir` for more
+---information.
+---@field tmpdir? string
+---
+--Internal variable used to store the user login name.
+--@field private user_login? string
+--
+---If `true` then default keymaps will not be created; defaults to `false`.
+---Do `:help user_maps_only` for more information.
+---@field user_maps_only? boolean
+---
+---Time to wait before loading the {nvimcom} package after starting R; defaults
+---to `60` seconds. Do `:help wait` for more information.
+---@field wait? integer
+---
+---Set `params` based on the YAML header for R Markdown and
+---Quarto documents. Defaults to `"yes"`.
+---@field set_params? '"no"' | '"no_override"' | '"yes"'
+
+---@alias RprojField '"pipe_version"'
+
+---@alias RHook fun(): nil
+
+---@class RConfig: RConfigUserOpts
+---@field uname? string
+---@field is_windows? boolean
+---@field is_darwin? boolean
+---@field rnvim_home? string
+---@field uservimfiles? string
+---@field user_login? string
+---@field localtmpdir? string
+---@field source_read? string
+---@field source_write? string
+---@field curview? string
+---@field term_title? string -- Pid of window application.
+---@field term_pid? integer -- Part of the window title.
+---@field R_Tmux_pane? string
+---@field R_prompt_str? string
+---@field R_continue_str? string
 
 -- stylua: ignore start
-
+---@type RConfig
 local config = {
     OutDec              = ".",
     RStudio_cmd         = "",
@@ -11,10 +380,7 @@ local config = {
     R_cmd               = "R",
     R_path              = "",
     Rout_more_colors    = false,
-    applescript         = false,
     arrange_windows     = true,
-    assignment_keymap   = "<M-->",
-    pipe_keymap         = "<localleader>,",
     pipe_version        = "native",
     auto_scroll         = true,
     auto_start          = "no",
@@ -32,16 +398,14 @@ local config = {
         max_time = 100,
     },
     config_tmux         = true,
-    csv_app             = "",
     debug               = true,
     debug_center        = false,
     debug_jump          = true,
     disable_cmds        = { "" },
     editing_mode        = "",
     esc_term            = true,
-    external_term       = false, -- might be a string
+    external_term       = "",
     has_X_tools         = false,
-    help_w              = 46,
     hl_term             = true,
     hook                = {
                               on_filetype = function() end,
@@ -51,11 +415,12 @@ local config = {
                           },
     insert_mode_cmds    = false,
     latexcmd            = { "default" },
+    latex_build_dir     = "",
+    sweaveargs          = "",
     listmethods         = false,
     local_R_library_dir = "",
     max_paste_lines     = 20,
     min_editor_width    = 80,
-    non_r_compl         = true,
     setwd               = "no",
     nvimpager           = "split_h",
     objbr_allnames      = false,
@@ -65,23 +430,28 @@ local config = {
     objbr_openlist      = false,
     objbr_place         = "script,right",
     objbr_w             = 40,
+    objbr_mappings      = {
+                              s = "summary",
+                              p = "plot",
+                          },
+    objbr_placeholder   = "{object}",
     open_example        = true,
     open_html           = "open and focus",
     open_pdf            = "open and focus",
     paragraph_begin     = true,
     parenblock          = true,
+    path_split_fun      = "file.path",
     pdfviewer           = "",
     quarto_preview_args = "",
     quarto_render_args  = "",
     rconsole_height     = 15,
     rconsole_width      = 80,
+    register_treesitter = true,
     remote_compldir     = "",
     rm_knit_cache       = false,
     rmarkdown_args      = "",
     rmd_environment     = ".GlobalEnv",
-    rmdchunk            = 2, -- might be a string
     rmhidden            = false,
-    rnowebchunk         = true,
     rnvim_home          = "",
     routnotab           = false,
     rproj_prioritise    = {
@@ -96,30 +466,33 @@ local config = {
     specialplot         = false,
     start_libs          = "base,stats,graphics,grDevices,utils,methods",
     synctex             = true,
-    term_pid            = 0,
-    term_title          = "term",
     texerr              = true,
     tmpdir              = "",
     user_login          = "",
     user_maps_only      = false,
+    view_df = {
+        open_app = "",  -- How to open the CSV in Neovim or an external application.
+        how = "tabnew", -- How to display the data within Neovim if not using an external application.
+        csv_sep = "",   -- Field separator to be used when saving the CSV.
+        n_lines = -1,   -- Number of lines to save in the CSV (0 for all lines).
+        save_fun = "",  -- Save the data.frame in a CSV file
+        open_fun = "",  -- Use an R function to open the data.frame directly (no conversion to CSV needed)
+    },
     wait                = 60,
+    set_params          = "yes",
 }
 
 -- stylua: ignore end
 
-local config_keys
-
 local user_opts = {}
 local did_real_setup = false
+local unix = require("r.platform.unix")
+local windows = require("r.platform.windows")
 
-local show_config = function(tbl)
-    local opt = tbl.args
-    if opt and opt:len() > 0 then
-        opt = opt:gsub(" .*", "")
-        print(vim.inspect(config[opt]))
-    else
-        print(vim.inspect(config))
-    end
+local smsgs = {}
+local swarn = function(msg)
+    table.insert(smsgs, msg)
+    require("r.log").warn(msg)
 end
 
 local set_editing_mode = function()
@@ -146,6 +519,9 @@ end
 local set_pdf_viewer = function()
     if config.is_darwin then
         config.pdfviewer = "skim"
+        if config.skim_app_path == "" then
+            config.skim_app_path = "/Applications/Skim.app"
+        end
     elseif config.is_windows then
         config.pdfviewer = "sumatra"
     else
@@ -164,8 +540,6 @@ end
 --- being applied. If a check fails, a warning is show, and the default option
 --- is used instead.
 local apply_user_opts = function()
-    local utils = require("r.utils")
-
     -- Ensure that some config options will be in lower case
     for _, v in pairs({
         "auto_start",
@@ -174,19 +548,12 @@ local apply_user_opts = function()
         "open_pdf",
         "open_html",
         "setwd",
+        "set_params",
     }) do
         if user_opts[v] then user_opts[v] = string.lower(user_opts[v]) end
     end
 
     -- stylua: ignore start
-    -- If an option can be multiple types, you can specify those types here.
-    -- Otherwise, the user option is checked against the type of the default
-    -- value.
-    local valid_types = {
-        external_term    = { "boolean", "string" },
-        rmdchunk         = { "number", "string" },
-        csv_app          = { "string", "function" },
-    }
 
     -- If an option is an enum, you can define the possible values here:
     local valid_values = {
@@ -196,7 +563,9 @@ local apply_user_opts = function()
         open_html        = { "no", "open", "open and focus" },
         open_pdf         = { "no", "open", "open and focus" },
         setwd            = { "no", "file", "nvim" },
-        pipe_version     = { "native", "magrittr" }
+        pipe_version     = { "native", "magrittr" },
+        path_split_fun   = { "here::here", "here", "file.path", "fs::path", "path" },
+        set_params       = { "no", "no_override", "yes"},
     }
     -- stylua: ignore end
 
@@ -214,6 +583,7 @@ local apply_user_opts = function()
             if type(default_val) == "table" then
                 default_val = default_val[k]
             else
+                ---@type any
                 default_val = nil
                 break
             end
@@ -223,23 +593,20 @@ local apply_user_opts = function()
         -- 1. Check the option exists
         -----------------------------------------------------------------------
         if default_val == nil then
-            warn("Invalid option `" .. key_name .. "`.")
+            swarn("Invalid option `" .. key_name .. "`.")
             return
         end
 
         -----------------------------------------------------------------------
         -- 2. Check the option has one of the expected types
         -----------------------------------------------------------------------
-        local expected_types = valid_types[key_name] or { type(default_val) }
-        if vim.fn.index(expected_types, type(user_opt)) == -1 then
-            warn(
-                "Invalid option type for `"
-                    .. key_name
-                    .. "`. Type should be "
-                    .. utils.msg_join(expected_types, ", ", ", or ", "")
-                    .. ", not "
-                    .. type(user_opt)
-                    .. "."
+        if type(default_val) ~= type(user_opt) then
+            swarn(
+                ("Invalid option type for `%s`. Type should be %s, not %s."):format(
+                    key_name,
+                    type(default_val),
+                    type(user_opt)
+                )
             )
             return
         end
@@ -249,14 +616,12 @@ local apply_user_opts = function()
         -----------------------------------------------------------------------
         local expected_values = valid_values[key_name]
         if expected_values and vim.fn.index(expected_values, user_opt) == -1 then
-            warn(
-                "Invalid option value for `"
-                    .. key_name
-                    .. "`. Value should be "
-                    .. utils.msg_join(expected_values, ", ", ", or ")
-                    .. ', not "'
-                    .. user_opt
-                    .. '".'
+            swarn(
+                ('Invalid option value for `%s`. Value should be %s, not "%s"'):format(
+                    key_name,
+                    utils.msg_join(expected_values, ", ", ", or "),
+                    user_opt
+                )
             )
             return
         end
@@ -264,7 +629,7 @@ local apply_user_opts = function()
         -----------------------------------------------------------------------
         -- 4. If the option is a dictionary, check each value individually
         -----------------------------------------------------------------------
-        if type(user_opt) == "table" then
+        if type(user_opt) == "table" and key_name ~= "objbr_mappings" then
             for k, v in pairs(user_opt) do
                 if type(k) == "string" then
                     local next_key = {}
@@ -288,8 +653,6 @@ local apply_user_opts = function()
 end
 
 local do_common_global = function()
-    local utils = require("r.utils")
-
     config.uname = uv.os_uname().sysname
     config.is_windows = config.uname:find("Windows", 1, true) ~= nil
     config.is_darwin = config.uname == "Darwin"
@@ -317,10 +680,16 @@ local do_common_global = function()
         elseif vim.env.HOME then
             config.user_login = vim.fn.escape(vim.env.HOME, "\\"):gsub("\\", "")
         elseif vim.fn.executable("whoami") ~= 0 then
-            config.user_login = vim.fn.system("whoami")
+            local obj = vim.system({ "whoami" }, { text = true }):wait()
+            if obj and obj.stdout ~= "" then
+                config.user_login = obj.stdout:gsub("\n", "")
+            else
+                config.user_login = "WhoAmI"
+                swarn("The command whoami failled.")
+            end
         else
             config.user_login = "NoLoginName"
-            warn("Could not determine user name.")
+            swarn("Could not determine user name.")
         end
     end
 
@@ -328,7 +697,7 @@ local do_common_global = function()
     config.user_login = config.user_login:gsub("[^%w]", "")
     if config.user_login == "" then
         config.user_login = "NoLoginName"
-        warn("Could not determine user name.")
+        swarn("Could not determine user name.")
     end
 
     if config.is_windows then
@@ -355,7 +724,7 @@ local do_common_global = function()
     -- Create or update the README (objls_ files will be regenerated if older than
     -- the README).
     local need_readme = false
-    local first_line = "Last change in this file: 2024-04-05"
+    local first_line = "Last change in this file: 2024-10-29"
     if
         vim.fn.filereadable(config.compldir .. "/README") == 0
         or vim.fn.readfile(config.compldir .. "/README")[1] ~= first_line
@@ -476,21 +845,14 @@ local do_common_global = function()
     config.source_write = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
 
     -- Default values of some variables
-    if
-        config.RStudio_cmd ~= ""
-        or (
-            config.is_windows
-            and type(config.external_term) == "boolean"
-            and config.external_term == true
-        )
-    then
+    if config.RStudio_cmd ~= "" or (config.is_windows and config.external_term ~= "") then
         -- Sending multiple lines at once to either Rgui on Windows or RStudio does not work.
         config.max_paste_lines = 1
         config.bracketed_paste = false
         config.parenblock = false
     end
 
-    if type(config.external_term) == "boolean" and config.external_term == false then
+    if config.external_term == "" then
         config.nvimpager = "split_h"
         config.save_win_pos = false
         config.arrange_windows = false
@@ -517,7 +879,7 @@ local do_common_global = function()
 
     -- Look for invalid options
     local objbrplace = vim.split(config.objbr_place, ",")
-    if #objbrplace > 2 then warn("Too many options for R_objbr_place.") end
+    if #objbrplace > 2 then swarn("Too many options for R_objbr_place.") end
     for _, pos in ipairs(objbrplace) do
         if
             pos ~= "console"
@@ -529,7 +891,7 @@ local do_common_global = function()
             and pos:lower() ~= "top"
             and pos:lower() ~= "bottom"
         then
-            warn(
+            swarn(
                 'Invalid value for R_objbr_place: "'
                     .. pos
                     .. "\". Please see R.nvim's documentation."
@@ -557,7 +919,7 @@ local do_common_global = function()
 
     -- Set the name of R executable
     if config.is_windows then
-        if type(config.external_term) == "boolean" and config.external_term == false then
+        if config.external_term == "" then
             config.R_app = "Rterm.exe"
         else
             config.R_app = "Rgui.exe"
@@ -579,241 +941,10 @@ local do_common_global = function()
     end
 end
 
-local resolve_fullpaths = function(tbl)
-    for i, v in ipairs(tbl) do
-        tbl[i] = uv.fs_realpath(v)
-    end
-end
-
-local windows_config = function()
-    local utils = require("r.utils")
-    local wtime = uv.hrtime()
-    local isi386 = false
-
-    if config.R_path ~= "" then
-        local rpath = vim.split(config.R_path, ";")
-        resolve_fullpaths(rpath)
-        vim.fn.reverse(rpath)
-        for _, dir in ipairs(rpath) do
-            if vim.fn.isdirectory(dir) then
-                vim.env.PATH = dir .. ";" .. vim.env.PATH
-            else
-                warn(
-                    '"'
-                        .. dir
-                        .. '" is not a directory. Fix the value of R_path in your config.'
-                )
-            end
-        end
-    else
-        if vim.env.RTOOLS40_HOME then
-            if vim.fn.isdirectory(vim.env.RTOOLS40_HOME .. "\\mingw64\\bin\\") then
-                vim.env.PATH = vim.env.RTOOLS40_HOME .. "\\mingw64\\bin;" .. vim.env.PATH
-            elseif vim.fn.isdirectory(vim.env.RTOOLS40_HOME .. "\\usr\\bin") then
-                vim.env.PATH = vim.env.RTOOLS40_HOME .. "\\usr\\bin;" .. vim.env.PATH
-            end
-        else
-            if vim.fn.isdirectory("C:\\rtools40\\mingw64\\bin") then
-                vim.env.PATH = "C:\\rtools40\\mingw64\\bin;" .. vim.env.PATH
-            elseif vim.fn.isdirectory("C:\\rtools40\\usr\\bin") then
-                vim.env.PATH = "C:\\rtools40\\usr\\bin;" .. vim.env.PATH
-            end
-        end
-
-        local get_rip = function(run_cmd)
-            local resp = utils.system(run_cmd, { text = true }):wait()
-            local rout = vim.split(resp.stdout, "\n")
-            local rip = {}
-            for _, v in pairs(rout) do
-                if v:find("InstallPath.*REG_SZ") then table.insert(rip, v) end
-            end
-            return rip
-        end
-
-        local run_cmd = { "reg.exe", "QUERY", "HKCU\\SOFTWARE\\R-core\\R", "/s" }
-        local rip = get_rip(run_cmd)
-        if #rip == 0 then
-            -- Normally, 32 bit applications access only 32 bit registry and...
-            -- We have to try again if the user has installed R only in the other architecture.
-            if vim.fn.has("win64") then
-                table.insert(run_cmd, "/reg:64")
-            else
-                table.insert(run_cmd, "/reg:32")
-            end
-            rip = get_rip(run_cmd)
-        end
-
-        if #rip == 0 then
-            warn(
-                "Could not find R path in Windows Registry. "
-                    .. "If you have already installed R, please, set the value of 'R_path'."
-            )
-            wtime = (uv.hrtime() - wtime) / 1000000000
-            require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
-            return
-        end
-
-        local rinstallpath = nil
-        rinstallpath = rip[1]
-        rinstallpath = rinstallpath:gsub(".*InstallPath.*REG_SZ%s*", "")
-        rinstallpath = rinstallpath:gsub("\n", "")
-        rinstallpath = rinstallpath:gsub("%s*$", "")
-        local hasR32 = vim.fn.isdirectory(rinstallpath .. "\\bin\\i386")
-        local hasR64 = vim.fn.isdirectory(rinstallpath .. "\\bin\\x64")
-        if hasR32 == 1 and not hasR64 then isi386 = true end
-        if hasR64 == 1 and not hasR32 then isi386 = false end
-        if hasR32 == 1 and isi386 then
-            vim.env.PATH = rinstallpath .. "\\bin\\i386;" .. vim.env.PATH
-        elseif hasR64 and isi386 == 0 then
-            vim.env.PATH = rinstallpath .. "\\bin\\x64;" .. vim.env.PATH
-        else
-            vim.env.PATH = rinstallpath .. "\\bin;" .. vim.env.PATH
-        end
-    end
-
-    if not config.R_args then
-        if type(config.external_term) == "boolean" and config.external_term == false then
-            config.R_args = { "--no-save" }
-        else
-            config.R_args = { "--sdi", "--no-save" }
-        end
-    end
-    wtime = (uv.hrtime() - wtime) / 1000000000
-    require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
-end
-
-local tmux_config = function()
-    local ttime = uv.hrtime()
-    -- Check whether Tmux is OK
-    if vim.fn.executable("tmux") == 0 then
-        config.external_term = false
-        warn("tmux executable not found")
-        return
-    end
-
-    local tmuxversion
-    if config.uname:find("OpenBSD") then
-        -- Tmux does not have -V option on OpenBSD: https://github.com/jcfaria/Vim-R-plugin/issues/200
-        tmuxversion = "0.0"
-    else
-        tmuxversion = vim.fn.system("tmux -V")
-        if tmuxversion then
-            tmuxversion = tmuxversion:gsub(".* ([0-9]%.[0-9]).*", "%1")
-            if #tmuxversion ~= 3 then tmuxversion = "1.0" end
-            if tmuxversion < "3.0" then warn("R.nvim requires Tmux >= 3.0") end
-        end
-    end
-    ttime = (uv.hrtime() - ttime) / 1000000000
-    require("r.edit").add_to_debug_info("tmux setup", ttime, "Time")
-end
-
-local unix_config = function()
-    local utime = uv.hrtime()
-    if config.R_path ~= "" then
-        local rpath = vim.split(config.R_path, ":")
-        resolve_fullpaths(rpath)
-
-        -- Add the current directory to the beginning of the path
-        table.insert(rpath, 1, "")
-
-        -- loop over rpath in reverse.
-        for i = #rpath, 1, -1 do
-            local dir = rpath[i]
-            local is_dir = uv.fs_stat(dir)
-            -- Each element in rpath must exist and be a directory
-            if is_dir and is_dir.type == "directory" then
-                vim.env.PATH = dir .. ":" .. vim.env.PATH
-            else
-                warn(
-                    '"'
-                        .. dir
-                        .. '" is not a directory. Fix the value of R_path in your config.'
-                )
-            end
-        end
-    end
-
-    if vim.fn.executable(config.R_app) ~= 1 then
-        warn(
-            '"'
-                .. config.R_app
-                .. '" not found. Fix the value of either R_path or R_app in your config.'
-        )
-    end
-
-    if
-        (type(config.external_term) == "boolean" and config.external_term)
-        or type(config.external_term) == "string"
-    then
-        tmux_config() -- Consider removing this line if it's not necessary
-    end
-    utime = (uv.hrtime() - utime) / 1000000000
-    require("r.edit").add_to_debug_info("unix setup", utime, "Time")
-end
-
-local create_user_commands = function()
-    vim.api.nvim_create_user_command(
-        "RStop",
-        function(_) require("r.run").signal_to_R("SIGINT") end,
-        {}
-    )
-    vim.api.nvim_create_user_command(
-        "RKill",
-        function(_) require("r.run").signal_to_R("SIGKILL") end,
-        {}
-    )
-    vim.api.nvim_create_user_command("RBuildTags", require("r.edit").build_tags, {})
-    vim.api.nvim_create_user_command("RDebugInfo", require("r.edit").show_debug_info, {})
-    vim.api.nvim_create_user_command("RMapsDesc", require("r.maps").show_map_desc, {})
-
-    vim.api.nvim_create_user_command(
-        "RSend",
-        function(tbl) require("r.send").cmd(tbl.args) end,
-        { nargs = 1 }
-    )
-
-    vim.api.nvim_create_user_command(
-        "RFormat",
-        require("r.run").formart_code,
-        { range = "%" }
-    )
-
-    vim.api.nvim_create_user_command(
-        "RInsert",
-        function(tbl) require("r.run").insert(tbl.args, "here") end,
-        { nargs = 1 }
-    )
-
-    vim.api.nvim_create_user_command(
-        "RSourceDir",
-        function(tbl) require("r.run").source_dir(tbl.args) end,
-        { nargs = 1, complete = "dir" }
-    )
-
-    vim.api.nvim_create_user_command(
-        "RHelp",
-        function(tbl) require("r.doc").ask_R_help(tbl.args) end,
-        {
-            nargs = "?",
-            complete = require("r.server").list_objs,
-        }
-    )
-
-    vim.api.nvim_create_user_command("RConfigShow", show_config, {
-        nargs = "?",
-        complete = function() return config_keys end,
-    })
-end
-
 local global_setup = function()
     local gtime = uv.hrtime()
 
     if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
-
-    config_keys = {}
-    for k, _ in pairs(config) do
-        table.insert(config_keys, tostring(k))
-    end
 
     set_pdf_viewer()
     apply_user_opts()
@@ -822,9 +953,7 @@ local global_setup = function()
     -- values.
     set_editing_mode()
 
-    if type(config.external_term) == "boolean" and config.external_term == false then
-        config.auto_quit = true
-    end
+    if config.external_term == "" then config.auto_quit = true end
 
     -- Load functions that were not converted to Lua yet
     -- Configure more values that depend on either system features or other
@@ -835,9 +964,9 @@ local global_setup = function()
     -- See https://github.com/jalvesaq/Nvim-R/issues/625
     do_common_global()
     if config.is_windows then
-        windows_config()
+        windows.configure(config)
     else
-        unix_config()
+        unix.configure(config)
     end
 
     -- Override default config values with user options for the second time.
@@ -845,13 +974,11 @@ local global_setup = function()
         config[k] = v
     end
 
-    create_user_commands()
+    require("r.commands").create_user_commands()
     vim.fn.timer_start(1, require("r.config").check_health)
     vim.schedule(function() require("r.server").check_nvimcom_version() end)
 
-    if config.hook.after_config then
-        vim.schedule(function() config.hook.after_config() end)
-    end
+    hooks.run(config, "after_config", true)
 
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
@@ -884,15 +1011,21 @@ M.real_setup = function()
         did_real_setup = true
         global_setup()
     end
-    if config.hook.on_filetype then
-        vim.schedule(function() config.hook.on_filetype() end)
-    end
+
+    -- The third argument must be `false`, otherwise :RMapsDesc will not display
+    -- custom key mappings.
+    hooks.run(config, "on_filetype", false)
+
     require("r.rproj").apply_settings(config)
+
+    if config.register_treesitter then
+        vim.treesitter.language.register("markdown", { "quarto", "rmd" })
+    end
 end
 
 --- Return the table with the final configure variables: the default values
 --- overridden by user options.
----@return table
+---@return RConfig
 M.get_config = function() return config end
 
 M.check_health = function()
@@ -900,23 +1033,31 @@ M.check_health = function()
 
     -- Check if either Vim-R-plugin or Nvim-R is installed
     if vim.fn.exists("*WaitVimComStart") ~= 0 then
-        warn("Please, uninstall Vim-R-plugin before using R.nvim.")
+        swarn("Please, uninstall Vim-R-plugin before using R.nvim.")
     elseif vim.fn.exists("*RWarningMsg") ~= 0 then
-        warn("Please, uninstall Nvim-R before using R.nvim.")
+        swarn("Please, uninstall Nvim-R before using R.nvim.")
     end
 
-    if vim.fn.executable(config.R_app) == 0 then
-        warn("R_app executable not found: '" .. config.R_app .. "'")
+    -- Check R_app asynchronously
+    utils.check_executable(config.R_app, function(exists)
+        if not exists then
+            swarn("R_app executable not found: '" .. config.R_app .. "'")
+        end
+    end)
+
+    -- Check R_cmd asynchronously if it's different from R_app
+    if config.R_cmd ~= config.R_app then
+        utils.check_executable(config.R_cmd, function(exists)
+            if not exists then
+                swarn("R_cmd executable not found: '" .. config.R_cmd .. "'")
+            end
+        end)
     end
 
-    if not config.R_cmd == config.R_app and vim.fn.executable(config.R_cmd) == 0 then
-        warn("R_cmd executable not found: '" .. config.R_cmd .. "'")
-    end
-
-    if vim.fn.has("nvim-0.9.5") ~= 1 then warn("R.nvim requires Neovim >= 0.9.5") end
+    if vim.fn.has("nvim-0.10.4") ~= 1 then swarn("R.nvim requires Neovim >= 0.10.4") end
 
     -- Check if treesitter is available
-    local function check_parsers(parser_name, parsers)
+    local function has_parser(parser_name, parsers)
         local path = "parser" .. (config.is_windows and "\\" or "/") .. parser_name .. "."
         for _, v in pairs(parsers) do
             if v:find(path, 1, true) then return true end
@@ -925,8 +1066,8 @@ M.check_health = function()
     end
     local has_treesitter, _ = pcall(require, "nvim-treesitter")
     if not has_treesitter then
-        warn(
-            'R.nvim requires nvim-treesitter. Please install it and the parsers for "r", "markdown", and "rnoweb".'
+        swarn(
+            'R.nvim requires nvim-treesitter. Please install it and the parsers for "r", "markdown", "rnoweb", and "yaml".'
         )
     else
         -- Check if required treesitter parsers are available
@@ -934,14 +1075,21 @@ M.check_health = function()
             "parser" .. (config.is_windows and "\\" or "/") .. "*.*",
             true
         )
-        local has_r_parser = check_parsers("r", parsers)
-        local has_markdown_parser = check_parsers("markdown", parsers)
-        local has_rnoweb_parser = check_parsers("rnoweb", parsers)
-        if not has_r_parser or not has_rnoweb_parser or not has_markdown_parser then
-            warn(
-                'R.nvim requires treesitter parsers for "r", "markdown" and "rnoweb". Please, install them.'
+        if
+            not has_parser("r", parsers)
+            or not has_parser("markdown", parsers)
+            or not has_parser("rnoweb", parsers)
+            or not has_parser("yaml", parsers)
+        then
+            swarn(
+                'R.nvim requires treesitter parsers for "r", "markdown", "rnoweb", and "yaml". Please, install them.'
             )
         end
+    end
+
+    if #smsgs > 0 then
+        local msg = "\n  " .. table.concat(smsgs, "\n  ")
+        require("r.edit").add_to_debug_info("Startup warnings", msg)
     end
 
     htime = (uv.hrtime() - htime) / 1000000000

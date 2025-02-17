@@ -1,9 +1,12 @@
-local warn = require("r").warn
+local warn = require("r.log").warn
+local inform = require("r.log").inform
 local send = require("r.send")
 local utils = require("r.utils")
+local get_lang = require("r.utils").get_lang
 local job = require("r.job")
 local config = require("r.config").get_config()
 local check_latexcmd = true
+local chunk_key = nil
 
 local check_latex_cmd = function()
     check_latexcmd = false
@@ -83,7 +86,7 @@ local SyncTeX_readconc = function(basenm)
         texidx = texidx + 1
         while i < max_i and texidx < ntexln do
             i = i + 1
-            local lnrange = vim.fn.range(1, concl[i])
+            local lnrange = vim.fn.range(1, tonumber(concl[i]))
             i = i + 1
             for _, _ in ipairs(lnrange) do
                 if texidx > ntexln then break end
@@ -151,32 +154,41 @@ end
 local M = {}
 
 M.write_chunk = function()
-    if vim.api.nvim_get_current_line() ~= "" and not M.is_in_R_code(false) then
-        vim.fn.feedkeys("<", "n")
-    else
-        local curline = vim.api.nvim_win_get_cursor(0)[1]
-        vim.api.nvim_buf_set_lines(
-            0,
-            curline - 1,
-            curline - 1,
-            true,
-            { "<<>>=", "@", "" }
-        )
-        vim.api.nvim_win_set_cursor(0, { curline, 2 })
-    end
-end
+    local curpos = vim.api.nvim_win_get_cursor(0)
+    local curline = vim.api.nvim_get_current_line()
+    local lang = get_lang()
 
---- Check if cursor is within a R block of code
----@param vrb boolean
----@return boolean
-M.is_in_R_code = function(vrb)
-    local chunkline = vim.fn.search("^<<", "bncW")
-    local docline = vim.fn.search("^@", "bncW")
-    if chunkline ~= vim.api.nvim_win_get_cursor(0)[1] and chunkline > docline then
-        return true
-    else
-        if vrb then warn("Not inside an R code chunk.") end
-        return false
+    -- Check if cursor is in an empty LaTeX line
+    if lang == "latex" then
+        if curline == "" then
+            -- Insert new R code chunk template
+            vim.api.nvim_buf_set_lines(
+                0,
+                curpos[1] - 1,
+                curpos[1] - 1,
+                true,
+                { "<<>>=", "@", "" }
+            )
+            vim.api.nvim_win_set_cursor(0, { curpos[1], 2 })
+        else
+            -- \Sexpr{}
+            vim.api.nvim_set_current_line(
+                curline:sub(1, curpos[2]) .. "\\Sexpr{}" .. curline:sub(curpos[2] + 1)
+            )
+            vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + 7 })
+        end
+        return
+    end
+
+    -- Just insert the mapped key stroke
+    if not chunk_key then
+        chunk_key = require("r.utils").get_mapped_key("RnwInsertChunk")
+    end
+    if chunk_key then
+        vim.api.nvim_set_current_line(
+            curline:sub(1, curpos[2]) .. chunk_key .. curline:sub(curpos[2] + 1)
+        )
+        vim.api.nvim_win_set_cursor(0, { curpos[1], curpos[2] + #chunk_key })
     end
 end
 
@@ -184,14 +196,15 @@ end
 ---@return boolean
 local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
-    if M.is_in_R_code(false) then
+    local lang = get_lang()
+    if lang ~= "r" and lang ~= "python" then
         local i = vim.fn.search("^<<.*$", "bnW")
         if i ~= 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end
     end
     local i = vim.fn.search("^<<.*$", "bnW")
     if i == 0 then
         vim.api.nvim_win_set_cursor(0, { curline, 0 })
-        warn("There is no previous R code chunk to go.")
+        inform("There is no previous R code chunk to go.")
         return false
     end
     vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
@@ -212,7 +225,7 @@ end
 local go_to_next = function()
     local i = vim.fn.search("^<<.*$", "nW")
     if i == 0 then
-        warn("There is no next R code chunk to go.")
+        inform("There is no next R code chunk to go.")
         return false
     end
     vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
@@ -230,7 +243,7 @@ end
 -- Because this function delete files, it will not be documented.
 -- If you want to try it, put in your config:
 --
--- let rm_knit_cache = true
+-- rm_knit_cache = true
 --
 -- If don't want to answer the question about deleting files, and
 -- if you trust this code more than I do, put in your config:
@@ -289,10 +302,13 @@ M.weave = function(bibtex, knit, pdf)
         if #config.latexcmd == 1 then
             pdfcmd = pdfcmd .. ", latexargs = character()"
         else
-            pdfcmd = pdfcmd
-                .. ', latexargs = c("'
-                .. table.concat(config.latexcmd, '", "')
-                .. '")'
+            pdfcmd = pdfcmd .. ", latexargs = c('" .. config.latexcmd[2] .. "'"
+            local i = 2
+            while i < #config.latexcmd do
+                i = i + 1
+                pdfcmd = pdfcmd .. ", '" .. config.latexcmd[i] .. "'"
+            end
+            pdfcmd = pdfcmd .. ")"
         end
     end
 
@@ -302,11 +318,11 @@ M.weave = function(bibtex, knit, pdf)
 
     if not pdf or config.open_pdf == "no" then pdfcmd = pdfcmd .. ", view = FALSE" end
 
-    if config.latex_build_dir then
+    if config.latex_build_dir ~= "" then
         pdfcmd = pdfcmd .. ', builddir="' .. config.latex_build_dir .. '"'
     end
 
-    if not knit and config.sweaveargs then
+    if not knit and config.sweaveargs ~= "" then
         pdfcmd = pdfcmd .. ", " .. config.sweaveargs
     end
 
@@ -319,8 +335,9 @@ end
 M.send_chunk = function(m)
     if vim.api.nvim_get_current_line():find("^<<") then
         vim.api.nvim_win_set_cursor(0, { vim.api.nvim_win_get_cursor(0)[1] + 1, 1 })
-    elseif not M.is_in_R_code(false) then
-        return
+    else
+        local lang = get_lang()
+        if lang ~= "r" and lang ~= "python" then return end
     end
 
     local chunkline = vim.fn.search("^<<", "bncW") + 1

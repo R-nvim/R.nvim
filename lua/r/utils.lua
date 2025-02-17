@@ -1,4 +1,105 @@
+local warn = require("r.log").warn
+local uv = vim.uv
+
 local M = {}
+
+--- Tries to asynchronously run cmd with --version
+--- callback function recieves true if exit code 0, otherwise false
+--- false means:
+---     1. executable not found.
+---     2. Not enough memory to spawn a process.
+---     3. User does not have necessary file permissions.
+---     4. executable does not support --version flag.
+---@param cmd string
+---@param callback function
+function M.check_executable(cmd, callback)
+    uv.spawn(cmd, {
+        args = { "--version" }, -- Assuming the executable supports '--version'
+        stdio = nil, -- We don't need to capture output here
+    }, function(code)
+        if code == 0 then
+            callback(true)
+        else
+            callback(false)
+        end
+    end)
+end
+
+--- Get language at current cursor position of rhelp buffer
+---@return string
+local get_rhelp_lang = function()
+    local lastsec = vim.fn.search("^\\\\[a-z][a-z]*{", "bncW")
+    local secname = vim.fn.getline(lastsec)
+    if
+        vim.api.nvim_win_get_cursor(0)[1] > lastsec
+        and (
+            secname == "\\usage{"
+            or secname == "\\examples{"
+            or secname == "\\dontshow{"
+            or secname == "\\dontrun{"
+            or secname == "\\donttest{"
+            or secname == "\\testonly{"
+        )
+    then
+        return "r"
+    else
+        return "rhelp"
+    end
+end
+
+--- Get language at current cursor position of rnoweb buffer
+---@return string
+local get_rnw_lang = function()
+    local cline = vim.api.nvim_get_current_line()
+    if cline:find("^<<.*child *= *") then
+        return "chunk_child"
+    elseif cline:find("^<<") then
+        return "chunk_header"
+    elseif cline:find("^@$") then
+        return "chunk_end"
+    end
+    local chunkline = vim.fn.search("^<<", "bncW")
+    local docline = vim.fn.search("^@", "bncW")
+    if chunkline ~= vim.api.nvim_win_get_cursor(0)[1] and chunkline > docline then
+        return "r"
+    else
+        return "latex"
+    end
+end
+
+function M.resolve_fullpaths(tbl)
+    for i, v in ipairs(tbl) do
+        tbl[i] = uv.fs_realpath(v)
+    end
+end
+
+--- Get language at current cursor position
+---@return string
+function M.get_lang()
+    if vim.bo.filetype == "" then return "none" end
+    -- Treesitter for rnoweb always return "latex" or "rnoweb"
+    if vim.bo.filetype == "rnoweb" then return get_rnw_lang() end
+    -- No treesitter parser for rhelp
+    if vim.bo.filetype == "rhelp" then return get_rhelp_lang() end
+
+    local p
+    if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
+        local cline = vim.api.nvim_get_current_line()
+        if cline:find("^```.*child *= *") then
+            return "chunk_child"
+        elseif cline:find("^```%{") then
+            return "chunk_header"
+        elseif cline:find("^```$") then
+            return "chunk_end"
+        end
+        p = vim.treesitter.get_parser(vim.api.nvim_get_current_buf(), "markdown")
+    else
+        p = vim.treesitter.get_parser()
+    end
+    local c = vim.api.nvim_win_get_cursor(0)
+    local lang = p:language_for_range({ c[1] - 1, c[2], c[1] - 1, c[2] }):lang()
+    return lang
+end
 
 --- Request the windows manager to focus a window.
 --- Currently, has support only for Xorg.
@@ -7,14 +108,14 @@ local M = {}
 M.focus_window = function(wttl, pid)
     local config = require("r.config").get_config()
     if config.has_X_tools then
-        M.system({ "wmctrl", "-a", wttl })
+        vim.system({ "wmctrl", "-a", wttl })
     elseif
         vim.env.XDG_CURRENT_DESKTOP == "sway" or vim.env.XDG_SESSION_DESKTOP == "sway"
     then
         if pid and pid ~= 0 then
-            M.system({ "swaymsg", '[pid="' .. tostring(pid) .. '"]', "focus" })
+            vim.system({ "swaymsg", '[pid="' .. tostring(pid) .. '"]', "focus" })
         elseif wttl then
-            M.system({ "swaymsg", '[name="' .. wttl .. '"]', "focus" })
+            vim.system({ "swaymsg", '[name="' .. wttl .. '"]', "focus" })
         end
     end
 end
@@ -58,7 +159,7 @@ function M.ensure_directory_exists(dir_path)
     -- Check if pcall caught an error
     if not status then
         -- Log the error
-        print("Error creating directory: " .. err)
+        warn("Error creating directory: " .. err)
         -- return false to indicate failure
         return false
     end
@@ -68,9 +169,7 @@ function M.ensure_directory_exists(dir_path)
 end
 
 local get_fw_info_X = function()
-    local config = require("r.config").get_config()
-    local warn = require("r").warn
-    local obj = M.system({ "xprop", "-root" }, { text = true }):wait()
+    local obj = vim.system({ "xprop", "-root" }, { text = true }):wait()
     if obj.code ~= 0 then
         warn("Failed to run `xprop -root`")
         return
@@ -87,7 +186,7 @@ local get_fw_info_X = function()
         warn("Failed to get ID of active window")
         return
     end
-    obj = M.system({ "xprop", "-id", awin }, { text = true }):wait()
+    obj = vim.system({ "xprop", "-id", awin }, { text = true }):wait()
     if obj.code ~= 0 then
         warn("xprop is required to get window PID")
         return
@@ -115,13 +214,14 @@ local get_fw_info_X = function()
         )
         return
     end
+    local config = require("r.config").get_config()
     config.term_title = nm
     config.term_pid = tonumber(pid)
 end
 
 local get_fw_info_Sway = function()
     local config = require("r.config").get_config()
-    local obj = M.system({ "swaymsg", "-t", "get_tree" }, { text = true }):wait()
+    local obj = vim.system({ "swaymsg", "-t", "get_tree" }, { text = true }):wait()
     local t = vim.json.decode(obj.stdout, { luanil = { object = true, array = true } })
     if t and t.nodes then
         for _, v1 in pairs(t.nodes) do
@@ -153,106 +253,6 @@ function M.get_focused_win_info()
     then
         get_fw_info_Sway()
     end
-end
-
---- Execute a command with arguments.
---- This is a simplified version of `vim.system()` in dev version of Neovim.
---- This make sure that R.nvim can run on stable version of Neovim.
---- This function will be removed when `vim.system()` is available in the stable version.
---- See: https://github.com/jalvesaq/tmp-R-Nvim/issues/36
---- Note: Neovim source code is under Apache License 2.0.
----@param cmd string[] The command to execute.
----@param opts table|nil Options.
----@return table
-function M.system(cmd, opts)
-    opts = opts or {}
-    local function close_handles(state)
-        for _, handle in pairs({ state.handle, state.stdout, state.stderr }) do
-            if not handle:is_closing() then handle:close() end
-        end
-    end
-
-    --- init state
-    local stdout = assert(vim.loop.new_pipe(false))
-    local stderr = assert(vim.loop.new_pipe(false))
-    local stdout_data, stderr_data
-    local state = {
-        handle = nil,
-        pid = nil,
-        done = false,
-        cmd = cmd,
-        stdout = stdout,
-        stderr = stderr,
-        result = {
-            code = nil,
-            signal = nil,
-            stdout = nil,
-            stderr = nil,
-        },
-    }
-
-    --- run the command
-    state.handle, state.pid = vim.loop.spawn(cmd[1], {
-        args = vim.list_slice(cmd, 2),
-        stdio = { nil, stdout, stderr },
-        cwd = opts.cwd,
-        detach = opts.detach,
-        hide = true,
-    }, function(code, signal)
-        --- make sure to close all handles
-        close_handles(state)
-
-        state.done = true
-        state.result = {
-            code = code,
-            signal = signal,
-            stdout = stdout_data and table.concat(stdout_data) or nil,
-            stderr = stderr_data and table.concat(stderr_data) or nil,
-        }
-    end)
-
-    local function stdio_handler(steam, store)
-        return function(err, data)
-            if err then error(err) end
-
-            if data ~= nil then
-                if opts.text then
-                    data = data:gsub("\r\n", "\n")
-                    table.insert(store, data)
-                else
-                    table.insert(store, data)
-                end
-            else
-                steam:read_stop()
-                steam:close()
-            end
-        end
-    end
-
-    if stdout then
-        stdout_data = {}
-        stdout:read_start(stdio_handler(state.stdout, stdout_data))
-    end
-    if stderr then
-        stderr_data = {}
-        stderr:read_start(stdio_handler(state.stderr, stderr_data))
-    end
-
-    local methods = {}
-    function methods:wait()
-        vim.wait(2 ^ 31, function() return state.done end)
-
-        if not state.done then
-            state.handle:kill("sigint")
-            close_handles(state)
-            local err = string.format("Command timed out: %s", table.concat(cmd, " "))
-            return { code = 0, signal = 2, stdout = "", stderr = err }
-        end
-
-        return state.result
-    end
-
-    return setmetatable({ pid = state.pid, _state = state }, { __index = methods })
 end
 
 --- Read a Debian Control File (DFC)
@@ -399,6 +399,34 @@ function M.msg_join(x, sep, last, quote)
     end
 
     return msg
+end
+
+--- Get the root node of the syntax tree for the given buffer.
+-- @param bufnr The buffer number (optional).
+-- @return The root node of the syntax tree, or nil if no parser is found.
+M.get_root_node = function(bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+    local parser = vim.treesitter.get_parser(bufnr)
+
+    if not parser then return nil end
+
+    local tree = parser:parse()[1]
+
+    return tree:root()
+end
+
+---Get the left hand side of a keymap
+---@param name  string The `<Plug>` name of the key binding
+---@return string|nil
+M.get_mapped_key = function(name)
+    local ilist = vim.split(vim.fn.execute("imap", "silent!") or "", "\n")
+    for _, v in pairs(ilist) do
+        if v:find(name .. "$") then
+            local km = v:gsub("^i%s*", ""):gsub("%s.*", "")
+            return km
+        end
+    end
+    return nil
 end
 
 return M

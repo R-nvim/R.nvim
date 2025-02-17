@@ -1,11 +1,11 @@
 local config = require("r.config").get_config()
-local utils = require("r.utils")
-local uv = vim.loop
-local warn = require("r").warn
+local uv = vim.uv
+local warn = require("r.log").warn
 
 local term_name = nil
-local term_cmd = nil
+local term_cmd = {}
 local tmuxsname = nil
+local is_tmux_split = false
 
 -- local global_option_value = TmuxOption("some_option", "global")
 -- local window_option_value = TmuxOption("some_option", "")
@@ -16,20 +16,26 @@ local external_term_config = function()
 
     tmuxsname = "Rnvim-" .. tostring(vim.fn.localtime()):gsub(".*(...)", "%1")
 
-    if type(config.external_term) == "string" then
+    if config.external_term ~= "" and config.external_term ~= "default" then
         -- User defined terminal
-        term_name = string.gsub(tostring(config.external_term), " .*", "")
-        if string.find(tostring(config.external_term), " ") then
+        term_name = config.external_term:gsub(" .*", "")
+        if vim.fn.executable(term_name) == 0 then
+            warn(
+                "'"
+                    .. term_name
+                    .. "' is not executable. Please, check the value of `external_term`."
+            )
+            return
+        end
+        if config.external_term:find(" ") then
             -- Complete command defined by the user
-            term_cmd = config.external_term
+            term_cmd = vim.fn.split(config.external_term, " ")
             return
         end
     end
 
-    if config.is_darwin then return end
-
     local etime = uv.hrtime()
-    if type(config.external_term) == "boolean" then
+    if config.external_term == "default" then
         -- Terminal name not defined. Try to find a known one.
         local terminals = {
             "kitty",
@@ -56,20 +62,25 @@ local external_term_config = function()
         return
     end
 
+    term_cmd = { term_name }
+
     if
         vim.tbl_contains(
-            { "foot", "gnome-terminal", "xfce4-terminal", "alacritty" },
+            { "foot", "gnome-terminal", "kitty", "xfce4-terminal", "alacritty" },
             term_name
         )
     then
-        term_cmd = term_name .. " --title R"
+        table.insert(term_cmd, "--title")
+        table.insert(term_cmd, "R")
     elseif vim.tbl_contains({ "xterm", "uxterm", "lxterm" }, term_name) then
-        term_cmd = term_name .. " -title R"
-    else
-        term_cmd = term_name
+        table.insert(term_cmd, "-title")
+        table.insert(term_cmd, "R")
     end
 
-    if term_name == "foot" then term_cmd = term_cmd .. " --log-level error" end
+    if term_name == "foot" then
+        table.insert(term_cmd, "--log-level")
+        table.insert(term_cmd, "error")
+    end
 
     local wd = require("r.run").get_R_start_dir()
     if wd then
@@ -79,20 +90,23 @@ local external_term_config = function()
                 term_name
             )
         then
-            term_cmd = term_cmd .. " --working-directory='" .. wd .. "'"
+            table.insert(term_cmd, "--working-directory='" .. wd .. "'")
         elseif term_name == "konsole" then
-            term_cmd = term_cmd .. " -p tabtitle=R --workdir '" .. wd .. "'"
-        elseif term_name == "roxterm" then
-            term_cmd = term_cmd .. " --directory='" .. wd .. "'"
+            table.insert(term_cmd, "-p")
+            table.insert(term_cmd, "tabtitle=R")
+            table.insert(term_cmd, "--workdir")
+            table.insert(term_cmd, wd)
+        elseif term_name == "roxterm" or term_name == "kitty" then
+            table.insert(term_cmd, "--directory='" .. wd .. "'")
         end
     end
 
     if term_name == "gnome-terminal" then
-        term_cmd = term_cmd .. " --"
+        table.insert(term_cmd, "--")
     elseif vim.tbl_contains({ "terminator", "xfce4-terminal" }, term_name) then
-        term_cmd = term_cmd .. " -x"
+        table.insert(term_cmd, "-x")
     else
-        term_cmd = term_cmd .. " -e"
+        table.insert(term_cmd, "-e")
     end
     etime = (uv.hrtime() - etime) / 1000000000
     require("r.edit").add_to_debug_info("external term setup", etime, "Time")
@@ -101,12 +115,7 @@ end
 local M = {}
 
 M.start_extern_term = function()
-    local rcmd = config.R_app .. " " .. require("r.run").get_r_args()
-
-    local tmuxcnf = " "
     if config.config_tmux then
-        tmuxcnf = '-f "' .. config.tmpdir .. "/tmux.conf" .. '"'
-
         -- Create a custom tmux.conf
         local cnflines = {
             "set-option -g prefix C-a",
@@ -138,7 +147,9 @@ M.start_extern_term = function()
 
     local open_cmd
 
-    local cmd = "RNVIM_TMPDIR="
+    local rargs = require("r.run").get_r_args()
+    if rargs ~= "" then rargs = " " .. rargs end
+    local rcmd = "RNVIM_TMPDIR="
         .. config.tmpdir:gsub(" ", "\\ ")
         .. " RNVIM_COMPLDIR="
         .. config.compldir:gsub(" ", "\\ ")
@@ -151,51 +162,64 @@ M.start_extern_term = function()
         .. " R_DEFAULT_PACKAGES="
         .. vim.env.R_DEFAULT_PACKAGES
         .. " "
-        .. rcmd
+        .. config.R_app
+        .. rargs
 
-    if term_cmd:find("tmux split%-window") then
-        open_cmd = string.format('%s "%s"', term_cmd, cmd)
-    elseif config.is_darwin and term_name ~= "tmux" then
-        open_cmd = string.format(
-            "tmux -L Rnvim -2 %s new-session -s %s '%s'",
-            tmuxcnf,
-            tmuxsname,
-            cmd
-        )
-        local open_file = vim.fn.tempname() .. "/openR"
-        vim.fn.writefile({ "#!/bin/sh", open_cmd }, open_file)
-        vim.fn.system("chmod +x '" .. open_file .. "'")
-        open_cmd = "open '" .. open_file .. "'"
+    open_cmd = term_cmd
+    if
+        vim.tbl_contains(term_cmd, "tmux") and vim.tbl_contains(term_cmd, "split%-window")
+    then
+        is_tmux_split = true
     elseif term_name == "konsole" then
-        open_cmd = string.format(
-            "%s 'tmux -L Rnvim -2 %s new-session -s %s \"%s\"'",
-            term_cmd,
-            tmuxcnf,
-            tmuxsname,
-            cmd
+        table.insert(
+            open_cmd,
+            "tmux -L Rnvim -2 -f "
+                .. config.tmpdir
+                .. "/tmux.conf new-session -s "
+                .. tmuxsname
+                .. ' "'
+                .. rcmd
+                .. '"'
         )
     else
-        open_cmd = string.format(
-            '%s tmux -L Rnvim -2 %s new-session -s %s "%s"',
-            term_cmd,
-            tmuxcnf,
-            tmuxsname,
-            cmd
-        )
+        table.insert(open_cmd, "tmux")
+        table.insert(open_cmd, "-L")
+        table.insert(open_cmd, "Rnvim")
+        table.insert(open_cmd, "-2")
+        if config.config_tmux then
+            table.insert(open_cmd, "-f")
+            table.insert(open_cmd, config.tmpdir .. "/tmux.conf")
+        end
+        table.insert(open_cmd, "new-session")
+        table.insert(open_cmd, "-s")
+        table.insert(open_cmd, tmuxsname)
+        if config.silent_term or term_name == "konsole" then
+            table.insert(open_cmd, rcmd)
+        else
+            table.insert(open_cmd, "'" .. rcmd .. "'")
+        end
+    end
+
+    local on_exit = function(obj)
+        if obj.code ~= 0 then
+            warn(
+                "Terminal emulator exit code: "
+                    .. tostring(obj.code)
+                    .. "\nstdout: "
+                    .. obj.stdout
+                    .. "\nstderr: "
+                    .. obj.stderr
+            )
+        end
     end
 
     vim.g.R_Nvim_status = 6
     if config.silent_term then
-        open_cmd = open_cmd .. " &"
-        local rlog = vim.fn.system(open_cmd)
-        if vim.v.shell_error ~= 0 then
-            if rlog then warn(rlog) end
-            return
-        end
+        vim.system(open_cmd, { text = true }, on_exit)
     else
         local initterm = {
             'cd "' .. vim.fn.getcwd() .. '"',
-            open_cmd,
+            table.concat(open_cmd, " "),
         }
         local init_file = config.tmpdir .. "/initterm_" .. vim.fn.rand() .. ".sh"
         vim.fn.writefile(initterm, init_file)
@@ -230,19 +254,19 @@ M.send_cmd_to_external_term = function(command)
 
     local scmd
 
-    if term_cmd:find("tmux split%-window") then
+    if is_tmux_split then
         scmd = { "tmux", "set-buffer", cmd .. "\n" }
     else
         scmd = { "tmux", "-L", "Rnvim", "set-buffer", cmd .. "\n" }
     end
-    local obj = utils.system(scmd):wait()
+    local obj = vim.system(scmd):wait()
     if obj.code ~= 0 then
         warn(obj.stderr)
         require("r.run").clear_R_info()
         return false
     end
 
-    if term_cmd:find("tmux split%-window") then
+    if is_tmux_split then
         scmd = { "tmux", "paste-buffer", "-t", config.R_Tmux_pane }
     else
         scmd = {
@@ -254,7 +278,7 @@ M.send_cmd_to_external_term = function(command)
             tmuxsname .. "." .. config.R_Tmux_pane,
         }
     end
-    obj = utils.system(scmd):wait()
+    obj = vim.system(scmd):wait()
     if obj.code ~= 0 then
         warn(obj.stderr)
         require("r.run").clear_R_info()

@@ -1,5 +1,6 @@
 local config = require("r.config").get_config()
 local sumatra_in_path = false
+local warn = require("r.info").warn
 
 ---Check if Sumatra is in the PATH
 ---@return boolean
@@ -45,7 +46,9 @@ M.open = function(fullpath)
                 .. fullpath
                 .. '"',
         }, config.tmpdir .. "/run_cmd.bat")
-        vim.fn.system(config.tmpdir .. "/run_cmd.bat")
+        local obj = vim.system({ config.tmpdir .. "/run_cmd.bat" }, { text = true })
+            :wait()
+        if obj.code ~= 0 then warn("Error starting Sumatra: " .. obj.stderr) end
         vim.cmd("cd " .. olddir)
     end
 end
@@ -71,7 +74,11 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
                 .. pname
                 .. '"',
         }, config.tmpdir .. "/run_cmd.bat")
-        vim.fn.system(config.tmpdir .. "/run_cmd.bat")
+        local obj = vim.system({ config.tmpdir .. "/run_cmd.bat" }, { text = true })
+            :wait()
+        if obj.code ~= 0 then
+            warn("Error running Sumatra forward search: " .. obj.stderr)
+        end
         vim.cmd("cd " .. olddir)
     end
 end
