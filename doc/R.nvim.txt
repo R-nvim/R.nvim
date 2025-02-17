@@ -867,7 +867,6 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |wait_reply|          Time to wait for R reply
 |setwd|               Directory where to start R
 |hook|                Lua functions to call after certain events
-|debug|             Support for debugging functions
 |user_maps_only|      Only user specified key bindings
 |disable_cmds|        List of commands to be disabled
 |tmpdir|              Where temporary files are created
@@ -875,6 +874,7 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |remote_compldir|     Mount point of remote cache directory
 |view_df|             Options for visualizing a data.frame or matrix
 |R.nvim-SyncTeX|      Options for SyncTeX
+|debug|               Support for debugging functions
 
 
 ------------------------------------------------------------------------------
@@ -2108,26 +2108,6 @@ packages) key binding.
 
 
 ------------------------------------------------------------------------------
-6.38. Support for debugging functions                                *debug*
-
-Put the line below in your config if do not want that the cursor jumps to the
-line being debugged (when `browser()` is run). Highlighting of the line being
-debugged will also be disabled.
->lua
-   debug = false
-<
-R.nvim puts the cursor in the R Console when the debugging starts. If you do
-not want this, put in your config:
->lua
-   debug_jump = false
-<
-The highlighted debugged line incrementally moves down the buffer with code
-execution and, with long scripts, it may stay at the bottom of the window as you
-debug. You can hold the highlighted line in the middle of the window with
->lua
-    debug_center = true
-<
-
 6.38. Split file paths and URLs                                   *split_path
 
 You can split the path of the current file, directory, or a URL under the
@@ -2166,6 +2146,27 @@ Defaults to `"yes"`. Valid values:
    `"yes"`:         Create and override the object `params` whenever the
                   corresponding YAML field changes.
 
+
+------------------------------------------------------------------------------
+6.41. Support for debugging functions                                *debug*
+
+Put the line below in your config if do not want that the cursor jumps to the
+line being debugged (when `browser()` is run). Highlighting of the line being
+debugged will also be disabled.
+>lua
+   debug = false
+<
+R.nvim puts the cursor in the R Console when the debugging starts. If you do
+not want this, put in your config:
+>lua
+   debug_jump = false
+<
+The highlighted debugged line incrementally moves down the buffer with code
+execution and, with long scripts, it may stay at the bottom of the window as you
+debug. You can hold the highlighted line in the middle of the window with
+>lua
+    debug_center = true
+<
 
 ==============================================================================
 7. Public Lua API                                             *public-lua-api*
