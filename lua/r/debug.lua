@@ -2,6 +2,7 @@
 -- Support for debugging R code
 ------------------------------------------------------------------------------
 local config = require("r.config").get_config()
+local warn = require("r.log").warn
 
 local M = {}
 
@@ -42,7 +43,13 @@ local find_func = function(srcref)
 
     vim.wait(300)
     if type(config.external_term) == "boolean" and not config.external_term then
-        rlines = vim.api.nvim_buf_get_lines(require("r.term").get_buf_nr(), 0, -1, false)
+        local rbn = require("r.term").get_buf_nr()
+        if rbn then
+            rlines = vim.api.nvim_buf_get_lines(rbn, 0, -1, false)
+        else
+            warn("Failed to get R buffer number.")
+            return
+        end
     else
         local run_cmd = {
             "tmux",
@@ -53,7 +60,7 @@ local find_func = function(srcref)
             "-t",
             require("r.external_term").get_tmuxsname(),
         }
-        local resp = require("r.utils").system(run_cmd, { text = true }):wait()
+        local resp = vim.system(run_cmd, { text = true }):wait()
         rlines = vim.split(resp.stdout, "\n")
     end
 
