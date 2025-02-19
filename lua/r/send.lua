@@ -6,10 +6,7 @@ local get_lang = require("r.utils").get_lang
 local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
-local get_r_chunks_from_quarto = require("r.quarto").get_r_chunks_from_quarto
-local get_root_node = require("r.utils").get_root_node
 
--- TODO: Find better name for this function and the module file
 local create_r_buffer = require("r.buffer").create_r_buffer
 
 --- Check if line is a comment
@@ -767,8 +764,6 @@ local r_fun_nodes = function(rbuf)
     local nodes = {}
 
     for _, node in query:iter_captures(root, rbuf, 0, -1) do
-        local start_row, _, end_row, _ = node:range()
-
         table.insert(nodes, node)
     end
 
