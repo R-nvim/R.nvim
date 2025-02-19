@@ -9,6 +9,9 @@ local paragraph = require("r.paragraph")
 local get_r_chunks_from_quarto = require("r.quarto").get_r_chunks_from_quarto
 local get_root_node = require("r.utils").get_root_node
 
+-- TODO: Find better name for this function and the module file
+local create_r_buffer = require("r.buffer").create_r_buffer
+
 --- Check if line is a comment
 ---@param line string
 ---@return boolean
@@ -738,18 +741,22 @@ M.chain = function()
     M.source_lines(chain, nil)
 end
 
---- Extracts R functions from the given R content based on the query and cursor position.
--- @param r_content The R content as a string.
--- @param capture_all Boolean indicating whether to capture all functions.
--- @param cursor_pos The current cursor position.
--- @param chunk_start_row The starting row of the chunk.
--- @return A table containing the extracted function lines.
-local extract_r_functions = function(r_content, capture_all, cursor_pos, chunk_start_row)
-    local r_parser = vim.treesitter.get_string_parser(r_content, "r")
-    local r_tree = r_parser:parse()[1]
-    local r_root = r_tree:root()
+--- Retrieves R function nodes from a given buffer using TreeSitter.
+---
+--- @param rbuf buffer The buffer to analyze
+--- @return table A list of TreeSitter nodes representing R functions
+local r_fun_nodes = function(rbuf)
+    local parser = vim.treesitter.get_parser(rbuf, "r")
 
-    local r_fun_query = vim.treesitter.query.parse(
+    if not parser then
+        inform("Treesitter parser not found.")
+        return {}
+    end
+
+    local tree = parser:parse()[1]
+    local root = tree:root()
+
+    local query = vim.treesitter.query.parse(
         "r",
         [[
         (binary_operator
@@ -757,79 +764,62 @@ local extract_r_functions = function(r_content, capture_all, cursor_pos, chunk_s
         ]]
     )
 
-    local lines = {}
+    local nodes = {}
 
-    for _, node in r_fun_query:iter_captures(r_root, r_content) do
+    for _, node in query:iter_captures(root, rbuf, 0, -1) do
         local start_row, _, end_row, _ = node:range()
 
-        -- Adjust the cursor position relative to the chunk start
-        local adjusted_cursor_pos = cursor_pos - (chunk_start_row or 0)
-
-        if
-            capture_all
-            or (
-                adjusted_cursor_pos >= start_row + 1
-                and adjusted_cursor_pos <= end_row + 1
-            )
-        then
-            local function_lines = vim.treesitter.get_node_text(node, r_content)
-            vim.list_extend(lines, { function_lines })
-        end
+        table.insert(nodes, node)
     end
 
-    return lines
+    return nodes
 end
 
-M.funs = function(bufnr, capture_all, move_down)
-    bufnr = bufnr or vim.api.nvim_get_current_buf()
+--- Captures and sources R functions from the current buffer.
+--- Can capture all functions or just the function at the cursor position.
+---
+--- @param capture_all boolean If true, captures all functions; if false, captures only the function at the cursor
+--- @param move_down boolean If true, moves the cursor to the end of the last captured function
+M.funs = function(capture_all, move_down)
+    local rbuf = create_r_buffer()
 
-    local filetype = vim.bo[bufnr].filetype
+    if not rbuf then return end
 
-    if
-        filetype ~= "r"
-        and filetype ~= "rnoweb"
-        and filetype ~= "quarto"
-        and filetype ~= "rmd"
-    then
-        inform("Not yet supported in '" .. filetype .. "' files.")
+    local nodes = r_fun_nodes(rbuf)
+
+    if not nodes or #nodes == 0 then
+        inform("No functions found.")
         return
     end
 
-    local root_node = get_root_node(bufnr)
-    if not root_node then return end
+    if rbuf == nil then
+        inform("Not in an R buffer.")
+        return
+    end
 
     local cursor_pos = vim.api.nvim_win_get_cursor(0)[1]
-
     local lines = {}
 
-    if filetype == "quarto" or filetype == "rmd" then
-        local r_chunks_content = get_r_chunks_from_quarto(root_node, bufnr)
+    -- Node used to move the cursor down at the end
+    local target_node = nil
 
-        for _, r_chunk in ipairs(r_chunks_content) do
-            local chunk_lines = extract_r_functions(
-                r_chunk.content,
-                capture_all,
-                cursor_pos,
-                r_chunk.start_row
-            )
-            vim.list_extend(lines, chunk_lines)
+    for _, node in ipairs(nodes) do
+        local start_row, _, end_row, _ = node:range()
+
+        if capture_all or (cursor_pos - 1 >= start_row and cursor_pos - 1 <= end_row) then
+            table.insert(lines, vim.treesitter.get_node_text(node, rbuf))
+            target_node = node
+            if not capture_all then break end
         end
-    else
-        local buffer_content =
-            table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
-        lines = extract_r_functions(buffer_content, capture_all, cursor_pos)
     end
 
-    if #lines > 0 then
-        M.source_lines(lines)
-        if move_down == true then
-            local last_function = lines[#lines]
-            local function_lines = vim.split(last_function, "\n")
-            local end_row = vim.api.nvim_win_get_cursor(0)[1] + #function_lines
-            local last_line = vim.api.nvim_buf_line_count(0)
-            vim.api.nvim_win_set_cursor(0, { math.min(end_row, last_line), 0 })
-            vim.cmd("normal! j")
-        end
+    M.source_lines(lines)
+
+    if move_down and target_node then
+        local _, _, end_row, _ = target_node:range()
+        vim.api.nvim_win_set_cursor(0, { end_row + 1, 0 })
+        cursor.move_next_line()
     end
 end
+
 return M
