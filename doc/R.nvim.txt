@@ -1957,18 +1957,7 @@ Calc:
    open_app = "localc"
    open_app = "c:/Program Files (x86)/LibreOffice 4/program/scalc.exe"
 <
-`open_app` can be a Lua function which will receive a single argument: the name
-of the `tsv` file. Example on how to see the first five lines as a
-notification:
->lua
-   view_df = {
-     n_lines = 5,
-     open_app = function(file_name)
-       local lines = vim.fn.readfile(file_name)
-       vim.notify(table.concat(lines, "\n"))
-     end
-   }
-<
+
 The substring `%s` is replaced by the name of the object under the cursor, and
 `()` are added if necessary. In this case, no `csv` file is saved (see also
 |R.nvim-key-bindings|).
