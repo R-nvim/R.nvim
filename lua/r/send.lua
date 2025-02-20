@@ -401,7 +401,7 @@ M.chunks_up_to_here = function()
                             .. table.concat(chunklines, "\n"):gsub('"', '\\"')
                             .. '")'
                     )
-                else
+                elseif lang == "R" then
                     for _, v in pairs(chunklines) do
                         table.insert(codelines, v)
                     end
