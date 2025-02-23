@@ -663,19 +663,19 @@ M.chain = function()
         (_
             (binary_operator
                 lhs: (_)
-                operator: ([("|>") ("<-") ("+") ("special")]) 
-                rhs: (call) 
+                operator: ([("|>") ("<-") ("+") ("special")])
+                rhs: (call)
             ) @pipeline_no_assign
             (#not-has-parent? @pipeline_no_assign binary_operator)
-        )       
-  
+        )
+
         (_
             ; Handle when the pipeline is assignment to a variable
             (binary_operator
-                lhs: (identifier) 
+                lhs: (identifier)
                 rhs: (binary_operator
                     lhs: (_)
-                    operator: ([("|>") ("+") ("special")]) 
+                    operator: ([("|>") ("+") ("special")])
                     rhs: (call)
                 ) @pipeline_with_assign
             )
