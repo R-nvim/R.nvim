@@ -8,7 +8,7 @@ local get_root_node = require("r.utils").get_root_node
 --- Creates an R buffer from the current buffer or a specified buffer number.
 --- If the current buffer is already an R file, it returns the current buffer number.
 --- For Quarto, or RMarkdown files, it extracts R code chunks and creates a new buffer.
---- @return buffer|nil The buffer number of the created R buffer, or nil if creation fails.
+--- @return integer|nil The buffer number of the created R buffer, or nil if creation fails.
 M.create_r_buffer = function()
     local bufnr = vim.api.nvim_get_current_buf()
 
