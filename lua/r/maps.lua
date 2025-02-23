@@ -84,14 +84,45 @@ local map_desc = {
     ROBToggle =     { m = "", k = "", c = "Object_Browser", d = "Toggle the Object Browser" },
 }
 
-local map_it = function(plug, mode, plg, tgt, cmd, opts)
+local map_list
+
+local fill_map_list = function()
+    local plg = ""
+    local map = ""
+    map_list = { n = {}, v = {}, i = {}}
+    for _, mode in pairs({"n", "i", "v"}) do
+        local txt = vim.fn.execute(mode .. "map")
+        local lines = vim.split(txt, "\n")
+        for _, v in pairs(lines) do
+            if v:find("<Plug>R") and not v:find("^" .. mode .. "  <Plug>R") then
+                plg = v:gsub(".*<Plug>R", "R")
+                plg = plg:gsub(" .*", "")
+                map = v:gsub("^" .. mode .. "  ", "")
+                map = map:gsub(" .*", "")
+                table.insert(map_list[mode], { plg, map })
+            end
+        end
+    end
+end
+
+local get_map_to = function(plg, mode)
+    for _, v in pairs(map_list[mode]) do
+        if v[1] == plg then
+            return v[2]
+        end
+    end
+    return ""
+end
+
+local map_it = function(plug, mode, tgt, cmd, opts)
     if not string.find(map_desc[plug].m, mode) then
         map_desc[plug].m = map_desc[plug].m .. mode
     end
-    vim.api.nvim_buf_set_keymap(0, mode, plg, tgt, opts)
+    vim.api.nvim_buf_set_keymap(0, mode, "<Plug>" .. plug, tgt, opts)
 
-    if vim.fn.hasmapto(plg, mode) == 1 then
-        map_desc[plug].k = "custom"
+    local key = get_map_to(plug, mode)
+    if key ~= "" then
+        map_desc[plug].k = key
         return
     end
 
@@ -100,7 +131,7 @@ local map_it = function(plug, mode, plg, tgt, cmd, opts)
         return
     end
 
-    vim.api.nvim_buf_set_keymap(0, mode, cmd, plg, opts)
+    vim.api.nvim_buf_set_keymap(0, mode, cmd, "<Plug>" .. plug, opts)
     map_desc[plug].k = cmd
 end
 
@@ -122,14 +153,13 @@ local create_maps = function(mode, plug, combo, target, esp)
     end
 
     local tgt = (esp and esp == 1) and target or target .. "<CR>"
-    local plg = "<Plug>" .. plug
     local cmd = (esp and esp == 3) and combo or "<LocalLeader>" .. combo
     local opts = { silent = true, noremap = true, expr = false, desc = map_desc[plug].d }
 
-    if mode:find("n") then map_it(plug, "n", plg, tgt, cmd, opts) end
-    if mode:find("v") then map_it(plug, "v", plg, tgt, cmd, opts) end
+    if mode:find("n") then map_it(plug, "n", tgt, cmd, opts) end
+    if mode:find("v") then map_it(plug, "v", tgt, cmd, opts) end
     if (config.insert_mode_cmds or (esp and esp > 1)) and mode:find("i") then
-        map_it(plug, "i", plg, tgt, cmd, opts)
+        map_it(plug, "i", tgt, cmd, opts)
     end
 end
 
@@ -308,6 +338,7 @@ end
 local M = {}
 
 M.create = function(file_type)
+    if not map_list then fill_map_list() end
     control(file_type)
     if file_type == "rbrowser" then return end
     send(file_type)
@@ -353,9 +384,17 @@ M.show_map_desc = function()
             )
             table.insert(map_key_desc, { string.format("  %-04s", v[2]), "Type" })
             local keymap = v[3] or " "
+            local syngrp = keymap == "disabled" and "Comment" or "Special"
+            local modes = vim.split(v[2], "")
+            for _, m in pairs(modes) do
+                if get_map_to(v[1], m) ~= "" then
+                    syngrp = "String"
+                    break
+                end
+            end
             table.insert(map_key_desc, {
                 string.format("%-0" .. kw .. "s", keymap),
-                (keymap == "custom" or keymap == "disabled") and "Comment" or "Special",
+                syngrp,
             })
             table.insert(map_key_desc, { v[4] .. "\n" })
         end
