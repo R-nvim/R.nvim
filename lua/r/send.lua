@@ -716,7 +716,7 @@ M.chain = function()
     local sibling = nil
     local visited = false
 
-    for id, node, _ in call_query:iter_captures(pipe_block_node, bufnr, 0, -1) do
+    for id, node, _ in call_query:iter_captures(root, bufnr, cursor_row, cursor_row + 1) do
         local capture_name = call_query.captures[id]
         local start_row, _, end_row = node:range()
 
