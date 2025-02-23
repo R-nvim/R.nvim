@@ -26,14 +26,17 @@ end
 -- @param bufnr The buffer number
 -- @param cursor_pos The cursor position (optional)
 -- @return A table containing R code blocks with their content, start row and end row
-M.get_r_chunks_from_quarto = function(root, bufnr, cursor_pos)
+M.get_code_chunk = function(root, bufnr, cursor_pos, code_fence_language)
     local query = vim.treesitter.query.parse(
         "markdown",
-        [[
-        (fenced_code_block
-          (info_string (language) @lang (#eq? @lang "r"))
-          (code_fence_content) @content)
-        ]]
+        string.format(
+            [[
+                (fenced_code_block
+                (info_string (language) @lang (#eq? @lang "%s"))
+                (code_fence_content) @content)
+            ]],
+            code_fence_language
+        )
     )
 
     bufnr = bufnr or vim.api.nvim_get_current_buf()
