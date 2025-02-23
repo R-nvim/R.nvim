@@ -2,6 +2,7 @@
 
 Thank you for your interest in contributing to R.nvim! This Document provides
 instructions on how to setup your environment and contribute effectively to the project.
+
 ## Setting a Pre-commit Hook
 
 After cloning the repository, run the following commands from a terminal:
@@ -18,6 +19,7 @@ ln -sf ../../scripts/pre-commit
 ## Formatting
 
 Make sure the formatting tool for the corresponding files in your commit is installed.
+
 | language | formatting tool | installation instructions                        |
 | -------- | --------------- | ------------------------------------------------ |
 | C        | clang-format    | [clang.llvm.org/docs/ClangFormat.html](https://clang.llvm.org/docs/ClangFormat.html) |

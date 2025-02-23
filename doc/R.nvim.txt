@@ -11,8 +11,9 @@ For Neovim >= 0.10.4
  4. Use                                         |R.nvim-use|
  5. Known bugs and workarounds                  |R.nvim-known-bugs|
  6. Options                                     |R.nvim-options|
- 7. Custom key bindings                         |R.nvim-key-bindings|
- 8. History                                     |R.nvim-history|
+ 7. Public Lua API                              |R.nvim-lua-api|
+ 8. Custom key bindings                         |R.nvim-key-bindings|
+ 9. History                                     |R.nvim-history|
 
 
 ==============================================================================
@@ -116,6 +117,11 @@ Main dependencies:
    Quarto: required to complete chunk options in `#|` comments in Quarto, Rmd
       and Rnoweb documents: https://quarto.org/
 
+   The R packages:
+      - `knitr`: to generate final documents from Rnoweb, Rmd or Quarto.
+      - `quarto`: to generate final documents from Quarto.
+      - `rmarkdown`: to generate final documents from Rmd.
+      - `styler`: to format R code.
 
 Additional dependencies for editing Rnoweb documents:
 
@@ -533,6 +539,9 @@ function definition (see |tags-and-searches|). The command `:RBuildTags` calls
 the R functions `rtags()` and `etags2ctags` to build the tags file for the R
 scripts in the current directory.
 
+As an alternative, R's `languageserver` can also jump to function
+definitions.
+
 
 ------------------------------------------------------------------------------
 4.6. Syntax highlight of .Rout files
@@ -642,6 +651,15 @@ the pattern is found, the cursor will jump to its position.
 The highlighting group used to highlight the line being debugged is the
 QuickFixLine (see |hl-QuickFixLine|). Its foreground and background colors are
 defined by your colorscheme.
+
+
+------------------------------------------------------------------------------
+4.8 roxygen2 support                                         *R.nvim-roxygen2*
+
+R.nvim supports the insertion of roxygen2 skeletons in R scripts. To insert a
+new roxygen2 block, you can use the `:Roxygenize` command while the cursor is
+inside a function definition. If a block of roxygen2 is already present, no
+modification will be made.
 
 
 ==============================================================================
@@ -2158,7 +2176,7 @@ debug. You can hold the highlighted line in the middle of the window with
 <
 
 ==============================================================================
-7. Public Lua API                                             *public-lua-api*
+7. Public Lua API                                             *R.nvim-lua-api*
 
 The Lua internals for R.nvim should be considered generally unstable and
 subject to change without notice. There are some exceptions to this rule,
@@ -2186,17 +2204,27 @@ See |user_maps_only| if you want to inhibit the creation of default mappings.
 See |disable_cmds| if you only want to avoid the creation of some of them.
 
 When creating custom key bindings for R.nvim, you have to create a map to a
-<Plug> label which is mapped to the actual function to be executed.
-To see the description of all key bindings <Plug> labels and how they were
-mapped in the current session, do in Normal mode:
+<Plug>Label which is mapped to the actual function to be executed. That is,
+you create the first link of the complete key mapping:
+>
+   Key_combination ---> <Plug>Label ---> Command
+<
+To see the description of all key combinations and their respective
+<Plug>Labels, do in Normal mode:
 >vim
    :RMapsDesc
 <
 You may close the window opened by `:RMapsDesc` by simply pressing `q`. The
 prefix "RD" in the labels means "cursor down".
 
-The `on_filetype` hook from `R.nvim` config is a good place to add your custom
-key bindings. Examples:
+If `user_maps_only = true`, no `Key_combination --> <Plug>Label` is
+automatically created and the remaining `<Plug>Label ---> Command`
+becomes harmless.
+
+Whether you have set `user_maps_only` to `true` in your R.nvim config or just
+want to change the default key combination of some key mappings, the
+`on_filetype` hook from `R.nvim` config is a good place to add your custom key
+bindings. Examples:
 >lua
    hook = {
        on_filetype = function()
@@ -2246,17 +2274,9 @@ inside the function passed to `hook.on_filetype` as in the examples below
    }
 
 
-==============================================================================
-9. roxygen2 support                                          *R.nvim-roxygen2*
-
-R.nvim supports the insertion of roxygen2 skeletons in R scripts. To insert a
-new roxygen2 block, you can use the `Roxygenize` function while the cursor is
-inside a function definition. If a block of roxygen2 is already present, no
-modification will be made.
-
 
 ==============================================================================
-10. History                                                   *R.nvim-history*
+9. History                                                    *R.nvim-history*
 
 See: https://www.vim.org/scripts/script.php?script_id=2628
      https://groups.google.com/g/vim-r-plugin
