@@ -384,9 +384,17 @@ M.show_map_desc = function()
             )
             table.insert(map_key_desc, { string.format("  %-04s", v[2]), "Type" })
             local keymap = v[3] or " "
+            local syngrp = keymap == "disabled" and "Comment" or "Special"
+            local modes = vim.split(v[2], "")
+            for _, m in pairs(modes) do
+                if get_map_to(v[1], m) ~= "" then
+                    syngrp = "String"
+                    break
+                end
+            end
             table.insert(map_key_desc, {
                 string.format("%-0" .. kw .. "s", keymap),
-                (keymap == "custom" or keymap == "disabled") and "Comment" or "Special",
+                syngrp,
             })
             table.insert(map_key_desc, { v[4] .. "\n" })
         end
