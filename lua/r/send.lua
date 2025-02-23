@@ -740,7 +740,7 @@ end
 
 --- Retrieves R function nodes from a given buffer using TreeSitter.
 ---
---- @param rbuf buffer The buffer to analyze
+--- @param rbuf integer The buffer to analyze
 --- @return table A list of TreeSitter nodes representing R functions
 local r_fun_nodes = function(rbuf)
     local parser = vim.treesitter.get_parser(rbuf, "r")
