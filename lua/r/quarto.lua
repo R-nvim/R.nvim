@@ -21,19 +21,26 @@ M.command = function(what)
     send_cmd(cmd)
 end
 
--- Helper function to get R content/code block from Quarto document
--- @param root The root node of the parsed tree
--- @param bufnr The buffer number
--- @param cursor_pos The cursor position (optional)
--- @return A table containing R code blocks with their content, start row and end row
-M.get_r_chunks_from_quarto = function(root, bufnr, cursor_pos)
+--- Helper function to get code block from Rmd or Quarto document
+---@param bufnr  integer The buffer number.
+---@param lang string The language of the code chunk.
+---@param row integer|nil The row number. If nil, all code chunks are returned.
+---@return table|nil
+M.get_code_chunk = function(bufnr, lang, row)
+    local root = require("r.utils").get_root_node()
+
+    if not root then return nil end
+
     local query = vim.treesitter.query.parse(
         "markdown",
-        [[
-        (fenced_code_block
-          (info_string (language) @lang (#eq? @lang "r"))
-          (code_fence_content) @content)
-        ]]
+        string.format(
+            [[
+                (fenced_code_block
+                (info_string (language) @lang (#eq? @lang "%s"))
+                (code_fence_content) @content)
+            ]],
+            lang
+        )
     )
 
     bufnr = bufnr or vim.api.nvim_get_current_buf()
@@ -42,13 +49,13 @@ M.get_r_chunks_from_quarto = function(root, bufnr, cursor_pos)
     for _, node, _ in query:iter_captures(root, bufnr, 0, -1) do
         if node:type() == "code_fence_content" then
             local start_row, _, end_row, _ = node:range()
-            if not cursor_pos or (cursor_pos >= start_row and cursor_pos <= end_row) then
+            if not row or (row >= start_row and row <= end_row) then
                 table.insert(r_contents, {
                     content = vim.treesitter.get_node_text(node, bufnr),
                     start_row = start_row,
                     end_row = end_row,
                 })
-                if cursor_pos then break end
+                if row then break end
             end
         end
     end

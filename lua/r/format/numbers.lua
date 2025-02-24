@@ -1,6 +1,5 @@
 local inform = require("r.log").inform
-local get_r_chunks_from_quarto = require("r.quarto").get_r_chunks_from_quarto
-local get_root_node = require("r.utils").get_root_node
+local get_code_chunk = require("r.quarto").get_code_chunk
 
 local M = {}
 
@@ -64,11 +63,13 @@ M.formatnum = function(bufnr)
         return
     end
 
-    local root_node = get_root_node(bufnr)
-    if not root_node then return end
-
     if filetype == "quarto" or filetype == "rmd" then
-        local r_chunks_content = get_r_chunks_from_quarto(root_node, bufnr)
+        local r_chunks_content = get_code_chunk(bufnr, "r")
+
+        if not r_chunks_content then
+            error("Failed to extract code chunks.")
+            return
+        end
 
         for _, r_chunk in ipairs(r_chunks_content) do
             find_and_replace_float(r_chunk.content, bufnr, r_chunk.start_row, 0)
