@@ -21,7 +21,7 @@ M.command = function(what)
     send_cmd(cmd)
 end
 
---- Find and replace floating point numbers in the given R content.
+--- Helper function to get code block from Rmd or Quarto document
 ---@param bufnr  integer The buffer number.
 ---@param lang string The language of the code chunk.
 ---@param row integer|nil The row number. If nil, all code chunks are returned.
