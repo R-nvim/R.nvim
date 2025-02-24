@@ -1,14 +1,17 @@
 local inform = require("r.log").inform
-local get_code_chunk = require("r.quarto").get_code_chunk
-
+local create_r_buffer = require("r.buffer").create_r_buffer
 local M = {}
 
---- Find and replace floating point numbers in the given R content.
--- @param r_content The R content as a string.
--- @param bufnr The buffer number.
--- @param chunk_start_row The starting row of the chunk.
--- @param chunk_start_col The starting column of the chunk.
-local function find_and_replace_float(r_content, bufnr, chunk_start_row, chunk_start_col)
+--- Replace all implicit numbers in the current R buffer with explicit integers.
+M.formatnum = function()
+    local rbuf = create_r_buffer()
+
+    if not rbuf then
+        error("Failed to create R buffer")
+        return
+    end
+
+    local r_content = table.concat(vim.api.nvim_buf_get_lines(rbuf, 0, -1, false), "\n")
     local r_parser = vim.treesitter.get_string_parser(r_content, "r")
     local r_tree = r_parser:parse()[1]
     local r_root = r_tree:root()
@@ -20,6 +23,7 @@ local function find_and_replace_float(r_content, bufnr, chunk_start_row, chunk_s
         ]]
     )
 
+    -- Collect all floating point numbers in the R content from the "tmp" buffer
     local replacements = {}
     for _, node in float_query:iter_captures(r_root, r_content) do
         local start_row, start_col, end_row, end_col = node:range()
@@ -27,19 +31,20 @@ local function find_and_replace_float(r_content, bufnr, chunk_start_row, chunk_s
         local new_text = float_text .. "L"
 
         table.insert(replacements, {
-            start_row = chunk_start_row + start_row,
-            start_col = chunk_start_col + start_col,
-            end_row = chunk_start_row + end_row,
-            end_col = chunk_start_col + end_col,
+            start_row = start_row,
+            start_col = start_col,
+            end_row = end_row,
+            end_col = end_col,
             text = new_text,
         })
     end
 
-    -- Apply replacements in reverse order
+    -- Apply replacements in reverse order in the "main" buffer
+    local current_bufnr = vim.api.nvim_get_current_buf()
     for i = #replacements, 1, -1 do
         local repl = replacements[i]
         vim.api.nvim_buf_set_text(
-            bufnr,
+            current_bufnr,
             repl.start_row,
             repl.start_col,
             repl.end_row,
@@ -47,39 +52,8 @@ local function find_and_replace_float(r_content, bufnr, chunk_start_row, chunk_s
             { repl.text }
         )
     end
-end
 
---- Format numbers in the current buffer.
--- This function formats numbers in R, Quarto, and RMarkdown files.
--- It replaces floating point numbers with integers followed by 'L'.
--- @param bufnr The buffer number (optional).
-M.formatnum = function(bufnr)
-    bufnr = bufnr or vim.api.nvim_get_current_buf()
-
-    local filetype = vim.bo[bufnr].filetype
-
-    if filetype ~= "r" and filetype ~= "quarto" and filetype ~= "rmd" then
-        inform("Not yet supported in '" .. filetype .. "' files.")
-        return
-    end
-
-    if filetype == "quarto" or filetype == "rmd" then
-        local r_chunks_content = get_code_chunk(bufnr, "r")
-
-        if not r_chunks_content then
-            error("Failed to extract code chunks.")
-            return
-        end
-
-        for _, r_chunk in ipairs(r_chunks_content) do
-            find_and_replace_float(r_chunk.content, bufnr, r_chunk.start_row, 0)
-        end
-    else
-        local buffer_content =
-            table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
-
-        find_and_replace_float(buffer_content, bufnr, 0, 0)
-    end
+    inform(#replacements .. " implicit numbers were replaced with integers.")
 end
 
 return M
