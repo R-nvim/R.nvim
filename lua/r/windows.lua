@@ -1,5 +1,4 @@
 local config = require("r.config").get_config()
-local utils = require("r.utils")
 local warn = require("r.log").warn
 local saved_home = nil
 local M = {}
@@ -8,15 +7,13 @@ M.set_R_home = function()
     -- R and Vim use different values for the $HOME variable.
     if config.set_home_env then
         saved_home = vim.env.HOME
-        local obj = utils
-            .system({
-                "reg.exe",
-                "QUERY",
-                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
-                "/v",
-                "Personal",
-            }, { text = true })
-            :wait()
+        local obj = vim.system({
+            "reg.exe",
+            "QUERY",
+            "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+            "/v",
+            "Personal",
+        }, { text = true }):wait()
         local prs = obj.stdout
         if prs and #prs > 0 then
             prs = prs:gsub(".*REG_SZ%s*", "")
