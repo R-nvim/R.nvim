@@ -4,6 +4,8 @@ local send = require("r.send")
 local get_lang = require("r.utils").get_lang
 local uv = vim.uv
 local chunk_key = nil
+local quarto = require("r.quarto")
+local source_chunk = require("r.send").source_chunk
 
 local M = {}
 
@@ -49,44 +51,25 @@ M.write_chunk = function()
     end
 end
 
--- Internal function to send a Python code chunk to R for execution.
--- This is not exposed in the module table `M` and is only called within `M.send_R_chunk`.
----@param m boolean If true, moves to the next chunk after sending the current one.
-local send_py_chunk = function(m)
-    -- Find the start and end of Python code chunk
-    local chunkline = vim.fn.search("^[ \t]*```[ ]*{python", "bncW") + 1
-    local docline = vim.fn.search("^[ \t]*```", "ncW") - 1
-    local lines = vim.api.nvim_buf_get_lines(0, chunkline - 1, docline, true) -- Get chunk lines
-    local ok = send.source_lines(lines, "PythonCode")
-    if ok == 0 then return end -- check if sending was successful
-    if m == true then M.next_chunk() end -- optional: move to next chunk
-end
-
---- Sends the current R code chunk to R for execution.
--- This function ensures the cursor is positioned inside an R code chunk before attempting to send it.
--- If inside a Python code chunk, it will delegate to `send_py_chunk`.
----@param m boolean If true, moves to the next chunk after sending the current one.
+--- Sends the current R or Python code chunk to the R console for evaluation.
+---@param m boolean If true, the cursor will move to the next code chunk after evaluation.
 M.send_R_chunk = function(m)
-    -- Ensure cursor is at the start of an R code chunk
-    if vim.api.nvim_get_current_line():find("^%s*```%s*{r") then
-        local lnum = vim.api.nvim_win_get_cursor(0)[1]
-        vim.api.nvim_win_set_cursor(0, { lnum + 1, 0 })
-    end
-    -- Check for R code chunk; if not, check for Python code chunk
-    local lang = get_lang()
-    if lang ~= "r" then
-        if lang ~= "python" then
-            inform("Not inside an R code chunk.")
-        else
-            send_py_chunk(m)
-        end
+    local bufnr = vim.api.nvim_get_current_buf()
+
+    local chunks = quarto.get_current_code_chunk(bufnr)
+    chunks = quarto.filter_code_chunks_by_eval(chunks)
+    chunks = quarto.filter_code_chunks_by_lang(chunks, { "r", "python" })
+
+    if #chunks == 0 then
+        inform("No R or Python code chunk found at the cursor position.")
         return
     end
-    -- find and send R chunk for execution
-    local chunkline = vim.fn.search("^[ \t]*```[ ]*{r", "bncW") + 1
-    local docline = vim.fn.search("^[ \t]*```", "ncW") - 1
-    local lines = vim.api.nvim_buf_get_lines(0, chunkline - 1, docline, true)
-    local ok = send.source_lines(lines, nil)
+
+    local codelines = quarto.codelines_from_chunks(chunks)
+
+    local lines = table.concat(codelines, "\n")
+
+    local ok = source_chunk(lines)
     if ok == 0 then return end
     if m == true then M.next_chunk() end
 end
