@@ -132,12 +132,12 @@ start_R2 = function()
 
     if config.RStudio_cmd ~= "" then
         vim.env.R_DEFAULT_PACKAGES = rdp .. ",rstudioapi"
-        require("r.rstudio").start_RStudio()
+        require("r.rstudio").start()
         return
     end
 
     if config.external_term == "" then
-        require("r.term").start_term()
+        require("r.term").start()
         return
     end
 
@@ -145,11 +145,11 @@ start_R2 = function()
         warn(
             "Support for running Rgui.exe may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/308"
         )
-        require("r.windows").start_Rgui()
+        require("r.rgui").start()
         return
     end
 
-    require("r.external_term").start_extern_term()
+    require("r.external_term").start()
 end
 
 --- Return arguments to start R defined as config.R_args or during custom R

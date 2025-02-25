@@ -9,7 +9,7 @@ local r_bufnr = nil
 ---Send command to R running a built-in terminal emulator
 ---@param command string
 ---@return boolean
-M.send_cmd_to_term = function(command)
+M.send_cmd = function(command)
     local is_running
     require("r.job").is_running("R")
     if is_running == 0 then
@@ -124,7 +124,7 @@ M.reopen_win = function()
     vim.cmd.sb(edbuf)
 end
 
-M.start_term = function()
+M.start = function()
     vim.g.R_Nvim_status = 6
 
     local edbuf = vim.api.nvim_get_current_buf()

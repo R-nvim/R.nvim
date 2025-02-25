@@ -2,7 +2,7 @@ local config = require("r.config").get_config()
 local warn = require("r.log").warn
 local M = {}
 
-M.start_RStudio = function()
+M.start = function()
     vim.g.R_Nvim_status = 6
 
     if config.is_windows then require("r.windows").set_R_home() end
@@ -21,7 +21,7 @@ end
 --- Send coommand to RStudio
 ---@param command string
 ---@return boolean
-M.send_cmd_to_RStudio = function(command)
+M.send_cmd = function(command)
     if not require("r.job").is_running("RStudio") then
         warn("Is RStudio running?")
         return false
