@@ -330,15 +330,15 @@ end
 --- code up to this one.
 M.chunks_up_to_here = function()
     local bufnr = vim.api.nvim_get_current_buf()
+
     local chunks = quarto.get_chunks_above_cursor(bufnr)
-
-    if #chunks == 0 then
-        inform("No code chunks found above the cursor.")
-        return
-    end
-
     chunks = quarto.filter_code_chunks_by_eval(chunks)
     chunks = quarto.filter_code_chunks_by_lang(chunks, { "r", "python" })
+
+    if #chunks == 0 then
+        inform("No runnable code chunks found above the cursor.")
+        return
+    end
 
     local codelines = quarto.codelines_from_chunks(chunks)
 
