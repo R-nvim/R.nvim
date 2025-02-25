@@ -231,6 +231,16 @@ M.source_lines = function(lines, what)
     return M.cmd(rcmd)
 end
 
+--- Send to R Console a command to source the current chunk.
+---@param chunk string The chunk header.
+---@return boolean
+M.source_chunk = function(chunk)
+    local rcmd = chunk
+
+    if config.bracketed_paste then rcmd = "\027[200~" .. rcmd .. "\027[201~" end
+    return M.cmd(rcmd)
+end
+
 --- Send to R all lines above the current one.
 M.above_lines = function()
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
@@ -342,7 +352,9 @@ M.chunks_up_to_here = function()
 
     local codelines = quarto.codelines_from_chunks(chunks)
 
-    M.source_lines(codelines, "chunk")
+    local lines = table.concat(codelines, "\n")
+
+    M.source_chunk(lines)
 end
 
 -- TODO: Test if this version works: git blame me to see previous version.
