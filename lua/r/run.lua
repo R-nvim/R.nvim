@@ -372,50 +372,24 @@ M.quit_R = function(how)
 end
 
 ---Request R to format code
----@param tbl table Table sent by Neovim's mapping function
-M.format_code = function(tbl)
-    if vim.g.R_Nvim_status < 7 then return end
-
-    local wco = vim.o.textwidth
-    if wco == 0 then
-        wco = 78
-    elseif wco < 20 then
-        wco = 20
-    elseif wco > 180 then
-        wco = 180
+M.format_code = function()
+    if vim.fn.executable("air") == 0 then
+        warn("air client not found. Please see https://posit-dev.github.io/air/cli.html")
+        return
     end
 
-    if tbl.range == 0 then
-        vim.cmd("update")
-        M.send_to_nvimcom(
-            "E",
-            "nvimcom:::nvim_format_file('"
-                .. vim.api.nvim_buf_get_name(0)
-                .. "', "
-                .. wco
-                .. ", "
-                .. vim.o.shiftwidth
-                .. ")"
-        )
-    else
-        local lns = vim.api.nvim_buf_get_lines(0, tbl.line1 - 1, tbl.line2, true)
-        local txt = table.concat(lns, "\020")
-        txt = txt:gsub("\\", "\\\\"):gsub("'", "\019")
-        M.send_to_nvimcom(
-            "E",
-            "nvimcom:::nvim_format_txt("
-                .. tbl.line1
-                .. ", "
-                .. tbl.line2
-                .. ", "
-                .. wco
-                .. ", "
-                .. vim.o.shiftwidth
-                .. ", '"
-                .. txt
-                .. "')"
-        )
+    if vim.bo.filetype ~= "r" then
+        warn("The current buffer is not a R file")
+        return
     end
+
+    local r_file = vim.fn.expand("%:p")
+
+    local cmd = "air format " .. r_file
+    vim.fn.system(cmd)
+
+    -- Not super happy with this, but it works
+    vim.cmd("edit!")
 end
 
 --- Request R to evaluate a command and send its output back
