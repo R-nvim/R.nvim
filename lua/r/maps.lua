@@ -294,8 +294,8 @@ local send = function(file_type)
     end
     if file_type == "rmd" or file_type == "quarto" then
         create_maps("nvi", "RKnit",           "kn", "<Cmd>lua require('r.run').knit()")
-        create_maps("ni",  "RSendChunk",      "cc", "<Cmd>lua require('r.rmd').send_R_chunk(false)")
-        create_maps("ni",  "RDSendChunk",     "cd", "<Cmd>lua require('r.rmd').send_R_chunk(true)")
+        create_maps("ni",  "RSendChunk",      "cc", "<Cmd>lua require('r.rmd').send_current_chunk(false)")
+        create_maps("ni",  "RDSendChunk",     "cd", "<Cmd>lua require('r.rmd').send_current_chunk(true)")
         create_maps("n",   "RNextRChunk",     "gn", "<Cmd>lua require('r.rmd').next_chunk()")
         create_maps("n",   "RPreviousRChunk", "gN", "<Cmd>lua require('r.rmd').previous_chunk()")
     end

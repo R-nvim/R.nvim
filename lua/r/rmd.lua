@@ -1,6 +1,5 @@
 local inform = require("r.log").inform
 local config = require("r.config").get_config()
-local send = require("r.send")
 local get_lang = require("r.utils").get_lang
 local uv = vim.uv
 local chunk_key = nil
@@ -53,7 +52,7 @@ end
 
 --- Sends the current R or Python code chunk to the R console for evaluation.
 ---@param m boolean If true, the cursor will move to the next code chunk after evaluation.
-M.send_R_chunk = function(m)
+M.send_current_chunk = function(m)
     local bufnr = vim.api.nvim_get_current_buf()
 
     local chunks = quarto.get_current_code_chunk(bufnr)
