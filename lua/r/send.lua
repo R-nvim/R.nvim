@@ -6,6 +6,7 @@ local get_lang = require("r.utils").get_lang
 local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
+local quarto = require("r.quarto")
 
 local create_r_buffer = require("r.buffer").create_r_buffer
 
@@ -328,89 +329,18 @@ end
 --- Send to R Console a command to source a file containing all chunks of here
 --- code up to this one.
 M.chunks_up_to_here = function()
-    local filetype = vim.o.filetype
-    local codelines = {}
-    local here = vim.api.nvim_win_get_cursor(0)[1]
-    local curbuf = vim.fn.getline(1, "$")
-    local idx = 0
+    local bufnr = vim.api.nvim_get_current_buf()
+    local chunks = quarto.get_chunks_above_cursor(bufnr)
 
-    local begchk, endchk, chdchk
-
-    if filetype == "rnoweb" then
-        begchk = "^<<.*>>=$"
-        endchk = "^@"
-        chdchk = "^<<.*child *= *"
-    elseif filetype == "rmd" or filetype == "quarto" then
-        begchk = "^[ \t]*```[ ]*{"
-        endchk = "^[ \t]*```$"
-        chdchk = "^```.*child *= *"
-    else
-        -- Should never happen
-        warn('Strange filetype (SendFHChunkToR): "' .. filetype .. '"')
+    if #chunks == 0 then
+        inform("No code chunks found above the cursor.")
         return
     end
 
-    while idx < here do
-        if
-            curbuf[idx + 1]:find(begchk) and not curbuf[idx + 1]:find("[<, ]eval *= *F")
-        then
-            -- Child R chunk
-            if curbuf[idx + 1]:match(chdchk) then
-                -- First, run everything up to the child chunk and reset buffer
-                M.source_lines(codelines, "chunk")
-                codelines = {}
+    chunks = quarto.filter_code_chunks_by_eval(chunks)
+    chunks = quarto.filter_code_chunks_by_lang(chunks, { "r", "python" })
 
-                -- Next, run the child chunk and continue
-                knit_child(curbuf[idx + 1], false)
-                idx = idx + 1
-            else
-                local lang = "R"
-                if filetype == "rmd" or filetype == "quarto" then
-                    if curbuf[idx + 1]:find("{python") then
-                        lang = "python"
-                    elseif not curbuf[idx + 1]:find("{r") then
-                        lang = "other"
-                    end
-                end
-                idx = idx + 1
-                local i = idx + 1
-                local j = idx + 1
-                while not curbuf[idx + 1]:match(endchk) and idx < here do
-                    -- skip chunk if `eval: false` and `child: *`
-                    if curbuf[j]:find("^#| *eval: *false") then
-                        j = i - 1
-                        break
-                    elseif curbuf[j]:find("^#| *child: ") then
-                        M.source_lines(codelines, "chunk")
-                        codelines = {}
-                        knit_child(curbuf[j], false)
-                        j = i - 1
-                        break
-                    end
-                    idx = idx + 1
-                    j = idx
-                end
-                local chunklines = {}
-                for k = i, j, 1 do
-                    table.insert(chunklines, curbuf[k])
-                end
-                if lang == "python" then
-                    table.insert(
-                        codelines,
-                        'reticulate::py_run_string("'
-                            .. table.concat(chunklines, "\n"):gsub('"', '\\"')
-                            .. '")'
-                    )
-                elseif lang == "R" then
-                    for _, v in pairs(chunklines) do
-                        table.insert(codelines, v)
-                    end
-                end
-            end
-        else
-            idx = idx + 1
-        end
-    end
+    local codelines = quarto.codelines_from_chunks(chunks)
 
     M.source_lines(codelines, "chunk")
 end
