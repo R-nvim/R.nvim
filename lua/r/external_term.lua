@@ -114,7 +114,7 @@ end
 
 local M = {}
 
-M.start_extern_term = function()
+M.start = function()
     if config.config_tmux then
         -- Create a custom tmux.conf
         local cnflines = {
@@ -165,7 +165,11 @@ M.start_extern_term = function()
         .. config.R_app
         .. rargs
 
-    open_cmd = term_cmd
+    open_cmd = {}
+    for _, v in pairs(term_cmd) do
+        table.insert(open_cmd, v)
+    end
+
     if
         vim.tbl_contains(term_cmd, "tmux") and vim.tbl_contains(term_cmd, "split%-window")
     then
@@ -238,7 +242,7 @@ end
 --- Send line of command to R Console
 ---@param command string
 ---@return boolean
-M.send_cmd_to_external_term = function(command)
+M.send_cmd = function(command)
     local cmd = command
 
     if config.clear_line then
@@ -290,6 +294,6 @@ end
 
 --- Return Tmux target name
 ---@return string
-M.get_tmuxsname = function() return tmuxsname end
+M.get_tmuxsname = function() return tmuxsname and tmuxsname or "" end
 
 return M

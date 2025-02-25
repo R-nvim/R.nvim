@@ -225,7 +225,7 @@ void parse_rgui_msg(char *msg) {
             fprintf(stderr, "R was already started\n");
             fflush(stderr);
         } else {
-            printf("lua require('r.windows').clean_and_start_Rgui()\n");
+            printf("lua require('r.rgui').clean_and_start()\n");
             fflush(stdout);
         }
         break;
