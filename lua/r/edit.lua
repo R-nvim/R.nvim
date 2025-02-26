@@ -189,7 +189,7 @@ M.add_to_debug_info = function(title, info, parent)
 end
 
 M.build_tags = function()
-    if vim.fn.filereadable("etags") then
+    if vim.fn.filereadable("etags") == 1 then
         warn('The file "etags" exists. Please, delete it and try again.')
         return
     end
