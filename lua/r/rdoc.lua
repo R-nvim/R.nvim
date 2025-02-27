@@ -25,7 +25,13 @@ M.set_buf_options = function()
         syn match rdocArgDelim / / contained conceal
         hi def link rdocArgItem Identifier
     ]])
-
+    local buf = vim.api.nvim_get_current_buf()
+    if vim.fn.has("nvim-0.11") == 1 then
+        local ns = vim.api.nvim_create_namespace("RDocumentation")
+        vim.hl.range(buf, ns, "Title", { 0, 1 }, { 0, -1 }, {})
+    else
+        vim.api.nvim_buf_add_highlight(buf, -1, "Title", 0, 0, -1)
+    end
     require("r.config").real_setup()
     require("r.maps").create("rdoc")
 end

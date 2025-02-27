@@ -130,8 +130,10 @@ M.show = function(rkeyword, txt)
 
     txt = txt:gsub("\019", "'")
     local lines
+    local is_help = false
     if txt:find("\008") then
         lines = require("r.rdoc").fix_rdoc(txt)
+        is_help = true
     else
         lines = vim.split(txt, "\020")
     end
@@ -139,7 +141,7 @@ M.show = function(rkeyword, txt)
     if rkeyword:find("R History", 1, true) then
         vim.api.nvim_set_option_value("filetype", "r", { scope = "local" })
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
-    elseif rkeyword:find("(help)", 1, true) or vim.fn.search("\008", "nw") > 0 then
+    elseif is_help then
         require("r.rdoc").set_buf_options()
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
     elseif rkeyword:find("%.Rd$") then

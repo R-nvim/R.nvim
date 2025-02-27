@@ -2,9 +2,7 @@
 # R.nvim sets this option during nvimcom loading.
 nvim.hmsg <- function(files, header, title, delete.file) {
     doc <- nvim.fix.string(paste(readLines(files[1]), collapse = "\x14"))
-    ttl <- sub("R Help on '(.*)'", "\\1 (help)", title)
-    ttl <- sub("R Help on \u2018(.*)\u2019", "\\1 (help)", ttl)
-    ttl <- nvim.fix.string(ttl)
+    ttl <- nvim.fix.string(title)
     .C(nvimcom_msg_to_nvim, paste0("lua require('r.doc').show('", ttl, "', '", doc, "')"))
     return(invisible(NULL))
 }
