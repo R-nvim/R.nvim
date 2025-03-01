@@ -79,26 +79,23 @@ function M.get_lang()
     if vim.bo.filetype == "" then return "none" end
     -- Treesitter for rnoweb always return "latex" or "rnoweb"
     if vim.bo.filetype == "rnoweb" then return get_rnw_lang() end
-    -- No treesitter parser for rhelp
+    -- There is no treesitter parser for rhelp
     if vim.bo.filetype == "rhelp" then return get_rhelp_lang() end
 
-    local p
-    if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
-        local cline = vim.api.nvim_get_current_line()
-        if cline:find("^```.*child *= *") then
-            return "chunk_child"
-        elseif cline:find("^```%{") then
+    local chunks = require("r.quarto").get_ts_chunks()
+    if not chunks then return "nil" end
+
+    local lnum = vim.api.nvim_win_get_cursor(0)[1]
+    for _, v in pairs(chunks) do
+        if lnum == v.start_row then
+            local cline = vim.api.nvim_get_current_line()
+            if cline:find("^```.*child *= *") then return "chunk_child" end
             return "chunk_header"
-        elseif cline:find("^```$") then
-            return "chunk_end"
         end
-        p = vim.treesitter.get_parser(vim.api.nvim_get_current_buf(), "markdown")
-    else
-        p = vim.treesitter.get_parser()
+        if lnum == v.end_row then return "chunk_end" end
+        if v.start_row < lnum and v.end_row > lnum then return v.lang end
     end
-    local c = vim.api.nvim_win_get_cursor(0)
-    local lang = p:language_for_range({ c[1] - 1, c[2], c[1] - 1, c[2] }):lang()
-    return lang
+    return "container"
 end
 
 --- Request the windows manager to focus a window.

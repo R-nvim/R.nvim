@@ -62,4 +62,41 @@ M.get_code_chunk = function(bufnr, lang, row)
     return r_contents
 end
 
+--- Helper function to get code block info from Rmd or Quarto document
+---@return table|nil
+M.get_ts_chunks = function()
+    local root = require("r.utils").get_root_node()
+
+    if not root then return nil end
+
+    local query = vim.treesitter.query.parse(
+        "markdown",
+        [[
+           (fenced_code_block) @fcb
+        ]]
+    )
+
+    local bufnr = vim.api.nvim_get_current_buf()
+    local chunks = {}
+    for _, node, _ in query:iter_captures(root, 0, bufnr, -1) do
+        local lang = "unknown"
+        for cn in node:iter_children() do
+            if cn:type() == "info_string" then
+                for ic in cn:iter_children() do
+                    if ic:type() == "language" then
+                        lang = vim.treesitter.get_node_text(ic, bufnr)
+                    end
+                end
+            end
+        end
+        local start_row, _, end_row, _ = node:range()
+        table.insert(chunks, {
+            lang = lang,
+            start_row = start_row + 1,
+            end_row = end_row + 1,
+        })
+    end
+    return chunks
+end
+
 return M
