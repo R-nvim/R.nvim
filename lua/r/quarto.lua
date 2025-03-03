@@ -111,9 +111,6 @@ end
 ---@param info_string string The info string of the code block.
 ---@return string,table
 M.parse_info_string_params = function(info_string)
-    -- remove the language name and get the parameters
-    -- e.g. {r, echo=FALSE, fig.cap="A caption"}
-    -- returns a map of the parameters with their values
     local params = {}
 
     if info_string == nil then return "", params end
@@ -125,7 +122,12 @@ M.parse_info_string_params = function(info_string)
     local param_list = vim.split(param_str, ",")
     for _, param in ipairs(param_list) do
         local key, value = param:match("^%s*([^=]+)%s*=%s*([^%s]+)%s*$")
-        if key ~= nil and value ~= nil then params[key] = value end
+
+        if key and value then
+            key = key:match("^%s*(.-)%s*$") -- Trim leading/trailing spaces from key
+            value = value:match("^%s*(.-)%s*$") -- Trim leading/trailing spaces from value
+            params[key] = value
+        end
     end
 
     return lang, params
@@ -138,8 +140,10 @@ M.parse_code_chunk_params = function(code_content)
     local params = {}
 
     for line in code_content:gmatch("[^\r\n]+") do
-        local key, value = line:match("^#%s*|%s*([^:]+)%s*:%s*(.+)%s*$")
-        if key and value then params[key] = value end
+        local key, value = line:match("^#|%s*([^:]+)%s*:%s*(.+)%s*$")
+        if key and value then
+            params[key:match("^%s*(.-)%s*$")] = value:match("^%s*(.-)%s*$")
+        end
     end
 
     return params
