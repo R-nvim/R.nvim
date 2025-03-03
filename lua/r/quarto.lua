@@ -157,6 +157,10 @@ M.get_all_code_chunks = function(bufnr)
     return chunks
 end
 
+--- This function filters the code chunks based on the language
+---@param chunks table The code chunks.
+---@param langs string[] The languages to filter by.
+---@return table The filtered code chunks.
 M.filter_code_chunks_by_lang = function(chunks, langs)
     local lang_set = {}
     for _, lang in ipairs(langs) do
