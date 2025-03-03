@@ -89,7 +89,7 @@ local get_code_chunks = function(bufnr)
 
             -- Get the parameters specified in the code chunk with #|
             local comment_params =
-                M.parse_code_chunk_params(vim.treesitter.get_node_text(node, bufnr))
+                M.parse_comment_params(vim.treesitter.get_node_text(node, bufnr))
 
             local chunk = Chunk:new(
                 vim.treesitter.get_node_text(node, bufnr),
@@ -136,7 +136,7 @@ end
 --- Helper function to parse the parameters specified in the code chunk with #|
 ---@param code_content string The content of the code chunk.
 ---@return table
-M.parse_code_chunk_params = function(code_content)
+M.parse_comment_params = function(code_content)
     local params = {}
 
     for line in code_content:gmatch("[^\r\n]+") do
