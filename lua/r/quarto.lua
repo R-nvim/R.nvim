@@ -1,5 +1,31 @@
 local M = {}
 
+local Chunk = {}
+Chunk.__index = Chunk
+
+--- Constructor for the Chunk class
+---@param content string The content of the code chunk.
+---@param start_row integer The starting row of the code chunk.
+---@param end_row integer The ending row of the code chunk.
+---@param info_string_params table The parameters specified in the info string of the code chunk.
+---@param comment_params table The parameters specified in the code chunk with #|
+---@param lang string The language of the code chunk.
+---@return table
+function Chunk:new(content, start_row, end_row, info_string_params, comment_params, lang)
+    local chunk = {
+        content = content,
+        start_row = start_row,
+        end_row = end_row,
+        info_string_params = info_string_params,
+        comment_params = comment_params,
+        lang = lang,
+    }
+
+    setmetatable(chunk, Chunk)
+
+    return chunk
+end
+
 M.command = function(what)
     local config = require("r.config").get_config()
     local send_cmd = require("r.send").cmd
@@ -63,14 +89,16 @@ local get_code_chunks = function(bufnr)
             local comment_params =
                 M.parse_code_chunk_params(vim.treesitter.get_node_text(node, bufnr))
 
-            table.insert(code_chunks, {
-                content = vim.treesitter.get_node_text(node, bufnr),
-                start_row = start_row,
-                end_row = end_row,
-                info_string_params = info_string_params,
-                comment_params = comment_params,
-                lang = lang,
-            })
+            local chunk = Chunk:new(
+                vim.treesitter.get_node_text(node, bufnr),
+                start_row,
+                end_row,
+                info_string_params,
+                comment_params,
+                lang
+            )
+
+            table.insert(code_chunks, chunk)
         end
     end
 
