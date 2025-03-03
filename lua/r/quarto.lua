@@ -26,6 +26,8 @@ function Chunk:new(content, start_row, end_row, info_string_params, comment_para
     return chunk
 end
 
+function Chunk:range() return self.start_row, self.end_row end
+
 M.command = function(what)
     local config = require("r.config").get_config()
     local send_cmd = require("r.send").cmd
@@ -153,7 +155,8 @@ M.get_current_code_chunk = function(bufnr)
     if not chunks then return {} end
 
     for _, chunk in ipairs(chunks) do
-        if row >= chunk.start_row and row <= chunk.end_row then return chunk end
+        local chunk_start_row, chunk_end_row = chunk:range()
+        if row >= chunk_start_row and row <= chunk_end_row then return chunk end
     end
 
     return {}
@@ -170,8 +173,11 @@ M.get_chunks_above_cursor = function(bufnr)
     if not chunks then return {} end
 
     local chunks_above = {}
+
     for _, chunk in ipairs(chunks) do
-        if chunk.end_row < row then table.insert(chunks_above, chunk) end
+        local _, chunk_end_row = chunk:range()
+
+        if chunk_end_row < row then table.insert(chunks_above, chunk) end
     end
 
     return chunks_above
