@@ -202,7 +202,11 @@ M.filter_code_chunks_by_eval = function(chunks)
     end, chunks)
 end
 
---- Formats the code chunks into a list of code lines that can be executed in R
+--- Formats the code chunks into a list of code lines that can be executed in
+--- R. The code lines are formatted based on the language of the code chunk. If
+--- the language is python, the code line is wrapped in
+--- reticulate::py_run_string. If the language is R, the code line is returned
+--- as is.
 ---@param chunks table The code chunks.
 ---@return table
 M.codelines_from_chunks = function(chunks)
