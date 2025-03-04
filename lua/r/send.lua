@@ -517,6 +517,7 @@ end
 M.line = function(m)
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     local line = vim.fn.getline(lnum)
+
     local lang = get_lang()
     if lang == "chunk_child" then
         if type(m) == "boolean" and m then
