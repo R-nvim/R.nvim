@@ -80,12 +80,10 @@ function M.get_lang()
     local filetype = vim.bo.filetype
     if filetype == "" then return "none" end
 
-    local lang_map = {
-        rnoweb = get_rnw_lang,
-        rhelp = get_rhelp_lang,
-    }
-
-    if lang_map[filetype] then return lang_map[filetype]() end
+    -- Treesitter for rnoweb always return "latex" or "rnoweb"
+    if vim.bo.filetype == "rnoweb" then return get_rnw_lang() end
+    -- No treesitter parser for rhelp
+    if vim.bo.filetype == "rhelp" then return get_rhelp_lang() end
 
     if filetype == "quarto" or filetype == "rmd" then
         local current_chunk =
