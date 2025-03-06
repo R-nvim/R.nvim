@@ -656,22 +656,16 @@ M.chain = function()
     )
 
     local sibling = nil
-    local visited = false
 
     local pipe_start_row, _, pipe_end_row = pipe_block_node:range()
 
     for id, node, _ in call_query:iter_captures(root, bufnr, pipe_start_row, pipe_end_row) do
         local capture_name = call_query.captures[id]
-        local start_row, _, end_row = node:range()
+        local _, _, end_row = node:range()
 
-        if
-            capture_name == "operator" and visited
-            or cursor_row == pipe_block_node:range()
-        then
+        if capture_name == "operator" and cursor_row <= end_row then
             sibling = node:prev_sibling()
             break
-        elseif capture_name == "call" then
-            if cursor_row >= start_row and cursor_row <= end_row then visited = true end
         end
     end
 
