@@ -257,11 +257,11 @@ M.filter_code_chunks_by_eval = function(chunks)
         local eval = true
 
         -- Check for eval in comment_params
-        if chunk.comment_params and chunk.comment_params.eval then
-            eval = chunk.comment_params.eval == "true"
+        if chunk:get_comment_params() and chunk:get_comment_params().eval then
+            eval = chunk:get_comment_params().eval == "true"
         -- Check for eval in info_string_params
-        elseif chunk.info_string_params and chunk.info_string_params.eval then
-            eval = chunk.info_string_params.eval == "TRUE"
+        elseif chunk:get_info_string_params() and chunk:get_info_string_params().eval then
+            eval = chunk:get_info_string_params().eval == "TRUE"
         end
 
         return eval -- Return true if eval is "true"
