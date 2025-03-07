@@ -11,7 +11,15 @@ Chunk.__index = Chunk
 ---@param comment_params table The parameters specified in the code chunk with #|
 ---@param lang string The language of the code chunk.
 ---@return table
-function Chunk:new(content, start_row, end_row, info_string_params, comment_params, lang)
+function Chunk:new(
+    content,
+    start_row,
+    end_row,
+    info_string_params,
+    comment_params,
+    lang,
+    node
+)
     local chunk = {
         content = content,
         start_row = start_row,
@@ -19,6 +27,7 @@ function Chunk:new(content, start_row, end_row, info_string_params, comment_para
         info_string_params = info_string_params,
         comment_params = comment_params,
         lang = lang,
+        code_block_node = node,
     }
 
     setmetatable(chunk, Chunk)
@@ -97,7 +106,8 @@ local get_code_chunks = function(bufnr)
                 end_row + 1,
                 info_string_params,
                 comment_params,
-                lang
+                lang,
+                parent
             )
 
             table.insert(code_chunks, chunk)
