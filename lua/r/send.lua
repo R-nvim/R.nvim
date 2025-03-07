@@ -443,8 +443,7 @@ M.selection = function(m)
 
     if
         (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-        and lang ~= "r"
-        and lang ~= "python"
+        and not quarto.is_supported_lang(lang)
         and not vim.api.nvim_get_current_line():find("`r ")
     then
         inform("Not inside R or Python code chunk.")
@@ -453,7 +452,7 @@ M.selection = function(m)
 
     if
         vim.o.filetype == "rnoweb"
-        and lang ~= "r"
+        and not quarto.is_r(lang)
         and not vim.api.nvim_get_current_line():find("\\Sexpr{")
     then
         inform("Not inside R code chunk.")
