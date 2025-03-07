@@ -221,28 +221,25 @@ M.get_chunks_above_cursor = function(bufnr)
     return chunks_above
 end
 
---- This function gets all the code chunks in the buffer
+-- Function to get all code chunks below the current cursor position
 ---@param bufnr integer The buffer number.
----@return table|nil
-M.get_all_code_chunks = function(bufnr)
-    local chunks = get_code_chunks(bufnr)
-    return chunks
-end
+---@return table
+M.get_chunks_below_cursor = function(bufnr)
+    local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 
---- This function filters the code chunks based on the language
----@param chunks table The code chunks.
----@param langs string[] The languages to filter by.
----@return table The filtered code chunks.
-M.filter_code_chunks_by_lang = function(chunks, langs)
-    local lang_set = {}
-    for _, lang in ipairs(langs) do
-        lang_set[lang] = true
+    local chunks = get_code_chunks(bufnr)
+
+    if not chunks then return {} end
+
+    local chunks_below = {}
+
+    for _, chunk in ipairs(chunks) do
+        local chunk_start_row, _ = chunk:get_range()
+
+        if chunk_start_row > row then table.insert(chunks_below, chunk) end
     end
 
-    return vim.tbl_filter(
-        function(chunk) return type(chunk) == "table" and lang_set[chunk.lang] or false end,
-        chunks
-    )
+    return chunks_below
 end
 
 --- This function gets the supported languages for code execution
@@ -253,7 +250,13 @@ M.get_supported_chunk_langs = function() return { "r", "webr", "python", "pyodid
 ---@param chunks table The code chunks.
 ---@return table The filtered code chunks.
 M.filter_supported_langs = function(chunks)
-    return M.filter_code_chunks_by_lang(chunks, M.get_supported_chunk_langs())
+    if #chunks == 0 then return {} end
+
+    local supported_chunks = {}
+    for _, chunk in ipairs(chunks) do
+        if M.is_supported_lang(chunk.lang) then table.insert(supported_chunks, chunk) end
+    end
+    return supported_chunks
 end
 
 --- This function checks if a language is supported
@@ -281,6 +284,8 @@ end
 ---@param chunks table
 ---@return table
 M.filter_code_chunks_by_eval = function(chunks)
+    if #chunks == 0 then return {} end
+
     -- If chunks is a single chunk (table), wrap it in a table to ensure uniform processing
     if type(chunks) ~= "table" or (type(chunks) == "table" and #chunks == 0) then
         chunks = { chunks }

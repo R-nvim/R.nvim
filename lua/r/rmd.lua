@@ -79,19 +79,20 @@ end
 ---@return boolean
 local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
-    local lang = get_lang()
-    if lang == "r" or lang == "python" then
-        local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- search for chunk start
-        if i ~= 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end -- if found, move cursor at chunk
-    end
-    local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- Search again for chunk start
-    if i == 0 then
+    local chunks = quarto.get_chunks_above_cursor(vim.api.nvim_get_current_buf())
+    chunks = quarto.filter_code_chunks_by_eval(chunks)
+    chunks = quarto.filter_supported_langs(chunks)
+
+    -- move the cursor to the previous chunk
+    if #chunks > 0 then
+        local prev_chunk = chunks[#chunks]
+        vim.api.nvim_win_set_cursor(0, { prev_chunk.start_row + 1, 0 })
+        return true
+    else
         vim.api.nvim_win_set_cursor(0, { curline, 0 })
         inform("There is no previous R code chunk to go.")
         return false
     end
-    vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the chunk
-    return true
 end
 
 -- Call go_to_previous() as many times as requested by the user.
@@ -107,13 +108,19 @@ end
 -- This function searches forward from the current cursor position for the start of any R or Python code chunk.
 ---@return boolean
 local go_to_next = function()
-    local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\|webr\\|pyodide\\)", "nW") -- Search for the next chunk start
-    if i == 0 then
+    local chunks = quarto.get_chunks_below_cursor(vim.api.nvim_get_current_buf())
+    chunks = quarto.filter_code_chunks_by_eval(chunks)
+    chunks = quarto.filter_supported_langs(chunks)
+
+    -- move the cursor to the next chunk
+    if #chunks > 0 then
+        local next_chunk = chunks[1]
+        vim.api.nvim_win_set_cursor(0, { next_chunk.start_row + 1, 0 })
+        return true
+    else
         inform("There is no next R code chunk to go.")
         return false
     end
-    vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the next chunk
-    return true
 end
 
 -- Call go_to_next() as many times as requested by the user.
