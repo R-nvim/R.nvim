@@ -46,7 +46,13 @@ function Chunk:get_content() return self.content end
 
 --- Get the language of the code chunk
 ---@return string
-function Chunk:get_lang() return self.lang end
+function Chunk:get_lang()
+    local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
+    if row == self.start_row then return "chunk_header" end
+    if row == self.end_row then return "chunk_end" end
+
+    return self.lang
+end
 
 --- Get the info string parameters of the code chunk
 ---@return table
@@ -188,7 +194,7 @@ M.get_current_code_chunk = function(bufnr)
 
     for _, chunk in ipairs(chunks) do
         local chunk_start_row, chunk_end_row = chunk:get_range()
-        if row > chunk_start_row and row < chunk_end_row then return chunk end
+        if row >= chunk_start_row and row <= chunk_end_row then return chunk end
     end
 
     return {}
