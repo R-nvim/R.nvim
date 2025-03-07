@@ -94,7 +94,7 @@ local get_code_chunks = function(bufnr)
             local chunk = Chunk:new(
                 vim.treesitter.get_node_text(node, bufnr),
                 start_row,
-                end_row,
+                end_row + 1,
                 info_string_params,
                 comment_params,
                 lang
@@ -160,7 +160,7 @@ M.get_current_code_chunk = function(bufnr)
 
     for _, chunk in ipairs(chunks) do
         local chunk_start_row, chunk_end_row = chunk:range()
-        if row >= chunk_start_row and row <= chunk_end_row then return chunk end
+        if row > chunk_start_row and row < chunk_end_row then return chunk end
     end
 
     return {}
