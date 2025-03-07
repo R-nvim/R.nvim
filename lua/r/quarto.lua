@@ -207,7 +207,7 @@ M.get_chunks_above_cursor = function(bufnr)
     local chunks_above = {}
 
     for _, chunk in ipairs(chunks) do
-        local _, chunk_end_row = chunk:range()
+        local _, chunk_end_row = chunk:get_range()
 
         if chunk_end_row < row then table.insert(chunks_above, chunk) end
     end
@@ -279,8 +279,8 @@ M.codelines_from_chunks = function(chunks)
     local codelines = {}
 
     for _, chunk in ipairs(chunks) do
-        local lang = chunk.lang
-        local content = chunk.content
+        local lang = chunk:get_lang()
+        local content = chunk:get_content()
 
         if lang == "python" then
             table.insert(codelines, 'reticulate::py_run_string("' .. content .. '")')
