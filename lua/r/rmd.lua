@@ -107,7 +107,7 @@ end
 -- This function searches forward from the current cursor position for the start of any R or Python code chunk.
 ---@return boolean
 local go_to_next = function()
-    local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "nW") -- Search for the next chunk start
+    local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\|webr\\|pyodide\\)", "nW") -- Search for the next chunk start
     if i == 0 then
         inform("There is no next R code chunk to go.")
         return false

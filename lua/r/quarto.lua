@@ -245,6 +245,10 @@ M.filter_code_chunks_by_lang = function(chunks, langs)
     )
 end
 
+--- This function gets the supported languages for code execution
+---@return string[]
+M.get_supported_chunk_langs = function() return { "r", "webr", "python", "pyodide" } end
+
 --- This function filters the code chunks based on the supported languages
 ---@param chunks table The code chunks.
 ---@return table The filtered code chunks.
@@ -252,20 +256,25 @@ M.filter_supported_langs = function(chunks)
     return M.filter_code_chunks_by_lang(chunks, M.get_supported_chunk_langs())
 end
 
---- This function returns the supported code chunk languages
----@return string[]
-M.get_supported_chunk_langs = function() return { "r", "webr", "python" } end
-
 --- This function checks if a language is supported
 ---@param lang string
 ---@return boolean
-M.is_supported_lang = function(lang)
-    local supported_langs = M.get_supported_chunk_langs()
+M.is_supported_lang = function(lang) return M.is_r(lang) or M.is_python(lang) end
 
-    for _, supported_lang in ipairs(supported_langs) do
-        if supported_lang == lang then return true end
-    end
-    return false
+--- This function checks if a language is either "r" or "webr"
+---@param lang string
+---@return boolean
+M.is_r = function(lang)
+    local r_langs = { r = true, webr = true }
+    return r_langs[lang] or false
+end
+
+--- This function checks if a language is "python"
+---@param lang string
+---@return boolean
+M.is_python = function(lang)
+    local python_langs = { python = true, pyodide = true }
+    return python_langs[lang] or false
 end
 
 --- This function filters the code chunks based on the eval parameter. If the eval parameter is not found it is assumed to be true
@@ -311,9 +320,9 @@ M.codelines_from_chunks = function(chunks)
         local lang = chunk:get_lang()
         local content = chunk:get_content()
 
-        if lang == "python" then
+        if M.is_python(lang) then
             table.insert(codelines, 'reticulate::py_run_string("' .. content .. '")')
-        elseif lang == "r" then
+        elseif M.is_r(lang) then
             table.insert(codelines, content)
         end
     end
