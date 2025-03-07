@@ -10,6 +10,7 @@ Chunk.__index = Chunk
 ---@param info_string_params table The parameters specified in the info string of the code chunk.
 ---@param comment_params table The parameters specified in the code chunk with #|
 ---@param lang string The language of the code chunk.
+---@param node TSNode|nil The code block node.
 ---@return table
 function Chunk:new(
     content,
@@ -27,7 +28,7 @@ function Chunk:new(
         info_string_params = info_string_params,
         comment_params = comment_params,
         lang = lang,
-        code_block_node = node,
+        code_block_node = node, -- not used yet, but could be useful in the future
     }
 
     setmetatable(chunk, Chunk)
@@ -35,7 +36,24 @@ function Chunk:new(
     return chunk
 end
 
-function Chunk:range() return self.start_row, self.end_row end
+--- Get the range of the code chunk
+---@return integer,integer
+function Chunk:get_range() return self.start_row, self.end_row end
+
+--- Get the content of the code chunk
+---@return string
+function Chunk:get_content() return self.content end
+
+--- Get the language of the code chunk
+---@return string
+function Chunk:get_lang() return self.lang end
+
+--- Get the info string parameters of the code chunk
+---@return table
+function Chunk:get_info_string_params() return self.info_string_params end
+--- Get the comment parameters of the code chunk
+---@return table
+function Chunk:get_comment_params() return self.comment_params end
 
 M.command = function(what)
     local config = require("r.config").get_config()
@@ -107,7 +125,7 @@ local get_code_chunks = function(bufnr)
                 info_string_params,
                 comment_params,
                 lang,
-                parent
+                parent or nil
             )
 
             table.insert(code_chunks, chunk)
@@ -169,7 +187,7 @@ M.get_current_code_chunk = function(bufnr)
     if not chunks then return {} end
 
     for _, chunk in ipairs(chunks) do
-        local chunk_start_row, chunk_end_row = chunk:range()
+        local chunk_start_row, chunk_end_row = chunk:get_range()
         if row > chunk_start_row and row < chunk_end_row then return chunk end
     end
 
