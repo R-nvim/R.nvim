@@ -245,6 +245,29 @@ M.filter_code_chunks_by_lang = function(chunks, langs)
     )
 end
 
+--- This function filters the code chunks based on the supported languages
+---@param chunks table The code chunks.
+---@return table The filtered code chunks.
+M.filter_supported_langs = function(chunks)
+    return M.filter_code_chunks_by_lang(chunks, M.get_supported_chunk_langs())
+end
+
+--- This function returns the supported code chunk languages
+---@return string[]
+M.get_supported_chunk_langs = function() return { "r", "webr", "python" } end
+
+--- This function checks if a language is supported
+---@param lang string
+---@return boolean
+M.is_supported_lang = function(lang)
+    local supported_langs = M.get_supported_chunk_langs()
+
+    for _, supported_lang in ipairs(supported_langs) do
+        if supported_lang == lang then return true end
+    end
+    return false
+end
+
 --- This function filters the code chunks based on the eval parameter. If the eval parameter is not found it is assumed to be true
 ---@param chunks table
 ---@return table

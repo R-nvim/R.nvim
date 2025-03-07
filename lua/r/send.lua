@@ -343,7 +343,7 @@ M.chunks_up_to_here = function()
 
     local chunks = quarto.get_chunks_above_cursor(bufnr)
     chunks = quarto.filter_code_chunks_by_eval(chunks)
-    chunks = quarto.filter_code_chunks_by_lang(chunks, { "r", "python" })
+    chunks = quarto.filter_supported_langs(chunks)
 
     if #chunks == 0 then
         inform("No runnable code chunks found above the cursor.")
@@ -443,8 +443,7 @@ M.selection = function(m)
 
     if
         (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-        and lang ~= "r"
-        and lang ~= "python"
+        and not quarto.is_supported_lang(lang)
         and not vim.api.nvim_get_current_line():find("`r ")
     then
         inform("Not inside R or Python code chunk.")
@@ -548,13 +547,13 @@ M.line = function(m)
             if ok and m == true then cursor.move_next_line() end
             return
         end
-        if lang ~= "r" then
+        if not quarto.is_supported_lang(lang) then
             inform("Not inside R or Python code chunk [within " .. lang .. "]")
             return
         end
     end
 
-    if vim.bo.filetype == "rhelp" and lang ~= "r" then
+    if vim.bo.filetype == "rhelp" and not quarto.is_supported_language(lang) then
         inform("Not inside an R section.")
         return
     end
