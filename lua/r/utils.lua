@@ -99,7 +99,15 @@ function M.get_lang()
     if not parser then return "" end
 
     local pos = vim.api.nvim_win_get_cursor(0)
-    return parser:language_for_range(pos):lang()
+    local lang = parser:language_for_range(pos):lang()
+
+    -- Force the parser to parse the buffer. Needed because we change the
+    -- parser to markdown.
+    local buf_tmp = vim.api.nvim_get_current_buf()
+    local parser_tmp = require("nvim-treesitter.parsers").get_parser(buf_tmp)
+    parser_tmp:parse()
+
+    return lang
 end
 
 --- Request the windows manager to focus a window.

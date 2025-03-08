@@ -107,12 +107,6 @@ local function get_code_to_send(txt, row)
 
     if vim.o.filetype == "rhelp" then return get_rhelp_code_to_send(txt, row) end
 
-    -- Force the parser to parse the buffer. Needed because we change the
-    -- parser to markdown in the get_lang() function.
-    local buf = vim.api.nvim_get_current_buf()
-    local parser = require("nvim-treesitter.parsers").get_parser(buf)
-    parser:parse()
-
     -- Find the 'root' node for the current expression --------------------
     local node = vim.treesitter.get_node({
         bufnr = 0,
