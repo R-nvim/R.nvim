@@ -77,37 +77,53 @@ end
 --- Get language at current cursor position
 ---@return string
 function M.get_lang()
+    -- WARN: Discuss if we really need that. It is only used to tell the user
+    -- where the cursor is when it is not in a chunk. Maybe we should just tell
+    -- the users that there are not inside a supported chunk. We could also
+    -- remove this
+    -- https://github.com/R-nvim/R.nvim/blob/edf523a9089280cd1c12f8ceb928cdb0114761f1/lua/r/quarto.lua#L49-L55 and do nothing if the chunk is in the header and simply compare the cursor position with the chunk end position to move the next chunk.
+
     local filetype = vim.bo.filetype
     if filetype == "" then return "none" end
 
+    -- Handle specific filetypes early
     if filetype == "rnoweb" then return get_rnw_lang() end
     if filetype == "rhelp" then return get_rhelp_lang() end
 
+    -- Handle quarto/rmd filetypes
     if filetype == "quarto" or filetype == "rmd" then
         local current_chunk =
             quarto.get_current_code_chunk(vim.api.nvim_get_current_buf())
 
         if current_chunk and current_chunk.lang then
-            local lang = current_chunk:get_lang()
+            return current_chunk:get_lang()
+        else
+            -- At this point, we are in a markdown file but not in a chunk
+            local buf = vim.api.nvim_get_current_buf()
+            local parser = vim.treesitter.get_parser(buf, "markdown")
+
+            if not parser then return "" end
+
+            -- Get the language for the current cursor position
+            local pos = vim.api.nvim_win_get_cursor(0)
+            local lang = parser:language_for_range(pos):lang()
+
+            -- Force the parser to parse the buffer to update the state,
+            -- because it was changed to markdown
+            require("nvim-treesitter.parsers").get_parser(buf):parse()
+
             return lang
         end
     end
 
+    -- For other filetypes, return the language at the cursor position
     local buf = vim.api.nvim_get_current_buf()
+    local pos = vim.api.nvim_win_get_cursor(0)
+    local parser = require("nvim-treesitter.parsers").get_parser(buf)
 
-    local parser = vim.treesitter.get_parser(buf, "markdown")
     if not parser then return "" end
 
-    local pos = vim.api.nvim_win_get_cursor(0)
-    local lang = parser:language_for_range(pos):lang()
-
-    -- Force the parser to parse the buffer. Needed because we change the
-    -- parser to markdown.
-    local buf_tmp = vim.api.nvim_get_current_buf()
-    local parser_tmp = require("nvim-treesitter.parsers").get_parser(buf_tmp)
-    parser_tmp:parse()
-
-    return lang
+    return parser:language_for_range(pos):lang()
 end
 
 --- Request the windows manager to focus a window.
