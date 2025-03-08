@@ -825,6 +825,7 @@ command:
 <
 You may close the window opened by `:RConfigShow` by simply pressing `q`.
 
+|auto_quit|	      Quits R when quitting Neovim	 	
 |auto_start|          Start R automatically
 |objbr_auto_start|    Start the Object Browser automatically
 |built-in-terminal|   Options to control Neovim's built-in terminal
