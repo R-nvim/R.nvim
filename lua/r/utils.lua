@@ -94,6 +94,7 @@ function M.get_lang()
     end
 
     local buf = vim.api.nvim_get_current_buf()
+
     local parser = vim.treesitter.get_parser(buf, "markdown")
     if not parser then return "" end
 
