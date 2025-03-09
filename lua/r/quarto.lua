@@ -250,11 +250,14 @@ M.get_supported_chunk_langs = function() return { "r", "webr", "python", "pyodid
 ---@param chunks table The code chunks.
 ---@return table The filtered code chunks.
 M.filter_supported_langs = function(chunks)
-    if #chunks == 0 then return {} end
+    if type(chunks) ~= "table" or vim.tbl_isempty(chunks) then return {} end
 
     local supported_chunks = {}
+    local supported_langs = M.get_supported_chunk_langs()
     for _, chunk in ipairs(chunks) do
-        if M.is_supported_lang(chunk.lang) then table.insert(supported_chunks, chunk) end
+        if vim.tbl_contains(supported_langs, chunk.lang) then
+            table.insert(supported_chunks, chunk)
+        end
     end
     return supported_chunks
 end
@@ -284,7 +287,7 @@ end
 ---@param chunks table
 ---@return table
 M.filter_code_chunks_by_eval = function(chunks)
-    if #chunks == 0 then return {} end
+    if type(chunks) ~= "table" or vim.tbl_isempty(chunks) then return {} end
 
     -- If chunks is a single chunk (table), wrap it in a table to ensure uniform processing
     if type(chunks) ~= "table" or (type(chunks) == "table" and #chunks == 0) then

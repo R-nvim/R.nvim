@@ -343,7 +343,7 @@ M.chunks_up_to_here = function()
 
     local chunks = quarto.get_chunks_above_cursor(bufnr)
     chunks = quarto.filter_code_chunks_by_eval(chunks)
-    chunks = quarto.filter_code_chunks_by_lang(chunks, quarto.get_supported_chunk_langs())
+    chunks = quarto.filter_supported_langs(chunks)
 
     if #chunks == 0 then
         inform("No runnable code chunks found above the cursor.")

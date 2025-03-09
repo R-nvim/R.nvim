@@ -56,6 +56,7 @@ M.send_current_chunk = function(m)
     local bufnr = vim.api.nvim_get_current_buf()
 
     local chunks = quarto.get_current_code_chunk(bufnr)
+
     chunks = quarto.filter_code_chunks_by_eval(chunks)
     chunks = quarto.filter_supported_langs(chunks)
 
