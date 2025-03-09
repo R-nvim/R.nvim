@@ -48,6 +48,8 @@ function Chunk:get_content() return self.content end
 ---@return string
 function Chunk:get_lang()
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
+
+    if self.info_string_params.child then return "chunk_child" end
     if row == self.start_row then return "chunk_header" end
     if row == self.end_row then return "chunk_end" end
 
