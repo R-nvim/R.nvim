@@ -95,7 +95,11 @@ function M.get_lang()
         local current_chunk =
             quarto.get_current_code_chunk(vim.api.nvim_get_current_buf())
 
-        if current_chunk and current_chunk.lang then
+        if
+            current_chunk
+            and not vim.tbl_isempty(current_chunk)
+            and current_chunk.lang
+        then
             return current_chunk:get_lang()
         else
             -- At this point, we are in a markdown file but not in a chunk
