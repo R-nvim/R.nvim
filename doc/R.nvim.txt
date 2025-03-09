@@ -825,7 +825,7 @@ command:
 <
 You may close the window opened by `:RConfigShow` by simply pressing `q`.
 
-|auto_quit|	      Quits R when quitting Neovim	 	
+|auto_quit|	    Quits R when quitting Neovim
 |auto_start|          Start R automatically
 |objbr_auto_start|    Start the Object Browser automatically
 |built-in-terminal|   Options to control Neovim's built-in terminal
@@ -2197,6 +2197,9 @@ r.send.cmd(command)                                              *r.send.cmd()*
     Parameters: ~
         {command} (string)  Code to send to the current R session
 
+See in the next section examples of using the API within the `on_filetype`
+hook.
+<
 
 ==============================================================================
 8. Custom key bindings                                   *R.nvim-key-bindings*
@@ -2271,6 +2274,9 @@ inside the function passed to `hook.on_filetype` as in the examples below
            -- object as argument, you can use `cmd()` from the `r.send` module
            -- to send it directly to R Console:
            vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>S", "<Cmd>lua require('r.send').cmd('search()')<CR>", {})
+
+	   -- Close the last graphics window:
+	   vim.api.nvim_buf_set_keymap(0, "n", "cw", "<Cmd>lua require('r.send').cmd('dev.off()')<CR>", { noremap = true })
        end,
    }
 
