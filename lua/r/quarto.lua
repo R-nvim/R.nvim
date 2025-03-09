@@ -94,10 +94,8 @@ local get_code_chunks = function(bufnr)
     local query = vim.treesitter.query.parse(
         "markdown",
         [[
-                (fenced_code_block
-                    (info_string (language) @lang) @info_string
-                    (#match? @info_string "^\\{.*\\}$")
-                    (code_fence_content) @content) @fenced_code_block
+                (fenced_code_block)
+                     @fenced_code_block
             ]]
     )
 
@@ -107,34 +105,40 @@ local get_code_chunks = function(bufnr)
     for id, node, _ in query:iter_captures(root, bufnr, 0, -1) do
         local capture_name = query.captures[id]
 
-        if capture_name == "content" then
+        if capture_name == "fenced_code_block" then
+            -- Loop through all children of the node and print their type and text
             local lang
             local info_string_params = {}
+            local comment_params = {}
+            local content_text = ""
             local start_row, _, end_row, _ = node:range()
 
-            -- Get the info string of the code block and parse it
-            local parent = node:parent()
-            if parent then
-                local info_node = parent:child(1)
-                if info_node and info_node:type() == "info_string" then
-                    local info_string = vim.treesitter.get_node_text(info_node, bufnr)
+            for child in node:iter_children() do
+                if child:type() == "info_string" then
+                    local info_string = vim.treesitter.get_node_text(child, bufnr)
                     lang, info_string_params = M.parse_info_string_params(info_string)
+                end
+
+                if child:type() == "code_fence_content" then
+                    content_text = vim.treesitter.get_node_text(child, bufnr)
+
+                    -- Get the parameters specified in the code chunk with #|
+                    comment_params =
+                        M.parse_comment_params(vim.treesitter.get_node_text(node, bufnr))
                 end
             end
 
-            -- Get the parameters specified in the code chunk with #|
-            local comment_params =
-                M.parse_comment_params(vim.treesitter.get_node_text(node, bufnr))
-
+            -- Create the chunk object with the extracted information
             local chunk = Chunk:new(
-                vim.treesitter.get_node_text(node, bufnr),
-                start_row,
-                end_row + 1,
+                content_text,
+                start_row + 1,
+                end_row,
                 info_string_params,
                 comment_params,
                 lang,
-                parent or nil
+                node
             )
+            -- vim.print(vim.inspect(chunk))
 
             table.insert(code_chunks, chunk)
         end
