@@ -36,6 +36,19 @@ function Chunk:new(
     return chunk
 end
 
+--- Get the child parameter of the code chunk (a file name)
+---@return string
+function Chunk:get_child_param()
+    local child = self.info_string_params and self.info_string_params.child
+        or self.comment_params and self.comment_params.child
+
+    if child then
+        child = vim.fs.normalize(child) -- Normalize path
+    end
+
+    return child
+end
+
 --- Get the range of the code chunk
 ---@return integer,integer
 function Chunk:get_range() return self.start_row, self.end_row end
@@ -49,7 +62,10 @@ function Chunk:get_content() return self.content end
 function Chunk:get_lang()
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 
-    if self.info_string_params.child and row == self.start_row then
+    if
+        (self.info_string_params.child or self.comment_params.child)
+        and row == self.start_row
+    then
         return "chunk_child"
     end
 
@@ -150,6 +166,8 @@ local get_code_chunks = function(bufnr)
     return code_chunks
 end
 
+local function unquote(str) return str and str:match("^['\"]?(.-)['\"]?$") or str end
+
 --- Helper function to parse the info string of a code block
 ---@param info_string string The info string of the code block.
 ---@return string,table
@@ -167,8 +185,9 @@ M.parse_info_string_params = function(info_string)
         local key, value = param:match("^%s*([^=]+)%s*=%s*([^%s]+)%s*$")
 
         if key and value then
-            key = key:match("^%s*(.-)%s*$") -- Trim leading/trailing spaces from key
-            value = value:match("^%s*(.-)%s*$") -- Trim leading/trailing spaces from value
+            key = key:match("^%s*(.-)%s*$")
+            value = value:match("^%s*(.-)%s*$")
+            value = unquote(value)
             params[key] = value
         end
     end
@@ -185,7 +204,10 @@ M.parse_comment_params = function(code_content)
     for line in code_content:gmatch("[^\r\n]+") do
         local key, value = line:match("^#|%s*([^:]+)%s*:%s*(.+)%s*$")
         if key and value then
-            params[key:match("^%s*(.-)%s*$")] = value:match("^%s*(.-)%s*$")
+            key = key:match("^%s*(.-)%s*$")
+            value = value:match("^%s*(.-)%s*$")
+            value = unquote(value)
+            params[key] = value
         end
     end
 
@@ -260,6 +282,11 @@ M.get_supported_chunk_langs = function() return { "r", "webr", "python", "pyodid
 ---@return table The filtered code chunks.
 M.filter_supported_langs = function(chunks)
     if type(chunks) ~= "table" or vim.tbl_isempty(chunks) then return {} end
+
+    -- If chunks is a single chunk (table), wrap it in a table to ensure uniform processing
+    if type(chunks) ~= "table" or (type(chunks) == "table" and #chunks == 0) then
+        chunks = { chunks }
+    end
 
     local supported_chunks = {}
     local supported_langs = M.get_supported_chunk_langs()
@@ -339,7 +366,7 @@ M.codelines_from_chunks = function(chunks)
 
         if M.is_python(lang) then
             table.insert(codelines, 'reticulate::py_run_string("' .. content .. '")')
-        elseif M.is_r(lang) then
+        elseif M.is_r(lang) or lang == "chunk_header" then
             table.insert(codelines, content)
         end
     end

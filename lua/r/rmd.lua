@@ -61,7 +61,7 @@ M.send_current_chunk = function(m)
     chunks = quarto.filter_supported_langs(chunks)
 
     if #chunks == 0 then
-        inform("No R or Python code chunk found at the cursor position.")
+        inform("There is no R or Python code chunk to send.")
         return
     end
 
@@ -113,10 +113,20 @@ local go_to_next = function()
     chunks = quarto.filter_code_chunks_by_eval(chunks)
     chunks = quarto.filter_supported_langs(chunks)
 
-    -- move the cursor to the next chunk
+    local row = vim.api.nvim_win_get_cursor(0)[1]
+
+    -- Move the cursor to the next chunk
     if #chunks > 0 then
         local next_chunk = chunks[1]
-        vim.api.nvim_win_set_cursor(0, { next_chunk.start_row + 1, 0 })
+
+        -- If the current chunk is a header, move the cursor to the start of the chunk.
+        -- Otherwise, move the cursor to the line after the chunk header.
+        if quarto.get_current_code_chunk().start_row == row then
+            vim.api.nvim_win_set_cursor(0, { next_chunk.start_row, 0 })
+        else
+            vim.api.nvim_win_set_cursor(0, { next_chunk.start_row + 1, 0 })
+        end
+
         return true
     else
         inform("There is no next R code chunk to go.")

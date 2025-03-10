@@ -320,17 +320,13 @@ M.line_part = function(direction, correctpos)
 end
 
 --- Send to R Console a command to source the document child indicated in chunk header.
----@param line string The chunk header.
----@param m boolean True if should move to the next chunk.
-local knit_child = function(line, m)
-    local nline = line:gsub(".*child *[:=] *['\"]", "")
-    local cfile = nline:gsub("['\"].*", "")
+--- This function is used in R Markdown documents.
+---@class chunk
+local knit_child = function(chunk)
+    local cfile = chunk:get_child_param()
+
     if vim.fn.filereadable(cfile) == 1 then
         M.cmd("require(knitr); knit('" .. cfile .. "', output=NULL)")
-        if m then
-            vim.api.nvim_win_set_cursor(0, { vim.api.nvim_win_get_cursor(0)[1] + 1, 1 })
-            cursor.move_next_line()
-        end
     else
         warn("File not found: '" .. cfile .. "'")
     end
@@ -516,12 +512,18 @@ end
 M.line = function(m)
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     local line = vim.fn.getline(lnum)
+
     local lang = get_lang()
+
     if lang == "chunk_child" then
-        if type(m) == "boolean" and m then
-            knit_child(line, true)
+        knit_child(quarto.get_current_code_chunk())
+        if type(m) == "boolean" and m then require("r.rmd").next_chunk() end
+        return
+    elseif lang == "chunk_header" then
+        if vim.bo.filetype == "rnoweb" then
+            require("r.rnw").send_chunk(m)
         else
-            knit_child(line, false)
+            require("r.rmd").send_current_chunk(m)
         end
         return
     elseif lang == "chunk_end" then
@@ -536,6 +538,7 @@ M.line = function(m)
     end
 
     local ok = false
+
     if
         vim.bo.filetype == "rnoweb"
         or vim.bo.filetype == "rmd"
@@ -548,11 +551,12 @@ M.line = function(m)
             return
         end
         if not quarto.is_r(lang) then
-            inform("Not inside R or Python code chunk [within " .. lang .. "]")
+            inform("Not inside R or Python code chunk.")
             return
         end
     end
 
+    -- Not in a chunk, send the line
     if vim.bo.filetype == "rhelp" and lang ~= "r" then
         inform("Not inside an R section.")
         return
