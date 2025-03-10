@@ -61,7 +61,10 @@ M.send_current_chunk = function(m)
     chunks = quarto.filter_supported_langs(chunks)
 
     if #chunks == 0 then
-        inform("There is no R or Python code chunk to send.")
+        inform(
+            "No evaluable R or Python code chunk found at the current cursor position."
+        )
+
         return
     end
 
