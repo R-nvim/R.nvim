@@ -346,11 +346,17 @@ M.chunks_up_to_here = function()
         return
     end
 
-    local codelines = quarto.codelines_from_chunks(chunks)
-
-    local lines = table.concat(codelines, "\n")
-
-    M.source_chunk(lines)
+    -- Loop all the chunks and source them, except is the chunk has a child parameter
+    for _, chunk in ipairs(chunks) do
+        local cfile = chunk:get_child_param()
+        if cfile then
+            knit_child(chunk)
+        else
+            local codelines = quarto.codelines_from_chunks({ chunk })
+            local lines = table.concat(codelines, "\n")
+            M.source_chunk(lines)
+        end
+    end
 end
 
 -- TODO: Test if this version works: git blame me to see previous version.
