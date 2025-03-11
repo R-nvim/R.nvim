@@ -39,8 +39,8 @@ end
 --- Get the child parameter of the code chunk (a file name)
 ---@return string|nil
 function Chunk:get_child_param()
-    local child = self.info_string_params and self.info_string_params.child
-        or self.comment_params and self.comment_params.child
+    local child = self.comment_params and self.comment_params.child
+        or self.info_string_params and self.info_string_params.child
 
     if child then
         child = vim.fs.normalize(child) -- Normalize path
