@@ -2,7 +2,6 @@ local config = require("r.config").get_config()
 local warn = require("r.log").warn
 local inform = require("r.log").inform
 local utils = require("r.utils")
-local get_lang = require("r.utils").get_lang
 local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
@@ -208,7 +207,7 @@ M.source_lines = function(lines, what)
         rcmd = table.concat(lines, "\n")
         if
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and get_lang() == "python"
+            and utils.get_lang() == "python"
         then
             rcmd = rcmd:gsub('"', '\\"')
             rcmd = 'reticulate::py_run_string("' .. rcmd .. '")'
@@ -394,7 +393,7 @@ end
 -- Function to get the marks which the cursor is between
 ---@param m boolean True if should move to the next line.
 M.marked_block = function(m)
-    if get_lang() ~= "r" then
+    if utils.get_lang() ~= "r" then
         inform("Not in R code.")
         return
     end
@@ -441,7 +440,7 @@ end
 --- Send to R Console the selected lines
 ---@param m boolean True if should move to the next line.
 M.selection = function(m)
-    local lang = get_lang()
+    local lang = utils.get_lang()
 
     if
         (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
@@ -519,7 +518,7 @@ M.line = function(m)
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     local line = vim.fn.getline(lnum)
 
-    local lang = get_lang()
+    local lang = utils.get_lang()
 
     if lang == "chunk_child" then
         knit_child(quarto.get_current_code_chunk())
