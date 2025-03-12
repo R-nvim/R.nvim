@@ -395,9 +395,6 @@ M.hl_code_bg = function()
         then
             hl_grp = "RCodeComment"
         end
-        if c.info_string_params.child or c.comment_params.child then
-            hl_grp = "RCodeIgnore"
-        end
         vim.api.nvim_buf_set_extmark(0, ns, c.start_row - 1, 0, {
             end_col = 0,
             end_row = c.end_row,
@@ -408,6 +405,19 @@ M.hl_code_bg = function()
             virt_text_pos = "right_align",
             hl_eol = true,
         })
+        if c.info_string_params.child or c.comment_params.child then
+            for i = c.start_row, c.end_row - 2, 1 do
+                local line = vim.api.nvim_buf_get_lines(0, i, i+1, true)[1]
+                if not line:find("#| child:") then
+                    vim.api.nvim_buf_set_extmark(0, ns, i, 0, {
+                        end_col = 0,
+                        end_row = i + 1,
+                        hl_group = "RCodeIgnore",
+                        hl_eol = true,
+                    })
+                end
+            end
+        end
     end
 end
 
