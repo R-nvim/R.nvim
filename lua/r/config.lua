@@ -254,6 +254,9 @@ local hooks = require("r.hooks")
 ---Do `:help quarto_render_args` for more information.
 ---@field quarto_render_args? string
 ---
+---How to highlight code blocks in Quarto and Rmd documents.
+---@field quarto_chunk_hl? { highlight: boolean, virtual_title: boolean, bg: string, events: string }
+---
 ---The default height for the R console; defaults to `15`.
 ---Do `:help rconsole_height` for more information.
 ---@field rconsole_height? integer
@@ -454,6 +457,12 @@ local config = {
     pdfviewer           = "",
     quarto_preview_args = "",
     quarto_render_args  = "",
+    quarto_chunk_hl = {
+        highlight = true,
+        virtual_title = true,
+        bg = "",
+        events = ""
+    },
     rconsole_height     = 15,
     rconsole_width      = 80,
     register_treesitter = true,

@@ -1,4 +1,5 @@
 local warn = require("r.log").warn
+local quarto = require("r.quarto")
 local uv = vim.uv
 
 local M = {}
@@ -76,29 +77,28 @@ end
 --- Get language at current cursor position
 ---@return string
 function M.get_lang()
-    if vim.bo.filetype == "" then return "none" end
-    -- Treesitter for rnoweb always return "latex" or "rnoweb"
-    if vim.bo.filetype == "rnoweb" then return get_rnw_lang() end
-    -- No treesitter parser for rhelp
-    if vim.bo.filetype == "rhelp" then return get_rhelp_lang() end
+    local filetype = vim.bo.filetype
+    if filetype == "" then return "none" end
 
-    local p
-    if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
-        local cline = vim.api.nvim_get_current_line()
-        if cline:find("^```.*child *= *") then
-            return "chunk_child"
-        elseif cline:find("^```%{") then
-            return "chunk_header"
-        elseif cline:find("^```$") then
-            return "chunk_end"
-        end
-        p = vim.treesitter.get_parser(vim.api.nvim_get_current_buf(), "markdown")
-    else
-        p = vim.treesitter.get_parser()
+    -- Handle specific filetypes early
+    if filetype == "rnoweb" then return get_rnw_lang() end
+    if filetype == "rhelp" then return get_rhelp_lang() end
+
+    -- Handle quarto/rmd filetypes
+    if filetype == "quarto" or filetype == "rmd" then
+        local current_chunk =
+            quarto.get_current_code_chunk(vim.api.nvim_get_current_buf())
+
+        if current_chunk and current_chunk.lang then return current_chunk:get_lang() end
     end
-    local c = vim.api.nvim_win_get_cursor(0)
-    local lang = p:language_for_range({ c[1] - 1, c[2], c[1] - 1, c[2] }):lang()
-    return lang
+
+    -- For other filetypes, return the language at the cursor position
+    local buf = vim.api.nvim_get_current_buf()
+    local pos = vim.api.nvim_win_get_cursor(0)
+    local parser = require("nvim-treesitter.parsers").get_parser(buf)
+
+    if not parser then return "" end
+    return parser:language_for_range({ pos[1], pos[2], pos[1], pos[2] }):lang()
 end
 
 --- Request the windows manager to focus a window.
