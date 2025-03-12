@@ -255,6 +255,27 @@ M.setup = function()
                    autocmd ]] .. config.quarto_chunk_hl.events .. [[ <buffer> lua require('r.quarto').hl_code_bg()
                    augroup END
                    ]])
+
+        vim.treesitter.query.set(
+            "r",
+            "highlights",
+            [[
+; extends
+
+; From quarto.nvim, YAML header for code blocks,
+; but `environment` instead of `literal`
+(
+ (comment) @comment
+ (#match? @comment "^\\#\\|")
+ ) @define
+
+; Cell delimiter for Jupyter
+(
+ (comment) @content
+ (#match? @content "^\\# ?\\%\\%")
+ ) @delimiter
+        ]]
+        )
     end
 end
 
