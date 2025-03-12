@@ -60,7 +60,11 @@ function Chunk:get_content() return self.content end
 
 --- Get the language of the code chunk
 ---@return string
-function Chunk:get_lang()
+function Chunk:get_lang() return self.lang end
+
+--- Get the type of the code chunk
+---@return string
+function Chunk:get_chunk_section_at_cursor()
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 
     if
@@ -74,7 +78,7 @@ function Chunk:get_lang()
 
     if row == self.end_row then return "chunk_end" end
 
-    return self.lang
+    return "chunk_body"
 end
 
 --- Get the info string parameters of the code chunk
@@ -367,7 +371,7 @@ M.codelines_from_chunks = function(chunks)
 
         if M.is_python(lang) then
             table.insert(codelines, 'reticulate::py_run_string("' .. content .. '")')
-        elseif M.is_r(lang) or lang == "chunk_header" then
+        elseif M.is_r(lang) then
             table.insert(codelines, content)
         end
     end

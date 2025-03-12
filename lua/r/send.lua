@@ -520,26 +520,33 @@ M.line = function(m)
 
     local lang = utils.get_lang()
 
-    if lang == "chunk_child" then
-        knit_child(quarto.get_current_code_chunk())
-        if type(m) == "boolean" and m then require("r.rmd").next_chunk() end
-        return
-    elseif lang == "chunk_header" then
-        if vim.bo.filetype == "rnoweb" then
-            require("r.rnw").send_chunk(m)
-        else
-            require("r.rmd").send_current_chunk(m)
-        end
-        return
-    elseif lang == "chunk_end" then
-        if m == true then
+    -- check if we are in a chunk
+    local chunk = quarto.get_current_code_chunk(vim.api.nvim_get_current_buf())
+
+    if not vim.tbl_isempty(chunk) then
+        local chunk_type = chunk:get_chunk_section_at_cursor()
+
+        if chunk_type == "chunk_child" then
+            knit_child(chunk)
+            if type(m) == "boolean" and m then require("r.rmd").next_chunk() end
+            return
+        elseif chunk_type == "chunk_header" then
             if vim.bo.filetype == "rnoweb" then
-                require("r.rnw").next_chunk()
+                require("r.rnw").send_chunk(m)
             else
-                require("r.rmd").next_chunk()
+                require("r.rmd").send_current_chunk(m)
             end
+            return
+        elseif chunk_type == "chunk_end" then
+            if m == true then
+                if vim.bo.filetype == "rnoweb" then
+                    require("r.rnw").next_chunk()
+                else
+                    require("r.rmd").next_chunk()
+                end
+            end
+            return
         end
-        return
     end
 
     local ok = false

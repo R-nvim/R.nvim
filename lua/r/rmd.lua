@@ -132,7 +132,7 @@ local go_to_next = function()
 
         return true
     else
-        inform("There is no next R code chunk to go.")
+        inform("There is no next code chunk to go.")
         return false
     end
 end
