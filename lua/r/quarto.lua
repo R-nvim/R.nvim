@@ -375,4 +375,36 @@ M.codelines_from_chunks = function(chunks)
     return codelines
 end
 
+local ns = vim.api.nvim_create_namespace("RQuartoNamespace")
+
+--- Special highlight for Quarto and Rmd code blocks
+M.hl_code_bg = function()
+    local config = require("r.config").get_config()
+    vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
+    local chunks = get_code_chunks(0)
+    if not chunks then return end
+    for _, c in pairs(chunks) do
+        local hl_grp = "RCodeBlock"
+        if
+            (c.info_string_params.eval and c.info_string_params.eval == "FALSE")
+            or (c.comment_params.eval and c.comment_params.eval == "false")
+        then
+            hl_grp = "RCodeComment"
+        end
+        if c.info_string_params.child or c.comment_params.child then
+            hl_grp = "RCodeIgnore"
+        end
+        vim.api.nvim_buf_set_extmark(0, ns, c.start_row - 1, 0, {
+            end_col = 0,
+            end_row = c.end_row,
+            hl_group = hl_grp,
+            virt_text = config.quarto_chunk_hl.virtual_title and {
+                { c.lang .. " ", { "Title", hl_grp } },
+            } or nil,
+            virt_text_pos = "right_align",
+            hl_eol = true,
+        })
+    end
+end
+
 return M
