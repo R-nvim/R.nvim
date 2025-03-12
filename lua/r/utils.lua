@@ -98,8 +98,7 @@ function M.get_lang()
     local parser = require("nvim-treesitter.parsers").get_parser(buf)
 
     if not parser then return "" end
-
-    return parser:language_for_range(pos):lang()
+    return parser:language_for_range({ pos[1], pos[2], pos[1], pos[2] }):lang()
 end
 
 --- Request the windows manager to focus a window.

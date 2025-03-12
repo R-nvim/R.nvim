@@ -25,6 +25,7 @@ M.write_chunk = function()
             { "```{r}", "", "```", "" }
         )
         vim.api.nvim_win_set_cursor(0, { curpos[1] + 1, 1 })
+        vim.schedule(require("r.quarto").hl_code_bg)
         return
     end
 
