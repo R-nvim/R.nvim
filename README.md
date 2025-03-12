@@ -154,7 +154,7 @@ firm commitment to backwards compatibility.
 
 ## Transitioning from Nvim-R
 
-### Removed features:
+### Removed features
 
 - reStructuredText support (no longer seems to be widely used).
 
@@ -179,7 +179,7 @@ firm commitment to backwards compatibility.
 
 - Integration with `Rapp` on macOS was removed (option `applescript`).
 
-### Changes:
+### Changes
 
 - `<M-->` (i.e. `Alt + -`) is now used to insert `<-`. See the documentation
   on how to create custom key bindings.
@@ -211,6 +211,11 @@ firm commitment to backwards compatibility.
 - `rmdchunk` and `rnowebchunk` were removed. In Insert mode, press `<M-r>` to
   insert chunks of R code in Rmd, Quarto or Rnoweb. See the documentation on
   how to create custom key bindings.
+
+- In a Quarto or RMarkdown document, when the cursor is over a chunk header
+  and you tries to send the current line and go to the next line, the whole
+  chunk is sent to R and the cursor jumps to the next chunk of either R or
+  Python code.
 
 ### New features
 
