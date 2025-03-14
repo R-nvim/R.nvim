@@ -1,14 +1,10 @@
 ---@diagnostic disable: undefined-global
 ---@diagnostic disable: undefined-field
 local jobopts = { rpc = true, width = 80, height = 24 }
-local rpcrequest = vim.rpcrequest
 
 describe("rmd module", function()
     local nvim -- Channel of the embedded Neovim process
     -- TODO: Move this to helpers file
-    local function send_lua_via_rpc(lua_command, args)
-        return rpcrequest(nvim, "nvim_exec_lua", lua_command, args or {})
-    end
     -- TODO: Move this to helpers file
     -- local function set_filetype(filetype)
     --     rpcrequest(nvim, "nvim_buf_set_option", 0, "filetype", filetype)
