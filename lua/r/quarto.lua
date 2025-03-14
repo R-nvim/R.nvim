@@ -370,7 +370,7 @@ M.codelines_from_chunks = function(chunks)
         local content = chunk:get_content()
 
         if M.is_python(lang) then
-            table.insert(codelines, 'reticulate::py_run_string("' .. content .. '")')
+            table.insert(codelines, 'reticulate::py_run_string(r"(' .. content .. ')")')
         elseif M.is_r(lang) then
             table.insert(codelines, content)
         end
