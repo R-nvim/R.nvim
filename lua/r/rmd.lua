@@ -205,6 +205,77 @@ end
 -- Register params as empty. This function is called when R quits.
 M.clean_params = function() last_params = "" end
 
+local setup_chunk_hl = function()
+    if config.quarto_chunk_hl.events == nil or config.quarto_chunk_hl.events == "" then
+        config.quarto_chunk_hl.events = "BufEnter,InsertLeave"
+    end
+    if config.quarto_chunk_hl.virtual_title == nil then
+        config.quarto_chunk_hl.virtual_title = true
+    end
+
+    if config.quarto_chunk_hl.bg == nil or config.quarto_chunk_hl.bg == "" then
+        local hl = vim.api.nvim_get_hl(0, { name = "CursorColumn", create = false })
+        if hl.bg then config.quarto_chunk_hl.bg = string.format("#%06x", hl.bg) end
+    end
+    local cbg = config.quarto_chunk_hl.bg
+    vim.api.nvim_set_hl(0, "RCodeBlock", { bg = cbg })
+
+    local hl = vim.api.nvim_get_hl(0, { name = "Comment", create = false })
+    local col = hl.fg and string.format("#%06x", hl.fg) or "#afafff"
+    vim.api.nvim_set_hl(0, "RCodeComment", { bg = cbg, fg = col })
+
+    hl = vim.api.nvim_get_hl(0, { name = "Ignore", create = false })
+    col = hl.fg and string.format("#%06x", hl.fg) or "#6c6c6c"
+    vim.api.nvim_set_hl(0, "RCodeIgnore", { bg = cbg, fg = col })
+
+    vim.cmd([[
+augroup RQmdChunkBg
+autocmd ]] .. config.quarto_chunk_hl.events .. [[ <buffer> lua require('r.quarto').hl_code_bg()
+augroup END
+]])
+end
+
+local setup_yaml_hl = function()
+    vim.treesitter.query.set(
+        "r",
+        "highlights",
+        [[
+; extends
+
+; From quarto.nvim, YAML header for code blocks.
+(
+ (comment) @comment
+ (#match? @comment "^\\#\\|")
+ ) @define
+
+; Cell delimiter for Jupyter
+(
+ (comment) @content
+ (#match? @content "^\\# ?\\%\\%")
+ ) @delimiter
+        ]]
+    )
+    vim.treesitter.query.set(
+        "python",
+        "highlights",
+        [[
+; extends
+
+; YAML header for code blocks
+(
+(comment) @comment
+(#match? @comment "^\\#\\|")
+) @define
+
+; Cell delimiter for Jupyter
+(
+(comment) @content
+(#match? @content "^\\# ?\\%\\%")
+) @class.outer @delimiter
+        ]]
+    )
+end
+
 --- Setup function for initializing module functionality.
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.
 M.setup = function()
@@ -225,59 +296,12 @@ M.setup = function()
     if config.quarto_chunk_hl.highlight == nil then
         config.quarto_chunk_hl.highlight = true
     end
-    if config.quarto_chunk_hl.highlight then
-        if
-            config.quarto_chunk_hl.events == nil
-            or config.quarto_chunk_hl.events == ""
-        then
-            config.quarto_chunk_hl.events = "BufEnter,InsertLeave"
-        end
-        if config.quarto_chunk_hl.virtual_title == nil then
-            config.quarto_chunk_hl.virtual_title = true
-        end
+    if config.quarto_chunk_hl.highlight then setup_chunk_hl() end
 
-        if config.quarto_chunk_hl.bg == nil or config.quarto_chunk_hl.bg == "" then
-            local hl = vim.api.nvim_get_hl(0, { name = "CursorColumn", create = false })
-            if hl.bg then config.quarto_chunk_hl.bg = string.format("#%06x", hl.bg) end
-        end
-        local cbg = config.quarto_chunk_hl.bg
-        vim.api.nvim_set_hl(0, "RCodeBlock", { bg = cbg })
-
-        local hl = vim.api.nvim_get_hl(0, { name = "Comment", create = false })
-        local col = hl.fg and string.format("#%06x", hl.fg) or "#afafff"
-        vim.api.nvim_set_hl(0, "RCodeComment", { bg = cbg, fg = col })
-
-        hl = vim.api.nvim_get_hl(0, { name = "Ignore", create = false })
-        col = hl.fg and string.format("#%06x", hl.fg) or "#6c6c6c"
-        vim.api.nvim_set_hl(0, "RCodeIgnore", { bg = cbg, fg = col })
-
-        vim.cmd([[
-                   augroup RQmdChunkBg
-                   autocmd ]] .. config.quarto_chunk_hl.events .. [[ <buffer> lua require('r.quarto').hl_code_bg()
-                   augroup END
-                   ]])
-
-        vim.treesitter.query.set(
-            "r",
-            "highlights",
-            [[
-; extends
-
-; From quarto.nvim, YAML header for code blocks,
-; but `environment` instead of `literal`
-(
- (comment) @comment
- (#match? @comment "^\\#\\|")
- ) @define
-
-; Cell delimiter for Jupyter
-(
- (comment) @content
- (#match? @content "^\\# ?\\%\\%")
- ) @delimiter
-        ]]
-        )
+    if config.quarto_chunk_hl.yaml_hl == nil then
+        config.quarto_chunk_hl.yaml_hl = true
     end
+    if config.quarto_chunk_hl.yaml_hl then vim.schedule(setup_yaml_hl) end
 end
 
 --- Compiles the current R Markdown document into a specified output format.
