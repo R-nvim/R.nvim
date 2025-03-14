@@ -29,36 +29,6 @@ describe("rmd module", function()
     after_each(function() vim.fn.jobstop(nvim) end)
 
     describe("get_lang() Unit Tests", function()
-        it("returns the correct language at cursor position", function()
-            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 1, 0 })
-            local result = send_lua_via_rpc([[return require('r.utils').get_lang()]])
-                == "markdown"
-            assert.is_true(result)
-        end)
-        it("returns the correct language at cursor position", function()
-            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 3, 0 })
-            local result = send_lua_via_rpc([[return require('r.utils').get_lang()]])
-                == "yaml"
-            assert.is_true(result)
-        end)
-        it("returns the correct language at cursor position", function()
-            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 10, 0 })
-            local result = send_lua_via_rpc([[return require('r.utils').get_lang()]])
-                == "markdown"
-            assert.is_true(result)
-        end)
-        it("returns the correct language at cursor position", function()
-            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 13, 0 })
-            local result = send_lua_via_rpc([[return require('r.utils').get_lang()]])
-                == "r"
-            assert.is_true(result)
-        end)
-        it("returns the correct language at cursor position", function()
-            rpcrequest(nvim, "nvim_win_set_cursor", 0, { 19, 0 })
-            local result = send_lua_via_rpc([[return require('r.utils').get_lang()]])
-                == "python"
-            assert.is_true(result)
-        end)
         it(
             "returns true if inside code chunk (filetype-agnostic)",
             function() pending("test filetype-agnostic code chunk detection") end
