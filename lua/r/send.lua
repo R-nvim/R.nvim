@@ -209,8 +209,7 @@ M.source_lines = function(lines, what)
             (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
             and utils.get_lang() == "python"
         then
-            rcmd = rcmd:gsub('"', '\\"')
-            rcmd = 'reticulate::py_run_string("' .. rcmd .. '")'
+            rcmd = 'reticulate::py_run_string(r"(' .. rcmd .. ')")'
         end
     else
         vim.fn.writefile(lines, config.source_write)
@@ -557,7 +556,7 @@ M.line = function(m)
         or vim.bo.filetype == "quarto"
     then
         if quarto.is_python(lang) then
-            line = 'reticulate::py_run_string("' .. line:gsub('"', '\\"') .. '")'
+            line = 'reticulate::py_run_string(r"(' .. line .. ')")'
             ok = M.cmd(line)
             if ok and m == true then cursor.move_next_line() end
             return
