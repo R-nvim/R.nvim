@@ -459,7 +459,7 @@ local config = {
     quarto_render_args  = "",
     quarto_chunk_hl = {
         highlight = true,
-        yaml_hl = true,
+        yaml_hl = vim.fn.has("nvim-0.11") == 1 and true or false,
         virtual_title = true,
         bg = "",
         events = ""
