@@ -241,38 +241,23 @@ local setup_yaml_hl = function()
         "highlights",
         [[
 ; extends
-
 ; From quarto.nvim, YAML header for code blocks.
-(
- (comment) @comment
- (#match? @comment "^\\#\\|")
- ) @define
-
+((comment) @comment (#match? @comment "^\\#\\|")) @define
 ; Cell delimiter for Jupyter
-(
- (comment) @content
- (#match? @content "^\\# ?\\%\\%")
- ) @delimiter
-        ]]
+((comment) @content (#match? @content "^\\# ?\\%\\%")) @delimiter
+]]
     )
+
     vim.treesitter.query.set(
         "python",
         "highlights",
         [[
 ; extends
-
 ; YAML header for code blocks
-(
-(comment) @comment
-(#match? @comment "^\\#\\|")
-) @define
-
+((comment) @comment (#match? @comment "^\\#\\|")) @define
 ; Cell delimiter for Jupyter
-(
-(comment) @content
-(#match? @content "^\\# ?\\%\\%")
-) @class.outer @delimiter
-        ]]
+((comment) @content (#match? @content "^\\# ?\\%\\%")) @class.outer @delimiter
+]]
     )
 end
 
