@@ -510,10 +510,7 @@ local unix = require("r.platform.unix")
 local windows = require("r.platform.windows")
 
 local smsgs = {}
-local swarn = function(msg)
-    table.insert(smsgs, msg)
-    require("r.log").warn(msg)
-end
+local swarn = function(msg) table.insert(smsgs, msg) end
 
 local set_editing_mode = function()
     if config.editing_mode ~= "" then return end
@@ -1108,8 +1105,13 @@ M.check_health = function()
     end
 
     if #smsgs > 0 then
+        local plural = #smsgs > 1 and "s" or ""
         local msg = "\n  " .. table.concat(smsgs, "\n  ")
-        require("r.edit").add_to_debug_info("Startup warnings", msg)
+        require("r.edit").add_to_debug_info("Startup warning" .. plural, msg)
+        msg = "R.nvim warning" .. plural .. ":" .. msg
+        vim.schedule(function()
+            vim.defer_fn(function() require("r.log").warn(msg) end, 200)
+        end)
     end
 
     htime = (uv.hrtime() - htime) / 1000000000
