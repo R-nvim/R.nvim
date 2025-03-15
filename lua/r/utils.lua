@@ -80,25 +80,23 @@ function M.get_lang()
     local filetype = vim.bo.filetype
     if filetype == "" then return "none" end
 
-    -- Handle specific filetypes early
+    -- Handle specific filetypes
     if filetype == "rnoweb" then return get_rnw_lang() end
     if filetype == "rhelp" then return get_rhelp_lang() end
 
-    -- Handle quarto/rmd filetypes
+    -- Handle quarto/rmd code blocks
     if filetype == "quarto" or filetype == "rmd" then
         local current_chunk =
             quarto.get_current_code_chunk(vim.api.nvim_get_current_buf())
-
         if current_chunk and current_chunk.lang then return current_chunk:get_lang() end
     end
 
-    -- For other filetypes, return the language at the cursor position
-    local buf = vim.api.nvim_get_current_buf()
-    local pos = vim.api.nvim_win_get_cursor(0)
-    local parser = require("nvim-treesitter.parsers").get_parser(buf)
-
+    -- Language of other parts of Quarto and Rmd
+    local parser = vim.treesitter.get_parser()
     if not parser then return "" end
-    return parser:language_for_range({ pos[1], pos[2], pos[1], pos[2] }):lang()
+
+    local pos = vim.api.nvim_win_get_cursor(0)
+    return parser:language_for_range({ pos[1] - 1, pos[2], pos[1] - 1, pos[2] }):lang()
 end
 
 --- Request the windows manager to focus a window.
