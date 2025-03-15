@@ -109,10 +109,11 @@ M.command = function(what)
     send_cmd(cmd)
 end
 
---- Helper function to get code block from Rmd or Quarto document
+--- Helper function to get code block from Rmd or Quarto document.
+--- The function is called by cmp_r too.
 ---@param bufnr  integer The buffer number.
 ---@return table|nil
-local get_code_chunks = function(bufnr)
+M.get_code_chunks = function(bufnr)
     local root = require("r.utils").get_root_node()
     if not root then return nil end
 
@@ -225,7 +226,7 @@ end
 M.get_current_code_chunk = function(bufnr)
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 
-    local chunks = get_code_chunks(bufnr)
+    local chunks = M.get_code_chunks(bufnr)
     if not chunks then return {} end
 
     for _, chunk in ipairs(chunks) do
@@ -242,7 +243,7 @@ end
 M.get_chunks_above_cursor = function(bufnr)
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 
-    local chunks = get_code_chunks(bufnr)
+    local chunks = M.get_code_chunks(bufnr)
 
     if not chunks then return {} end
 
@@ -263,7 +264,7 @@ end
 M.get_chunks_below_cursor = function(bufnr)
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 
-    local chunks = get_code_chunks(bufnr)
+    local chunks = M.get_code_chunks(bufnr)
 
     if not chunks then return {} end
 
@@ -385,7 +386,7 @@ local ns = vim.api.nvim_create_namespace("RQuartoNamespace")
 M.hl_code_bg = function()
     local config = require("r.config").get_config()
     vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
-    local chunks = get_code_chunks(0)
+    local chunks = M.get_code_chunks(0)
     if not chunks then return end
     for _, c in pairs(chunks) do
         local hl_grp = "RCodeBlock"
@@ -400,7 +401,7 @@ M.hl_code_bg = function()
             end_row = c.end_row,
             hl_group = hl_grp,
             virt_text = config.quarto_chunk_hl.virtual_title and {
-                { c.lang .. " ", { "Title", hl_grp } },
+                { c.lang .. " ", { hl_grp, "Title" } },
             } or nil,
             virt_text_pos = "right_align",
             hl_eol = true,

@@ -241,38 +241,23 @@ local setup_yaml_hl = function()
         "highlights",
         [[
 ; extends
-
 ; From quarto.nvim, YAML header for code blocks.
-(
- (comment) @comment
- (#match? @comment "^\\#\\|")
- ) @define
-
+((comment) @comment (#match? @comment "^\\#\\|")) @define
 ; Cell delimiter for Jupyter
-(
- (comment) @content
- (#match? @content "^\\# ?\\%\\%")
- ) @delimiter
-        ]]
+((comment) @content (#match? @content "^\\# ?\\%\\%")) @delimiter
+]]
     )
+
     vim.treesitter.query.set(
         "python",
         "highlights",
         [[
 ; extends
-
 ; YAML header for code blocks
-(
-(comment) @comment
-(#match? @comment "^\\#\\|")
-) @define
-
+((comment) @comment (#match? @comment "^\\#\\|")) @define
 ; Cell delimiter for Jupyter
-(
-(comment) @content
-(#match? @content "^\\# ?\\%\\%")
-) @class.outer @delimiter
-        ]]
+((comment) @content (#match? @content "^\\# ?\\%\\%")) @class.outer @delimiter
+]]
     )
 end
 
@@ -299,7 +284,7 @@ M.setup = function()
     if config.quarto_chunk_hl.highlight then setup_chunk_hl() end
 
     if config.quarto_chunk_hl.yaml_hl == nil then
-        config.quarto_chunk_hl.yaml_hl = true
+        config.quarto_chunk_hl.yaml_hl = vim.fn.has("nvim-0.11") == 1 and true or false
     end
     if config.quarto_chunk_hl.yaml_hl then vim.schedule(setup_yaml_hl) end
 end
