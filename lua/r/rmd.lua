@@ -285,7 +285,7 @@ M.setup = function()
     if config.quarto_chunk_hl.yaml_hl == nil then
         config.quarto_chunk_hl.yaml_hl = vim.fn.has("nvim-0.11") == 1 and true or false
     end
-    if config.quarto_chunk_hl.yaml_hl then vim.schedule(setup_yaml_hl) end
+    if config.quarto_chunk_hl.yaml_hl then setup_yaml_hl() end
 end
 
 --- Compiles the current R Markdown document into a specified output format.

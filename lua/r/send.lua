@@ -512,7 +512,7 @@ M.selection = function(m)
 end
 
 --- Send current line to R Console
----@param m boolean|string Movement to do after sending the line.
+---@param m string Movement to do after sending the line.
 M.line = function(m)
     local lnum = vim.api.nvim_win_get_cursor(0)[1]
     local line = vim.fn.getline(lnum)
@@ -527,17 +527,17 @@ M.line = function(m)
 
         if chunk_type == "chunk_child" then
             knit_child(chunk)
-            if type(m) == "boolean" and m then require("r.rmd").next_chunk() end
+            if m == "move" then require("r.rmd").next_chunk() end
             return
         elseif chunk_type == "chunk_header" then
             if vim.bo.filetype == "rnoweb" then
-                require("r.rnw").send_chunk(m)
+                require("r.rnw").send_chunk(m == "move")
             else
-                require("r.rmd").send_current_chunk(m)
+                require("r.rmd").send_current_chunk(m == "move")
             end
             return
         elseif chunk_type == "chunk_end" then
-            if m == true then
+            if m == "move" then
                 if vim.bo.filetype == "rnoweb" then
                     require("r.rnw").next_chunk()
                 else
@@ -558,7 +558,7 @@ M.line = function(m)
         if quarto.is_python(lang) then
             line = 'reticulate::py_run_string(r"(' .. line .. ')")'
             ok = M.cmd(line)
-            if ok and m == true then cursor.move_next_line() end
+            if ok and m == "move" then cursor.move_next_line() end
             return
         end
         if not quarto.is_r(lang) then
@@ -587,7 +587,7 @@ M.line = function(m)
         end
     end
 
-    if ok and m == true then
+    if ok and m == "move" then
         local last_line = vim.api.nvim_buf_line_count(0)
         -- Move to the last line of the sent expression
         vim.api.nvim_win_set_cursor(0, { math.min(lnum + 1, last_line), 0 })
