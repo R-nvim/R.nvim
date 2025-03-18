@@ -58,7 +58,6 @@ M.send_current_chunk = function(m)
 
     local chunks = quarto.get_current_code_chunk(bufnr)
 
-    chunks = quarto.filter_code_chunks_by_eval(chunks)
     chunks = quarto.filter_supported_langs(chunks)
 
     if #chunks == 0 then
