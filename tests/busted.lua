@@ -18,10 +18,11 @@ require("lazy.minit").busted({
 })
 
 -- Ensure the R parser is installed before running tests
--- vim.cmd("TSInstallSync r")
+local parser_path = vim.fn.globpath(vim.o.runtimepath, "parser/r.so")
+if parser_path == "" then vim.cmd("TSInstallSync r --quiet --yes") end
 
 -- Verify the installation
-local parser_path = vim.fn.globpath(vim.o.runtimepath, "parser/r.so")
+parser_path = vim.fn.globpath(vim.o.runtimepath, "parser/r.so")
 if parser_path == "" then
     error("Tree-sitter R parser is missing! Check the installation.")
 end
