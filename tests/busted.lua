@@ -17,6 +17,9 @@ require("lazy.minit").busted({
     },
 })
 
+-- Ensure the R parser is installed before running tests
+-- vim.cmd("TSInstallSync r")
+
 -- Verify the installation
 local parser_path = vim.fn.globpath(vim.o.runtimepath, "parser/r.so")
 if parser_path == "" then
