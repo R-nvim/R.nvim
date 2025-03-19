@@ -1,5 +1,5 @@
 ![GitHub Release](https://img.shields.io/github/v/release/R-nvim/R.nvim)
-![Selene linter check](https://github.com/jalvesaq/tmp-R-Nvim/actions/workflows/selene.yml/badge.svg)
+![Selene linter check](https://github.com/R-Nvim/R.nvim/actions/workflows/selene.yml/badge.svg)
 [![CI](https://github.com/R-nvim/R.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/R-nvim/R.nvim/actions/workflows/ci.yml)
 
 # R.nvim
@@ -263,7 +263,7 @@ None yet! Please let us know if you publish a video presenting R.nvim features ð
 ## How R.nvim communicates with your R session
 
 The diagram below shows how the communication between Neovim and R works.
-![Neovim-R communication](https://raw.githubusercontent.com/jalvesaq/tmp-R-Nvim/master/nvimrcom.svg "Neovim-R communication")
+![Neovim-R communication](https://raw.githubusercontent.com/R-Nvim/R.nvim/main/nvimrcom.svg "Neovim-R communication")
 
 The black arrows represent all commands that you trigger in the editor and
 that you can see being pasted into R Console.
