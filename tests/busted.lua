@@ -20,6 +20,7 @@ require("lazy.minit").busted({
                     sync_install = true,
                     ensure_installed = { "latex", "r", "rnoweb", "yaml" },
                 })
+                vim.treesitter.language.register("markdown", { "quarto", "rmd" })
             end,
         },
     },

@@ -11,9 +11,7 @@ describe("Tree-sitter R parser", function()
         local root = tree:root()
 
         assert(root, "Root of the syntax tree is nil")
-        --
-        -- -- print the content of the buffer, should preint the content of the file, hnot a table
-        -- print(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false))
+
         vim.api.nvim_set_current_buf(bufnr)
         require("r.format.numbers").formatnum()
 

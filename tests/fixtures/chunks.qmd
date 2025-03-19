@@ -9,6 +9,8 @@ title: "Motion"
 x <- 1L:10L
 ```
 
+Some text here.
+
 ```{r}
 #| label: not_runnable_chunk
 #| eval: false
