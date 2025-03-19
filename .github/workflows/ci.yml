@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install stable neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+
+      - name: Check Neovim version
+        run: nvim --version
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common curl wget jq
+          sudo apt-get update
+          sudo apt-get install -y luarocks libuv1-dev make
+          sudo luarocks install luv
+          echo "LUA_PATH=\"$(luarocks path --lr-path)\"" >> $GITHUB_ENV
+          echo "LUA_CPATH=\"$(luarocks path --lr-cpath)\"" >> $GITHUB_ENV
+          nvim --headless -c "lua print(vim.inspect(vim.loop ~= nil))" -c "q"
+
+      - name: Run tests
+        run: |
+          export LUA_PATH="${LUA_PATH}"
+          export LUA_CPATH="${LUA_CPATH}"
+          make test

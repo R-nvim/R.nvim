@@ -38,7 +38,7 @@ describe("Tree-sitter R parser", function()
         -- Set the created buffer as the current buffer
         vim.api.nvim_set_current_buf(bufnr)
 
-        require("lua.r.format.numbers").formatnum()
+        require("r.format.numbers").formatnum()
 
         local result_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
