@@ -1,6 +1,6 @@
 local parsers = require("nvim-treesitter.parsers")
 local assert = require("luassert")
-local test_utils = require("tests.test_utils")
+local test_utils = require("./test_utils")
 
 describe("Tree-sitter R parser", function()
     it("should parse an R file", function()

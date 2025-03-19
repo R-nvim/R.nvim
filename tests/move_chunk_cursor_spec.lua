@@ -1,5 +1,5 @@
 local assert = require("luassert")
-local test_utils = require("tests.test_utils")
+local test_utils = require("./test_utils")
 
 describe("Chunk motion", function()
     it("Move the cursor to the next_chunk, skipping eval: false chunk", function()
