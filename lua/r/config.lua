@@ -254,6 +254,9 @@ local hooks = require("r.hooks")
 ---Do `:help quarto_render_args` for more information.
 ---@field quarto_render_args? string
 ---
+---How to highlight code blocks in Quarto and Rmd documents.
+---@field quarto_chunk_hl? { highlight: boolean, yaml_hl: boolean, virtual_title: boolean, bg: string, events: string }
+---
 ---The default height for the R console; defaults to `15`.
 ---Do `:help rconsole_height` for more information.
 ---@field rconsole_height? integer
@@ -454,6 +457,13 @@ local config = {
     pdfviewer           = "",
     quarto_preview_args = "",
     quarto_render_args  = "",
+    quarto_chunk_hl = {
+        highlight = true,
+        yaml_hl = vim.fn.has("nvim-0.11") == 1 and true or false,
+        virtual_title = true,
+        bg = "",
+        events = ""
+    },
     rconsole_height     = 15,
     rconsole_width      = 80,
     register_treesitter = true,
@@ -500,10 +510,7 @@ local unix = require("r.platform.unix")
 local windows = require("r.platform.windows")
 
 local smsgs = {}
-local swarn = function(msg)
-    table.insert(smsgs, msg)
-    require("r.log").warn(msg)
-end
+local swarn = function(msg) table.insert(smsgs, msg) end
 
 local set_editing_mode = function()
     if config.editing_mode ~= "" then return end
@@ -1098,8 +1105,13 @@ M.check_health = function()
     end
 
     if #smsgs > 0 then
+        local plural = #smsgs > 1 and "s" or ""
         local msg = "\n  " .. table.concat(smsgs, "\n  ")
-        require("r.edit").add_to_debug_info("Startup warnings", msg)
+        require("r.edit").add_to_debug_info("Startup warning" .. plural, msg)
+        msg = "R.nvim warning" .. plural .. ":" .. msg
+        vim.schedule(function()
+            vim.defer_fn(function() require("r.log").warn(msg) end, 200)
+        end)
     end
 
     htime = (uv.hrtime() - htime) / 1000000000

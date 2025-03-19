@@ -277,8 +277,8 @@ local send = function(file_type)
     create_maps("ni", "RDSendParagraph", "pd", "<Cmd>lua require('r.send').paragraph(true)")
 
     -- *Line*
-    create_maps("ni",  "RSendLine",           "l",        "<Cmd>lua require('r.send').line(false)")
-    create_maps("ni",  "RDSendLine",          "d",        "<Cmd>lua require('r.send').line(true)")
+    create_maps("ni",  "RSendLine",           "l",        "<Cmd>lua require('r.send').line('stay')")
+    create_maps("ni",  "RDSendLine",          "d",        "<Cmd>lua require('r.send').line('move')")
     create_maps("ni",  "RInsertLineOutput",   "o",        "<Cmd>lua require('r.run').insert_commented()")
     create_maps("v",   "RInsertLineOutput",   "o",        "<Cmd>lua require('r').warn('This command does not work over a selection of lines.')")
     create_maps("i",   "RSendLAndOpenNewOne", "q",        "<Cmd>lua require('r.send').line('newline')")

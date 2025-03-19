@@ -25,6 +25,7 @@ M.write_chunk = function()
             { "```{r}", "", "```", "" }
         )
         vim.api.nvim_win_set_cursor(0, { curpos[1] + 1, 1 })
+        vim.schedule(require("r.quarto").hl_code_bg)
         return
     end
 
@@ -56,11 +57,14 @@ M.send_current_chunk = function(m)
     local bufnr = vim.api.nvim_get_current_buf()
 
     local chunks = quarto.get_current_code_chunk(bufnr)
-    chunks = quarto.filter_code_chunks_by_eval(chunks)
-    chunks = quarto.filter_code_chunks_by_lang(chunks, { "r", "python" })
+
+    chunks = quarto.filter_supported_langs(chunks)
 
     if #chunks == 0 then
-        inform("No R or Python code chunk found at the cursor position.")
+        inform(
+            "No evaluable R or Python code chunk found at the current cursor position."
+        )
+
         return
     end
 
@@ -79,19 +83,20 @@ end
 ---@return boolean
 local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
-    local lang = get_lang()
-    if lang == "r" or lang == "python" then
-        local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- search for chunk start
-        if i ~= 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end -- if found, move cursor at chunk
-    end
-    local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "bnW") -- Search again for chunk start
-    if i == 0 then
+    local chunks = quarto.get_chunks_above_cursor(vim.api.nvim_get_current_buf())
+    chunks = quarto.filter_code_chunks_by_eval(chunks)
+    chunks = quarto.filter_supported_langs(chunks)
+
+    -- move the cursor to the previous chunk
+    if #chunks > 0 then
+        local prev_chunk = chunks[#chunks]
+        vim.api.nvim_win_set_cursor(0, { prev_chunk.start_row + 1, 0 })
+        return true
+    else
         vim.api.nvim_win_set_cursor(0, { curline, 0 })
         inform("There is no previous R code chunk to go.")
         return false
     end
-    vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the chunk
-    return true
 end
 
 -- Call go_to_previous() as many times as requested by the user.
@@ -107,13 +112,29 @@ end
 -- This function searches forward from the current cursor position for the start of any R or Python code chunk.
 ---@return boolean
 local go_to_next = function()
-    local i = vim.fn.search("^[ \t]*```[ ]*{\\(r\\|python\\)", "nW") -- Search for the next chunk start
-    if i == 0 then
-        inform("There is no next R code chunk to go.")
+    local chunks = quarto.get_chunks_below_cursor(vim.api.nvim_get_current_buf())
+    chunks = quarto.filter_code_chunks_by_eval(chunks)
+    chunks = quarto.filter_supported_langs(chunks)
+
+    local row = vim.api.nvim_win_get_cursor(0)[1]
+
+    -- Move the cursor to the next chunk
+    if #chunks > 0 then
+        local next_chunk = chunks[1]
+
+        -- If the current chunk is a header, move the cursor to the start of the chunk.
+        -- Otherwise, move the cursor to the line after the chunk header.
+        if quarto.get_current_code_chunk(0).start_row == row then
+            vim.api.nvim_win_set_cursor(0, { next_chunk.start_row, 0 })
+        else
+            vim.api.nvim_win_set_cursor(0, { next_chunk.start_row + 1, 0 })
+        end
+
+        return true
+    else
+        inform("There is no next code chunk to go.")
         return false
     end
-    vim.api.nvim_win_set_cursor(0, { i + 1, 0 }) -- position cursor inside the next chunk
-    return true
 end
 
 -- Call go_to_next() as many times as requested by the user.
@@ -183,6 +204,62 @@ end
 -- Register params as empty. This function is called when R quits.
 M.clean_params = function() last_params = "" end
 
+local setup_chunk_hl = function()
+    if config.quarto_chunk_hl.events == nil or config.quarto_chunk_hl.events == "" then
+        config.quarto_chunk_hl.events = "BufEnter,InsertLeave"
+    end
+    if config.quarto_chunk_hl.virtual_title == nil then
+        config.quarto_chunk_hl.virtual_title = true
+    end
+
+    if config.quarto_chunk_hl.bg == nil or config.quarto_chunk_hl.bg == "" then
+        local hl = vim.api.nvim_get_hl(0, { name = "CursorColumn", create = false })
+        if hl.bg then config.quarto_chunk_hl.bg = string.format("#%06x", hl.bg) end
+    end
+    local cbg = config.quarto_chunk_hl.bg
+    vim.api.nvim_set_hl(0, "RCodeBlock", { bg = cbg })
+
+    local hl = vim.api.nvim_get_hl(0, { name = "Comment", create = false })
+    local col = hl.fg and string.format("#%06x", hl.fg) or "#afafff"
+    vim.api.nvim_set_hl(0, "RCodeComment", { bg = cbg, fg = col })
+
+    hl = vim.api.nvim_get_hl(0, { name = "Ignore", create = false })
+    col = hl.fg and string.format("#%06x", hl.fg) or "#6c6c6c"
+    vim.api.nvim_set_hl(0, "RCodeIgnore", { bg = cbg, fg = col })
+
+    vim.cmd([[
+augroup RQmdChunkBg
+autocmd ]] .. config.quarto_chunk_hl.events .. [[ <buffer> lua require('r.quarto').hl_code_bg()
+augroup END
+]])
+end
+
+local setup_yaml_hl = function()
+    vim.treesitter.query.set(
+        "r",
+        "highlights",
+        [[
+; extends
+; From quarto.nvim, YAML header for code blocks.
+((comment) @comment (#match? @comment "^\\#\\|")) @define
+; Cell delimiter for Jupyter
+((comment) @content (#match? @content "^\\# ?\\%\\%")) @delimiter
+]]
+    )
+
+    vim.treesitter.query.set(
+        "python",
+        "highlights",
+        [[
+; extends
+; YAML header for code blocks
+((comment) @comment (#match? @comment "^\\#\\|")) @define
+; Cell delimiter for Jupyter
+((comment) @content (#match? @content "^\\# ?\\%\\%")) @class.outer @delimiter
+]]
+    )
+end
+
 --- Setup function for initializing module functionality.
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.
 M.setup = function()
@@ -199,6 +276,16 @@ M.setup = function()
     rmdtime = (uv.hrtime() - rmdtime) / 1000000000
     require("r.edit").add_to_debug_info("rmd setup", rmdtime, "Time")
     vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
+
+    if config.quarto_chunk_hl.highlight == nil then
+        config.quarto_chunk_hl.highlight = true
+    end
+    if config.quarto_chunk_hl.highlight then setup_chunk_hl() end
+
+    if config.quarto_chunk_hl.yaml_hl == nil then
+        config.quarto_chunk_hl.yaml_hl = vim.fn.has("nvim-0.11") == 1 and true or false
+    end
+    if config.quarto_chunk_hl.yaml_hl then setup_yaml_hl() end
 end
 
 --- Compiles the current R Markdown document into a specified output format.
