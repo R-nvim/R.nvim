@@ -18,6 +18,21 @@ local function create_r_buffer_from_file(file_path)
     return bufnr
 end
 
+--- Create a new buffer from a string
+---@param content string
+---@param filetype string
+---@return number
+local function create_r_buffer_from_string(content, filetype)
+    local bufnr = vim.api.nvim_create_buf(false, true)
+    local lines = vim.split(content, "\n")
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+
+    if filetype then vim.bo[bufnr].filetype = filetype end
+
+    return bufnr
+end
+
 return {
     create_r_buffer_from_file = create_r_buffer_from_file,
+    create_r_buffer_from_string = create_r_buffer_from_string,
 }
