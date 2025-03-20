@@ -2,38 +2,41 @@ local assert = require("luassert")
 local test_utils = require("./utils")
 
 describe("Chunk motion functionality", function()
-    it(
-        "Moves the cursor to the next chunk, skipping chunks with eval set to false",
-        function()
-            local bufnr =
-                test_utils.create_r_buffer_from_file("tests/fixtures/chunks.qmd")
+    local bufnr
 
-            vim.api.nvim_set_current_buf(bufnr)
+    before_each(function()
+        bufnr = test_utils.create_r_buffer_from_file("tests/fixtures/chunks.qmd")
+        vim.api.nvim_set_current_buf(bufnr)
+    end)
 
-            vim.api.nvim_win_set_cursor(0, { 7, 0 })
-
+    local function test_cursor_movement(initial_pos, expected_pos, description)
+        it(description, function()
+            vim.api.nvim_win_set_cursor(0, initial_pos)
             require("r.rmd").next_chunk()
-
             local cursor = vim.api.nvim_win_get_cursor(0)
+            assert.same(
+                expected_pos,
+                cursor,
+                "Cursor did not move to the expected position"
+            )
+        end)
+    end
 
-            assert.same({ 22, 0 }, cursor, "Cursor did not move to the next chunk")
-        end
+    test_cursor_movement(
+        { 7, 0 },
+        { 22, 0 },
+        "Moves the cursor to the next chunk, skipping headers with eval set to false"
     )
-    it(
-        "Moves the cursor to the next chunk, even if the cursor is on a chunk header with eval set to false",
-        function()
-            local bufnr =
-                test_utils.create_r_buffer_from_file("tests/fixtures/chunks.qmd")
 
-            vim.api.nvim_set_current_buf(bufnr)
+    test_cursor_movement(
+        { 14, 0 },
+        { 22, 0 },
+        "Moves the cursor to the next chunk, even if the cursor is on a header with eval set to false"
+    )
 
-            vim.api.nvim_win_set_cursor(0, { 14, 0 })
-
-            require("r.rmd").next_chunk()
-
-            local cursor = vim.api.nvim_win_get_cursor(0)
-
-            assert.same({ 22, 0 }, cursor, "Cursor did not move to the next chunk")
-        end
+    test_cursor_movement(
+        { 8, 0 },
+        { 23, 0 },
+        "Moves the cursor inside the next chunk while the cursor is inside a chunk"
     )
 end)
