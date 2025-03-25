@@ -415,7 +415,7 @@ nvim_complete_args <- function(id, rkeyword, argkey, firstobj = "", lib = NULL, 
         args <- paste0("{label = '",
                        paste(argsl,
                              collapse = "', cls = 'a', env = '.GlobalEnv'}, {label = '"),
-                       "', cls = 'a', env = '.GlobalEnv'}")
+                       "', cls = 'a', env = '.GlobalEnv'}, ")
         msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";;", args)
         .C(nvimcom_msg_to_nvim, msg)
         return(invisible(NULL))

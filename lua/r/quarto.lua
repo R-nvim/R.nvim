@@ -400,7 +400,7 @@ M.hl_code_bg = function()
             end_col = 0,
             end_row = c.end_row,
             hl_group = hl_grp,
-            virt_text = config.quarto_chunk_hl.virtual_title and {
+            virt_text = (c.lang and config.quarto_chunk_hl.virtual_title) and {
                 { c.lang .. " ", { hl_grp, "Title" } },
             } or nil,
             virt_text_pos = "right_align",
