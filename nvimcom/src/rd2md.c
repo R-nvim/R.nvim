@@ -18,7 +18,7 @@ typedef struct pattern {
    3: \cmd{s1}{s2}                  -> <s2>
    4: \cmd{s}{}                     -> ""
    5: \cmd[optional-argument]{s}    -> <s>
-   6: \href{s1}{s2}                 -> ‘s2’ <s1>
+   6: \href{s1}{s2}                 -> 's2' <s1> // curly single quotes
    7: \ifelse{{html|latex}{s1}{s2}} -> s2
    8: \code{\link{s}}               -> <s>
    9: \item{s1}{s2}                 -> `s1`: s2 || \n - s1
@@ -34,18 +34,18 @@ static struct pattern rd[] = {
     {"R", 1, 0, "*R*", "\000"},
     {"emph", 4, 1, "*", "*"},
     {"eqn", 3, 1, "*", "*"},
-    {"sQuote", 6, 1, "‘", "’"},
-    {"dQuote", 6, 1, "“", "”"},
+    {"sQuote", 6, 1, "\xe2\x80\x98", "\xe2\x80\x99"},
+    {"dQuote", 6, 1, "\xe2\x80\x9c", "\xe2\x80\x9d"},
     {"pkg", 3, 1, "\000", "\000"},
     {"linkS4class", 11, 1, "\000", "\000"},
-    {"link", 4, 5, "‘", "’"},
+    {"link", 4, 5, "\xe2\x80\x98", "\xe2\x80\x99"},
     {"item{", 5, 9, "\x14  • ", "\x14"},
     {"item ", 5, 0, "\x14  • ", "\000"},
     {"itemize", 7, 1, "\x14", "\x14"},
     {"item", 4, 1, "\x14  • ", "\000"},
     {"dots", 4, 0, "...", "\000"},
     {"bold", 4, 1, "**", "**"},
-    {"file", 4, 1, "‘", "’"},
+    {"file", 4, 1, "\xe2\x80\x98", "\xe2\x80\x99"},
     {"option", 6, 1, "\000", "\000"},
     {"command", 7, 1, "`", "`"},
     {"mu", 2, 0, "μ", "\000"},
@@ -235,7 +235,7 @@ static void rd_md(char **o1, char **o2) {
                 *o1 = p1;
                 *o2 = p2;
                 return;
-            case 6: // \href{string1}{string2} -> ‘string2’ <string1>
+            case 6: // \href{string1}{string2} -> 'string2' <string1>
                 p2 += rd[i].len + 1;
                 p2a = p2;
                 p2a = p2a + find_matching_bracket(p2a);
@@ -243,9 +243,9 @@ static void rd_md(char **o1, char **o2) {
                 p2b = p2a + 2;
                 p3 = p2b + find_matching_bracket(p2b);
                 *p3 = 0;
-                p1 = insert_str(p1, "‘");
+                p1 = insert_str(p1, "\xe2\x80\x98");
                 p1 = insert_str(p1, p2b);
-                p1 = insert_str(p1, "’ <");
+                p1 = insert_str(p1, "\xe2\x80\x99 <");
                 p1 = insert_str(p1, p2);
                 p1 = insert_str(p1, ">");
                 p2 = p3 + 1;
@@ -306,7 +306,7 @@ static void rd_md(char **o1, char **o2) {
                 *o1 = p1;
                 *o2 = p2;
                 return;
-            case 9: // \item{string1}{string2} -> ‘string1’: string2
+            case 9: // \item{string1}{string2} -> 'string1': string2
                 p2 += rd[i].len;
                 p2a = p2;
                 p2a = p2a + find_matching_bracket(p2a);
