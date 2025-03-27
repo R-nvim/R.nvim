@@ -669,11 +669,7 @@ local apply_user_opts = function()
     apply(user_opts, {})
 end
 
-local do_common_global = function()
-    config.uname = uv.os_uname().sysname
-    config.is_windows = config.uname:find("Windows", 1, true) ~= nil
-    config.is_darwin = config.uname == "Darwin"
-
+local set_directories = function()
     -- config.rnvim_home should be the directory where the plugin files are.
     config.rnvim_home = vim.fn.expand("<script>:h:h")
 
@@ -738,6 +734,62 @@ local do_common_global = function()
 
     utils.ensure_directory_exists(config.compldir)
 
+    -- Check if the 'config' table has the key 'tmpdir'
+    if not config.tmpdir ~= "" then
+        -- Set temporary directory based on the platform
+        if config.is_windows then
+            if vim.env.TMP and vim.fn.isdirectory(vim.env.TMP) ~= 0 then
+                config.tmpdir = vim.env.TMP .. "/R.nvim-" .. config.user_login
+            elseif vim.env.TEMP and vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
+                config.tmpdir = vim.env.TEMP .. "/R.nvim-" .. config.user_login
+            else
+                config.tmpdir = config.uservimfiles .. "/R_tmp"
+            end
+            config.tmpdir = utils.normalize_windows_path(config.tmpdir)
+        else
+            if vim.env.TMPDIR and vim.fn.isdirectory(vim.env.TMPDIR) ~= 0 then
+                if string.find(vim.env.TMPDIR, "/$") then
+                    config.tmpdir = vim.env.TMPDIR .. "R.nvim-" .. config.user_login
+                else
+                    config.tmpdir = vim.env.TMPDIR .. "/R.nvim-" .. config.user_login
+                end
+            elseif vim.fn.isdirectory("/dev/shm") ~= 0 then
+                config.tmpdir = "/dev/shm/R.nvim-" .. config.user_login
+            elseif vim.fn.isdirectory("/tmp") ~= 0 then
+                config.tmpdir = "/tmp/R.nvim-" .. config.user_login
+            else
+                config.tmpdir = config.uservimfiles .. "/R_tmp"
+            end
+        end
+    end
+
+    -- Adjust options when accessing R remotely
+    config.localtmpdir = config.tmpdir
+    if config.remote_compldir ~= "" then
+        vim.env.RNVIM_REMOTE_COMPLDIR = config.remote_compldir
+        vim.env.RNVIM_REMOTE_TMPDIR = config.remote_compldir .. "/tmp"
+        config.tmpdir = config.compldir .. "/tmp"
+    else
+        vim.env.RNVIM_REMOTE_COMPLDIR = config.compldir
+        vim.env.RNVIM_REMOTE_TMPDIR = config.tmpdir
+    end
+
+    utils.ensure_directory_exists(config.tmpdir)
+    utils.ensure_directory_exists(config.localtmpdir)
+
+    vim.env.RNVIM_TMPDIR = config.tmpdir
+    vim.env.RNVIM_COMPLDIR = config.compldir
+
+    -- Make the file name of files to be sourced
+    if config.remote_compldir ~= "" then
+        config.source_read = config.remote_compldir .. "/tmp/Rsource-" .. vim.fn.getpid()
+    else
+        config.source_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
+    end
+    config.source_write = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
+end
+
+local check_readme = function()
     -- Create or update the README (objls_ files will be regenerated if older than
     -- the README).
     local need_readme = false
@@ -806,60 +858,16 @@ local do_common_global = function()
 
         vim.fn.writefile(readme, config.compldir .. "/README")
     end
+end
 
-    -- Check if the 'config' table has the key 'tmpdir'
-    if not config.tmpdir ~= "" then
-        -- Set temporary directory based on the platform
-        if config.is_windows then
-            if vim.env.TMP and vim.fn.isdirectory(vim.env.TMP) ~= 0 then
-                config.tmpdir = vim.env.TMP .. "/R.nvim-" .. config.user_login
-            elseif vim.env.TEMP and vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
-                config.tmpdir = vim.env.TEMP .. "/R.nvim-" .. config.user_login
-            else
-                config.tmpdir = config.uservimfiles .. "/R_tmp"
-            end
-            config.tmpdir = utils.normalize_windows_path(config.tmpdir)
-        else
-            if vim.env.TMPDIR and vim.fn.isdirectory(vim.env.TMPDIR) ~= 0 then
-                if string.find(vim.env.TMPDIR, "/$") then
-                    config.tmpdir = vim.env.TMPDIR .. "R.nvim-" .. config.user_login
-                else
-                    config.tmpdir = vim.env.TMPDIR .. "/R.nvim-" .. config.user_login
-                end
-            elseif vim.fn.isdirectory("/dev/shm") ~= 0 then
-                config.tmpdir = "/dev/shm/R.nvim-" .. config.user_login
-            elseif vim.fn.isdirectory("/tmp") ~= 0 then
-                config.tmpdir = "/tmp/R.nvim-" .. config.user_login
-            else
-                config.tmpdir = config.uservimfiles .. "/R_tmp"
-            end
-        end
-    end
+local do_common_global = function()
+    config.uname = uv.os_uname().sysname
+    config.is_windows = config.uname:find("Windows", 1, true) ~= nil
+    config.is_darwin = config.uname == "Darwin"
 
-    -- Adjust options when accessing R remotely
-    config.localtmpdir = config.tmpdir
-    if config.remote_compldir ~= "" then
-        vim.env.RNVIM_REMOTE_COMPLDIR = config.remote_compldir
-        vim.env.RNVIM_REMOTE_TMPDIR = config.remote_compldir .. "/tmp"
-        config.tmpdir = config.compldir .. "/tmp"
-    else
-        vim.env.RNVIM_REMOTE_COMPLDIR = config.compldir
-        vim.env.RNVIM_REMOTE_TMPDIR = config.tmpdir
-    end
-
-    utils.ensure_directory_exists(config.tmpdir)
-    utils.ensure_directory_exists(config.localtmpdir)
-
-    vim.env.RNVIM_TMPDIR = config.tmpdir
-    vim.env.RNVIM_COMPLDIR = config.compldir
-
-    -- Make the file name of files to be sourced
-    if config.remote_compldir ~= "" then
-        config.source_read = config.remote_compldir .. "/tmp/Rsource-" .. vim.fn.getpid()
-    else
-        config.source_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
-    end
-    config.source_write = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
+    set_pdf_viewer()
+    set_directories()
+    check_readme()
 
     -- Default values of some variables
     if config.RStudio_cmd ~= "" or (config.is_windows and config.external_term ~= "") then
@@ -963,7 +971,6 @@ local global_setup = function()
 
     if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
 
-    set_pdf_viewer()
     apply_user_opts()
 
     -- Config values that depend on either system features or other config
