@@ -28,12 +28,13 @@ M.set_buf_options = function()
     local buf = vim.api.nvim_get_current_buf()
     if vim.fn.has("nvim-0.11") == 1 then
         local ns = vim.api.nvim_create_namespace("RDocumentation")
-        vim.hl.range(buf, ns, "Title", { 0, 1 }, { 0, -1 }, {})
+        vim.hl.range(buf, ns, "Title", { 0, 0 }, { 0, -1 }, {})
     else
         vim.api.nvim_buf_add_highlight(buf, -1, "Title", 0, 0, -1)
     end
     require("r.config").real_setup()
     require("r.maps").create("rdoc")
+    if config.quarto_chunk_hl.highlight then require("r.quarto").hl_code_bg() end
 end
 
 ---Prepare R documentation output to be displayed by Nvim
@@ -53,12 +54,15 @@ M.fix_rdoc = function(txt)
 
     -- Mark the end of Examples
     if txt:find("\020Examples:\020") then
-        txt = txt:gsub("\020Examples:\020", "\020Examples:\020```{r}")
+        txt = txt:gsub("\020Examples:\020", "\020Examples:\020\020```{r}")
         txt = txt .. "```"
     end
 
     if txt:find("\020Usage:\020") then
-        txt = txt:gsub("\020Usage:\020(.-)\020([A-Z])", "\020Usage:\020```{r}%1```\020%2")
+        txt = txt:gsub(
+            "\020Usage:\020(.-)\020([A-Z])",
+            "\020Usage:\020\020```{r}%1```\020\020%2"
+        )
     end
 
     local lines = vim.split(txt, "\020")

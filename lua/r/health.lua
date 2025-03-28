@@ -77,9 +77,7 @@ local check_lang = function()
         { "yaml", 2, 0, "" },
         { "markdown", 4, 0, "" },
         { "markdown_inline", 5, 0, "" },
-        { "chunk_header", 7, 0, "" },
         { "r", 8, 0, "" },
-        { "chunk_end", 9, 0, "" },
     }
 
     qlangs = check_buffer("quarto", lines, qlangs)
