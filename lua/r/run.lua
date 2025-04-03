@@ -258,8 +258,12 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
 
     -- R_version = r_info[1]
     config.OutDec = r_info.OutDec
-    config.R_prompt_str = r_info.prompt:gsub(" $", "")
-    config.R_continue_str = r_info.continue:gsub(" $", "")
+    if config.R_prompt_str == "" then
+        config.R_prompt_str = r_info.prompt:gsub(" $", "")
+    end
+    if config.R_continue_str == "" then
+        config.R_continue_str = r_info.continue:gsub(" $", "")
+    end
 
     if not r_info.has_color and config.hl_term then require("r.term").highlight_term() end
 

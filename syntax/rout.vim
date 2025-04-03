@@ -80,9 +80,11 @@ syn match routDate "[0-9][0-9]:[0-9][0-9]:[0-9][-0-9]"
 if exists('s:config') && has_key(s:config, "Rout_more_colors") &&
             \ has_key(s:config, "R_prompt_str") && has_key(s:config, "R_continue_str")
     if s:config.Rout_more_colors
+        let b:this_is_rout = {'prompt': s:config.R_prompt_str, 'cont': s:config.R_continue_str}
         syn include @routR syntax/r.vim
-        exe 'syn region routColoredR start=/^' . s:config.R_prompt_str . '/ end=/$/ contains=@routR keepend'
-        exe 'syn region routColoredR start=/^' . s:config.R_continue_str . '/ end=/$/ contains=@routR keepend'
+        exe 'syn region routColoredR start=/^' . s:config.R_prompt_str . '/ end=/\n' . s:config.R_prompt_str . '/ contains=@routR'
+        exe 'syn region routColoredR start=/^' . s:config.R_prompt_str . '/ end=/\n/ contains=@routR'
+        unlet b:this_is_rout
     else
         " Input
         exe 'syn match routInput /^' . s:config.R_prompt_str . '.*/'

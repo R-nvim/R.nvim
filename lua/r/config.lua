@@ -34,6 +34,14 @@ local hooks = require("r.hooks")
 ---Do `:help Rout_more_colors` for more information.
 ---@field Rout_more_colors? boolean
 ---
+---The R prompt string; defaults to `""`.
+---Do `:help R_prompt_str` for more information.
+---@field R_prompt_str? string
+---
+---The R continuation string; defaults to `""`.
+---Do `:help R_continue_str` for more information.
+---@field R_continue_str? string
+---
 ---Whether to remember the window layout when quitting R; defaults to `true`.
 ---Do `:help arrange_windows` for more information.
 ---@field arrange_windows? boolean
@@ -380,8 +388,6 @@ local hooks = require("r.hooks")
 ---@field term_title? string -- Pid of window application.
 ---@field term_pid? integer -- Part of the window title.
 ---@field R_Tmux_pane? string
----@field R_prompt_str? string
----@field R_continue_str? string
 
 -- stylua: ignore start
 ---@type RConfig
@@ -393,6 +399,8 @@ local config = {
     R_cmd               = "R",
     R_path              = "",
     Rout_more_colors    = false,
+    R_prompt_str        = "",
+    R_continue_str      = "",
     arrange_windows     = true,
     pipe_version        = "native",
     auto_scroll         = true,

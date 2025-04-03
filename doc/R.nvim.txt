@@ -1486,6 +1486,23 @@ you should put in your config:
 >lua
    R_prompt_str = "»"
 <
+Similarly, if the `continue` option in your `~/.Rprofile` has ANSI scape codes,
+you should set the value of `R_continue_str`. Example:
+>lua
+   R_continue_str = "…"
+<
+Alternatively, you can set prompt and continuation strings in your
+`~/.Rprofile` without special characters if R was started by `R.nvim`.
+Example:
+>r
+ if (Sys.getenv("RNVIM_TMPDIR") == "") {
+     options(prompt = "\x1b[33m»\x1b[0m ",
+             continue = "\x1b[33m…\x1b[0m ")
+ } else {
+     options(prompt = "» ",
+             continue = "… ")
+ }
+<
 
 ------------------------------------------------------------------------------
 6.12. How to automatically open the .Rout file                   *routnotab*
