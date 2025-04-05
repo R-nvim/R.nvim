@@ -384,7 +384,8 @@ end
 -- Function to get the marks which the cursor is between
 ---@param m boolean True if should move to the next line.
 M.marked_block = function(m)
-    if utils.get_lang() ~= "r" then
+    local lang = utils.get_lang()
+    if lang ~= "r" and lang ~= "python" then
         inform("Not in R code.")
         return
     end
@@ -418,8 +419,9 @@ M.marked_block = function(m)
     if lineB < last_line then lineB = lineB - 1 end
 
     local lines = vim.api.nvim_buf_get_lines(0, lineA - 1, lineB, true)
-    local ok = M.source_lines(lines, "block")
 
+    local what = lang == "python" and "PythonCode" or "block"
+    local ok = M.source_lines(lines, what)
     if ok == 0 then return end
 
     if m == true and lineB ~= last_line then
