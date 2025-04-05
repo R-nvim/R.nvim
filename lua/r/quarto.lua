@@ -369,11 +369,14 @@ M.codelines_from_chunks = function(chunks)
     for _, chunk in ipairs(chunks) do
         local lang = chunk:get_lang()
         local content = chunk:get_content()
-
         if M.is_python(lang) then
-            table.insert(codelines, 'reticulate::py_run_string(r"(' .. content .. ')")')
-        elseif M.is_r(lang) then
-            table.insert(codelines, content)
+            content = 'reticulate::py_run_string(r"(' .. content .. ')")'
+        end
+        if M.is_python(lang) or M.is_r(lang) then
+            local lines = vim.fn.split(content, "\n")
+            for _, v in pairs(lines) do
+                table.insert(codelines, v)
+            end
         end
     end
 
