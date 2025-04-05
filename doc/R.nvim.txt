@@ -1905,12 +1905,19 @@ below:
        on_filetype =  function() vim.notify("R.nvim FileType event") end,
        after_config = function() vim.notify("R.nvim is configured") end,
        after_R_start = function() vim.notify("R was launched") end,
-       after_ob_open = nil,
+       after_ob_open = function() vim.notify("Object Browser") end,
    },
 <
 See |R.nvim-key-bindings| for a real example of how to use the `after_config`
-hook.
-
+hook. In the example below, the plugin `ccc.nvim` is disabled in the Object
+Browser buffer:
+>lua
+  hook = {
+    after_ob_open = function()
+      vim.cmd("CccHighlighterDisable")
+    end
+  }
+<
 
 ------------------------------------------------------------------------------
 6.29. Disable R.nvim commands                                 *user_maps_only*
