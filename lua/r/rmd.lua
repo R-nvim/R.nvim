@@ -4,7 +4,6 @@ local get_lang = require("r.utils").get_lang
 local uv = vim.uv
 local chunk_key = nil
 local quarto = require("r.quarto")
-local source_chunk = require("r.send").source_chunk
 
 local M = {}
 
@@ -69,10 +68,8 @@ M.send_current_chunk = function(m)
     end
 
     local codelines = quarto.codelines_from_chunks(chunks)
+    local ok = require("r.send").source_lines(codelines, "chunk")
 
-    local lines = table.concat(codelines, "\n")
-
-    local ok = source_chunk(lines)
     if ok == 0 then return end
     if m == true then M.next_chunk() end
 end

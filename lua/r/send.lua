@@ -205,10 +205,7 @@ M.source_lines = function(lines, what)
 
     if #lines < config.max_paste_lines then
         rcmd = table.concat(lines, "\n")
-        if
-            (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
-            and utils.get_lang() == "python"
-        then
+        if what and what == "PythonCode" then
             rcmd = 'reticulate::py_run_string(r"(' .. rcmd .. ')")'
         end
     else
@@ -224,16 +221,6 @@ M.source_lines = function(lines, what)
             rcmd = "Rnvim.source(" .. sargs .. ")"
         end
     end
-
-    if config.bracketed_paste then rcmd = "\027[200~" .. rcmd .. "\027[201~" end
-    return M.cmd(rcmd)
-end
-
---- Send to R Console a command to source the current chunk.
----@param chunk string The chunk header.
----@return boolean
-M.source_chunk = function(chunk)
-    local rcmd = chunk
 
     if config.bracketed_paste then rcmd = "\027[200~" .. rcmd .. "\027[201~" end
     return M.cmd(rcmd)
@@ -320,14 +307,16 @@ end
 --- Send to R Console a command to source the document child indicated in chunk header.
 --- This function is used in R Markdown documents.
 ---@class chunk
+---@return string
 local knit_child = function(chunk)
     local cfile = chunk:get_child_param()
 
     if vim.fn.filereadable(cfile) == 1 then
-        M.cmd("require(knitr); knit('" .. cfile .. "', output=NULL)")
-    else
         warn("File not found: '" .. cfile .. "'")
+        return ""
     end
+
+    return "require(knitr); knit('" .. cfile .. "', output=NULL)"
 end
 
 --- Send to R Console a command to source a file containing all chunks of here
@@ -345,16 +334,19 @@ M.chunks_up_to_here = function()
     end
 
     -- Loop all the chunks and source them, except is the chunk has a child parameter
+    local lines = {}
     for _, chunk in ipairs(chunks) do
         local cfile = chunk:get_child_param()
         if cfile then
-            knit_child(chunk)
+            table.insert(lines, knit_child(chunk))
         else
             local codelines = quarto.codelines_from_chunks({ chunk })
-            local lines = table.concat(codelines, "\n")
-            M.source_chunk(lines)
+            for _, v in pairs(codelines) do
+                table.insert(lines, v)
+            end
         end
     end
+    if #lines > 0 then M.source_lines(lines, "chunk") end
 end
 
 -- TODO: Test if this version works: git blame me to see previous version.
@@ -392,7 +384,8 @@ end
 -- Function to get the marks which the cursor is between
 ---@param m boolean True if should move to the next line.
 M.marked_block = function(m)
-    if utils.get_lang() ~= "r" then
+    local lang = utils.get_lang()
+    if lang ~= "r" and lang ~= "python" then
         inform("Not in R code.")
         return
     end
@@ -426,8 +419,9 @@ M.marked_block = function(m)
     if lineB < last_line then lineB = lineB - 1 end
 
     local lines = vim.api.nvim_buf_get_lines(0, lineA - 1, lineB, true)
-    local ok = M.source_lines(lines, "block")
 
+    local what = lang == "python" and "PythonCode" or "block"
+    local ok = M.source_lines(lines, what)
     if ok == 0 then return end
 
     if m == true and lineB ~= last_line then
@@ -526,8 +520,11 @@ M.line = function(m)
         local chunk_type = chunk:get_chunk_section_at_cursor()
 
         if chunk_type == "chunk_child" then
-            knit_child(chunk)
-            if m == "move" then require("r.rmd").next_chunk() end
+            local child_cmd = knit_child(chunk)
+            if child_cmd ~= "" then
+                M.cmd(child_cmd)
+                if m == "move" then require("r.rmd").next_chunk() end
+            end
             return
         elseif chunk_type == "chunk_header" then
             if vim.bo.filetype == "rnoweb" then
