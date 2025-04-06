@@ -300,6 +300,7 @@ local function start_OB()
         state.buf = vim.api.nvim_get_current_buf()
         state.win = vim.api.nvim_get_current_win()
 
+        hooks.run(config, "after_ob_open", false)
         if config.objbr_auto_start and state.auto_starting then
             state.auto_starting = false
             vim.cmd.sb(edbuf)
@@ -333,8 +334,6 @@ function M.start(_)
 
     start_OB()
     state.is_running = false
-
-    hooks.run(config, "after_ob_open", true)
 end
 
 --- Return the active pane of the Object Browser
