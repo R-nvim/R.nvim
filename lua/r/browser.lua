@@ -289,10 +289,11 @@ local function start_OB()
         end
 
         -- Adjust size based on configuration
+        local obw = vim.api.nvim_get_current_win()
         if config.objbr_place:find("left") or config.objbr_place:find("right") then
-            vim.cmd("vertical resize " .. config.objbr_w)
+            vim.schedule(function() vim.api.nvim_win_set_width(obw, config.objbr_w) end)
         else
-            vim.cmd("resize " .. config.objbr_h)
+            vim.schedule(function() vim.api.nvim_win_set_height(obw, config.objbr_h) end)
         end
 
         set_buf_options()
