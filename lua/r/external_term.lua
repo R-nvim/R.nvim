@@ -171,9 +171,14 @@ M.start = function()
     end
 
     if
-        vim.tbl_contains(term_cmd, "tmux") and vim.tbl_contains(term_cmd, "split%-window")
+        vim.tbl_contains(term_cmd, "tmux") and vim.tbl_contains(term_cmd, "split-window")
     then
         is_tmux_split = true
+        if config.silent_term then
+            table.insert(open_cmd, rcmd)
+        else
+            table.insert(open_cmd, '"' .. rcmd .. ' "')
+        end
     elseif term_name == "konsole" then
         table.insert(
             open_cmd,
