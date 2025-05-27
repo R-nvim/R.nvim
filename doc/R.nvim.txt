@@ -2278,15 +2278,20 @@ bindings. Examples:
    hook = {
        on_filetype = function()
            -- Use <Enter> to send code to R:
-           vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", { noremap = true })
-           vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", { noremap = true })
+           vim.api.nvim_buf_set_keymap(0, "n", "<Enter>",
+	       "<Plug>RDSendLine", { noremap = true })
+           vim.api.nvim_buf_set_keymap(0, "v", "<Enter>",
+	       "<Plug>RSendSelection", { noremap = true })
 
 	   -- Emulate some of Nvim-R's default key bindings:
-           vim.api.nvim_buf_set_keymap(0, "i", "_", "<Plug>RInsertAssign", { noremap = true })
+           vim.api.nvim_buf_set_keymap(0, "i", "_",
+	       "<Plug>RInsertAssign", { noremap = true })
            if vim.bo.filetype == "rnoweb" then
-               vim.api.nvim_buf_set_keymap(0, "i", "<", "<Plug>RnwInsertChunk", { noremap = true })
+               vim.api.nvim_buf_set_keymap(0, "i", "<",
+	           "<Plug>RnwInsertChunk", { noremap = true })
            elseif vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
-               vim.api.nvim_buf_set_keymap(0, "i", "`", "<Plug>RmdInsertChunk", { noremap = true })
+               vim.api.nvim_buf_set_keymap(0, "i", "`",
+	           "<Plug>RmdInsertChunk", { noremap = true })
            end
        end,
    }
@@ -2303,25 +2308,37 @@ inside the function passed to `hook.on_filetype` as in the examples below
 >lua
    hook = {
        on_filetype = function()
-           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>L", "<Cmd>lua require('r.run').action('levels')<CR>", {})
+           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>L",
+	       "<Cmd>lua require('r.run').action('levels')<CR>", {})
 
            -- If you want an action over a selection, then the second
            -- argument must be the string `"v"`:
-           -- In this case, the beginning and the end of the selection must be
-           -- in the same line.
-           vim.api.nvim_buf_set_keymap(0, "v", "<LocalLeader>T", "<Cmd>lua require('r.run').action('head')<CR>", {})
+           -- In this case, the beginning and the end of the selection
+	   -- must be in the same line.
+           vim.api.nvim_buf_set_keymap(0, "v", "<LocalLeader>T",
+	       "<Cmd>lua require('r.run').action('head')<CR>", {})
 
-           -- If a third optional argument starts with a comma, it will be
-           -- inserted as argument(s) to the `action`:
-           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>H", "<Cmd>lua require('r.run').action('head', 'n', ', n = 10')<CR>", {})
+           -- If a third optional argument starts with a comma, it will
+	   -- be inserted as argument(s) to the `action`:
+           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>H",
+	       "<Cmd>lua require('r.run').action('head', 'n', ', n = 10')<CR>", {})
 
            -- If the command that you want to send does not require an R
-           -- object as argument, you can use `cmd()` from the `r.send` module
-           -- to send it directly to R Console:
-           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>S", "<Cmd>lua require('r.send').cmd('search()')<CR>", {})
+           -- object as argument, you can use `cmd()` from the `r.send`
+	   -- module to send it directly to R Console:
+           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>S",
+	       "<Cmd>lua require('r.send').cmd('search()')<CR>", {})
 
 	   -- Close the last graphics window:
-	   vim.api.nvim_buf_set_keymap(0, "n", "cw", "<Cmd>lua require('r.send').cmd('dev.off()')<CR>", { noremap = true })
+	   vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>cw",
+	       "<Cmd>lua require('r.send').cmd('dev.off()')<CR>", {})
+
+	   -- Send the current file name as argument to `file.info()`:
+	   vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>fi", "", {
+		callback = function()
+		   require('r.send').cmd('file.info("' ..
+		       vim.api.nvim_buf_get_name(0) .. '")')
+		end })
        end,
    }
 
