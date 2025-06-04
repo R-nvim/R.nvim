@@ -66,6 +66,10 @@ static void skip_consecutive_spaces(const char *input, char *output) {
 
 static int read_field_data(char *s, int i) {
     while (s[i]) {
+        // Fix https://github.com/R-nvim/cmp-r/issues/17
+        if (s[i] == '\\')
+            s[i] = ' ';
+
         if (s[i] == '\n' && s[i + 1] == ' ') {
             s[i] = ' ';
             i++;
