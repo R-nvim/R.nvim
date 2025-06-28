@@ -42,10 +42,6 @@ local hooks = require("r.hooks")
 ---Do `:help R_continue_str` for more information.
 ---@field R_continue_str? string
 ---
----Whether to remember the window layout when quitting R; defaults to `true`.
----Do `:help arrange_windows` for more information.
----@field arrange_windows? boolean
----
 ---The version of the pipe operator to insert on pipe keymap; defaults to
 ---`"native"`. Do `:help pipe_version` for more information.
 ---@field pipe_version? '"native"' | '"|>"' | '"magrittr"' | '"%>%"'
@@ -308,10 +304,6 @@ local hooks = require("r.hooks")
 ---information.
 ---@field rproj_prioritise? table<integer, RprojField>
 ---
----Whether to save the position of the R console on quit; defaults to `true`.
----Do `:help save_win_pos` for more information.
----@field save_win_pos? boolean
----
 ---Whether to set the `HOME` environmental variable; defaults to `true`.
 ---Do `:help set_home_env` for more information.
 ---@field set_home_env? boolean
@@ -395,13 +387,12 @@ local config = {
     OutDec              = ".",
     RStudio_cmd         = "",
     R_app               = "R",
-    R_args              = {},
+    R_args              = { },
     R_cmd               = "R",
     R_path              = "",
     Rout_more_colors    = false,
     R_prompt_str        = "",
     R_continue_str      = "",
-    arrange_windows     = true,
     pipe_version        = "native",
     auto_scroll         = true,
     auto_start          = "no",
@@ -485,7 +476,6 @@ local config = {
     rproj_prioritise    = {
                                "pipe_version"
                           },
-    save_win_pos        = true,
     set_home_env        = true,
     setwidth            = 2,
     silent_term         = false,
@@ -878,8 +868,8 @@ local do_common_global = function()
     check_readme()
 
     -- Default values of some variables
-    if config.RStudio_cmd ~= "" or (config.is_windows and config.external_term ~= "") then
-        -- Sending multiple lines at once to either Rgui on Windows or RStudio does not work.
+    if config.RStudio_cmd ~= "" then
+        -- Sending multiple lines at once to RStudio does not work.
         config.max_paste_lines = 1
         config.bracketed_paste = false
         config.parenblock = false
@@ -887,8 +877,6 @@ local do_common_global = function()
 
     if config.external_term == "" then
         config.nvimpager = "split_h"
-        config.save_win_pos = false
-        config.arrange_windows = false
     else
         config.nvimpager = "tab"
         config.objbr_place = string.gsub(config.objbr_place, "console", "script")
@@ -896,14 +884,6 @@ local do_common_global = function()
     end
 
     if config.R_app:find("radian") then config.hl_term = false end
-
-    if config.is_windows then
-        config.save_win_pos = true
-        config.arrange_windows = true
-    else
-        config.save_win_pos = false
-        config.arrange_windows = false
-    end
 
     -- The environment variables RNVIM_COMPLCB and RNVIM_COMPLInfo must be defined
     -- before starting the rnvimserver because it needs them at startup.
@@ -952,11 +932,7 @@ local do_common_global = function()
 
     -- Set the name of R executable
     if config.is_windows then
-        if config.external_term == "" then
-            config.R_app = "Rterm.exe"
-        else
-            config.R_app = "Rgui.exe"
-        end
+        config.R_app = "Rterm.exe"
         config.R_cmd = "R.exe"
     end
 

@@ -832,8 +832,6 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |external_term|       Command to run R in an external terminal emulator
 |silent_term|         Do not show terminal errors
 |set_home_env|        Set the value of $HOME for R (Windows only)
-|save_win_pos|        Save position of Rgui window (Windows only)
-|arrange_windows|     Restore position of R window (Windows only)
 |pipe_version|        Either "native"/"|>" or "magrittr"/"%>%"
 |rproj_prioritise|    Use .Rproj file to override options
 |objbr_place|         Placement of Object Browser
@@ -1024,7 +1022,7 @@ used to send commands from Neovim to R.
 
 
 ------------------------------------------------------------------------------
-6.3. Terminal emulator (Linux/Unix only)                       *external_term*
+6.3. Terminal emulator                                         *external_term*
                                                                  *silent_term*
 
 Note: The options of this section are ignored on macOS, where the command
@@ -1033,9 +1031,7 @@ Note: The options of this section are ignored on macOS, where the command
 R will run in Neovim's built-in terminal emulator, unless you set the value of
 `external_term`, which can be `""` (use Neovim's built-in terminal),
 `"default"` (automatically choose a pre-defined terminal), the name of the
-terminal emulator or the complete command to run the terminal emulator. On
-Windows, if the value of `external_term` is `"default"`, R.nvim will run
-`Rgui.exe`, and not really a terminal emulator.
+terminal emulator or the complete command to run the terminal emulator.
 
 On Linux, a command for running the terminal is predefined for the following
 options:
@@ -1048,13 +1044,12 @@ options:
     6. alacritty
     7. xterm
 
-
 If the value of `external_term` is `"default"`, the plugin runs the first terminal
 emulator that it finds from the above list. If your favorite terminal emulator
 is not selected, you may define it in your config. Below are some examples of
 how to set the value of `external_term`:
 >lua
-   external_term = "default" -- Run R in an external terminal (or Rgui.exe)
+   external_term = "default" -- Run R in an external terminal
    external_term = "konsole" -- Run R in konsole
 <
 If `external_term` is just the name of one of the above terminal emulators,
@@ -1096,29 +1091,14 @@ built-in terminal emulator and `false` otherwise.
 
 
 ------------------------------------------------------------------------------
-6.4. Windows specific options                                *save_win_pos*
-                                                             *arrange_windows*
-                                                             *set_home_env*
-                                                             *Rtools-path*
+6.4. Windows specific options                                   *set_home_env*
+                                                                *Rtools-path*
 If R cannot find either `make` or `gcc` while trying to compile nvimcom, you
 should add their directories to the beginning of the `PATH` environment
 variable in your |init.lua|. Example:
 >lua
-   vim.env.PATH = "C:\\rtools40\\mingw64\\bin;C:\\rtools40\\usr\\bin;" .. $PATH
+   vim.env.PATH = "C:\\rtools45\\mingw64\\bin;C:\\rtools45\\usr\\bin;" .. vim.env.PATH
 <
-By default, R.nvim will save the positions of R Console and Neovim windows
-when you quit R with the <LocalLeader>rq command, and it will restore the
-positions of the windows when you start R. If you do not like this behavior,
-you can put in your config:
->lua
-   save_win_pos = false
-   arrange_windows = false
-<
-If you want Rgui window always in a specific arrangement, regardless of
-its state when you have quit R for the last time, you should arrange it
-in the way you want, quit R, change in your config only the value of
-`save_win_pos` and, finally, quit Neovim.
-
 The plugin sets `$HOME` as the Windows register value for "Personal" "Shell
 Folders" which is the same value set by R. However, if you have set `$HOME`
 yourself with the intention of changing the default value of `$HOME` assumed
@@ -1390,7 +1370,7 @@ So, it can include more than one directory separated by a `;` on Windows or a
 `:` on other systems. This is specially important to include the path to
 RTools `bin` directories on Windows. Example:
 >lua
-   R_path = "C:\\rtools40\\mingw64\\bin;C:\\rtools40\\usr\\bin;C:\\Program Files\\R\\R-4.3.3\\bin\\x64"
+   R_path = "C:\\rtools45\\mingw64\\bin;C:\\rtools45\\usr\\bin;C:\\Program Files\\R\\R-4.5.1\\bin\\x64"
 <
 By default `R_cmd` is `"R"` (the same as `R_app`) and will be used to run some
 scripts in the background, such as:
@@ -1403,15 +1383,18 @@ If it is necessary to call a different application to run the above commands
 in your system, you should set the value of `R_cmd` in your config.
 
 By default the value of `R_app` is `"R"` on Unix systems (such as Linux and
-macOS). On Windows, it is `Rterm.exe` if R is going to run in a Neovim
-buffer and `"Rgui.exe"` otherwise. R.nvim cannot send messages to `Rterm.exe`
-in an external `cmd` window. If your R binary has a different name (for
+macOS), and `Rterm.exe`, on Windows.
+
+If your R binary has a different name (for
 example, if it is called by a custom script), you should set the value of
 `R_app` in your config (and, perhaps, `R_cmd` too). Example:
 >lua
    R_app = "radian"
    R_cmd = "R"
 <
+On Windows, R.nvim cannot send messages to `Rterm.exe` in an external `cmd`
+window.
+
 
 ------------------------------------------------------------------------------
 6.9. Arguments to R                                                   *R_args*
@@ -1421,10 +1404,10 @@ R at the startup. The value of this variable must be a `string[]`. Example:
 >lua
    R_args = { "--no-save", "--quiet" }
 <
-On Linux, there is no default value for |R_args|. On Windows, the default
-value is `{"--sdi"}`, but you may change it to `{"--mdi"}` if you do not like
-the SDI style of the graphical user interface.
-
+The default value for |R_args| is an empty Lua table:
+>lua
+   R_args = { }
+<
 
 ------------------------------------------------------------------------------
 6.10. Auto-completion                                             *start_libs*
@@ -1803,7 +1786,7 @@ the PDF viewer window was not implemented for all systems. Currently, it works
 only on the X Server and on the Sway Window Manager. On Linux, if running on
 the X server (not on Wayland), the application `wmctrl` is required to raise
 both the PDF viewer and Neovim windows. This feature is not implemented for
-Wayland windows managers other than Sway.
+Wayland window managers other than Sway.
 
 R.nvim will call Sumatra to open the PDF on Windows, Skim on macOS, and
 Zathura on Linux, but you can change the values of `synctex` and `pdfviewer`
