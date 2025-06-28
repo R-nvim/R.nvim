@@ -123,6 +123,9 @@ M.show = function(rkeyword, txt)
     end
 
     doc_buf_id = vim.api.nvim_get_current_buf()
+    vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
+    vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
+    vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
     vim.api.nvim_buf_set_name(doc_buf_id, rkeyword)
 
     vim.api.nvim_set_option_value("modifiable", true, { scope = "local" })
@@ -151,10 +154,7 @@ M.show = function(rkeyword, txt)
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
     else
         vim.o.syntax = "rout"
-        vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
         vim.api.nvim_set_option_value("number", false, { scope = "local" })
-        vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
-        vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
         vim.api.nvim_buf_set_keymap(
             0,
             "n",

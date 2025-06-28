@@ -1112,17 +1112,6 @@ static void nvimcom_parse_received_msg(char *buf) {
         nvimcom_fire();
 #endif
         break;
-#ifdef WIN32
-    case 'C': // Send command to Rgui Console
-        p = buf;
-        p++;
-        if (strstr(p, getenv("RNVIM_ID")) == p) {
-            p += strlen(getenv("RNVIM_ID"));
-            r_is_busy = 1;
-            Rconsolecmd(p);
-        }
-        break;
-#endif
     case 'L': // Evaluate lazy object
 #ifdef WIN32
         if (r_is_busy)

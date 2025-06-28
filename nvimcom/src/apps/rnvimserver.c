@@ -2,9 +2,6 @@
 #include <stdio.h>  // Standard input/output definitions
 #include <stdlib.h> // Standard library
 #include <string.h> // String handling functions
-#ifdef WIN32
-#include "rgui.h"
-#endif
 
 #include "data_structures.h"
 #include "logging.h"
@@ -240,13 +237,6 @@ void stdin_loop(void) {
             if (p)
                 resolve_arg_item(p, f, itm);
             break;
-#ifdef WIN32
-        case '8':
-            // Messages related with the Rgui on Windows
-            msg++;
-            parse_rgui_msg(msg);
-            break;
-#endif
         case '9': // Quit now
             stop_server();
             exit(0);
@@ -263,9 +253,6 @@ void stdin_loop(void) {
 
 int main(int argc, char **argv) {
     init();
-#ifdef WIN32
-    Windows_setup();
-#endif
     stdin_loop();
     return 0;
 }

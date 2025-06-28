@@ -105,15 +105,6 @@ start_R2 = function()
         start_options,
         'options(nvimcom.source.path = "' .. config.source_read .. '")'
     )
-    if
-        config.set_params ~= "no"
-        and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
-        and require("r.rmd").params_status() == "new"
-    then
-        local bn = vim.api.nvim_buf_get_name(0)
-        if config.is_windows then bn = bn:gsub("\\", "\\\\") end
-        table.insert(start_options, 'nvimcom:::update_params("' .. bn .. '")')
-    end
 
     local rsd = M.get_R_start_dir()
     if rsd then
@@ -138,14 +129,6 @@ start_R2 = function()
 
     if config.external_term == "" then
         require("r.term").start()
-        return
-    end
-
-    if config.is_windows then
-        warn(
-            "Support for running Rgui.exe may be removed. Please, see https://github.com/R-nvim/R.nvim/issues/308"
-        )
-        require("r.rgui").start()
         return
     end
 
@@ -254,6 +237,8 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     end
 
     R_pid = rpid
+
+    -- Possibly useful for scripts that will raise the R Console window
     vim.env.RCONSOLE = wid
 
     -- R_version = r_info[1]
@@ -269,29 +254,9 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
 
     config.R_Tmux_pane = r_info.tmux_pane
 
-    if job.is_running("Server") then
-        if config.is_windows then
-            if vim.env.RCONSOLE == "0" then warn("nvimcom did not save R window ID") end
-        end
-    else
-        warn("nvimcom is not running")
-    end
-
-    if config.RStudio_cmd ~= "" then
-        if
-            config.is_windows
-            and config.arrange_windows
-            and vim.fn.filereadable(config.compldir .. "/win_pos") == 1
-        then
-            job.stdin("Server", "85" .. config.compldir .. "\n")
-        end
-    elseif config.is_windows then
-        if
-            config.arrange_windows
-            and vim.fn.filereadable(config.compldir .. "/win_pos") == 1
-        then
-            job.stdin("Server", "85" .. config.compldir .. "\n")
-        end
+    if not job.is_running("Server") then
+        warn("Server not running.")
+        return
     end
 
     if config.objbr_auto_start then
@@ -304,6 +269,15 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     end
 
     vim.g.R_Nvim_status = 7
+    if
+        config.set_params ~= "no"
+        and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
+        and require("r.rmd").params_status() == "new"
+    then
+        local bn = vim.api.nvim_buf_get_name(0)
+        if config.is_windows then bn = bn:gsub("\\", "\\\\") end
+        M.send_to_nvimcom( "E", 'nvimcom:::update_params("' .. bn .. '")')
+    end
     hooks.run(config, "after_R_start", true)
     send.set_send_cmd_fun()
 end
@@ -673,14 +647,7 @@ end
 -- Clear the console screen
 M.clear_console = function()
     if config.clear_console == false then return end
-
-    if config.is_windows and config.external_term ~= "" then
-        job.stdin("Server", "86\n")
-        vim.wait(50)
-        job.stdin("Server", "87\n")
-    else
-        send.cmd("\012")
-    end
+    send.cmd("\012")
 end
 
 M.clear_all = function()

@@ -10,6 +10,8 @@ M.open = function(fullpath)
         return
     end
 
+    if not require("r.pdf").pdfviewer_installed() then return end
+
     local opts = {
         on_exit = require("r.job").on_exit,
         detach = true,

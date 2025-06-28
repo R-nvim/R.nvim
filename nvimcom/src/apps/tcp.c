@@ -13,7 +13,6 @@
 #include <time.h>
 #include <winsock2.h>
 #include <windows.h>
-#include "rgui.h"
 #else
 #include <netdb.h>
 #include <pthread.h>
