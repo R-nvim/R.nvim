@@ -7,6 +7,8 @@ local M = {}
 --- Use Zathura to open PDF document
 ---@param fullpath string
 M.open = function(fullpath)
+    if not require("r.pdf").pdfviewer_installed() then return end
+
     local zopts = {
         on_stdout = require("r.job").on_stdout,
         on_exit = require("r.job").on_exit,
@@ -27,6 +29,8 @@ end
 ---@param ppath string PDF document path.
 ---@param texln number Line number in the LaTeX document.
 M.SyncTeX_forward = function(tpath, ppath, texln)
+    if not require("r.pdf").pdfviewer_installed() then return end
+
     local texname = tpath:gsub(" ", "\\ ")
     local pdfname = ppath:gsub(" ", "\\ ")
     local shortp = ppath:gsub(".*/", "")

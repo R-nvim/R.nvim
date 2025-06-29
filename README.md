@@ -278,11 +278,8 @@ There are three different ways of sending the commands to R Console:
   is used to send code to R Console.
 
 - When running R in an external terminal emulator, Tmux is used to send
-  commands to R Console.
-
-- On the Windows operating system, if using the `Rgui.exe` as "external
-  terminal", Nvim-R can send a message to R (nvimcom) which forwards the
-  command to R Console.
+  commands to R Console, but some terminal emulators have built-in multiplexer
+  capabilities and can be used without Tmux.
 
 The R package _nvimcom_ includes the application _rnvimserver_ which is never
 used by R itself but is run as a Neovim's job. That is, the communication
