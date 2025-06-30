@@ -33,7 +33,7 @@ end
 M.ask_R_doc = function(rkeyword, package, getclass)
     local firstobj = ""
     local cb = vim.api.nvim_get_current_buf()
-    local rb = require("r.term").get_buf_nr()
+    local rb = require("r.term.builtin").get_buf_nr()
     local bb = require("r.browser").get_buf_nr()
     if cb == rb or cb == bb then
         local savesb = vim.o.switchbuf
@@ -89,7 +89,7 @@ M.show = function(rkeyword, txt)
 
     local cb = vim.api.nvim_get_current_buf()
     local bb = require("r.browser").get_buf_nr()
-    local rb = require("r.term").get_buf_nr()
+    local rb = require("r.term.builtin").get_buf_nr()
     if cb == rb then
         -- Exit Terminal mode and go to Normal mode
         vim.cmd("stopinsert")
@@ -216,7 +216,7 @@ M.load_html = function(fullpath, browser)
 
     local cmd
     if browser == "" then
-        if config.is_windows or config.is_darwin then
+        if config.is_windows or config.uname == "Darwin" then
             cmd = { "open", fullpath }
         else
             cmd = { "xdg-open", fullpath }

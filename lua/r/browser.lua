@@ -268,7 +268,7 @@ local function start_OB()
         else
             -- Place next to the console or script buffer
             if config.objbr_place:find("console") then
-                vim.cmd.sb(require("r.term").get_buf_nr())
+                vim.cmd.sb(require("r.term.builtin").get_buf_nr())
             else
                 vim.cmd.sb(require("r.edit").get_rscript_buf())
             end

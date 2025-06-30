@@ -37,37 +37,97 @@ local switch_buf = function(fnm)
     s.winnr = vim.api.nvim_get_current_win()
 end
 
+local get_bultin_rlines = function()
+    local rbn = require("r.term.builtin").get_buf_nr()
+    if not rbn then
+        warn("Failed to get R buffer number.")
+        return nil
+    end
+    local rlines = vim.api.nvim_buf_get_lines(rbn, 0, -1, false)
+    return rlines
+end
+
+local get_cmd_output = function(run_cmd)
+    local obj = vim.system(run_cmd, { text = true }):wait()
+    if obj.code ~= 0 then
+        warn("Error running `" .. table.concat(run_cmd, " ") .. "`:\n" .. obj.stderr)
+        return nil
+    end
+    local rlines = vim.split(obj.stdout, "\n")
+    return rlines
+end
+
+local get_wezterm_rlines = function()
+    local run_cmd = {
+        "wezterm",
+        "cli",
+        "get-text",
+        "--pane-id",
+        require("r.term.wezterm").get_r_pane(),
+    }
+    return get_cmd_output(run_cmd)
+end
+
+local get_kitty_rlines = function()
+    local kaddr = require("r.term.kitty").get_kaddr()
+    local run_cmd = {
+        "kitten",
+        "@",
+        "get-text",
+        "--to",
+        kaddr,
+        "-m",
+        "id:1",
+    }
+    return get_cmd_output(run_cmd)
+end
+
+local get_kitty_split_rlines = function()
+    local run_cmd = {
+        "kitten",
+        "@",
+        "get-text",
+        "-m",
+        "id:" .. require("r.term.kitten").get_r_wid(),
+    }
+    return get_cmd_output(run_cmd)
+end
+
+local get_tmux_rlines = function()
+    local run_cmd = {
+        "tmux",
+        "-L",
+        "Rnvim",
+        "capture-pane",
+        "-p",
+        "-t",
+        require("r.term.tmux").get_tmuxsname(),
+    }
+    return get_cmd_output(run_cmd)
+end
+
+local get_rlines = function()
+    if config.external_term == "" then
+        return get_bultin_rlines()
+    elseif
+        config.external_term == "wezterm" or config.external_term == "wezterm_split"
+    then
+        return get_wezterm_rlines()
+    elseif config.external_term == "kitty" then
+        return get_kitty_rlines()
+    elseif config.external_term == "kitty_split" then
+        return get_kitty_split_rlines()
+    else
+        return get_tmux_rlines()
+    end
+end
+
 local find_func = function(srcref)
-    local rlines
     s.func_offset = -1 -- Not found
 
+    local rlines = get_rlines()
+    if not rlines then return end
     vim.wait(300)
-    if config.external_term == "" then
-        local rbn = require("r.term").get_buf_nr()
-        if rbn then
-            rlines = vim.api.nvim_buf_get_lines(rbn, 0, -1, false)
-        else
-            warn("Failed to get R buffer number.")
-            return
-        end
-    else
-        local run_cmd = {
-            "tmux",
-            "-L",
-            "Rnvim",
-            "capture-pane",
-            "-p",
-            "-t",
-            require("r.external_term").get_tmuxsname(),
-        }
-        local obj = vim.system(run_cmd, { text = true }):wait()
-        if obj.code == 0 then
-            rlines = vim.split(obj.stdout, "\n")
-        else
-            warn("Error running `" .. table.concat(run_cmd, " ") .. "`:\n" .. obj.stderr)
-            return
-        end
-    end
 
     local idx = #rlines - 1
     while idx > 0 do
@@ -198,9 +258,9 @@ M.jump = function(fnm, lnum)
     if
         config.debug_jump
         and config.external_term == ""
-        and vim.api.nvim_get_current_buf() ~= require("r.term").get_buf_nr()
+        and vim.api.nvim_get_current_buf() ~= require("r.term.builtin").get_buf_nr()
     then
-        vim.cmd("sb " .. tostring(require("r.term").get_buf_nr()))
+        vim.cmd("sb " .. tostring(require("r.term.builtin").get_buf_nr()))
         vim.cmd("startinsert")
     end
 

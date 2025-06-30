@@ -33,7 +33,7 @@ M.setup = function()
     elseif config.is_windows and config.pdfviewer == "sumatra" then
         M.open2 = require("r.pdf.sumatra").open
         M.SyncTeX_forward = require("r.pdf.sumatra").SyncTeX_forward
-    elseif config.is_darwin and config.pdfviewer == "skim" then
+    elseif config.uname == "Darwin" and config.pdfviewer == "skim" then
         M.open2 = require("r.pdf.skim").open
         M.SyncTeX_forward = require("r.pdf.skim").SyncTeX_forward
     else
@@ -44,7 +44,7 @@ M.setup = function()
     if vim.o.filetype == "rnoweb" and config.synctex then
         if
             not config.is_windows
-            and not config.is_darwin
+            and not config.uname == "Darwin"
             and not vim.env.WAYLAND_DISPLAY
             and vim.env.DISPLAY
         then
