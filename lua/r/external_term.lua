@@ -35,7 +35,7 @@ local external_term_config = function()
     end
 
     local etime = uv.hrtime()
-    if config.external_term == "default" then
+    if config.external_term == "default" and not config.is_windows then
         -- Terminal name not defined. Try to find a known one.
         local terminals = {
             "kitty",

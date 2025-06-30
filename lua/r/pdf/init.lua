@@ -3,23 +3,29 @@ local utils = require("r.utils")
 local warn = require("r.log").warn
 local job = require("r.job")
 local uv = vim.uv
-
-local check_installed = function()
-    if vim.fn.executable(config.pdfviewer) == 0 then
-        warn(
-            "R.nvim: Please, set the value of `pdfviewer`. The application `"
-                .. config.pdfviewer
-                .. "` was not found."
-        )
-    end
-end
+local viewer_installed = false
 
 local M = {}
 
+--- Check if the pdf viewer is installed.
+---@return boolean
+M.pdfviewer_installed = function()
+    if viewer_installed then return true end
+
+    if vim.fn.executable(config.pdfviewer) == 1 then
+        viewer_installed = true
+        return true
+    end
+    warn(
+        "R.nvim: Please, set the value of `pdfviewer`. The application `"
+            .. config.pdfviewer
+            .. "` was not found."
+    )
+    return false
+end
+
 M.setup = function()
     local ptime = uv.hrtime()
-
-    if config.pdfviewer ~= "" then check_installed() end
 
     if config.pdfviewer == "zathura" then
         M.open2 = require("r.pdf.zathura").open
