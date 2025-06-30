@@ -43,7 +43,7 @@ local find_func = function(srcref)
 
     vim.wait(300)
     if config.external_term == "" then
-        local rbn = require("r.term").get_buf_nr()
+        local rbn = require("r.term.builtin").get_buf_nr()
         if rbn then
             rlines = vim.api.nvim_buf_get_lines(rbn, 0, -1, false)
         else
@@ -58,7 +58,7 @@ local find_func = function(srcref)
             "capture-pane",
             "-p",
             "-t",
-            require("r.external_term").get_tmuxsname(),
+            require("r.term.tmux").get_tmuxsname(),
         }
         local obj = vim.system(run_cmd, { text = true }):wait()
         if obj.code == 0 then
@@ -198,9 +198,9 @@ M.jump = function(fnm, lnum)
     if
         config.debug_jump
         and config.external_term == ""
-        and vim.api.nvim_get_current_buf() ~= require("r.term").get_buf_nr()
+        and vim.api.nvim_get_current_buf() ~= require("r.term.builtin").get_buf_nr()
     then
-        vim.cmd("sb " .. tostring(require("r.term").get_buf_nr()))
+        vim.cmd("sb " .. tostring(require("r.term.builtin").get_buf_nr()))
         vim.cmd("startinsert")
     end
 

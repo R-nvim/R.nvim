@@ -112,6 +112,8 @@ set_running_info <- function() {
                   "', prompt = '", gsub("\n", "#N#", getOption("prompt")),
                   "', continue = '", getOption("continue"),
                   "', has_color = ", ifelse(hascolor, "true", "false"),
+                  ", kitty_wid = '", Sys.getenv("KITTY_WINDOW_ID"), "'",
+                  ", wez_pane = '", Sys.getenv("WEZTERM_PANE"), "'",
                   ", tmux_pane = '", Sys.getenv("TMUX_PANE"), "'}")
     NvimcomEnv$info <- c(pd$Version, info)
     return(invisible(NULL))

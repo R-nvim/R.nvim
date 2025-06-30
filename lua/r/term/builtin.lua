@@ -78,17 +78,9 @@ M.close_term = function()
 end
 
 local split_window = function()
-    local n
-    if vim.o.number then
-        n = 1
-    else
-        n = 0
-    end
-    if
-        config.rconsole_width > 0
-        and vim.fn.winwidth(0)
-            > (config.rconsole_width + config.min_editor_width + 1 + (n * vim.o.numberwidth))
-    then
+    local nw = vim.o.number and vim.o.numberwidth or 0
+    local sw = config.rconsole_width + config.min_editor_width + 1 + nw
+    if config.rconsole_width > 0 and vim.fn.winwidth(0) > sw then
         if
             config.rconsole_width > 16
             and config.rconsole_width < (vim.fn.winwidth(0) - 17)

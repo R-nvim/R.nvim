@@ -128,11 +128,39 @@ start_R2 = function()
     end
 
     if config.external_term == "" then
-        require("r.term").start()
+        require("r.term.builtin").start()
         return
     end
 
-    require("r.external_term").start()
+    if config.external_term == "default" then
+        if not config.is_windows and vim.fn.executable("kitty") == 1 then
+            config.external_term = "kitty"
+        elseif vim.fn.executable("wezterm") == 1 then
+            config.external_term = "wezterm"
+        end
+    end
+
+    if config.external_term == "kitty" then
+        require("r.term.kitty").start()
+        return
+    end
+
+    if config.external_term == "wezterm" then
+        require("r.term.wezterm").start()
+        return
+    end
+
+    if config.external_term == "kitty_split" then
+        require("r.term.kitten").start()
+        return
+    end
+
+    if config.external_term == "wezterm_split" then
+        require("r.term.wezterm_split").start()
+        return
+    end
+
+    require("r.term.tmux").start()
 end
 
 --- Return arguments to start R defined as config.R_args or during custom R
@@ -150,7 +178,7 @@ end
 M.start_R = function(whatr)
     -- R started and nvimcom loaded
     if vim.g.R_Nvim_status == 7 then
-        if config.external_term == "" then require("r.term").reopen_win() end
+        if config.external_term == "" then require("r.term.builtin").reopen_win() end
         return
     end
 
@@ -250,9 +278,18 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         config.R_continue_str = r_info.continue:gsub(" $", "")
     end
 
-    if not r_info.has_color and config.hl_term then require("r.term").highlight_term() end
+    if not r_info.has_color and config.hl_term then require("r.term.builtin").highlight_term() end
 
     config.R_Tmux_pane = r_info.tmux_pane
+    if r_info.wez_pane ~= "" then
+        if config.external_term == "wezterm" then
+            require("r.term.wezterm").set_r_pane(r_info.wez_pane)
+        elseif config.external_term == "wezterm_split" then
+            require("r.term.wezterm_split").set_r_pane(r_info.wez_pane)
+        end
+    elseif r_info.kitty_wid ~= "" and config.external_term == "kitty_split" then
+        require("r.term.kitten").set_r_wid(r_info.kitty_wid)
+    end
 
     if not job.is_running("Server") then
         warn("Server not running.")
@@ -276,7 +313,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     then
         local bn = vim.api.nvim_buf_get_name(0)
         if config.is_windows then bn = bn:gsub("\\", "\\\\") end
-        M.send_to_nvimcom( "E", 'nvimcom:::update_params("' .. bn .. '")')
+        M.send_to_nvimcom("E", 'nvimcom:::update_params("' .. bn .. '")')
     end
     hooks.run(config, "after_R_start", true)
     send.set_send_cmd_fun()
@@ -286,7 +323,7 @@ M.clear_R_info = function()
     vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.RNVIM_ID))
     vim.fn.delete(config.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.RNVIM_ID))
     R_pid = 0
-    if config.external_term == "" then require("r.term").close_term() end
+    if config.external_term == "" then require("r.term.builtin").close_term() end
     if job.is_running("Server") then
         vim.g.R_Nvim_status = 3
         job.stdin("Server", "43\n")
@@ -327,17 +364,6 @@ M.quit_R = function(how)
         qcmd = 'quit(save = "yes")'
     else
         qcmd = 'quit(save = "no")'
-    end
-
-    if config.is_windows then
-        if config.external_term ~= "" then
-            -- SaveWinPos
-            job.stdin(
-                "Server",
-                "84" .. vim.fn.escape(vim.env.RNVIM_COMPLDIR, "\\") .. "\n"
-            )
-        end
-        job.stdin("Server", "2QuitNow\n")
     end
 
     local bb = require("r.browser").get_buf_nr()

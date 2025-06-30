@@ -41,7 +41,15 @@ function M.configure(config)
         end
     end)
 
-    if config.external_term ~= "" then tmux.configure(config) end
+    if
+        config.external_term ~= ""
+        and config.external_term ~= "kitty"
+        and config.external_term ~= "kitty_split"
+        and config.external_term ~= "wezterm"
+        and config.external_term ~= "wezterm_split"
+    then
+        tmux.configure(config)
+    end
     utime = (uv.hrtime() - utime) / 1000000000
     require("r.edit").add_to_debug_info("unix setup", utime, "Time")
 end

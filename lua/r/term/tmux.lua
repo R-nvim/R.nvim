@@ -38,7 +38,6 @@ local external_term_config = function()
     if config.external_term == "default" and not config.is_windows then
         -- Terminal name not defined. Try to find a known one.
         local terminals = {
-            "kitty",
             "gnome-terminal",
             "konsole",
             "xfce4-terminal",
@@ -66,7 +65,7 @@ local external_term_config = function()
 
     if
         vim.tbl_contains(
-            { "foot", "gnome-terminal", "kitty", "xfce4-terminal", "alacritty" },
+            { "foot", "gnome-terminal", "xfce4-terminal", "alacritty" },
             term_name
         )
     then
@@ -96,7 +95,7 @@ local external_term_config = function()
             table.insert(term_cmd, "tabtitle=R")
             table.insert(term_cmd, "--workdir")
             table.insert(term_cmd, wd)
-        elseif term_name == "roxterm" or term_name == "kitty" then
+        elseif term_name == "roxterm" then
             table.insert(term_cmd, "--directory='" .. wd .. "'")
         end
     end
