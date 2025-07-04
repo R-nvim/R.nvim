@@ -73,6 +73,11 @@ M.formatsubsetting = function(bufnr)
 
     if node:type() == "extract_operator" then
         replace_extract_operator(node)
+    elseif node:type() == "identifier" then
+        local parent = node:parent()
+        if parent and parent:type() == "extract_operator" then
+            replace_extract_operator(parent)
+        end
     elseif node:type() == "arguments" then
         local parent = node:parent()
         if parent and parent:type() == "subset" then replace_subset(parent) end
