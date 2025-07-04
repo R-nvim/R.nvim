@@ -66,24 +66,6 @@ M.formatsubsetting = function(bufnr)
         return
     end
 
-    local cursor = vim.api.nvim_win_get_cursor(0)
-    local line = cursor[1] - 1
-    local col = cursor[2]
-
-    local diagnostics = vim.diagnostic.get(bufnr, { lnum = line, col = col })
-
-    for _, diagnostic in ipairs(diagnostics) do
-        if
-            diagnostic.lnum == line
-            and diagnostic.col == col
-            and diagnostic.code == "extraction_operator_linter"
-        then
-            break
-        else
-            warn("Cursor is not at an extraction operator.")
-        end
-    end
-
     local parser = vim.treesitter.get_parser(bufnr)
     if not parser then return end
 
