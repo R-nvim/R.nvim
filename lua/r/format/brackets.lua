@@ -71,16 +71,39 @@ M.formatsubsetting = function(bufnr)
 
     local node = vim.treesitter.get_node()
 
-    if node:type() == "extract_operator" then
+    local node_type = node:type()
+
+    if node_type == "extract_operator" then
         replace_extract_operator(node)
-    elseif node:type() == "identifier" then
+        return
+    end
+
+    -- Handle cursor on RHS identifier of extract operator (e.g., "var" in df$var)
+    if node_type == "identifier" then
         local parent = node:parent()
         if parent and parent:type() == "extract_operator" then
             replace_extract_operator(parent)
+            return
         end
-    elseif node:type() == "arguments" then
+    end
+
+    -- Handle cursor on subset arguments (e.g., "1" in vec[1])
+    if node_type == "arguments" then
         local parent = node:parent()
-        if parent and parent:type() == "subset" then replace_subset(parent) end
+        if parent and parent:type() == "subset" then
+            replace_subset(parent)
+            return
+        end
+    end
+
+    -- Handle cursor anywhere inside a subset operation (brackets, content, etc.)
+    local current = node
+    while current do
+        if current:type() == "subset" then
+            replace_subset(current)
+            break
+        end
+        current = current:parent()
     end
 end
 
