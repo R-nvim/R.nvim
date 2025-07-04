@@ -115,8 +115,7 @@ end
 --- Processes and formats the path found in the current Treesitter node.
 -- This function updates the path within the Treesitter node based on its type and context.
 M.separate = function()
-    local ts_utils = require("nvim-treesitter.ts_utils")
-    local node = ts_utils.get_node_at_cursor()
+    local node = vim.treesitter.get_node()
 
     if not node or node:type() ~= "string_content" then return end
 
