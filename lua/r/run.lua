@@ -133,16 +133,17 @@ start_R2 = function()
     end
 
     if config.external_term == "default" then
-        if not config.is_windows and vim.fn.executable("kitty") == 1 then
-            config.external_term = "kitty"
-        elseif vim.fn.executable("wezterm") == 1 then
+        if vim.fn.executable("wezterm") == 1 then
             config.external_term = "wezterm"
+        else
+            if config.is_windows then
+                warn("WezTerm must be installed to run R in a external terminal emulator")
+                return
+            end
+            if vim.fn.executable("kitty") == 1 then
+                config.external_term = "kitty"
+            end
         end
-    end
-
-    if config.external_term == "kitty" then
-        require("r.term.kitty").start()
-        return
     end
 
     if config.external_term == "wezterm" then
@@ -150,13 +151,18 @@ start_R2 = function()
         return
     end
 
-    if config.external_term == "kitty_split" then
-        require("r.term.kitten").start()
+    if config.external_term == "wezterm_split" then
+        require("r.term.wezterm_split").start()
         return
     end
 
-    if config.external_term == "wezterm_split" then
-        require("r.term.wezterm_split").start()
+    if config.external_term == "kitty" then
+        require("r.term.kitty").start()
+        return
+    end
+
+    if config.external_term == "kitty_split" then
+        require("r.term.kitten").start()
         return
     end
 
@@ -278,7 +284,9 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         config.R_continue_str = r_info.continue:gsub(" $", "")
     end
 
-    if not r_info.has_color and config.hl_term then require("r.term.builtin").highlight_term() end
+    if not r_info.has_color and config.hl_term then
+        require("r.term.builtin").highlight_term()
+    end
 
     config.R_Tmux_pane = r_info.tmux_pane
     if r_info.wez_pane ~= "" then

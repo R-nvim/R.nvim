@@ -19,16 +19,7 @@ M.send_cmd = function(command)
 
     if config.is_windows then require("r.run").send_to_nvimcom("B", "R is Busy") end
 
-    local cmd
-    if config.clear_line then
-        if config.editing_mode == "emacs" then
-            cmd = "\001\011" .. command
-        else
-            cmd = "\0270Da" .. command
-        end
-    else
-        cmd = command
-    end
+    local cmd = require("r.term").sanitize(command, false)
 
     -- Update the width, if necessary
     local bwid = vim.fn.bufwinid(r_bufnr)
