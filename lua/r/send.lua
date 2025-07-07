@@ -159,9 +159,17 @@ M.set_send_cmd_fun = function()
     if config.RStudio_cmd ~= "" then
         M.cmd = require("r.rstudio").send_cmd
     elseif config.external_term == "" then
-        M.cmd = require("r.term").send_cmd
+        M.cmd = require("r.term.builtin").send_cmd
+    elseif
+        config.external_term == "wezterm" or config.external_term == "wezterm_split"
+    then
+        M.cmd = require("r.term.wezterm").send_cmd
+    elseif config.external_term == "kitty" then
+        M.cmd = require("r.term.kitty").send_cmd
+    elseif config.external_term == "kitty_split" then
+        M.cmd = require("r.term.kitten").send_cmd
     else
-        M.cmd = require("r.external_term").send_cmd
+        M.cmd = require("r.term.tmux").send_cmd
     end
 end
 

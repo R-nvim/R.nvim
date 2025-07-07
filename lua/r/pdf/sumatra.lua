@@ -44,6 +44,7 @@ M.open = function(fullpath)
     }, config.tmpdir .. "/run_cmd.bat")
     vim.system({ config.tmpdir .. "/run_cmd.bat" }, { detach = true })
     vim.cmd("cd " .. olddir)
+    require("r.edit").add_for_deletion(config.tmpdir .. "/run_cmd.bat")
 end
 
 ---Send the SyncTeX forward command to Sumatra
@@ -70,6 +71,7 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
     }, config.tmpdir .. "/run_cmd.bat")
     vim.system({ config.tmpdir .. "/run_cmd.bat" }, { detach = true })
     vim.cmd("cd " .. olddir)
+    require("r.edit").add_for_deletion(config.tmpdir .. "/run_cmd.bat")
 end
 
 return M

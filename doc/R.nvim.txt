@@ -136,10 +136,16 @@ Additional dependencies for editing Rnoweb documents:
 
 Suggestions for Unix (Linux, macOS, etc.):
 
+   WezTerm or Kitty:
+                 https://sw.kovidgoyal.net/kitty/
+		 https://wezterm.org/
+		 Required if you want to run R in an external terminal
+		 emulator and don't want to install Tmux.
+
    Tmux >= 3.0:  http://tmux.sourceforge.net
                  Tmux is required only if you want to run R in an external
-		 terminal emulator or in a Tmux split panel
-		 (see |external_term|).
+		 terminal emulator or in a Tmux split pane. Not required if
+		 either WezTerm or Kitty is installed (see |external_term|).
 
    colorout >= 1.3-1:
                  https://github.com/jalvesaq/colorout/releases
@@ -148,11 +154,10 @@ Suggestions for Unix (Linux, macOS, etc.):
                  See |external_term|). You should put in your Rprofile:
                  `library(colorout)`
 
-Suggestions for bibliographic completion from Zotero in RMarkdown (`.Rmd`) and
-Quarto (`.qmd`) documents:
+Suggestions for bibliographic completion from Zotero in RMarkdown (`.Rmd`),
+Quarto (`.qmd`), and Rnoweb (`.Rnw`) documents:
 
    - https://github.com/jalvesaq/zotcite
-   - https://github.com/jalvesaq/cmp-zotcite
 
 
 ------------------------------------------------------------------------------
@@ -1012,21 +1017,12 @@ value:
    buffer_opts = "winfixwidth winfixheight nobuflisted"
 <
 If you do not want to run R in Neovim's built-in terminal emulator, you
-have to install Tmux >= 3.0, and then put in your config:
->lua
-   external_term = "default"
-<
-Then, R will start in an external terminal emulator (useful if you use two
-monitors and want Neovim and R separate from each other), and Tmux will be
-used to send commands from Neovim to R.
+have to install WezTerm, Kitty, or Tmux (see next section).
 
 
 ------------------------------------------------------------------------------
 6.3. Terminal emulator                                         *external_term*
                                                                  *silent_term*
-
-Note: The options of this section are ignored on macOS, where the command
-`open` is called to run the default application used to run shell scripts.
 
 R will run in Neovim's built-in terminal emulator, unless you set the value of
 `external_term`, which can be `""` (use Neovim's built-in terminal),
@@ -1036,13 +1032,14 @@ terminal emulator or the complete command to run the terminal emulator.
 On Linux, a command for running the terminal is predefined for the following
 options:
 
-    1. foot
+    1. wezterm
     2. kitty
-    3. gnome-terminal
-    4. konsole
-    5. xfce4-terminal
-    6. alacritty
-    7. xterm
+    3. foot
+    4. gnome-terminal
+    5. konsole
+    6. xfce4-terminal
+    7. alacritty
+    8. xterm
 
 If the value of `external_term` is `"default"`, the plugin runs the first terminal
 emulator that it finds from the above list. If your favorite terminal emulator
@@ -1066,13 +1063,31 @@ Examples (see also https://github.com/R-nvim/R.nvim/wiki/External-Terminals):
 Please, look at the manual of your terminal emulator to know how to call it.
 The last argument must be the one which precedes the command to be executed.
 
-Although the option is intended to allow running R in an external terminal
-emulator, if you are running Neovim within Tmux, it can also be used to run R
-in a Tmux split panel. Examples:
+Note: On Windows, Neovim must be running in WezTerm and the directory where R
+is installed must be in the PATH. Example of how to configure the PATH in
+WezTerm config:
 >lua
+ return {
+   set_environment_variables = {
+     PATH = "C:/Program Files/R/R-4.5.1/bin/x64;" .. os.getenv("PATH"),
+ }
+<
+Although the option is intended to allow running R in an external terminal
+emulator, if you are running Neovim within WezTerm, Kitty or Tmux, it can also
+be used to run R in a split pane. Examples:
+>lua
+   external_term = "kitty_split"
+   external_term = "wezterm_split"
    external_term = "tmux split-window -vf"
    external_term = "tmux split-window -h -l 80"
 <
+Note: for `external_term = "kitty_split"`, Kitty must be ready to receive
+remote commands. Example:
+>sh
+ kitty --instance-group "kitty_sock" -o allow_remote_control=yes --listen-on unix:/tmp/.kitty_sock
+<
+You will also need the option `enabled_layouts splits` in your Kitty config.
+
 The terminal error messages, if any, are shown as warning messages, unless you
 put in your config:
 >lua
@@ -1502,9 +1517,9 @@ that the file is open in a new split window, put in your config:
 6.13. Tmux configuration (Linux/Unix only)                       *config_tmux*
 
 
-If Neovim is running R in an external terminal emulator, R will run in a Tmux
-session with a specially built Tmux configuration file. If you want to use
-your own ~/.tmux.conf, put in your config:
+If Neovim is running R within Tmux in an external terminal emulator other than
+Wezterm or Kitty, a specially built Tmux configuration file will be used. If
+you want to use your own `tmux.conf`, put in your config:
 >lua
    config_tmux = false
 <
@@ -1761,8 +1776,7 @@ the audible bell only for R by putting in your `~/.inputrc`:
        set bell-style audible
    $endif
 <
-Note: You can't control the bell on Windows; it is hardcoded to run in Rterm
-and to not run in Rgui.
+Note: You can't control the bell on Windows; it is hardcoded to run in Rterm.
 
 
 ------------------------------------------------------------------------------

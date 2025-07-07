@@ -369,17 +369,14 @@ local hooks = require("r.hooks")
 ---@class RConfig: RConfigUserOpts
 ---@field uname? string
 ---@field is_windows? boolean
----@field is_darwin? boolean
 ---@field rnvim_home? string
 ---@field uservimfiles? string
 ---@field user_login? string
 ---@field localtmpdir? string
 ---@field source_read? string
 ---@field source_write? string
----@field curview? string
 ---@field term_title? string -- Pid of window application.
 ---@field term_pid? integer -- Part of the window title.
----@field R_Tmux_pane? string
 
 -- stylua: ignore start
 ---@type RConfig
@@ -504,8 +501,6 @@ local config = {
 
 local user_opts = {}
 local did_real_setup = false
-local unix = require("r.platform.unix")
-local windows = require("r.platform.windows")
 
 local smsgs = {}
 local swarn = function(msg) table.insert(smsgs, msg) end
@@ -532,7 +527,7 @@ local set_editing_mode = function()
 end
 
 local set_pdf_viewer = function()
-    if config.is_darwin then
+    if config.uname == "Darwin" then
         config.pdfviewer = "skim"
         if config.skim_app_path == "" then
             config.skim_app_path = "/Applications/Skim.app"
@@ -861,7 +856,6 @@ end
 local do_common_global = function()
     config.uname = uv.os_uname().sysname
     config.is_windows = config.uname:find("Windows", 1, true) ~= nil
-    config.is_darwin = config.uname == "Darwin"
 
     set_pdf_viewer()
     set_directories()
@@ -927,9 +921,6 @@ local do_common_global = function()
         vim.env.WINDOWID = vim.v.windowid
     end
 
-    -- Current view of the object browser: .GlobalEnv X loaded libraries
-    config.curview = "None"
-
     -- Set the name of R executable
     if config.is_windows then
         config.R_app = "Rterm.exe"
@@ -971,10 +962,11 @@ local global_setup = function()
     -- asynchronously to avoid slow startup on macOS.
     -- See https://github.com/jalvesaq/Nvim-R/issues/625
     do_common_global()
+
     if config.is_windows then
-        windows.configure(config)
+        require("r.platform.windows").configure(config)
     else
-        unix.configure(config)
+        require("r.platform.unix").configure(config)
     end
 
     -- Override default config values with user options for the second time.
