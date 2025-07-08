@@ -331,7 +331,10 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     then
         local bn = vim.api.nvim_buf_get_name(0)
         if config.is_windows then bn = bn:gsub("\\", "\\\\") end
-        M.send_to_nvimcom("E", 'nvimcom:::update_params("' .. bn .. '")')
+        vim.schedule(function()
+            uv.sleep(100)
+            M.send_to_nvimcom("E", 'nvimcom:::update_params("' .. bn .. '")')
+        end)
     end
     hooks.run(config, "after_R_start", true)
     send.set_send_cmd_fun()

@@ -157,8 +157,6 @@ firm commitment to backwards compatibility.
 
 - reStructuredText support (no longer seems to be widely used).
 
-- Debugging support (a formal debug adaptor would be a better solution).
-
 - Legacy omni-completion (we now recommend
   [nvim-cmp](https://github.com/hrsh7th/nvim-cmp)).
 
@@ -177,6 +175,7 @@ firm commitment to backwards compatibility.
   [execution-options](https://quarto.org/docs/computations/execution-options.html).
 
 - Integration with `Rapp` on macOS was removed (option `applescript`).
+
 
 ### Changes
 
@@ -252,6 +251,12 @@ firm commitment to backwards compatibility.
 
 - `objbr_mappings` can be configured to run R commands on objects in the
   current session.
+
+- `external_term` now accepts as valid values `"wezterm_split"` and
+  `"kitty_split"`, not requiring Tmux to split the terminal window.
+  It's possible to [WezTerm](https://wezterm.org/) to run R in an external
+  terminal emulator on Windows. Hence, the values `"wezterm"` and
+  `"wezterm_split"` are valid on Linux, macOS and Windows.
 
 ## Screenshots and videos
 
