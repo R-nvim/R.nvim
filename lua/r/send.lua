@@ -661,14 +661,10 @@ M.chain = function()
     local call_query = vim.treesitter.query.parse(
         "r",
         [[
-        (_
             (binary_operator
-                lhs: (_)
                 operator: (["|>" "+" "special"] @operator)
                 rhs: (call) @call
-                (#not-has-ancestor? @call call) ;; Ensure the rhs is not inside another call
             )
-        )
         ]]
     )
 
