@@ -2,18 +2,13 @@ local config = require("r.config").get_config()
 local uv = vim.uv
 local warn = require("r.log").warn
 
+local r_pane = "?"
 local term_name = nil
 local term_cmd = {}
 local tmuxsname = nil
 local is_tmux_split = false
 
--- local global_option_value = TmuxOption("some_option", "global")
--- local window_option_value = TmuxOption("some_option", "")
-
 local external_term_config = function()
-    -- The Object Browser can run in a Tmux pane only if Neovim is inside a Tmux session
-    config.objbr_place = string.gsub(config.objbr_place, "console", "script")
-
     tmuxsname = "Rnvim-" .. tostring(vim.fn.localtime()):gsub(".*(...)", "%1")
 
     if config.external_term ~= "" and config.external_term ~= "default" then
@@ -35,10 +30,9 @@ local external_term_config = function()
     end
 
     local etime = uv.hrtime()
-    if config.external_term == "default" then
+    if config.external_term == "default" and not config.is_windows then
         -- Terminal name not defined. Try to find a known one.
         local terminals = {
-            "kitty",
             "gnome-terminal",
             "konsole",
             "xfce4-terminal",
@@ -66,7 +60,7 @@ local external_term_config = function()
 
     if
         vim.tbl_contains(
-            { "foot", "gnome-terminal", "kitty", "xfce4-terminal", "alacritty" },
+            { "foot", "gnome-terminal", "xfce4-terminal", "alacritty" },
             term_name
         )
     then
@@ -80,25 +74,6 @@ local external_term_config = function()
     if term_name == "foot" then
         table.insert(term_cmd, "--log-level")
         table.insert(term_cmd, "error")
-    end
-
-    local wd = require("r.run").get_R_start_dir()
-    if wd then
-        if
-            vim.tbl_contains(
-                { "gnome-terminal", "xfce4-terminal", "lxterminal", "foot" },
-                term_name
-            )
-        then
-            table.insert(term_cmd, "--working-directory='" .. wd .. "'")
-        elseif term_name == "konsole" then
-            table.insert(term_cmd, "-p")
-            table.insert(term_cmd, "tabtitle=R")
-            table.insert(term_cmd, "--workdir")
-            table.insert(term_cmd, wd)
-        elseif term_name == "roxterm" or term_name == "kitty" then
-            table.insert(term_cmd, "--directory='" .. wd .. "'")
-        end
     end
 
     if term_name == "gnome-terminal" then
@@ -115,6 +90,12 @@ end
 local M = {}
 
 M.start = function()
+    if vim.fn.executable("tmux") == 0 then
+        config.external_term = ""
+        warn("tmux executable not found")
+        return
+    end
+
     if config.config_tmux then
         -- Create a custom tmux.conf
         local cnflines = {
@@ -171,9 +152,10 @@ M.start = function()
     end
 
     if
-        vim.tbl_contains(term_cmd, "tmux") and vim.tbl_contains(term_cmd, "split%-window")
+        vim.tbl_contains(term_cmd, "tmux") and vim.tbl_contains(term_cmd, "split-window")
     then
         is_tmux_split = true
+        table.insert(open_cmd, rcmd)
     elseif term_name == "konsole" then
         table.insert(
             open_cmd,
@@ -197,65 +179,17 @@ M.start = function()
         table.insert(open_cmd, "new-session")
         table.insert(open_cmd, "-s")
         table.insert(open_cmd, tmuxsname)
-        if config.silent_term or term_name == "konsole" then
-            table.insert(open_cmd, rcmd)
-        else
-            table.insert(open_cmd, "'" .. rcmd .. "'")
-        end
+        table.insert(open_cmd, rcmd)
     end
 
-    local on_exit = function(obj)
-        if obj.code ~= 0 then
-            warn(
-                "Terminal emulator exit code: "
-                    .. tostring(obj.code)
-                    .. "\nstdout: "
-                    .. obj.stdout
-                    .. "\nstderr: "
-                    .. obj.stderr
-            )
-        end
-    end
-
-    vim.g.R_Nvim_status = 6
-    if config.silent_term then
-        vim.system(open_cmd, { text = true }, on_exit)
-    else
-        local initterm = {
-            'cd "' .. vim.fn.getcwd() .. '"',
-            table.concat(open_cmd, " "),
-        }
-        local init_file = config.tmpdir .. "/initterm_" .. vim.fn.rand() .. ".sh"
-        vim.fn.writefile(initterm, init_file)
-        local job = require("r.job")
-        job.start("Terminal emulator", { "sh", init_file }, {
-            on_stderr = job.on_stderr,
-            on_exit = job.on_exit,
-            detach = 1,
-        })
-        require("r.edit").add_for_deletion(init_file)
-    end
-
-    require("r.run").wait_nvimcom_start()
+    require("r.term").start(open_cmd, false)
 end
 
 --- Send line of command to R Console
 ---@param command string
 ---@return boolean
 M.send_cmd = function(command)
-    local cmd = command
-
-    if config.clear_line then
-        if config.editing_mode == "emacs" then
-            cmd = "\001\011" .. cmd
-        else
-            cmd = "\0270Da" .. cmd
-        end
-    end
-
-    -- Send the command to R running in an external terminal emulator
-    if cmd:find("^-") then cmd = " " .. cmd end
-
+    local cmd = require("r.term").sanitize(command, true)
     local scmd
 
     if is_tmux_split then
@@ -271,7 +205,7 @@ M.send_cmd = function(command)
     end
 
     if is_tmux_split then
-        scmd = { "tmux", "paste-buffer", "-t", config.R_Tmux_pane }
+        scmd = { "tmux", "paste-buffer", "-t", r_pane }
     else
         scmd = {
             "tmux",
@@ -279,21 +213,20 @@ M.send_cmd = function(command)
             "Rnvim",
             "paste-buffer",
             "-t",
-            tmuxsname .. "." .. config.R_Tmux_pane,
+            tmuxsname .. "." .. r_pane,
         }
     end
-    obj = vim.system(scmd):wait()
-    if obj.code ~= 0 then
-        warn(obj.stderr)
-        require("r.run").clear_R_info()
-        return false
-    end
 
-    return true
+    local res = require("r.term").send(scmd)
+    return res
 end
 
 --- Return Tmux target name
 ---@return string
 M.get_tmuxsname = function() return tmuxsname and tmuxsname or "" end
+
+--- Set number of Tmux pane where R is running
+---@param p string
+M.set_r_pane = function(p) r_pane = p end
 
 return M

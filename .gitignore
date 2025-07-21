@@ -13,3 +13,4 @@ nvimcom/src/apps/compile_flags.txt
 scripts/__pycache__/
 scripts/*.pyc
 .tests
+deps

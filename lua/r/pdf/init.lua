@@ -3,31 +3,29 @@ local utils = require("r.utils")
 local warn = require("r.log").warn
 local job = require("r.job")
 local uv = vim.uv
-
-local check_installed = function()
-    if vim.fn.executable(config.pdfviewer) == 0 then
-        warn(
-            "R.nvim: Please, set the value of `pdfviewer`. The application `"
-                .. config.pdfviewer
-                .. "` was not found."
-        )
-    end
-end
+local viewer_installed = false
 
 local M = {}
 
+--- Check if the pdf viewer is installed.
+---@return boolean
+M.pdfviewer_installed = function()
+    if viewer_installed then return true end
+
+    if vim.fn.executable(config.pdfviewer) == 1 then
+        viewer_installed = true
+        return true
+    end
+    warn(
+        "R.nvim: Please, set the value of `pdfviewer`. The application `"
+            .. config.pdfviewer
+            .. "` was not found."
+    )
+    return false
+end
+
 M.setup = function()
     local ptime = uv.hrtime()
-
-    if config.pdfviewer == "" and vim.fn.has("nvim-0.10") == 0 then
-        if config.is_windows or config.is_darwin then
-            config.pdfviewer = "open"
-        else
-            config.pdfviewer = "xdg-open"
-        end
-    end
-
-    if config.pdfviewer ~= "" then check_installed() end
 
     if config.pdfviewer == "zathura" then
         M.open2 = require("r.pdf.zathura").open
@@ -35,7 +33,7 @@ M.setup = function()
     elseif config.is_windows and config.pdfviewer == "sumatra" then
         M.open2 = require("r.pdf.sumatra").open
         M.SyncTeX_forward = require("r.pdf.sumatra").SyncTeX_forward
-    elseif config.is_darwin and config.pdfviewer == "skim" then
+    elseif config.uname == "Darwin" and config.pdfviewer == "skim" then
         M.open2 = require("r.pdf.skim").open
         M.SyncTeX_forward = require("r.pdf.skim").SyncTeX_forward
     else
@@ -46,7 +44,7 @@ M.setup = function()
     if vim.o.filetype == "rnoweb" and config.synctex then
         if
             not config.is_windows
-            and not config.is_darwin
+            and not config.uname == "Darwin"
             and not vim.env.WAYLAND_DISPLAY
             and vim.env.DISPLAY
         then

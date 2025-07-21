@@ -136,10 +136,16 @@ Additional dependencies for editing Rnoweb documents:
 
 Suggestions for Unix (Linux, macOS, etc.):
 
+   WezTerm or Kitty:
+                 https://sw.kovidgoyal.net/kitty/
+		 https://wezterm.org/
+		 Required if you want to run R in an external terminal
+		 emulator and don't want to install Tmux.
+
    Tmux >= 3.0:  http://tmux.sourceforge.net
                  Tmux is required only if you want to run R in an external
-		 terminal emulator or in a Tmux split panel
-		 (see |external_term|).
+		 terminal emulator or in a Tmux split pane. Not required if
+		 either WezTerm or Kitty is installed (see |external_term|).
 
    colorout >= 1.3-1:
                  https://github.com/jalvesaq/colorout/releases
@@ -148,11 +154,10 @@ Suggestions for Unix (Linux, macOS, etc.):
                  See |external_term|). You should put in your Rprofile:
                  `library(colorout)`
 
-Suggestions for bibliographic completion from Zotero in RMarkdown (`.Rmd`) and
-Quarto (`.qmd`) documents:
+Suggestions for bibliographic completion from Zotero in RMarkdown (`.Rmd`),
+Quarto (`.qmd`), and Rnoweb (`.Rnw`) documents:
 
    - https://github.com/jalvesaq/zotcite
-   - https://github.com/jalvesaq/cmp-zotcite
 
 
 ------------------------------------------------------------------------------
@@ -825,14 +830,13 @@ command:
 <
 You may close the window opened by `:RConfigShow` by simply pressing `q`.
 
+|auto_quit|	    Quits R when quitting Neovim
 |auto_start|          Start R automatically
 |objbr_auto_start|    Start the Object Browser automatically
 |built-in-terminal|   Options to control Neovim's built-in terminal
 |external_term|       Command to run R in an external terminal emulator
 |silent_term|         Do not show terminal errors
 |set_home_env|        Set the value of $HOME for R (Windows only)
-|save_win_pos|        Save position of Rgui window (Windows only)
-|arrange_windows|     Restore position of R window (Windows only)
 |pipe_version|        Either "native"/"|>" or "magrittr"/"%>%"
 |rproj_prioritise|    Use .Rproj file to override options
 |objbr_place|         Placement of Object Browser
@@ -873,6 +877,7 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |rmarkdown_args|      Further options to be passed to `rmarkdown::render()`
 |quarto_render_args|  Options to be passed to `quarto::quarto_render()`
 |quarto_preview_args| Options to be passed to `quarto::quarto_preview()`
+|quarto_chunk_hl|     How to highlight code blocks in Quarto and Rmd
 |clear_line|          Clear R Console line before sending a command
 |editing_mode|        The mode defined in your `~/.inputrc`
 |pdfviewer|           PDF application used to open PDF documents
@@ -1012,47 +1017,36 @@ value:
    buffer_opts = "winfixwidth winfixheight nobuflisted"
 <
 If you do not want to run R in Neovim's built-in terminal emulator, you
-have to install Tmux >= 3.0, and then put in your config:
->lua
-   external_term = "default"
-<
-Then, R will start in an external terminal emulator (useful if you use two
-monitors and want Neovim and R separate from each other), and Tmux will be
-used to send commands from Neovim to R.
+have to install WezTerm, Kitty, or Tmux (see next section).
 
 
 ------------------------------------------------------------------------------
-6.3. Terminal emulator (Linux/Unix only)                       *external_term*
+6.3. Terminal emulator                                         *external_term*
                                                                  *silent_term*
-
-Note: The options of this section are ignored on macOS, where the command
-`open` is called to run the default application used to run shell scripts.
 
 R will run in Neovim's built-in terminal emulator, unless you set the value of
 `external_term`, which can be `""` (use Neovim's built-in terminal),
 `"default"` (automatically choose a pre-defined terminal), the name of the
-terminal emulator or the complete command to run the terminal emulator. On
-Windows, if the value of `external_term` is `"default"`, R.nvim will run
-`Rgui.exe`, and not really a terminal emulator.
+terminal emulator or the complete command to run the terminal emulator.
 
 On Linux, a command for running the terminal is predefined for the following
 options:
 
-    1. foot
+    1. wezterm
     2. kitty
-    3. gnome-terminal
-    4. konsole
-    5. xfce4-terminal
-    6. alacritty
-    7. xterm
-
+    3. foot
+    4. gnome-terminal
+    5. konsole
+    6. xfce4-terminal
+    7. alacritty
+    8. xterm
 
 If the value of `external_term` is `"default"`, the plugin runs the first terminal
 emulator that it finds from the above list. If your favorite terminal emulator
 is not selected, you may define it in your config. Below are some examples of
 how to set the value of `external_term`:
 >lua
-   external_term = "default" -- Run R in an external terminal (or Rgui.exe)
+   external_term = "default" -- Run R in an external terminal
    external_term = "konsole" -- Run R in konsole
 <
 If `external_term` is just the name of one of the above terminal emulators,
@@ -1069,13 +1063,31 @@ Examples (see also https://github.com/R-nvim/R.nvim/wiki/External-Terminals):
 Please, look at the manual of your terminal emulator to know how to call it.
 The last argument must be the one which precedes the command to be executed.
 
-Although the option is intended to allow running R in an external terminal
-emulator, if you are running Neovim within Tmux, it can also be used to run R
-in a Tmux split panel. Examples:
+Note: On Windows, Neovim must be running in WezTerm and the directory where R
+is installed must be in the PATH. Example of how to configure the PATH in
+WezTerm config:
 >lua
+ return {
+   set_environment_variables = {
+     PATH = "C:/Program Files/R/R-4.5.1/bin/x64;" .. os.getenv("PATH"),
+ }
+<
+Although the option is intended to allow running R in an external terminal
+emulator, if you are running Neovim within WezTerm, Kitty or Tmux, it can also
+be used to run R in a split pane. Examples:
+>lua
+   external_term = "kitty_split"
+   external_term = "wezterm_split"
    external_term = "tmux split-window -vf"
    external_term = "tmux split-window -h -l 80"
 <
+Note: for `external_term = "kitty_split"`, Kitty must be ready to receive
+remote commands. Example:
+>sh
+ kitty --instance-group "kitty_sock" -o allow_remote_control=yes --listen-on unix:/tmp/.kitty_sock
+<
+You will also need the option `enabled_layouts splits` in your Kitty config.
+
 The terminal error messages, if any, are shown as warning messages, unless you
 put in your config:
 >lua
@@ -1094,29 +1106,14 @@ built-in terminal emulator and `false` otherwise.
 
 
 ------------------------------------------------------------------------------
-6.4. Windows specific options                                *save_win_pos*
-                                                             *arrange_windows*
-                                                             *set_home_env*
-                                                             *Rtools-path*
+6.4. Windows specific options                                   *set_home_env*
+                                                                *Rtools-path*
 If R cannot find either `make` or `gcc` while trying to compile nvimcom, you
 should add their directories to the beginning of the `PATH` environment
 variable in your |init.lua|. Example:
 >lua
-   vim.env.PATH = "C:\\rtools40\\mingw64\\bin;C:\\rtools40\\usr\\bin;" .. $PATH
+   vim.env.PATH = "C:\\rtools45\\mingw64\\bin;C:\\rtools45\\usr\\bin;" .. vim.env.PATH
 <
-By default, R.nvim will save the positions of R Console and Neovim windows
-when you quit R with the <LocalLeader>rq command, and it will restore the
-positions of the windows when you start R. If you do not like this behavior,
-you can put in your config:
->lua
-   save_win_pos = false
-   arrange_windows = false
-<
-If you want Rgui window always in a specific arrangement, regardless of
-its state when you have quit R for the last time, you should arrange it
-in the way you want, quit R, change in your config only the value of
-`save_win_pos` and, finally, quit Neovim.
-
 The plugin sets `$HOME` as the Windows register value for "Personal" "Shell
 Folders" which is the same value set by R. However, if you have set `$HOME`
 yourself with the intention of changing the default value of `$HOME` assumed
@@ -1388,7 +1385,7 @@ So, it can include more than one directory separated by a `;` on Windows or a
 `:` on other systems. This is specially important to include the path to
 RTools `bin` directories on Windows. Example:
 >lua
-   R_path = "C:\\rtools40\\mingw64\\bin;C:\\rtools40\\usr\\bin;C:\\Program Files\\R\\R-4.3.3\\bin\\x64"
+   R_path = "C:\\rtools45\\mingw64\\bin;C:\\rtools45\\usr\\bin;C:\\Program Files\\R\\R-4.5.1\\bin\\x64"
 <
 By default `R_cmd` is `"R"` (the same as `R_app`) and will be used to run some
 scripts in the background, such as:
@@ -1401,15 +1398,18 @@ If it is necessary to call a different application to run the above commands
 in your system, you should set the value of `R_cmd` in your config.
 
 By default the value of `R_app` is `"R"` on Unix systems (such as Linux and
-macOS). On Windows, it is `Rterm.exe` if R is going to run in a Neovim
-buffer and `"Rgui.exe"` otherwise. R.nvim cannot send messages to `Rterm.exe`
-in an external `cmd` window. If your R binary has a different name (for
+macOS), and `Rterm.exe`, on Windows.
+
+If your R binary has a different name (for
 example, if it is called by a custom script), you should set the value of
 `R_app` in your config (and, perhaps, `R_cmd` too). Example:
 >lua
    R_app = "radian"
    R_cmd = "R"
 <
+On Windows, R.nvim cannot send messages to `Rterm.exe` in an external `cmd`
+window.
+
 
 ------------------------------------------------------------------------------
 6.9. Arguments to R                                                   *R_args*
@@ -1419,10 +1419,10 @@ R at the startup. The value of this variable must be a `string[]`. Example:
 >lua
    R_args = { "--no-save", "--quiet" }
 <
-On Linux, there is no default value for |R_args|. On Windows, the default
-value is `{"--sdi"}`, but you may change it to `{"--mdi"}` if you do not like
-the SDI style of the graphical user interface.
-
+The default value for |R_args| is an empty Lua table:
+>lua
+   R_args = { }
+<
 
 ------------------------------------------------------------------------------
 6.10. Auto-completion                                             *start_libs*
@@ -1484,6 +1484,23 @@ you should put in your config:
 >lua
    R_prompt_str = "»"
 <
+Similarly, if the `continue` option in your `~/.Rprofile` has ANSI scape codes,
+you should set the value of `R_continue_str`. Example:
+>lua
+   R_continue_str = "…"
+<
+Alternatively, you can set prompt and continuation strings in your
+`~/.Rprofile` without special characters if R was started by `R.nvim`.
+Example:
+>r
+ if (Sys.getenv("RNVIM_TMPDIR") == "") {
+     options(prompt = "\x1b[33m»\x1b[0m ",
+             continue = "\x1b[33m…\x1b[0m ")
+ } else {
+     options(prompt = "» ",
+             continue = "… ")
+ }
+<
 
 ------------------------------------------------------------------------------
 6.12. How to automatically open the .Rout file                   *routnotab*
@@ -1500,9 +1517,9 @@ that the file is open in a new split window, put in your config:
 6.13. Tmux configuration (Linux/Unix only)                       *config_tmux*
 
 
-If Neovim is running R in an external terminal emulator, R will run in a Tmux
-session with a specially built Tmux configuration file. If you want to use
-your own ~/.tmux.conf, put in your config:
+If Neovim is running R within Tmux in an external terminal emulator other than
+Wezterm or Kitty, a specially built Tmux configuration file will be used. If
+you want to use your own `tmux.conf`, put in your config:
 >lua
    config_tmux = false
 <
@@ -1698,8 +1715,9 @@ Other options to be passed to `rmarkdown::render()` might be defined with
 <
 
 ------------------------------------------------------------------------------
-6.21. Quarto's render and preview options                *quarto_render_args*
+6.21. Quarto options                                      *quarto_render_args*
                                                          *quarto_preview_args*
+							     *quarto_chunk_hl*
 
 If you want to send the commands `quarto::quarto_render()` and
 `quarto::quarto_preview()` to R with additional arguments, you should define
@@ -1708,6 +1726,25 @@ config, as in the examples:
 >lua
    quarto_render_args = ", pandoc_args = c('-F', 'apafix.py')"
    quarto_preview_args = ", browse = FALSE"
+<
+R.nvim changes the background color of code blocks and adds a virtual text
+with the language of the code block to the right side of the header of the
+block. It also highlights YAML comments (prefixed with `#|`) with the
+foreground color of the tree-sitter highlighting group `@define` and comments
+prefixed with `# %%` with the foreground color of `@delimiter`. The background
+color is taken from |hl-CursorColumn| and the highlighting is updated on the
+|BufEnter| and |InsertLeave| events. The code of chunks with the field `eval:
+false` are highlighted with foreground color of |hl-Comment|, and chunks with
+the field `child` are highlighted with the foreground color of |hl-Ignore|.
+Below is an example of how to configure the highlighting:
+>lua
+   quarto_chunk_hl = {
+     highlight = false,               -- Highlight code blocks?
+     yaml_hl = false,                 -- Highlight YAML comments?
+     virtual_title = false,           -- Add language as virtual text?
+     bg = "#003010",                  -- Use a different background color
+     events = "BufEnter,TextChanged", -- Update the highlighting more often
+   },
 <
 
 ------------------------------------------------------------------------------
@@ -1739,8 +1776,7 @@ the audible bell only for R by putting in your `~/.inputrc`:
        set bell-style audible
    $endif
 <
-Note: You can't control the bell on Windows; it is hardcoded to run in Rterm
-and to not run in Rgui.
+Note: You can't control the bell on Windows; it is hardcoded to run in Rterm.
 
 
 ------------------------------------------------------------------------------
@@ -1764,7 +1800,7 @@ the PDF viewer window was not implemented for all systems. Currently, it works
 only on the X Server and on the Sway Window Manager. On Linux, if running on
 the X server (not on Wayland), the application `wmctrl` is required to raise
 both the PDF viewer and Neovim windows. This feature is not implemented for
-Wayland windows managers other than Sway.
+Wayland window managers other than Sway.
 
 R.nvim will call Sumatra to open the PDF on Windows, Skim on macOS, and
 Zathura on Linux, but you can change the values of `synctex` and `pdfviewer`
@@ -1866,12 +1902,19 @@ below:
        on_filetype =  function() vim.notify("R.nvim FileType event") end,
        after_config = function() vim.notify("R.nvim is configured") end,
        after_R_start = function() vim.notify("R was launched") end,
-       after_ob_open = nil,
+       after_ob_open = function() vim.notify("Object Browser") end,
    },
 <
 See |R.nvim-key-bindings| for a real example of how to use the `after_config`
-hook.
-
+hook. In the example below, the plugin `ccc.nvim` is disabled in the Object
+Browser buffer:
+>lua
+  hook = {
+    after_ob_open = function()
+      vim.cmd("CccHighlighterDisable")
+    end
+  }
+<
 
 ------------------------------------------------------------------------------
 6.29. Disable R.nvim commands                                 *user_maps_only*
@@ -2196,6 +2239,9 @@ r.send.cmd(command)                                              *r.send.cmd()*
     Parameters: ~
         {command} (string)  Code to send to the current R session
 
+See in the next section examples of using the API within the `on_filetype`
+hook.
+<
 
 ==============================================================================
 8. Custom key bindings                                   *R.nvim-key-bindings*
@@ -2229,15 +2275,20 @@ bindings. Examples:
    hook = {
        on_filetype = function()
            -- Use <Enter> to send code to R:
-           vim.api.nvim_buf_set_keymap(0, "n", "<Enter>", "<Plug>RDSendLine", { noremap = true })
-           vim.api.nvim_buf_set_keymap(0, "v", "<Enter>", "<Plug>RSendSelection", { noremap = true })
+           vim.api.nvim_buf_set_keymap(0, "n", "<Enter>",
+	       "<Plug>RDSendLine", { noremap = true })
+           vim.api.nvim_buf_set_keymap(0, "v", "<Enter>",
+	       "<Plug>RSendSelection", { noremap = true })
 
 	   -- Emulate some of Nvim-R's default key bindings:
-           vim.api.nvim_buf_set_keymap(0, "i", "_", "<Plug>RInsertAssign", { noremap = true })
+           vim.api.nvim_buf_set_keymap(0, "i", "_",
+	       "<Plug>RInsertAssign", { noremap = true })
            if vim.bo.filetype == "rnoweb" then
-               vim.api.nvim_buf_set_keymap(0, "i", "<", "<Plug>RnwInsertChunk", { noremap = true })
+               vim.api.nvim_buf_set_keymap(0, "i", "<",
+	           "<Plug>RnwInsertChunk", { noremap = true })
            elseif vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
-               vim.api.nvim_buf_set_keymap(0, "i", "`", "<Plug>RmdInsertChunk", { noremap = true })
+               vim.api.nvim_buf_set_keymap(0, "i", "`",
+	           "<Plug>RmdInsertChunk", { noremap = true })
            end
        end,
    }
@@ -2254,22 +2305,37 @@ inside the function passed to `hook.on_filetype` as in the examples below
 >lua
    hook = {
        on_filetype = function()
-           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>L", "<Cmd>lua require('r.run').action('levels')<CR>", {})
+           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>L",
+	       "<Cmd>lua require('r.run').action('levels')<CR>", {})
 
            -- If you want an action over a selection, then the second
            -- argument must be the string `"v"`:
-           -- In this case, the beginning and the end of the selection must be
-           -- in the same line.
-           vim.api.nvim_buf_set_keymap(0, "v", "<LocalLeader>T", "<Cmd>lua require('r.run').action('head')<CR>", {})
+           -- In this case, the beginning and the end of the selection
+	   -- must be in the same line.
+           vim.api.nvim_buf_set_keymap(0, "v", "<LocalLeader>T",
+	       "<Cmd>lua require('r.run').action('head')<CR>", {})
 
-           -- If a third optional argument starts with a comma, it will be
-           -- inserted as argument(s) to the `action`:
-           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>H", "<Cmd>lua require('r.run').action('head', 'n', ', n = 10')<CR>", {})
+           -- If a third optional argument starts with a comma, it will
+	   -- be inserted as argument(s) to the `action`:
+           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>H",
+	       "<Cmd>lua require('r.run').action('head', 'n', ', n = 10')<CR>", {})
 
            -- If the command that you want to send does not require an R
-           -- object as argument, you can use `cmd()` from the `r.send` module
-           -- to send it directly to R Console:
-           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>S", "<Cmd>lua require('r.send').cmd('search()')<CR>", {})
+           -- object as argument, you can use `cmd()` from the `r.send`
+	   -- module to send it directly to R Console:
+           vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>S",
+	       "<Cmd>lua require('r.send').cmd('search()')<CR>", {})
+
+	   -- Close the last graphics window:
+	   vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>cw",
+	       "<Cmd>lua require('r.send').cmd('dev.off()')<CR>", {})
+
+	   -- Send the current file name as argument to `file.info()`:
+	   vim.api.nvim_buf_set_keymap(0, "n", "<LocalLeader>fi", "", {
+		callback = function()
+		   require('r.send').cmd('file.info("' ..
+		       vim.api.nvim_buf_get_name(0) .. '")')
+		end })
        end,
    }
 

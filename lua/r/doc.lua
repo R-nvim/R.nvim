@@ -33,7 +33,7 @@ end
 M.ask_R_doc = function(rkeyword, package, getclass)
     local firstobj = ""
     local cb = vim.api.nvim_get_current_buf()
-    local rb = require("r.term").get_buf_nr()
+    local rb = require("r.term.builtin").get_buf_nr()
     local bb = require("r.browser").get_buf_nr()
     if cb == rb or cb == bb then
         local savesb = vim.o.switchbuf
@@ -89,7 +89,7 @@ M.show = function(rkeyword, txt)
 
     local cb = vim.api.nvim_get_current_buf()
     local bb = require("r.browser").get_buf_nr()
-    local rb = require("r.term").get_buf_nr()
+    local rb = require("r.term.builtin").get_buf_nr()
     if cb == rb then
         -- Exit Terminal mode and go to Normal mode
         vim.cmd("stopinsert")
@@ -123,6 +123,9 @@ M.show = function(rkeyword, txt)
     end
 
     doc_buf_id = vim.api.nvim_get_current_buf()
+    vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
+    vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
+    vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
     vim.api.nvim_buf_set_name(doc_buf_id, rkeyword)
 
     vim.api.nvim_set_option_value("modifiable", true, { scope = "local" })
@@ -151,10 +154,7 @@ M.show = function(rkeyword, txt)
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
     else
         vim.o.syntax = "rout"
-        vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
         vim.api.nvim_set_option_value("number", false, { scope = "local" })
-        vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
-        vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
         vim.api.nvim_buf_set_keymap(
             0,
             "n",
@@ -216,7 +216,7 @@ M.load_html = function(fullpath, browser)
 
     local cmd
     if browser == "" then
-        if config.is_windows or config.is_darwin then
+        if config.is_windows or config.uname == "Darwin" then
             cmd = { "open", fullpath }
         else
             cmd = { "xdg-open", fullpath }

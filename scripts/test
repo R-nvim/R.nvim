@@ -1,0 +1,4 @@
+#!/bin/bash
+set -eu
+
+nvim --noplugin -l tests/busted.lua --output TAP tests/

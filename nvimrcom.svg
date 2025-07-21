@@ -34,11 +34,6 @@
 <path d="M 260,250 L 540,250" stroke-width="2" stroke="black" fill="none" />
 <path d="M 542,248 l -8,-4 l 4,6, -4,6 12,-6" fill="black" stroke="none" />
 
-<!-- Arrow from Neovim to nvimcom -->
-<path d="M 260,220 C 450,220 450,110 540,110"
-  stroke-width="2" stroke="black" fill="none" />
-<path d="M 542,108 l -8,-4 l 4,6, -4,6 12,-6" fill="black" stroke="none" />
-
 <!-- Arrows from nvimcom to Neovim -->
 <path d="M 260,185 C 280,185 320,185 370,165"
   stroke-width="2" stroke="blue" fill="none" />
@@ -71,9 +66,8 @@
   <text x="400" y="170">files</text>
 </g>
 <g font-size="15" font-family="sans-serif" fill="black" text-anchor="middle">
-  <text x="400" y="240">via chansend() or Tmux</text>
-  <text x="415" y="202" transform="rotate(-30, 415, 202)">with</text>
-  <text x="445" y="182" transform="rotate(-40, 445, 182)">Rgui</text>
+  <text x="400" y="240">via chansend() or</text>
+  <text x="400" y="270">multiplexer</text>
 </g>
 
 </svg>

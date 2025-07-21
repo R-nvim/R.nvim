@@ -34,9 +34,13 @@ local hooks = require("r.hooks")
 ---Do `:help Rout_more_colors` for more information.
 ---@field Rout_more_colors? boolean
 ---
----Whether to remember the window layout when quitting R; defaults to `true`.
----Do `:help arrange_windows` for more information.
----@field arrange_windows? boolean
+---The R prompt string; defaults to `""`.
+---Do `:help R_prompt_str` for more information.
+---@field R_prompt_str? string
+---
+---The R continuation string; defaults to `""`.
+---Do `:help R_continue_str` for more information.
+---@field R_continue_str? string
 ---
 ---The version of the pipe operator to insert on pipe keymap; defaults to
 ---`"native"`. Do `:help pipe_version` for more information.
@@ -254,6 +258,9 @@ local hooks = require("r.hooks")
 ---Do `:help quarto_render_args` for more information.
 ---@field quarto_render_args? string
 ---
+---How to highlight code blocks in Quarto and Rmd documents.
+---@field quarto_chunk_hl? { highlight: boolean, yaml_hl: boolean, virtual_title: boolean, bg: string, events: string }
+---
 ---The default height for the R console; defaults to `15`.
 ---Do `:help rconsole_height` for more information.
 ---@field rconsole_height? integer
@@ -296,10 +303,6 @@ local hooks = require("r.hooks")
 ---Defaults to `{ "pipe_version" }`. Do `:help rproj_prioritise` for more
 ---information.
 ---@field rproj_prioritise? table<integer, RprojField>
----
----Whether to save the position of the R console on quit; defaults to `true`.
----Do `:help save_win_pos` for more information.
----@field save_win_pos? boolean
 ---
 ---Whether to set the `HOME` environmental variable; defaults to `true`.
 ---Do `:help set_home_env` for more information.
@@ -366,19 +369,14 @@ local hooks = require("r.hooks")
 ---@class RConfig: RConfigUserOpts
 ---@field uname? string
 ---@field is_windows? boolean
----@field is_darwin? boolean
 ---@field rnvim_home? string
 ---@field uservimfiles? string
 ---@field user_login? string
 ---@field localtmpdir? string
 ---@field source_read? string
 ---@field source_write? string
----@field curview? string
 ---@field term_title? string -- Pid of window application.
 ---@field term_pid? integer -- Part of the window title.
----@field R_Tmux_pane? string
----@field R_prompt_str? string
----@field R_continue_str? string
 
 -- stylua: ignore start
 ---@type RConfig
@@ -386,11 +384,12 @@ local config = {
     OutDec              = ".",
     RStudio_cmd         = "",
     R_app               = "R",
-    R_args              = {},
+    R_args              = { },
     R_cmd               = "R",
     R_path              = "",
     Rout_more_colors    = false,
-    arrange_windows     = true,
+    R_prompt_str        = "",
+    R_continue_str      = "",
     pipe_version        = "native",
     auto_scroll         = true,
     auto_start          = "no",
@@ -454,6 +453,13 @@ local config = {
     pdfviewer           = "",
     quarto_preview_args = "",
     quarto_render_args  = "",
+    quarto_chunk_hl = {
+        highlight = true,
+        yaml_hl = vim.fn.has("nvim-0.11") == 1 and true or false,
+        virtual_title = true,
+        bg = "",
+        events = ""
+    },
     rconsole_height     = 15,
     rconsole_width      = 80,
     register_treesitter = true,
@@ -467,7 +473,6 @@ local config = {
     rproj_prioritise    = {
                                "pipe_version"
                           },
-    save_win_pos        = true,
     set_home_env        = true,
     setwidth            = 2,
     silent_term         = false,
@@ -496,14 +501,9 @@ local config = {
 
 local user_opts = {}
 local did_real_setup = false
-local unix = require("r.platform.unix")
-local windows = require("r.platform.windows")
 
 local smsgs = {}
-local swarn = function(msg)
-    table.insert(smsgs, msg)
-    require("r.log").warn(msg)
-end
+local swarn = function(msg) table.insert(smsgs, msg) end
 
 local set_editing_mode = function()
     if config.editing_mode ~= "" then return end
@@ -527,7 +527,7 @@ local set_editing_mode = function()
 end
 
 local set_pdf_viewer = function()
-    if config.is_darwin then
+    if config.uname == "Darwin" then
         config.pdfviewer = "skim"
         if config.skim_app_path == "" then
             config.skim_app_path = "/Applications/Skim.app"
@@ -662,11 +662,7 @@ local apply_user_opts = function()
     apply(user_opts, {})
 end
 
-local do_common_global = function()
-    config.uname = uv.os_uname().sysname
-    config.is_windows = config.uname:find("Windows", 1, true) ~= nil
-    config.is_darwin = config.uname == "Darwin"
-
+local set_directories = function()
     -- config.rnvim_home should be the directory where the plugin files are.
     config.rnvim_home = vim.fn.expand("<script>:h:h")
 
@@ -731,10 +727,66 @@ local do_common_global = function()
 
     utils.ensure_directory_exists(config.compldir)
 
+    -- Check if the 'config' table has the key 'tmpdir'
+    if not config.tmpdir ~= "" then
+        -- Set temporary directory based on the platform
+        if config.is_windows then
+            if vim.env.TMP and vim.fn.isdirectory(vim.env.TMP) ~= 0 then
+                config.tmpdir = vim.env.TMP .. "/R.nvim-" .. config.user_login
+            elseif vim.env.TEMP and vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
+                config.tmpdir = vim.env.TEMP .. "/R.nvim-" .. config.user_login
+            else
+                config.tmpdir = config.uservimfiles .. "/R_tmp"
+            end
+            config.tmpdir = utils.normalize_windows_path(config.tmpdir)
+        else
+            if vim.env.TMPDIR and vim.fn.isdirectory(vim.env.TMPDIR) ~= 0 then
+                if string.find(vim.env.TMPDIR, "/$") then
+                    config.tmpdir = vim.env.TMPDIR .. "R.nvim-" .. config.user_login
+                else
+                    config.tmpdir = vim.env.TMPDIR .. "/R.nvim-" .. config.user_login
+                end
+            elseif vim.fn.isdirectory("/dev/shm") ~= 0 then
+                config.tmpdir = "/dev/shm/R.nvim-" .. config.user_login
+            elseif vim.fn.isdirectory("/tmp") ~= 0 then
+                config.tmpdir = "/tmp/R.nvim-" .. config.user_login
+            else
+                config.tmpdir = config.uservimfiles .. "/R_tmp"
+            end
+        end
+    end
+
+    -- Adjust options when accessing R remotely
+    config.localtmpdir = config.tmpdir
+    if config.remote_compldir ~= "" then
+        vim.env.RNVIM_REMOTE_COMPLDIR = config.remote_compldir
+        vim.env.RNVIM_REMOTE_TMPDIR = config.remote_compldir .. "/tmp"
+        config.tmpdir = config.compldir .. "/tmp"
+    else
+        vim.env.RNVIM_REMOTE_COMPLDIR = config.compldir
+        vim.env.RNVIM_REMOTE_TMPDIR = config.tmpdir
+    end
+
+    utils.ensure_directory_exists(config.tmpdir)
+    utils.ensure_directory_exists(config.localtmpdir)
+
+    vim.env.RNVIM_TMPDIR = config.tmpdir
+    vim.env.RNVIM_COMPLDIR = config.compldir
+
+    -- Make the file name of files to be sourced
+    if config.remote_compldir ~= "" then
+        config.source_read = config.remote_compldir .. "/tmp/Rsource-" .. vim.fn.getpid()
+    else
+        config.source_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
+    end
+    config.source_write = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
+end
+
+local check_readme = function()
     -- Create or update the README (objls_ files will be regenerated if older than
     -- the README).
     local need_readme = false
-    local first_line = "Last change in this file: 2024-10-29"
+    local first_line = "Last change in this file: 2025-06-04"
     if
         vim.fn.filereadable(config.compldir .. "/README") == 0
         or vim.fn.readfile(config.compldir .. "/README")[1] ~= first_line
@@ -799,64 +851,19 @@ local do_common_global = function()
 
         vim.fn.writefile(readme, config.compldir .. "/README")
     end
+end
 
-    -- Check if the 'config' table has the key 'tmpdir'
-    if not config.tmpdir ~= "" then
-        -- Set temporary directory based on the platform
-        if config.is_windows then
-            if vim.env.TMP and vim.fn.isdirectory(vim.env.TMP) ~= 0 then
-                config.tmpdir = vim.env.TMP .. "/R.nvim-" .. config.user_login
-            elseif vim.env.TEMP and vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
-                config.tmpdir = vim.env.TEMP .. "/R.nvim-" .. config.user_login
-            else
-                config.tmpdir = config.uservimfiles .. "/R_tmp"
-            end
-            config.tmpdir = utils.normalize_windows_path(config.tmpdir)
-        else
-            if vim.env.TMPDIR and vim.fn.isdirectory(vim.env.TMPDIR) ~= 0 then
-                if string.find(vim.env.TMPDIR, "/$") then
-                    config.tmpdir = vim.env.TMPDIR .. "R.nvim-" .. config.user_login
-                else
-                    config.tmpdir = vim.env.TMPDIR .. "/R.nvim-" .. config.user_login
-                end
-            elseif vim.fn.isdirectory("/dev/shm") ~= 0 then
-                config.tmpdir = "/dev/shm/R.nvim-" .. config.user_login
-            elseif vim.fn.isdirectory("/tmp") ~= 0 then
-                config.tmpdir = "/tmp/R.nvim-" .. config.user_login
-            else
-                config.tmpdir = config.uservimfiles .. "/R_tmp"
-            end
-        end
-    end
+local do_common_global = function()
+    config.uname = uv.os_uname().sysname
+    config.is_windows = config.uname:find("Windows", 1, true) ~= nil
 
-    -- Adjust options when accessing R remotely
-    config.localtmpdir = config.tmpdir
-    if config.remote_compldir ~= "" then
-        vim.env.RNVIM_REMOTE_COMPLDIR = config.remote_compldir
-        vim.env.RNVIM_REMOTE_TMPDIR = config.remote_compldir .. "/tmp"
-        config.tmpdir = config.compldir .. "/tmp"
-    else
-        vim.env.RNVIM_REMOTE_COMPLDIR = config.compldir
-        vim.env.RNVIM_REMOTE_TMPDIR = config.tmpdir
-    end
-
-    utils.ensure_directory_exists(config.tmpdir)
-    utils.ensure_directory_exists(config.localtmpdir)
-
-    vim.env.RNVIM_TMPDIR = config.tmpdir
-    vim.env.RNVIM_COMPLDIR = config.compldir
-
-    -- Make the file name of files to be sourced
-    if config.remote_compldir ~= "" then
-        config.source_read = config.remote_compldir .. "/tmp/Rsource-" .. vim.fn.getpid()
-    else
-        config.source_read = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
-    end
-    config.source_write = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
+    set_pdf_viewer()
+    set_directories()
+    check_readme()
 
     -- Default values of some variables
-    if config.RStudio_cmd ~= "" or (config.is_windows and config.external_term ~= "") then
-        -- Sending multiple lines at once to either Rgui on Windows or RStudio does not work.
+    if config.RStudio_cmd ~= "" then
+        -- Sending multiple lines at once to RStudio does not work.
         config.max_paste_lines = 1
         config.bracketed_paste = false
         config.parenblock = false
@@ -864,8 +871,6 @@ local do_common_global = function()
 
     if config.external_term == "" then
         config.nvimpager = "split_h"
-        config.save_win_pos = false
-        config.arrange_windows = false
     else
         config.nvimpager = "tab"
         config.objbr_place = string.gsub(config.objbr_place, "console", "script")
@@ -873,14 +878,6 @@ local do_common_global = function()
     end
 
     if config.R_app:find("radian") then config.hl_term = false end
-
-    if config.is_windows then
-        config.save_win_pos = true
-        config.arrange_windows = true
-    else
-        config.save_win_pos = false
-        config.arrange_windows = false
-    end
 
     -- The environment variables RNVIM_COMPLCB and RNVIM_COMPLInfo must be defined
     -- before starting the rnvimserver because it needs them at startup.
@@ -924,16 +921,9 @@ local do_common_global = function()
         vim.env.WINDOWID = vim.v.windowid
     end
 
-    -- Current view of the object browser: .GlobalEnv X loaded libraries
-    config.curview = "None"
-
     -- Set the name of R executable
     if config.is_windows then
-        if config.external_term == "" then
-            config.R_app = "Rterm.exe"
-        else
-            config.R_app = "Rgui.exe"
-        end
+        config.R_app = "Rterm.exe"
         config.R_cmd = "R.exe"
     end
 
@@ -956,7 +946,6 @@ local global_setup = function()
 
     if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
 
-    set_pdf_viewer()
     apply_user_opts()
 
     -- Config values that depend on either system features or other config
@@ -973,10 +962,11 @@ local global_setup = function()
     -- asynchronously to avoid slow startup on macOS.
     -- See https://github.com/jalvesaq/Nvim-R/issues/625
     do_common_global()
+
     if config.is_windows then
-        windows.configure(config)
+        require("r.platform.windows").configure(config)
     else
-        unix.configure(config)
+        require("r.platform.unix").configure(config)
     end
 
     -- Override default config values with user options for the second time.
@@ -1098,8 +1088,13 @@ M.check_health = function()
     end
 
     if #smsgs > 0 then
+        local plural = #smsgs > 1 and "s" or ""
         local msg = "\n  " .. table.concat(smsgs, "\n  ")
-        require("r.edit").add_to_debug_info("Startup warnings", msg)
+        require("r.edit").add_to_debug_info("Startup warning" .. plural, msg)
+        msg = "R.nvim warning" .. plural .. ":" .. msg
+        vim.schedule(function()
+            vim.defer_fn(function() require("r.log").warn(msg) end, 200)
+        end)
     end
 
     htime = (uv.hrtime() - htime) / 1000000000

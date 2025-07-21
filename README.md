@@ -1,5 +1,6 @@
 ![GitHub Release](https://img.shields.io/github/v/release/R-nvim/R.nvim)
-![Selene linter check](https://github.com/jalvesaq/tmp-R-Nvim/actions/workflows/selene.yml/badge.svg)
+![Selene linter check](https://github.com/R-Nvim/R.nvim/actions/workflows/selene.yml/badge.svg)
+[![CI](https://github.com/R-nvim/R.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/R-nvim/R.nvim/actions/workflows/ci.yml)
 
 # R.nvim
 
@@ -42,7 +43,7 @@ A longer example adding some custom behaviour:
 {
     "R-nvim/R.nvim",
      -- Only required if you also set defaults.lazy = true
-    lazy = false
+    lazy = false,
     -- R.nvim is still young and we may make some breaking changes from time
     -- to time (but also bug fixes all the time). If configuration stability
     -- is a high priority for you, pin to the latest minor version, but unpin
@@ -97,8 +98,7 @@ R autocompletion should be configured via another plugin. We recommend
 [cmp-r](https://github.com/R-nvim/cmp-r), which can be minimally configured
 like so:
 
-
-``` lua
+```lua
 {
     "R-nvim/cmp-r",
     {
@@ -120,7 +120,7 @@ sources simultaneously is not advised.
 Tree-sitter is required to enable much of the functionality of R.nvim, and can
 be minimally configured like so:
 
-``` lua
+```lua
 {
     "nvim-treesitter/nvim-treesitter",
     run = ":TSUpdate",
@@ -132,7 +132,6 @@ be minimally configured like so:
     end
 },
 ```
-
 
 ## Usage
 
@@ -154,23 +153,21 @@ firm commitment to backwards compatibility.
 
 ## Transitioning from Nvim-R
 
-### Removed features:
+### Removed features
 
 - reStructuredText support (no longer seems to be widely used).
 
-- Debugging support (a formal debug adaptor would be a better solution).
-
 - Legacy omni-completion (we now recommend
-    [nvim-cmp](https://github.com/hrsh7th/nvim-cmp)).
+  [nvim-cmp](https://github.com/hrsh7th/nvim-cmp)).
 
 - Highlighting functions from `.GlobalEnv` (difficult to make compatible with
-    tree-sitter + LSP highlighting).
+  tree-sitter + LSP highlighting).
 
 - The `echo` argument for functions that send code to R console has been
-    removed. Users can still set the `source_args` to define the arguments that
-    will be passed to `base::source()` and include the argument `echo=TRUE`.
-    `max_lines_to_paste` can now be used to set the number of lines which can be
-    sent directly to the R Console without saving the code in a temporary file.
+  removed. Users can still set the `source_args` to define the arguments that
+  will be passed to `base::source()` and include the argument `echo=TRUE`.
+  `max_lines_to_paste` can now be used to set the number of lines which can be
+  sent directly to the R Console without saving the code in a temporary file.
 
 - Rnoweb chunk headers with options are not supported by tree-sitter. You have
   to write the options at the top of the code block after the `#|` comment
@@ -179,20 +176,21 @@ firm commitment to backwards compatibility.
 
 - Integration with `Rapp` on macOS was removed (option `applescript`).
 
-### Changes:
+
+### Changes
 
 - `<M-->` (i.e. `Alt + -`) is now used to insert `<-`. See the documentation
   on how to create custom key bindings.
 
 - `R_source` and `after_R_start` have been replaced with more powerful `hook`
-    options.
+  options.
 
 - `nvimpager`, which controls how R documentation is displayed, now has possible
-    options `"split_h"`, `"split_v"`, `"tab"`, `"float"` (not implemented yet),
-    and `"no"`.
+  options `"split_h"`, `"split_v"`, `"tab"`, `"float"` (not implemented yet),
+  and `"no"`.
 
 - `open_pdf` replaces `openpdf` and `openhtml`; see the documentation for
-    details.
+  details.
 
 - `setwd` replaces `nvim_wd`. The new default value is `"no"`.
 
@@ -201,7 +199,7 @@ firm commitment to backwards compatibility.
 - `config_tmux` replaces `notmuxconf`. The new default value is `true`.
 
 - `:RFormat` now requires {styler} to be installed; {formatR} is no longer
-    supported.
+  supported.
 
 - `view_df` is a table replacing the options `csv_app`,
   `csv_delim`, and `df_viewer`. The commands to see a `data.frame`
@@ -211,6 +209,11 @@ firm commitment to backwards compatibility.
 - `rmdchunk` and `rnowebchunk` were removed. In Insert mode, press `<M-r>` to
   insert chunks of R code in Rmd, Quarto or Rnoweb. See the documentation on
   how to create custom key bindings.
+
+- In a Quarto or RMarkdown document, when the cursor is over a chunk header
+  and you tries to send the current line and go to the next line, the whole
+  chunk is sent to R and the cursor jumps to the next chunk of either R or
+  Python code.
 
 ### New features
 
@@ -227,14 +230,14 @@ firm commitment to backwards compatibility.
 - `<LocalLeader>sc` sends a piped chain of commands.
 
 - `<LocalLeader>ip` installs missing packages detected by
-    [languageserver](https://github.com/REditorSupport/languageserver).
+  [languageserver](https://github.com/REditorSupport/languageserver).
 
 - `<LocalLeader>sp` splits a filepath under the cursor into individual
-    components concatenated using either `"here::here"` (the default),
-    `"here"`, `"file.path"`, `"fs::path"`, or `"path"`, depending on how
-    `path_split_fun` is set. Requires
-    [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
-    installed).
+  components concatenated using either `"here::here"` (the default),
+  `"here"`, `"file.path"`, `"fs::path"`, or `"path"`, depending on how
+  `path_split_fun` is set. Requires
+  [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
+  installed).
 
 - `<LocalLeader>,` inserts a pipe operator (`|>`).
 
@@ -243,11 +246,17 @@ firm commitment to backwards compatibility.
 - `auto_quit` can be configured to automatically quit R when you quit Neovim.
 
 - `rproj_prioritise` can be configured to control how `.Rproj` files change the
-    behaviour of R.nvim. Amongst other things, this may affect whether
-    `<LocalLeader>,` inserts `|>` or `%>%`.
+  behaviour of R.nvim. Amongst other things, this may affect whether
+  `<LocalLeader>,` inserts `|>` or `%>%`.
 
 - `objbr_mappings` can be configured to run R commands on objects in the
-    current session.
+  current session.
+
+- `external_term` now accepts as valid values `"wezterm_split"` and
+  `"kitty_split"`, not requiring Tmux to split the terminal window.
+  It's possible to [WezTerm](https://wezterm.org/) to run R in an external
+  terminal emulator on Windows. Hence, the values `"wezterm"` and
+  `"wezterm_split"` are valid on Linux, macOS and Windows.
 
 ## Screenshots and videos
 
@@ -256,16 +265,15 @@ None yet! Please let us know if you publish a video presenting R.nvim features ð
 ## Troubleshooting
 
 - [colorout](https://github.com/jalvesaq/colorout): If you have [colorout]
-    installed and are *not* loading it in your `~/.Rprofile`, it should be
-    version `1.3-1` or higher. This is because R.nvim uses
-    `colorout::isColorOut()` which in previous `colorout` versions was unduly
-    enabling the output colorizing.
-
+  installed and are _not_ loading it in your `~/.Rprofile`, it should be
+  version `1.3-1` or higher. This is because R.nvim uses
+  `colorout::isColorOut()` which in previous `colorout` versions was unduly
+  enabling the output colorizing.
 
 ## How R.nvim communicates with your R session
 
 The diagram below shows how the communication between Neovim and R works.
-![Neovim-R communication](https://raw.githubusercontent.com/jalvesaq/tmp-R-Nvim/master/nvimrcom.svg "Neovim-R communication")
+![Neovim-R communication](https://raw.githubusercontent.com/R-Nvim/R.nvim/main/nvimrcom.svg "Neovim-R communication")
 
 The black arrows represent all commands that you trigger in the editor and
 that you can see being pasted into R Console.
@@ -275,11 +283,8 @@ There are three different ways of sending the commands to R Console:
   is used to send code to R Console.
 
 - When running R in an external terminal emulator, Tmux is used to send
-  commands to R Console.
-
-- On the Windows operating system, if using the `Rgui.exe` as "external
-  terminal", Nvim-R can send a message to R (nvimcom) which forwards the
-  command to R Console.
+  commands to R Console, but some terminal emulators have built-in multiplexer
+  capabilities and can be used without Tmux.
 
 The R package _nvimcom_ includes the application _rnvimserver_ which is never
 used by R itself but is run as a Neovim's job. That is, the communication
@@ -305,18 +310,16 @@ but temporary files are used in a few cases.
 ## See also:
 
 - [cmp-r](https://github.com/R-nvim/cmp-r): autocompletion source for
-    [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) using R.nvim as backend.
+  [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) using R.nvim as backend.
 
 - [languageserver](https://github.com/REditorSupport/languageserver): a
-    language server for R.
+  language server for R.
 
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's
-    output.
+  output.
 
 - [Ark](https://github.com/posit-dev/ark): a LSP server/DAP server/Jupyter kernel
-    for R.
+  for R.
 
 - [southernlights](https://github.com/jalvesaq/southernlights): a colourscheme
-    for vim.
-
-
+  for vim.

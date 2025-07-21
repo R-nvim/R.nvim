@@ -19,16 +19,7 @@ M.send_cmd = function(command)
 
     if config.is_windows then require("r.run").send_to_nvimcom("B", "R is Busy") end
 
-    local cmd
-    if config.clear_line then
-        if config.editing_mode == "emacs" then
-            cmd = "\001\011" .. command
-        else
-            cmd = "\0270Da" .. command
-        end
-    else
-        cmd = command
-    end
+    local cmd = require("r.term").sanitize(command, false)
 
     -- Update the width, if necessary
     local bwid = vim.fn.bufwinid(r_bufnr)
@@ -78,17 +69,9 @@ M.close_term = function()
 end
 
 local split_window = function()
-    local n
-    if vim.o.number then
-        n = 1
-    else
-        n = 0
-    end
-    if
-        config.rconsole_width > 0
-        and vim.fn.winwidth(0)
-            > (config.rconsole_width + config.min_editor_width + 1 + (n * vim.o.numberwidth))
-    then
+    local nw = vim.o.number and vim.o.numberwidth or 0
+    local sw = config.rconsole_width + config.min_editor_width + 1 + nw
+    if config.rconsole_width > 0 and vim.fn.winwidth(0) > sw then
         if
             config.rconsole_width > 16
             and config.rconsole_width < (vim.fn.winwidth(0) - 17)

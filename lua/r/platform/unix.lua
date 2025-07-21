@@ -3,7 +3,6 @@ local M = {}
 local uv = vim.uv
 local log = require("r.log")
 local utils = require("r.utils")
-local tmux = require("r.platform.tmux")
 
 function M.configure(config)
     local utime = uv.hrtime()
@@ -41,7 +40,6 @@ function M.configure(config)
         end
     end)
 
-    if config.external_term ~= "" then tmux.configure(config) end
     utime = (uv.hrtime() - utime) / 1000000000
     require("r.edit").add_to_debug_info("unix setup", utime, "Time")
 end

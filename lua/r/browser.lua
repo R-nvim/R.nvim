@@ -268,7 +268,7 @@ local function start_OB()
         else
             -- Place next to the console or script buffer
             if config.objbr_place:find("console") then
-                vim.cmd.sb(require("r.term").get_buf_nr())
+                vim.cmd.sb(require("r.term.builtin").get_buf_nr())
             else
                 vim.cmd.sb(require("r.edit").get_rscript_buf())
             end
@@ -289,10 +289,11 @@ local function start_OB()
         end
 
         -- Adjust size based on configuration
+        local obw = vim.api.nvim_get_current_win()
         if config.objbr_place:find("left") or config.objbr_place:find("right") then
-            vim.cmd("vertical resize " .. config.objbr_w)
+            vim.schedule(function() vim.api.nvim_win_set_width(obw, config.objbr_w) end)
         else
-            vim.cmd("resize " .. config.objbr_h)
+            vim.schedule(function() vim.api.nvim_win_set_height(obw, config.objbr_h) end)
         end
 
         set_buf_options()
@@ -300,6 +301,7 @@ local function start_OB()
         state.buf = vim.api.nvim_get_current_buf()
         state.win = vim.api.nvim_get_current_win()
 
+        hooks.run(config, "after_ob_open", false)
         if config.objbr_auto_start and state.auto_starting then
             state.auto_starting = false
             vim.cmd.sb(edbuf)
@@ -333,8 +335,6 @@ function M.start(_)
 
     start_OB()
     state.is_running = false
-
-    hooks.run(config, "after_ob_open", true)
 end
 
 --- Return the active pane of the Object Browser

@@ -10,8 +10,17 @@ Chunk.__index = Chunk
 ---@param info_string_params table The parameters specified in the info string of the code chunk.
 ---@param comment_params table The parameters specified in the code chunk with #|
 ---@param lang string The language of the code chunk.
+---@param code_block_node TSNode|nil The code block node.
 ---@return table
-function Chunk:new(content, start_row, end_row, info_string_params, comment_params, lang)
+function Chunk:new(
+    content,
+    start_row,
+    end_row,
+    info_string_params,
+    comment_params,
+    lang,
+    code_block_node
+)
     local chunk = {
         content = content,
         start_row = start_row,
@@ -19,6 +28,7 @@ function Chunk:new(content, start_row, end_row, info_string_params, comment_para
         info_string_params = info_string_params,
         comment_params = comment_params,
         lang = lang,
+        code_block_node = code_block_node, -- not used yet, but could be useful in the future
     }
 
     setmetatable(chunk, Chunk)
@@ -26,7 +36,57 @@ function Chunk:new(content, start_row, end_row, info_string_params, comment_para
     return chunk
 end
 
-function Chunk:range() return self.start_row, self.end_row end
+--- Get the child parameter of the code chunk (a file name)
+---@return string|nil
+function Chunk:get_child_param()
+    local child = self.comment_params and self.comment_params.child
+        or self.info_string_params and self.info_string_params.child
+
+    if child then
+        child = vim.fs.normalize(child) -- Normalize path
+        return child
+    end
+
+    return nil
+end
+
+--- Get the range of the code chunk
+---@return integer,integer
+function Chunk:get_range() return self.start_row, self.end_row end
+
+--- Get the content of the code chunk
+---@return string
+function Chunk:get_content() return self.content end
+
+--- Get the language of the code chunk
+---@return string
+function Chunk:get_lang() return self.lang end
+
+--- Get the type of the code chunk
+---@return string
+function Chunk:get_chunk_section_at_cursor()
+    local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
+
+    if
+        (self.info_string_params.child or self.comment_params.child)
+        and row == self.start_row
+    then
+        return "chunk_child"
+    end
+
+    if row == self.start_row then return "chunk_header" end
+
+    if row == self.end_row then return "chunk_end" end
+
+    return "chunk_body"
+end
+
+--- Get the info string parameters of the code chunk
+---@return table
+function Chunk:get_info_string_params() return self.info_string_params end
+--- Get the comment parameters of the code chunk
+---@return table
+function Chunk:get_comment_params() return self.comment_params end
 
 M.command = function(what)
     local config = require("r.config").get_config()
@@ -49,20 +109,19 @@ M.command = function(what)
     send_cmd(cmd)
 end
 
---- Helper function to get code block from Rmd or Quarto document
+--- Helper function to get code block from Rmd or Quarto document.
+--- The function is called by cmp_r too.
 ---@param bufnr  integer The buffer number.
 ---@return table|nil
-local get_code_chunks = function(bufnr)
+M.get_code_chunks = function(bufnr)
     local root = require("r.utils").get_root_node()
     if not root then return nil end
 
     local query = vim.treesitter.query.parse(
         "markdown",
         [[
-                (fenced_code_block
-                    (info_string (language) @lang) @info_string
-                    (#match? @info_string "^\\{.*\\}$")
-                    (code_fence_content) @content) @fenced_code_block
+                (fenced_code_block)
+                     @fenced_code_block
             ]]
     )
 
@@ -72,32 +131,38 @@ local get_code_chunks = function(bufnr)
     for id, node, _ in query:iter_captures(root, bufnr, 0, -1) do
         local capture_name = query.captures[id]
 
-        if capture_name == "content" then
+        if capture_name == "fenced_code_block" then
+            -- Loop through all children of the node and print their type and text
             local lang
             local info_string_params = {}
+            local comment_params = {}
+            local content_text = ""
             local start_row, _, end_row, _ = node:range()
 
-            -- Get the info string of the code block and parse it
-            local parent = node:parent()
-            if parent then
-                local info_node = parent:child(1)
-                if info_node and info_node:type() == "info_string" then
-                    local info_string = vim.treesitter.get_node_text(info_node, bufnr)
+            for child in node:iter_children() do
+                if child:type() == "info_string" then
+                    local info_string = vim.treesitter.get_node_text(child, bufnr)
                     lang, info_string_params = M.parse_info_string_params(info_string)
+                end
+
+                if child:type() == "code_fence_content" then
+                    content_text = vim.treesitter.get_node_text(child, bufnr)
+
+                    -- Get the parameters specified in the code chunk with #|
+                    comment_params =
+                        M.parse_comment_params(vim.treesitter.get_node_text(node, bufnr))
                 end
             end
 
-            -- Get the parameters specified in the code chunk with #|
-            local comment_params =
-                M.parse_comment_params(vim.treesitter.get_node_text(node, bufnr))
-
+            -- Create the chunk object with the extracted information
             local chunk = Chunk:new(
-                vim.treesitter.get_node_text(node, bufnr),
-                start_row,
+                content_text,
+                start_row + 1,
                 end_row,
                 info_string_params,
                 comment_params,
-                lang
+                lang,
+                node
             )
 
             table.insert(code_chunks, chunk)
@@ -106,6 +171,8 @@ local get_code_chunks = function(bufnr)
 
     return code_chunks
 end
+
+local function unquote(str) return str and str:match("^['\"]?(.-)['\"]?$") or str end
 
 --- Helper function to parse the info string of a code block
 ---@param info_string string The info string of the code block.
@@ -124,8 +191,9 @@ M.parse_info_string_params = function(info_string)
         local key, value = param:match("^%s*([^=]+)%s*=%s*([^%s]+)%s*$")
 
         if key and value then
-            key = key:match("^%s*(.-)%s*$") -- Trim leading/trailing spaces from key
-            value = value:match("^%s*(.-)%s*$") -- Trim leading/trailing spaces from value
+            key = key:match("^%s*(.-)%s*$")
+            value = value:match("^%s*(.-)%s*$")
+            value = unquote(value)
             params[key] = value
         end
     end
@@ -142,7 +210,10 @@ M.parse_comment_params = function(code_content)
     for line in code_content:gmatch("[^\r\n]+") do
         local key, value = line:match("^#|%s*([^:]+)%s*:%s*(.+)%s*$")
         if key and value then
-            params[key:match("^%s*(.-)%s*$")] = value:match("^%s*(.-)%s*$")
+            key = key:match("^%s*(.-)%s*$")
+            value = value:match("^%s*(.-)%s*$")
+            value = unquote(value)
+            params[key] = value
         end
     end
 
@@ -155,11 +226,11 @@ end
 M.get_current_code_chunk = function(bufnr)
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 
-    local chunks = get_code_chunks(bufnr)
+    local chunks = M.get_code_chunks(bufnr)
     if not chunks then return {} end
 
     for _, chunk in ipairs(chunks) do
-        local chunk_start_row, chunk_end_row = chunk:range()
+        local chunk_start_row, chunk_end_row = chunk:get_range()
         if row >= chunk_start_row and row <= chunk_end_row then return chunk end
     end
 
@@ -172,14 +243,14 @@ end
 M.get_chunks_above_cursor = function(bufnr)
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 
-    local chunks = get_code_chunks(bufnr)
+    local chunks = M.get_code_chunks(bufnr)
 
     if not chunks then return {} end
 
     local chunks_above = {}
 
     for _, chunk in ipairs(chunks) do
-        local _, chunk_end_row = chunk:range()
+        local _, chunk_end_row = chunk:get_range()
 
         if chunk_end_row < row then table.insert(chunks_above, chunk) end
     end
@@ -187,34 +258,79 @@ M.get_chunks_above_cursor = function(bufnr)
     return chunks_above
 end
 
---- This function gets all the code chunks in the buffer
+-- Function to get all code chunks below the current cursor position
 ---@param bufnr integer The buffer number.
----@return table|nil
-M.get_all_code_chunks = function(bufnr)
-    local chunks = get_code_chunks(bufnr)
-    return chunks
-end
+---@return table
+M.get_chunks_below_cursor = function(bufnr)
+    local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 
---- This function filters the code chunks based on the language
----@param chunks table The code chunks.
----@param langs string[] The languages to filter by.
----@return table The filtered code chunks.
-M.filter_code_chunks_by_lang = function(chunks, langs)
-    local lang_set = {}
-    for _, lang in ipairs(langs) do
-        lang_set[lang] = true
+    local chunks = M.get_code_chunks(bufnr)
+
+    if not chunks then return {} end
+
+    local chunks_below = {}
+
+    for _, chunk in ipairs(chunks) do
+        local chunk_start_row, _ = chunk:get_range()
+
+        if chunk_start_row > row then table.insert(chunks_below, chunk) end
     end
 
-    return vim.tbl_filter(
-        function(chunk) return type(chunk) == "table" and lang_set[chunk.lang] or false end,
-        chunks
-    )
+    return chunks_below
+end
+
+--- This function gets the supported languages for code execution
+---@return string[]
+M.get_supported_chunk_langs = function() return { "r", "webr", "python", "pyodide" } end
+
+--- This function filters the code chunks based on the supported languages
+---@param chunks table The code chunks.
+---@return table The filtered code chunks.
+M.filter_supported_langs = function(chunks)
+    if type(chunks) ~= "table" or vim.tbl_isempty(chunks) then return {} end
+
+    -- If chunks is a single chunk (table), wrap it in a table to ensure uniform processing
+    if type(chunks) ~= "table" or (type(chunks) == "table" and #chunks == 0) then
+        chunks = { chunks }
+    end
+
+    local supported_chunks = {}
+    local supported_langs = M.get_supported_chunk_langs()
+    for _, chunk in ipairs(chunks) do
+        if vim.tbl_contains(supported_langs, chunk.lang) then
+            table.insert(supported_chunks, chunk)
+        end
+    end
+    return supported_chunks
+end
+
+--- This function checks if a language is supported
+---@param lang string
+---@return boolean
+M.is_supported_lang = function(lang) return M.is_r(lang) or M.is_python(lang) end
+
+--- This function checks if a language is either "r" or "webr"
+---@param lang string
+---@return boolean
+M.is_r = function(lang)
+    local r_langs = { r = true, webr = true }
+    return r_langs[lang] or false
+end
+
+--- This function checks if a language is "python"
+---@param lang string
+---@return boolean
+M.is_python = function(lang)
+    local python_langs = { python = true, pyodide = true }
+    return python_langs[lang] or false
 end
 
 --- This function filters the code chunks based on the eval parameter. If the eval parameter is not found it is assumed to be true
 ---@param chunks table
 ---@return table
 M.filter_code_chunks_by_eval = function(chunks)
+    if type(chunks) ~= "table" or vim.tbl_isempty(chunks) then return {} end
+
     -- If chunks is a single chunk (table), wrap it in a table to ensure uniform processing
     if type(chunks) ~= "table" or (type(chunks) == "table" and #chunks == 0) then
         chunks = { chunks }
@@ -229,11 +345,11 @@ M.filter_code_chunks_by_eval = function(chunks)
         local eval = true
 
         -- Check for eval in comment_params
-        if chunk.comment_params and chunk.comment_params.eval then
-            eval = chunk.comment_params.eval == "true"
+        if chunk:get_comment_params() and chunk:get_comment_params().eval then
+            eval = chunk:get_comment_params().eval ~= "false"
         -- Check for eval in info_string_params
-        elseif chunk.info_string_params and chunk.info_string_params.eval then
-            eval = chunk.info_string_params.eval == "TRUE"
+        elseif chunk:get_info_string_params() and chunk:get_info_string_params().eval then
+            eval = chunk:get_info_string_params().eval ~= "FALSE"
         end
 
         return eval -- Return true if eval is "true"
@@ -251,17 +367,62 @@ M.codelines_from_chunks = function(chunks)
     local codelines = {}
 
     for _, chunk in ipairs(chunks) do
-        local lang = chunk.lang
-        local content = chunk.content
-
-        if lang == "python" then
-            table.insert(codelines, 'reticulate::py_run_string("' .. content .. '")')
-        elseif lang == "r" then
-            table.insert(codelines, content)
+        local lang = chunk:get_lang()
+        local content = chunk:get_content()
+        if M.is_python(lang) then
+            content = 'reticulate::py_run_string(r"(' .. content .. ')")'
+        end
+        if M.is_python(lang) or M.is_r(lang) then
+            local lines = vim.fn.split(content, "\n")
+            for _, v in pairs(lines) do
+                table.insert(codelines, v)
+            end
         end
     end
 
     return codelines
+end
+
+local ns = vim.api.nvim_create_namespace("RQuartoNamespace")
+
+--- Special highlight for Quarto and Rmd code blocks
+M.hl_code_bg = function()
+    local config = require("r.config").get_config()
+    vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
+    local chunks = M.get_code_chunks(0)
+    if not chunks then return end
+    for _, c in pairs(chunks) do
+        local hl_grp = "RCodeBlock"
+        if
+            (c.info_string_params.eval and c.info_string_params.eval == "FALSE")
+            or (c.comment_params.eval and c.comment_params.eval == "false")
+        then
+            hl_grp = "RCodeComment"
+        end
+        vim.api.nvim_buf_set_extmark(0, ns, c.start_row - 1, 0, {
+            end_col = 0,
+            end_row = c.end_row,
+            hl_group = hl_grp,
+            virt_text = (c.lang and config.quarto_chunk_hl.virtual_title) and {
+                { c.lang .. " ", { hl_grp, "Title" } },
+            } or nil,
+            virt_text_pos = "right_align",
+            hl_eol = true,
+        })
+        if c.info_string_params.child or c.comment_params.child then
+            for i = c.start_row, c.end_row - 2, 1 do
+                local line = vim.api.nvim_buf_get_lines(0, i, i + 1, true)[1]
+                if not line:find("#| child:") then
+                    vim.api.nvim_buf_set_extmark(0, ns, i, 0, {
+                        end_col = 0,
+                        end_row = i + 1,
+                        hl_group = "RCodeIgnore",
+                        hl_eol = true,
+                    })
+                end
+            end
+        end
+    end
 end
 
 return M

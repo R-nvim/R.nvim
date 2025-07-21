@@ -123,8 +123,7 @@ local default_handlers = {
 ---@param cmd table The command to start the job with.
 ---@param opt table|nil Optional table of handlers for job events.
 M.start = function(job_name, cmd, opt)
-    local h = default_handlers
-    if opt then h = opt end
+    local h = opt and opt or default_handlers
     local jobid = vim.fn.jobstart(cmd, h)
     if jobid == 0 then
         warn("Invalid arguments in: " .. tostring(cmd))

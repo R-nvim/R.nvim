@@ -30,12 +30,6 @@ function M.configure(config)
             elseif vim.fn.isdirectory(vim.env.RTOOLS40_HOME .. "\\usr\\bin") then
                 vim.env.PATH = vim.env.RTOOLS40_HOME .. "\\usr\\bin;" .. vim.env.PATH
             end
-        else
-            if vim.fn.isdirectory("C:\\rtools40\\mingw64\\bin") then
-                vim.env.PATH = "C:\\rtools40\\mingw64\\bin;" .. vim.env.PATH
-            elseif vim.fn.isdirectory("C:\\rtools40\\usr\\bin") then
-                vim.env.PATH = "C:\\rtools40\\usr\\bin;" .. vim.env.PATH
-            end
         end
 
         local get_rip = function(run_cmd)
@@ -102,13 +96,6 @@ function M.configure(config)
         end
     end
 
-    if not config.R_args then
-        if config.external_term == "" then
-            config.R_args = { "--no-save" }
-        else
-            config.R_args = { "--sdi", "--no-save" }
-        end
-    end
     wtime = (uv.hrtime() - wtime) / 1000000000
     require("r.edit").add_to_debug_info("windows setup", wtime, "Time")
 end
