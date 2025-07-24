@@ -761,13 +761,17 @@ M.funs = function(capture_all, move_down)
         local start_row, _, end_row, _ = node:range()
 
         if capture_all or (cursor_pos - 1 >= start_row and cursor_pos - 1 <= end_row) then
-            table.insert(lines, vim.treesitter.get_node_text(node, rbuf))
+            local ts_txt = vim.treesitter.get_node_text(node, rbuf)
+            local ts_lines = vim.fn.split(ts_txt, "\n")
+            for _, v in pairs(ts_lines) do
+                table.insert(lines, v)
+            end
             target_node = node
             if not capture_all then break end
         end
     end
 
-    M.source_lines(lines)
+    M.source_lines(lines, "function")
 
     if move_down and target_node then
         local _, _, end_row, _ = target_node:range()

@@ -1640,10 +1640,10 @@ while others have no command to clear the console. You should set the value of
                                                              *max_paste_lines*
 
 When you send multiple lines of code to R (a selection of lines, a paragraph,
-code between two marks or an R chunk of code), and the number of lines is
-higher than `max_paste_lines`, R.nvim saves the lines in a temporary file and,
-then, sends to R a command which calls `base::source()` to run the commands
-from the temporary file.
+a function, code between two marks or an R chunk of code), and the number of
+lines is higher than `max_paste_lines`, R.nvim saves the lines in a temporary
+file and, then, sends to R a command which calls `base::source()` to run the
+commands from the temporary file.
 
 By default, R's `source()` is called with the arguments `print.eval=TRUE` and
 `spaced=FALSE`. The argument `local=parent.frame()` is passed to `source()`
