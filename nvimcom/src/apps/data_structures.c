@@ -269,7 +269,7 @@ static PkgData *get_pkg(const char *nm) {
     return NULL;
 }
 
-static char *get_pkg_descr(const char *pkgnm) {
+static char *get_pkg_descr(const char *pkgnm, int again) {
     Log("get_pkg_descr(%s)", pkgnm);
     InstLibs *il = instlibs;
     while (il) {
@@ -279,6 +279,10 @@ static char *get_pkg_descr(const char *pkgnm) {
             return s;
         }
         il = il->next;
+    }
+    if (again) {
+        update_inst_libs();
+        return get_pkg_descr(pkgnm, 0);
     }
     return NULL;
 }
@@ -428,7 +432,7 @@ static void load_pkg_data(PkgData *pd) {
     Log("load_pkg_data(%s)", pd->name);
     int size;
     if (!pd->descr)
-        pd->descr = get_pkg_descr(pd->name);
+        pd->descr = get_pkg_descr(pd->name, 1);
     pd->alias = read_alias_file(pd->name);
     pd->args = read_args_file(pd->name);
     if (!pd->objls) {
@@ -449,7 +453,7 @@ static PkgData *new_pkg_data(const char *nm, const char *vrsn) {
     strcpy(pd->name, nm);
     pd->version = malloc((strlen(vrsn) + 1) * sizeof(char));
     strcpy(pd->version, vrsn);
-    pd->descr = get_pkg_descr(pd->name);
+    pd->descr = get_pkg_descr(pd->name, 1);
     pd->loaded = 1;
 
     snprintf(buf, 1023, "%s/objls_%s_%s", compldir, nm, vrsn);

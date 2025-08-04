@@ -774,7 +774,15 @@ details, please, access:
 
 
 ------------------------------------------------------------------------------
-5.7. Windows bugs and limitations
+5.6 Object Browser may display the wrong tree segment
+
+On the Libraries view of the Object Browser, if the last element of a library
+is a list, data.frame or S4 object, it will be prefixed by "|-" instead of
+"`-".
+
+
+------------------------------------------------------------------------------
+5.8. Windows bugs and limitations
 
 ------------------------------
 Wrong message that "R is busy"

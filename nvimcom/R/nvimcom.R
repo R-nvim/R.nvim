@@ -79,15 +79,9 @@ NvimcomEnv$tcb <- FALSE
 #' detach("package:nvimcom", unload = TRUE)
 .onUnload <- function(libpath) {
     NvimcomEnv$tcb <- FALSE
-    if (is.loaded("nvimcom_Stop")) {
-        .C(nvimcom_Stop)
-        if (Sys.getenv("RNVIM_TMPDIR") != "" && .Platform$OS.type == "windows") {
-                unlink(paste0(Sys.getenv("RNVIM_TMPDIR"), "/rconsole_hwnd_",
-                              Sys.getenv("RNVIM_SECRET")))
-        }
-        Sys.sleep(0.2)
-        library.dynam.unload("nvimcom", libpath)
-    }
+    try(.C(nvimcom_Stop), silent = TRUE)
+    Sys.sleep(0.2)
+    try(library.dynam.unload("nvimcom", libpath), silent = TRUE)
 }
 
 run_tcb <- function(...) {
