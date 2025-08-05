@@ -29,54 +29,43 @@ M.insert_roxygen = function(bufnr)
         return
     end
 
-    local lang = parsers.get_buf_lang(bufnr)
-    if not lang then
-        warn("Could not determine the language of the buffer.")
-        return
-    end
-
-    local parser = parsers.get_parser(bufnr)
-    if not parser then
-        warn("No parser found for the current buffer.")
-        return
-    end
-
-    local query = [[
-        (function_definition) @function
-    ]]
-    local query_obj = treesitter.query.parse(lang, query)
-    local root = parser:parse()[1]:root()
+    local parser = vim.treesitter.get_parser(bufnr, "r")
+    local tree = parser:parse()[1]
+    local root = tree:root()
 
     local cursor_pos = api.nvim_win_get_cursor(0)
     local cursor_line = cursor_pos[1] - 1
 
-    local roxygen_template = {
-        "#' Title",
-        "#'",
-    }
+    local query = vim.treesitter.query.parse("r", [[
+        (function_definition) @function
+    ]])
 
-    for _, function_node in query_obj:iter_captures(root, bufnr) do
+    for _, function_node in query:iter_captures(root, bufnr) do
         local start_row, _, end_row, _ = function_node:range()
 
-        -- The cursor is within the range of a function definition
         if cursor_line >= start_row and cursor_line <= end_row then
             if has_roxygen(start_row) then
                 warn("Roxygen comment already exists for this function.")
                 return
             end
 
-            local parameters = function_node:child(1)
-            if not parameters then return end
+            local roxygen_template = {
+                "#' Title",
+                "#'",
+            }
 
-            for parameter in parameters:iter_children() do
-                if parameter:type() == "parameter" then
-                    local name_node = parameter:field("name")
-                    if name_node then
-                        local name_value = treesitter.get_node_text(name_node[1], bufnr)
-                        table.insert(
-                            roxygen_template,
-                            string.format("#' @param %s", name_value)
-                        )
+            local parameters = function_node:child(1)
+            if parameters then
+                for parameter in parameters:iter_children() do
+                    if parameter:type() == "parameter" then
+                        local name_node = parameter:field("name")
+                        if name_node then
+                            local name_value = vim.treesitter.get_node_text(name_node[1], bufnr)
+                            table.insert(
+                                roxygen_template,
+                                string.format("#' @param %s", name_value)
+                            )
+                        end
                     end
                 end
             end
