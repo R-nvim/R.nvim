@@ -95,7 +95,7 @@ function M.create_user_commands()
     })
 
     vim.api.nvim_create_user_command(
-        "Roxygenize",
+        "ROxygenize",
         function() require("r.roxygen").insert_roxygen(vim.api.nvim_get_current_buf()) end,
         {}
     )

@@ -662,7 +662,7 @@ defined by your colorscheme.
 4.8 roxygen2 support                                         *R.nvim-roxygen2*
 
 R.nvim supports the insertion of roxygen2 skeletons in R scripts. To insert a
-new roxygen2 block, you can use the `:Roxygenize` command while the cursor is
+new roxygen2 block, you can use the `:ROxygenize` command while the cursor is
 inside a function definition. If a block of roxygen2 is already present, no
 modification will be made.
 
