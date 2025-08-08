@@ -443,7 +443,9 @@ show_plot_in_terminal <- function(
       stdout = TRUE,
       stderr = TRUE
     )
-    cat("DEBUG: Kitty command result:", paste(result, collapse = " "), "\n\n\n")
+    cat("\n\n\n")
+    cat(paste(result, collapse = " "))
+    cat("\n\n\n")
   } else {
     cat("DEBUG: No suitable image display tool found\n")
     cat("DEBUG: Available tools:\n")
@@ -459,23 +461,19 @@ show_plot_in_terminal <- function(
 # Setup terminal plotting - called from nvimcom.R .onAttach
 setup_terminal_plotting <- function() {
   if (interactive() && getOption("nvimcom.terminal_plot", FALSE)) {
-    cat("DEBUG: Setting up terminal plotting...\n")
-
     assign(".base_plot", base::plot, envir = .GlobalEnv)
-    cat("DEBUG: Stored original plot function\n")
 
     plot <- function(...) {
       show_plot_in_terminal(.base_plot(...))
     }
+
     assign("plot", plot, envir = .GlobalEnv)
-    cat("DEBUG: Assigned custom plot function to .GlobalEnv\n")
 
     if (requireNamespace("ggplot2", quietly = TRUE)) {
       .ggplot2_print <- getS3method("print", "ggplot")
       assign(
         "print.ggplot",
         function(x, ...) {
-          cat("DEBUG: Custom print.ggplot function called\n")
           show_plot_in_terminal(.ggplot2_print(x, ...))
         },
         envir = globalenv()

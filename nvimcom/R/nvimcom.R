@@ -77,6 +77,7 @@ NvimcomEnv$tcb <- FALSE
 
   # Setup terminal plotting functionality
   setup_terminal_plotting()
+
   if (
     !is.na(utils::localeToCharset()[1L]) &&
       utils::localeToCharset()[1L] == "UTF-8" &&
