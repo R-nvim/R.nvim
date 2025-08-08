@@ -20,6 +20,86 @@ static int max_depth = 2;      // Max list depth in nvimcom
 
 void set_max_depth(int m) { max_depth = m; }
 
+/**
+ * @brief Reads the entire contents of a specified file into a buffer.
+ *
+ * This function opens the file specified by the filename and reads its entire
+ * content into a dynamically allocated buffer. It ensures that the file is read
+ * in binary mode to preserve the data format. This function is typically used
+ * to load files containing data relevant to the R.nvim plugin, such as
+ * completion lists or configuration data.
+ *
+ * @param fn The name of the file to be read.
+ * @param verbose Flag to indicate whether to print error messages. If set to a
+ * non-zero value, error messages are printed to stderr.
+ * @return Returns a pointer to a buffer containing the file's content if
+ * successful. Returns NULL if the file cannot be opened or in case of a read
+ * error.
+ */
+static char *read_file(const char *fn, int verbose) {
+    FILE *f = fopen(fn, "rb");
+    if (!f) {
+        if (verbose) {
+            fprintf(stderr, "Error opening '%s'", fn);
+            fflush(stderr);
+        }
+        return NULL;
+    }
+    fseek(f, 0L, SEEK_END);
+    long sz = ftell(f);
+    if (sz == 0) {
+        // List of objects is empty. Perhaps no object was created yet.
+        // The args_datasets files is empty
+        fclose(f);
+        return calloc(1, sizeof(char));
+    }
+
+    char *b = calloc(1, sz + 1);
+    if (!b) {
+        fclose(f);
+        fputs("Error allocating memory\n", stderr);
+        fflush(stderr);
+        return NULL;
+    }
+
+    rewind(f);
+    if (1 != fread(b, sz, 1, f)) {
+        fclose(f);
+        free(b);
+        fprintf(stderr, "Error reading '%s'\n", fn);
+        fflush(stderr);
+        return NULL;
+    }
+    fclose(f);
+    return b;
+}
+
+/**
+ * Compares two ASCII strings in a case-insensitive manner.
+ * @param a First string.
+ * @param b Second string.
+ * @return An integer less than, equal to, or greater than zero if a is found,
+ *         respectively, to be less than, to match, or be greater than b.
+ */
+static int ascii_ic_cmp(const char *a, const char *b) {
+    int d;
+    unsigned x, y;
+    while (*a && *b) {
+        x = (unsigned char)*a;
+        y = (unsigned char)*b;
+        if (x <= 'Z')
+            x += 32;
+        if (y <= 'Z')
+            y += 32;
+        d = x - y;
+        if (d != 0)
+            return d;
+        a++;
+        b++;
+    }
+    return 0;
+}
+
 static void change_all_stt(ListStatus *root, int stt) {
     if (root != NULL) {
         // Open all but libraries
@@ -353,24 +433,22 @@ static char *count_sep(char *b1, int *size) {
  * successful. Returns NULL if the buffer does not meet the expected format or
  * validation fails.
  */
-static char *check_omils_buffer(char *buffer, int *size) {
+static char *check_omils_buffer(char *b, int *size) {
     // Ensure that there are exactly 7 \006 between new line characters
-    buffer = count_sep(buffer, size);
+    b = count_sep(b, size);
 
-    if (!buffer)
+    if (!b)
         return NULL;
 
-    if (buffer) {
-        char *p = buffer;
+    if (b) {
+        char *p = b;
         while (*p) {
             if (*p == '\006')
                 *p = 0;
-            // if (*p == '\'')
-            //     *p = '\x13';
             p++;
         }
     }
-    return buffer;
+    return b;
 }
 
 /**
@@ -391,41 +469,41 @@ static char *check_omils_buffer(char *buffer, int *size) {
  * of a read error.
  */
 static char *read_objls_file(const char *fn, int *size) {
-    char *buffer = read_file(fn, 1);
-    if (!buffer)
+    char *b = read_file(fn, 1);
+    if (!b)
         return NULL;
 
-    return check_omils_buffer(buffer, size);
+    return check_omils_buffer(b, size);
 }
 
 static char *read_alias_file(const char *nm) {
     char fnm[512];
     snprintf(fnm, 511, "%s/alias_%s", compldir, nm);
-    char *buffer = read_file(fnm, 1);
-    if (!buffer)
+    char *b = read_file(fnm, 1);
+    if (!b)
         return NULL;
-    char *p = buffer;
+    char *p = b;
     while (*p) {
         if (*p == '\x09')
             *p = 0;
         p++;
     }
-    return buffer;
+    return b;
 }
 
 static char *read_args_file(const char *nm) {
     char fnm[512];
     snprintf(fnm, 511, "%s/args_%s", compldir, nm);
-    char *buffer = read_file(fnm, 1);
-    if (!buffer)
+    char *b = read_file(fnm, 1);
+    if (!b)
         return NULL;
-    char *p = buffer;
+    char *p = b;
     while (*p) {
         if (*p == '\006')
             *p = 0;
         p++;
     }
-    return buffer;
+    return b;
 }
 
 static void load_pkg_data(PkgData *pd) {
