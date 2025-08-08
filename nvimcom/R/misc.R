@@ -404,17 +404,37 @@ nvim.plot <- function(x) {
 # Terminal plot functionality
 show_plot_in_terminal <- function(
   expr,
-  width = 800L,
-  height = 600L,
+  width = NULL,
+  height = NULL,
   dpi = 100L
 ) {
+  # Get terminal dimensions if width/height not specified
+  if (is.null(width) || is.null(height)) {
+    term_size <- system2("stty", "size", stdout = TRUE, stderr = FALSE)
+    if (length(term_size) > 0L && !is.na(term_size)) {
+      dims <- as.numeric(strsplit(term_size, " ")[[1L]])
+      if (length(dims) == 2L) {
+        term_rows <- dims[1L]
+        term_cols <- dims[2L]
+        char_width <- 12L # pixels per character
+        char_height <- 24L # pixels per character line
+        if (is.null(width)) width <- as.integer(term_cols * char_width)
+        if (is.null(height)) height <- as.integer(term_rows * char_height * 0.7)
+      }
+    }
+
+    if (is.null(width)) width <- 800L
+    if (is.null(height)) height <- 600L
+  }
+
   png_file <- tempfile(fileext = ".png")
 
-  # Save current device
   current_dev <- dev.cur()
 
-  # Open PNG device
-  png(png_file, width = width, height = height, res = dpi)
+  png(png_file, width = width, height = height, res = dpi * 1.5)
+
+  par(cex = 1.2, cex.axis = 1.2, cex.lab = 1.2, cex.main = 1.2)
+
   png_dev <- dev.cur()
 
   # Ensure we close the PNG device even if there's an error
@@ -430,6 +450,7 @@ show_plot_in_terminal <- function(
   force(expr)
 
   on.exit(NULL)
+
   if (dev.cur() == png_dev && png_dev != 1L) {
     dev.off()
   }
