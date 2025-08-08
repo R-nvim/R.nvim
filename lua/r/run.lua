@@ -119,6 +119,11 @@ start_R2 = function()
         start_options,
         'options(nvimcom.source.path = "' .. config.source_read .. '")'
     )
+    if config.terminal_plot then
+        table.insert(start_options, "options(nvimcom.terminal_plot = TRUE)")
+    else
+        table.insert(start_options, "options(nvimcom.terminal_plot = FALSE)")
+    end
 
     local rsd = get_R_start_dir()
     if rsd then

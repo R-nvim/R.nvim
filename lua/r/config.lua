@@ -329,6 +329,10 @@ local hooks = require("r.hooks")
 ---`false`. Do `:help specialplot` for more information.
 ---@field specialplot? boolean
 ---
+---Whether to enable terminal plot functionality for interactive R sessions;
+---defaults to `false`. Do `:help terminal_plot` for more information.
+---@field terminal_plot? boolean
+---
 ---Packages for which to built autocompletions when R starts; defaults to
 ---`"base,stats,graphics,grDevices,utils,methods"`. Do `:help start_libs` for
 ---more information.
@@ -479,6 +483,7 @@ local config = {
     skim_app_path       = "",
     source_args         = "",
     specialplot         = false,
+    terminal_plot       = false,
     start_libs          = "base,stats,graphics,grDevices,utils,methods",
     synctex             = true,
     texerr              = true,
