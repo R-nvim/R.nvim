@@ -17,6 +17,23 @@ void init_compl_vars(void) {
     strncpy(resolve_cb, getenv("RNVIM_RSLV_CB"), 63);
 }
 
+/**
+ * Checks if the string `b` can be found through string `a`.
+ * @param a The string to be checked.
+ * @param b The substring to look for at the start of `a`.
+ * @return 1 if `b` is at the start of `a`, 0 otherwise.
+ */
+static int fuzzy_find(const char *a, const char *b) {
+    while (*b && *a) {
+        while (*a && *a != *b)
+            a++;
+        if (*a)
+            a++;
+        b++;
+    }
+    return *b == '\0';
+}
+
 static int count_twice(const char *b1, const char *b2, const char ch) {
     int n1 = 0;
     int n2 = 0;
