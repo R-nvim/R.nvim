@@ -21,17 +21,24 @@ void init_compl_vars(void) {
  * Checks if the string `b` can be found through string `a`.
  * @param a The string to be checked.
  * @param b The substring to look for at the start of `a`.
- * @return 1 if `b` is at the start of `a`, 0 otherwise.
+ * @return 1 if `b` can be found through `a`, 0 otherwise.
  */
 static int fuzzy_find(const char *a, const char *b) {
-    while (*b && *a) {
-        while (*a && *a != *b)
-            a++;
-        if (*a)
-            a++;
-        b++;
+    int i = 0;
+    int j = 0;
+    while (a[i] && b[j]) {
+        while (a[i] && a[i] != b[j])
+            i++;
+        if (b[j] == '$' || b[j] == '@') {
+            for (int k = 0; k <= j; k++)
+                if (a[k] != b[k])
+                    return 0;
+        }
+        if (a[i])
+            i++;
+        j++;
     }
-    return *b == '\0';
+    return b[j] == '\0';
 }
 
 static int count_twice(const char *b1, const char *b2, const char ch) {
