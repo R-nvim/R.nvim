@@ -515,10 +515,8 @@ setup_terminal_plotting <- function() {
   }
 
   if (getOption("nvimcom.terminal_plot", FALSE)) {
-    assign(".base_plot", base::plot, envir = .GlobalEnv)
-
     plot <- function(...) {
-      show_plot_in_terminal(.base_plot(...))
+      show_plot_in_terminal(base::plot(...))
     }
 
     assign("plot", plot, envir = .GlobalEnv)
