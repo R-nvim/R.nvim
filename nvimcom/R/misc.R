@@ -440,6 +440,17 @@ show_plot_in_terminal <- function(
   height = NULL,
   dpi = 100L
 ) {
+  # Check terminal support first
+  term <- Sys.getenv("TERM")
+  supported_terminals <- c("xterm-kitty", "wezterm")
+
+  if (!term %in% supported_terminals) {
+    warning(
+      "Terminal plot display not supported."
+    )
+    return()
+  }
+
   # Get terminal dimensions if width/height not specified
   if (is.null(width) || is.null(height)) {
     term_size <- system2("stty", "size", stdout = TRUE, stderr = FALSE)
@@ -493,17 +504,7 @@ show_plot_in_terminal <- function(
     dev.off()
   }
 
-  term <- Sys.getenv("TERM")
-  supported_terminals <- c("xterm-kitty", "wezterm")
-
-  if (term %in% supported_terminals) {
-    png2terminal(png_file)
-  } else {
-    warning(
-      "Terminal plot display not supported."
-    )
-    return()
-  }
+  png2terminal(png_file)
 }
 
 # Setup terminal plotting - called from nvimcom.R .onAttach
