@@ -13,8 +13,9 @@ nvim.print <- function(object, firstobj) {
         ns <- -1L
     }
 
-    if (!exists(object, ns))
+    if (!exists(object, ns)) {
         warning("object '", object, "' not found")
+    }
     if (!missing(firstobj)) {
         objclass <- nvim.getclass(firstobj)
         if (objclass[1] != "#E#" && objclass[1] != "") {
@@ -43,7 +44,8 @@ nvim.print <- function(object, firstobj) {
         }
     }
     # make sure only search current calling environment
-    if (!exists(".newobj", inherits = FALSE))
+    if (!exists(".newobj", inherits = FALSE)) {
         .newobj <- get(object, ns)
+    }
     print(.newobj)
 }
