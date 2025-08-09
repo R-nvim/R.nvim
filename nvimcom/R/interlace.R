@@ -10,7 +10,11 @@ SyncTeX_readconc <- function(texf, concf) {
     conc <- readLines(concf)
     idx <- 1
     maxidx <- length(conc) + 1
-    while (idx < maxidx && texidx < ntexln && length(grep("Sconcordance", conc[idx])) > 0) {
+    while (
+        idx < maxidx &&
+            texidx < ntexln &&
+            length(grep("Sconcordance", conc[idx])) > 0
+    ) {
         curline <- sub("\\\\Sconcordance\\{concordance:", "", conc[idx])
         texf <- sub("([^:]*):.*", "\\1", curline)
         rnwf <- sub("[^:]*:([^:]*):.*", "\\1", curline)
@@ -35,8 +39,9 @@ SyncTeX_readconc <- function(texf, concf) {
             lnrange <- 1:concl[ii]
             ii <- ii + 1
             for (iii in lnrange) {
-                if (texidx >= ntexln)
+                if (texidx >= ntexln) {
                     break
+                }
                 rnwl <- rnwl + concl[ii]
                 lsrnwl[texidx] <- rnwl
                 lsrnwf[texidx] <- rnwf
@@ -44,8 +49,12 @@ SyncTeX_readconc <- function(texf, concf) {
             }
         }
     }
-    return(data.frame(texlnum = lstexln, rnwfile = lsrnwf,
-                      rnwline = lsrnwl, stringsAsFactors = FALSE))
+    return(data.frame(
+        texlnum = lstexln,
+        rnwfile = lsrnwf,
+        rnwline = lsrnwl,
+        stringsAsFactors = FALSE
+    ))
 }
 
 #' Return the lines in the Rnoweb file corresponding to the generated LaTeX
@@ -62,10 +71,17 @@ GetRnwLines <- function(texf, concf, l) {
             while (idx < nrow(conc) && texln > conc$texlnum[idx]) {
                 idx <- idx + 1
                 if (conc$texlnum[idx] >= texln) {
-                    l[ii] <- sub("(.*) line ([0-9]*)",
-                                 paste0("\\1 line \\2 [",
-                                        conc$rnwfile[idx], ": ",
-                                        conc$rnwline[idx], "]"), l[ii])
+                    l[ii] <- sub(
+                        "(.*) line ([0-9]*)",
+                        paste0(
+                            "\\1 line \\2 [",
+                            conc$rnwfile[idx],
+                            ": ",
+                            conc$rnwline[idx],
+                            "]"
+                        ),
+                        l[ii]
+                    )
                     break
                 }
             }
@@ -75,10 +91,17 @@ GetRnwLines <- function(texf, concf, l) {
             while (idx < nrow(conc) && texln > conc$texlnum[idx]) {
                 idx <- idx + 1
                 if (conc$texlnum[idx] >= texln) {
-                    l[ii] <- sub("l\\.([0-9]*) (.*)",
-                                 paste0("l.\\1 \\2 [",
-                                        conc$rnwfile[idx], ": ",
-                                        conc$rnwline[idx], "]"), l[ii])
+                    l[ii] <- sub(
+                        "l\\.([0-9]*) (.*)",
+                        paste0(
+                            "l.\\1 \\2 [",
+                            conc$rnwfile[idx],
+                            ": ",
+                            conc$rnwline[idx],
+                            "]"
+                        ),
+                        l[ii]
+                    )
                     break
                 }
             }
@@ -104,11 +127,19 @@ GetRnwLines <- function(texf, concf, l) {
                 }
             }
             if (!is.na(rnwIdx1) && !is.na(rnwIdx2)) {
-                l[ii] <- sub("(.*) lines ([0-9]*)--([0-9]*)",
-                             paste0("\\1 lines \\2--\\3 [",
-                                    conc$rnwfile[rnwIdx1], ": ",
-                                    conc$rnwline[rnwIdx1], "--",
-                                    conc$rnwline[rnwIdx2], "]"), l[ii])
+                l[ii] <- sub(
+                    "(.*) lines ([0-9]*)--([0-9]*)",
+                    paste0(
+                        "\\1 lines \\2--\\3 [",
+                        conc$rnwfile[rnwIdx1],
+                        ": ",
+                        conc$rnwline[rnwIdx1],
+                        "--",
+                        conc$rnwline[rnwIdx2],
+                        "]"
+                    ),
+                    l[ii]
+                )
             }
         }
     }
@@ -135,7 +166,8 @@ ShowTexErrors <- function(texf, logf, l) {
             }
         } else {
             # Get the result of number of '(' minus number of ')'
-            pb <- length(grep(28, charToRaw(l[idx]))) - length(grep(29, charToRaw(l[idx])))
+            pb <- length(grep(28, charToRaw(l[idx]))) -
+                length(grep(29, charToRaw(l[idx])))
             if (pb > 0) {
                 lev <- lev + pb
                 fname <- sub(".*\\(", "", l[idx])
@@ -144,8 +176,7 @@ ShowTexErrors <- function(texf, logf, l) {
                 lev <- lev + pb
             }
             # Avoid function crash if there is a spurious closing parenthesis in the log
-            if (lev == 0)
-                lev <- 1
+            if (lev == 0) lev <- 1
         }
         lf[idx] <- levfile[lev]
         idx <- idx + 1
@@ -153,7 +184,11 @@ ShowTexErrors <- function(texf, logf, l) {
 
     idx <- rep(FALSE, length(l))
     idx[grepl("^(Over|Under)full \\\\(h|v)box ", l, useBytes = TRUE)] <- TRUE
-    idx[grepl("^(Package|Class) \\w+ (Error|Warning):", l, useBytes = TRUE)] <- TRUE
+    idx[grepl(
+        "^(Package|Class) \\w+ (Error|Warning):",
+        l,
+        useBytes = TRUE
+    )] <- TRUE
     idx[grepl("^LaTeX (Error|Warning):", l, useBytes = TRUE)] <- TRUE
     idx[grepl("^No pages of output", l, useBytes = TRUE)] <- TRUE
     undef <- grep("Undefined control sequence", l, useBytes = TRUE)
@@ -178,11 +213,21 @@ ShowTexErrors <- function(texf, logf, l) {
         if (length(ismaster) > 0 && file.exists(concf)) {
             l[ismaster] <- GetRnwLines(texf, concf, l[ismaster])
         }
-        msg <- paste0("\nSelected lines of: ", logf, "\n\n",
-                      paste(lf, l, sep = ": ", collapse = "\n"), "\n")
-        if (has.pdfTeX.errors)
-            msg <- paste0(msg, 'There are pdfTeX errors or warnings. See "',
-                          logf, '" for details.\n')
+        msg <- paste0(
+            "\nSelected lines of: ",
+            logf,
+            "\n\n",
+            paste(lf, l, sep = ": ", collapse = "\n"),
+            "\n"
+        )
+        if (has.pdfTeX.errors) {
+            msg <- paste0(
+                msg,
+                'There are pdfTeX errors or warnings. See "',
+                logf,
+                '" for details.\n'
+            )
+        }
         cat(msg)
     }
 }
@@ -200,10 +245,19 @@ ShowTexErrors <- function(texf, logf, l) {
 #' @param view Whether to open the generated PDF.
 #' @param builddir Where the log file is expected to be found.
 #' @param ... Further arguments passed to `Sweave()`.
-nvim.interlace.rnoweb <- function(rnwf, rnwdir, latexcmd = "latexmk",
-                                  latexargs, synctex = TRUE, bibtex = FALSE,
-                                  knit = TRUE, buildpdf = TRUE, view = TRUE,
-                                  builddir, ...) {
+nvim.interlace.rnoweb <- function(
+    rnwf,
+    rnwdir,
+    latexcmd = "latexmk",
+    latexargs,
+    synctex = TRUE,
+    bibtex = FALSE,
+    knit = TRUE,
+    buildpdf = TRUE,
+    view = TRUE,
+    builddir,
+    ...
+) {
     oldwd <- getwd()
     on.exit(setwd(oldwd))
     setwd(rnwdir)
@@ -219,29 +273,35 @@ nvim.interlace.rnoweb <- function(rnwf, rnwdir, latexcmd = "latexmk",
 
         for (f in sfls) {
             tdiff <- file.info(f)$mtime - file.info(texf)$mtime
-            if (is.na(tdiff) || tdiff > 0)
-                break
+            if (is.na(tdiff) || tdiff > 0) break
         }
     }
 
     # Compile the .tex file
     if (is.na(tdiff) || tdiff > 0 || !buildpdf) {
         if (knit) {
-            if (!require(knitr, quietly = TRUE))
+            if (!require(knitr, quietly = TRUE)) {
                 stop("Please, install the 'knitr' package.")
-            if (synctex)
+            }
+            if (synctex) {
                 knitr::opts_knit$set(concordance = TRUE)
+            }
             texf <- knit(rnwf, envir = globalenv())
         } else {
             texf <- Sweave(rnwf, ...)
         }
     }
 
-    if (!buildpdf)
+    if (!buildpdf) {
         return(invisible(NULL))
+    }
 
-    if (missing(latexargs))
-        latexargs <- c("-pdf", '-pdflatex="xelatex %O -file-line-error -interaction=nonstopmode -synctex=1 %S"')
+    if (missing(latexargs)) {
+        latexargs <- c(
+            "-pdf",
+            '-pdflatex="xelatex %O -file-line-error -interaction=nonstopmode -synctex=1 %S"'
+        )
+    }
 
     # We cannot capture the output to see where the log was saved
     # because if pdflatex is running in stopmode the user will have
@@ -253,33 +313,38 @@ nvim.interlace.rnoweb <- function(rnwf, rnwdir, latexcmd = "latexmk",
         haserror <- system(paste("bibtex", sub("\\.tex$", ".aux", texf)))
         if (!haserror) {
             haserror <- system(paste(latexcmd, texf))
-            if (!haserror)
-                haserror <- system(paste(latexcmd, texf))
+            if (!haserror) haserror <- system(paste(latexcmd, texf))
         }
     }
 
     logf <- sub("\\....$", ".log", rnwf)
-    if (!missing(builddir) && dir.exists(builddir))
+    if (!missing(builddir) && dir.exists(builddir)) {
         logf <- paste0(builddir, "/", logf)
+    }
 
     if (!file.exists(logf)) {
         if (latexcmd == "latexmk" && file.exists("~/.latexmkrc")) {
             lmk <- readLines("~/.latexmkrc")
             idx <- grep("\\$out_dir\\s*=", lmk)
             if (length(idx) == 1) {
-                logf <- paste0(sub(".*\\$out_dir\\s*=\\s*['\"](.*)['\"].*",
-                                   "\\1", lmk[idx]), "/",
-                               sub("\\....$", ".log", rnwf))
+                logf <- paste0(
+                    sub(".*\\$out_dir\\s*=\\s*['\"](.*)['\"].*", "\\1", lmk[idx]),
+                    "/",
+                    sub("\\....$", ".log", rnwf)
+                )
             }
         } else {
             idx <- grep("-output-directory=", latexargs)
             if (length(idx) == 1) {
-                logf <- paste0(sub("-output-directory=", "", latexargs[idx]),
-                               "/", sub("\\....$", ".log", rnwf))
+                logf <- paste0(
+                    sub("-output-directory=", "", latexargs[idx]),
+                    "/",
+                    sub("\\....$", ".log", rnwf)
+                )
             } else {
                 idx <- grep("-output-directory$", latexargs)
                 if (length(idx) == 1 && idx < length(latexargs)) {
-                    logf <- paste0(latexargs[idx+1], "/", sub("\\....$", ".log", rnwf))
+                    logf <- paste0(latexargs[idx + 1], "/", sub("\\....$", ".log", rnwf))
                 }
             }
         }
@@ -296,7 +361,11 @@ nvim.interlace.rnoweb <- function(rnwf, rnwdir, latexcmd = "latexmk",
     if (view) {
         idx <- grep("Latexmk: All targets .* are up-to-date", sout)
         if (length(idx)) {
-            pdff <- sub("Latexmk: All targets \\((.*)\\) are up-to-date", "\\1", sout[idx])
+            pdff <- sub(
+                "Latexmk: All targets \\((.*)\\) are up-to-date",
+                "\\1",
+                sout[idx]
+            )
         } else {
             idx <- grep('Output written on "*.*\\.pdf.*', sout)
             if (length(idx)) {
@@ -306,10 +375,13 @@ nvim.interlace.rnoweb <- function(rnwf, rnwdir, latexcmd = "latexmk",
             }
         }
         if (pdff != "") {
-            if (!grepl("^/", pdff))
+            if (!grepl("^/", pdff)) {
                 pdff <- paste0(getwd(), "/", pdff)
-            .C(nvimcom_msg_to_nvim,
-               paste0("lua require('r.doc').open('", pdff, "', '')"))
+            }
+            .C(
+                nvimcom_msg_to_nvim,
+                paste0("lua require('r.doc').open('", pdff, "', '')")
+            )
         }
     }
 
@@ -326,16 +398,18 @@ nvim.interlace.rnoweb <- function(rnwf, rnwdir, latexcmd = "latexmk",
 #' @param rmddir Directory where the Rmd file is.
 #' @param ... Further arguments passed to `rmarkdown::render()`.
 nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
-    if (!require(rmarkdown, quietly = TRUE))
+    if (!require(rmarkdown, quietly = TRUE)) {
         stop("Please, install the 'rmarkdown' package.")
+    }
 
     oldwd <- getwd()
     on.exit(setwd(oldwd))
     setwd(rmddir)
 
     if (grepl("\\.qmd$", Rmdfile, ignore.case = TRUE)) {
-        if (!require(quarto, quietly = TRUE))
+        if (!require(quarto, quietly = TRUE)) {
             stop("Please, install the 'quarto' package.")
+        }
         if (is.null(outform)) {
             cfg <- quarto::quarto_inspect(Rmdfile)
             fmt <- names(cfg$formats)[1]
@@ -350,8 +424,7 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
         mtime1 <- file.info(res)$mtime
         quarto::quarto_render(Rmdfile, outform)
         mtime2 <- file.info(res)$mtime
-        if (is.na(mtime2) || (!is.na(mtime1) && mtime2 <= mtime1))
-            res <- ""
+        if (is.na(mtime2) || (!is.na(mtime1) && mtime2 <= mtime1)) res <- ""
     } else {
         if (exists("params", envir = .GlobalEnv)) {
             old_params <- get("params", envir = .GlobalEnv)
@@ -368,11 +441,12 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
         if (is.function(brwsr)) {
             brwsr <- "RbrowseURLfun"
         } else {
-            if (!is.character(brwsr))
-                brwsr <- ""
+            if (!is.character(brwsr)) brwsr <- ""
         }
     }
-    .C(nvimcom_msg_to_nvim,
-       paste0("lua require('r.doc').open('", res, "', '", brwsr, "')"))
+    .C(
+        nvimcom_msg_to_nvim,
+        paste0("lua require('r.doc').open('", res, "', '", brwsr, "')")
+    )
     return(invisible(NULL))
 }

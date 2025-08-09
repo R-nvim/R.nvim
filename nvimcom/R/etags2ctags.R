@@ -50,8 +50,13 @@ etags2ctags <- function(etagsfile, ctagsfile) {
                 k <- k + 1
             }
         } else {
-            stop("Error while trying to interpret line ", i,
-                 " of '", etagsfile, "'.\n")
+            stop(
+                "Error while trying to interpret line ",
+                i,
+                " of '",
+                etagsfile,
+                "'.\n"
+            )
         }
     }
     curcollate <- Sys.getlocale(category = "LC_COLLATE")

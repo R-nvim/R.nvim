@@ -10,32 +10,53 @@ out <- function(x) {
 
 isdir <- file.info(Sys.getenv("RNVIM_TMPDIR"))[["isdir"]]
 if (is.na(isdir)) {
-    out(paste0("WARN: R: RNVIM_TMPDIR (`", Sys.getenv("RNVIM_TMPDIR"), "`) not found."))
+    out(paste0(
+        "WARN: R: RNVIM_TMPDIR (`",
+        Sys.getenv("RNVIM_TMPDIR"),
+        "`) not found."
+    ))
 } else {
-    if (!isdir)
-        out(paste0("WARN: R: RNVIM_TMPDIR (`", Sys.getenv("RNVIM_TMPDIR"), "`) is not a directory."))
+    if (!isdir) {
+        out(paste0(
+            "WARN: R: RNVIM_TMPDIR (`",
+            Sys.getenv("RNVIM_TMPDIR"),
+            "`) is not a directory."
+        ))
+    }
 }
 
 isdir <- file.info(Sys.getenv("RNVIM_COMPLDIR"))[["isdir"]]
 if (is.na(isdir)) {
-    out(paste0("WARN: R: RNVIM_COMPLDIR (`", Sys.getenv("RNVIM_COMPLDIR"), "`) not found."))
+    out(paste0(
+        "WARN: R: RNVIM_COMPLDIR (`",
+        Sys.getenv("RNVIM_COMPLDIR"),
+        "`) not found."
+    ))
 } else {
-    if (!isdir)
-        out(paste0("WARN: R: RNVIM_COMPLDIR (`", Sys.getenv("RNVIM_COMPLDIR"), "`) is not a directory."))
+    if (!isdir) {
+        out(paste0(
+            "WARN: R: RNVIM_COMPLDIR (`",
+            Sys.getenv("RNVIM_COMPLDIR"),
+            "`) is not a directory."
+        ))
+    }
 }
 
 setwd(Sys.getenv("RNVIM_TMPDIR"))
 
 # Save libPaths for rnvimserver
-libp <- unique(c(unlist(strsplit(Sys.getenv("R_LIBS_USER"),
-                                 .Platform$path.sep)), .libPaths()))
+libp <- unique(c(
+    unlist(strsplit(Sys.getenv("R_LIBS_USER"), .Platform$path.sep)),
+    .libPaths()
+))
 cat(libp, sep = "\n", colapse = "\n", file = "libPaths")
 
 # Check R version
 R_version <- paste0(version[c("major", "minor")], collapse = ".")
 
-if (R_version < "4.0.0")
+if (R_version < "4.0.0") {
     out("WARN: R.nvim requires R >= 4.0.0")
+}
 
 R_version <- sub("[0-9]$", "", R_version)
 
@@ -52,7 +73,11 @@ check_nvimcom_installation <- function() {
     } else {
         if (length(np) == 0) {
             if (dir.exists(paste0(libp[1], "/00LOCK-nvimcom"))) {
-                out(paste0('WARN: Failed to install nvimcom. Perhaps you should delete the directory "', libp[1], '/00LOCK-nvimcom"'))
+                out(paste0(
+                    'WARN: Failed to install nvimcom. Perhaps you should delete the directory "',
+                    libp[1],
+                    '/00LOCK-nvimcom"'
+                ))
             } else {
                 out("WARN: Failed to install nvimcom.")
             }
@@ -72,23 +97,38 @@ if (!is.null(needed_nvc_version)) {
     if (length(np) == 1) {
         nd <- utils::packageDescription("nvimcom")
         if (!grepl(paste0('^R ', R_version), nd$Built)) {
-            need_new_nvimcom <- paste0("R version mismatch: '", R_version, "' vs '", nd$Built, "'")
+            need_new_nvimcom <- paste0(
+                "R version mismatch: '",
+                R_version,
+                "' vs '",
+                nd$Built,
+                "'"
+            )
         } else {
             if (nd$Version != needed_nvc_version) {
                 need_new_nvimcom <- "nvimcom version mismatch"
                 fi <- file.info(paste0(np, "/DESCRIPTION"))
-                if (sum(grepl("uname", names(fi))) == 1 &&
-                    Sys.getenv("USER") != "" &&
-                    Sys.getenv("USER") != fi[["uname"]]) {
+                if (
+                    sum(grepl("uname", names(fi))) == 1 &&
+                        Sys.getenv("USER") != "" &&
+                        Sys.getenv("USER") != fi[["uname"]]
+                ) {
                     need_new_nvimcom <-
-                        paste0(need_new_nvimcom, " (nvimcom ", nd$Version,
-                               " was installed in `", np, "` by \"", fi[["uname"]], "\")")
+                        paste0(
+                            need_new_nvimcom,
+                            " (nvimcom ",
+                            nd$Version,
+                            " was installed in `",
+                            np,
+                            "` by \"",
+                            fi[["uname"]],
+                            "\")"
+                        )
                 }
             }
         }
     } else {
-        if (length(np) == 0)
-            need_new_nvimcom <- "Nvimcom not installed"
+        if (length(np) == 0) need_new_nvimcom <- "Nvimcom not installed"
     }
 
     # Build and install nvimcom if necessary
@@ -97,9 +137,9 @@ if (!is.null(needed_nvc_version)) {
 
         # Check if any directory in libPaths is writable
         ok <- FALSE
-        for (p in libp)
-            if (dir.exists(p) && file.access(p, mode = 2) == 0)
-                ok <- TRUE
+        for (p in libp) {
+            if (dir.exists(p) && file.access(p, mode = 2) == 0) ok <- TRUE
+        }
         if (!ok) {
             out(paste0("LIBD: ", libp[1]))
             quit(save = "no", status = 71)
@@ -111,17 +151,44 @@ if (!is.null(needed_nvc_version)) {
         }
 
         if (!file.exists(paste0(nvim_r_home, "/nvimcom"))) {
-            if (file.exists(paste0(Sys.getenv("RNVIM_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"))) {
+            if (
+                file.exists(paste0(
+                    Sys.getenv("RNVIM_TMPDIR"),
+                    "/",
+                    "nvimcom_",
+                    needed_nvc_version,
+                    ".tar.gz"
+                ))
+            ) {
                 out("ECHO: Installing nvimcom...")
-                tools:::.install_packages(paste0(Sys.getenv("RNVIM_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"), no.q = TRUE)
-                unlink(paste0(Sys.getenv("RNVIM_TMPDIR"), "/", "nvimcom_", needed_nvc_version, ".tar.gz"))
+                tools:::.install_packages(
+                    paste0(
+                        Sys.getenv("RNVIM_TMPDIR"),
+                        "/",
+                        "nvimcom_",
+                        needed_nvc_version,
+                        ".tar.gz"
+                    ),
+                    no.q = TRUE
+                )
+                unlink(paste0(
+                    Sys.getenv("RNVIM_TMPDIR"),
+                    "/",
+                    "nvimcom_",
+                    needed_nvc_version,
+                    ".tar.gz"
+                ))
                 check_nvimcom_installation()
             } else {
-                out(paste0("WARN: Cannot build nvimcom: directory '", nvim_r_home, "/nvimcom", "' not found"))
+                out(paste0(
+                    "WARN: Cannot build nvimcom: directory '",
+                    nvim_r_home,
+                    "/nvimcom",
+                    "' not found"
+                ))
                 quit(save = "no", status = 72)
             }
         } else {
-
             out("ECHO: Building nvimcom...")
             tools:::.build_packages(paste0(nvim_r_home, "/nvimcom"), no.q = TRUE)
             if (!file.exists(paste0("nvimcom_", needed_nvc_version, ".tar.gz"))) {
@@ -130,7 +197,10 @@ if (!is.null(needed_nvc_version)) {
             }
 
             out("ECHO: Installing nvimcom...")
-            tools:::.install_packages(paste0("nvimcom_", needed_nvc_version, ".tar.gz"), no.q = TRUE)
+            tools:::.install_packages(
+                paste0("nvimcom_", needed_nvc_version, ".tar.gz"),
+                no.q = TRUE
+            )
             unlink(paste0("nvimcom_", needed_nvc_version, ".tar.gz"))
             check_nvimcom_installation()
         }
@@ -144,33 +214,53 @@ np <- find.package("nvimcom", quiet = TRUE, verbose = FALSE)
 if (length(np) == 1) {
     nd <- utils::packageDescription("nvimcom")
     nvimcom_info <- c(nd$Version, np, sub("R ([^;]*).*", "\\1", nd$Built))
-    writeLines(nvimcom_info, paste0(Sys.getenv("RNVIM_COMPLDIR"), "/nvimcom_info"))
+    writeLines(
+        nvimcom_info,
+        paste0(Sys.getenv("RNVIM_COMPLDIR"), "/nvimcom_info")
+    )
 
     # Save lib names for rnvimserver
     hasl <- rep(FALSE, length(libs))
     lver <- rep("", length(libs))
-    for (i in 1:length(libs))
+    for (i in 1:length(libs)) {
         if (length(find.package(libs[i], quiet = TRUE, verbose = FALSE)) > 0) {
             hasl[i] <- TRUE
             lver[i] <- packageDescription(libs[i])$Version
         }
+    }
     libs <- libs[hasl]
     lver <- lver[hasl]
-    cat(paste(libs, lver, collapse = '\n', sep = '_'),
-        '\n', sep = '', file = paste0(Sys.getenv("RNVIM_TMPDIR"), "/libnames_", Sys.getenv("RNVIM_ID")))
+    cat(
+        paste(libs, lver, collapse = '\n', sep = '_'),
+        '\n',
+        sep = '',
+        file = paste0(
+            Sys.getenv("RNVIM_TMPDIR"),
+            "/libnames_",
+            Sys.getenv("RNVIM_ID")
+        )
+    )
     quit(save = "no")
 }
 
 if (length(np) == 0) {
     out("WARN: nvimcom is not installed.")
-    for (p in libp)
-        if (dir.exists(paste0(p, "/00LOCK-nvimcom")))
-            out(paste0('WARN: nvimcom is not installed. Perhaps you should delete the directory "', p, '/00LOCK-nvimcom"'))
+    for (p in libp) {
+        if (dir.exists(paste0(p, "/00LOCK-nvimcom"))) {
+            out(paste0(
+                'WARN: nvimcom is not installed. Perhaps you should delete the directory "',
+                p,
+                '/00LOCK-nvimcom"'
+            ))
+        }
+    }
     quit(save = "no", status = 67)
 }
 
 if (length(np) > 1) {
-    out(paste0("WARN: nvimcom is installed in more than one directory: ",
-               paste0(ip[grep("^nvimcom$", rownames(ip)), "LibPath"], collapse = ", ")))
+    out(paste0(
+        "WARN: nvimcom is installed in more than one directory: ",
+        paste0(ip[grep("^nvimcom$", rownames(ip)), "LibPath"], collapse = ", ")
+    ))
     quit(save = "no", status = 68)
 }
