@@ -1,9 +1,12 @@
 # Function called by R if options(editor = nvim.edit).
 # R.nvim sets this option during nvimcom loading.
 nvim.edit <- function(name, file, title) {
-  if (file != "") stop("Feature not implemented. Use nvim to edit files.")
-  if (is.null(name))
+  if (file != "") {
+    stop("Feature not implemented. Use nvim to edit files.")
+  }
+  if (is.null(name)) {
     stop("Feature not implemented. Use nvim to create R objects from scratch.")
+  }
 
   editf <- paste0(
     Sys.getenv("RNVIM_TMPDIR"),
@@ -22,7 +25,9 @@ nvim.edit <- function(name, file, title) {
 
   .C(nvimcom_msg_to_nvim, paste0("lua require('r.edit').obj('", editf, "')"))
 
-  while (file.exists(waitf)) Sys.sleep(1L)
+  while (file.exists(waitf)) {
+    Sys.sleep(1L)
+  }
   x <- eval(parse(editf))
   unlink(waitf)
   unlink(editf)
@@ -118,7 +123,9 @@ nvim_viewobj <- function(
     }
   }
   if (is.data.frame(o) || is.matrix(o)) {
-    if (nrows < 0L) nrows <- ceiling(10000L / ncol(o))
+    if (nrows < 0L) {
+      nrows <- ceiling(10000L / ncol(o))
+    }
     if (nrows != 0L && nrows < nrow(o)) {
       o <- o[1L:nrows, ]
     }
@@ -184,36 +191,41 @@ Rnvim.source <- function(..., print.eval = TRUE, spaced = FALSE) {
 #' This function is sent to R Console when the user press `\ss`.
 #' @param ... Further arguments passed to base::source.
 #' @param local See base::source.
-Rnvim.selection <- function(..., local = parent.frame())
+Rnvim.selection <- function(..., local = parent.frame()) {
   Rnvim.source(..., local = local)
+}
 
 #' Call base::source.
 #' This function is sent to R Console when the user press `\pp`.
 #' @param ... Further arguments passed to base::source.
 #' @param local See base::source.
-Rnvim.paragraph <- function(..., local = parent.frame())
+Rnvim.paragraph <- function(..., local = parent.frame()) {
   Rnvim.source(..., local = local)
+}
 
 #' Call base::source.
 #' This function is sent to R Console when the user press `\bb`.
 #' @param ... Further arguments passed to base::source.
 #' @param local See base::source.
-Rnvim.block <- function(..., local = parent.frame())
+Rnvim.block <- function(..., local = parent.frame()) {
   Rnvim.source(..., local = local)
+}
 
 #' Call base::source.
 #' This function is sent to R Console when the user press `\ff`.
 #' @param ... Further arguments passed to base::source.
 #' @param local See base::source.
-Rnvim.function <- function(..., local = parent.frame())
+Rnvim.function <- function(..., local = parent.frame()) {
   Rnvim.source(..., local = local)
+}
 
 #' Call base::source.
 #' This function is sent to R Console when the user press `\cc`.
 #' @param ... Further arguments passed to base::source.
 #' @param local See base::source.
-Rnvim.chunk <- function(..., local = parent.frame())
+Rnvim.chunk <- function(..., local = parent.frame()) {
   Rnvim.source(..., local = local)
+}
 
 #' Source a temporary copy of an R file and, finally, delete it.
 #' This function is sent to R Console when the user press `\aa`, `\ae`, or `\ao`.
@@ -284,16 +296,21 @@ nvim.GlobalEnv.fun.args <- function(funcname) {
 #' @param prnt Parent environment
 nvim.min.info <- function(obj, prnt) {
   isnull <- try(is.null(obj), silent = TRUE)
-  if (class(isnull)[1L] != "logical") return(invisible(NULL))
-  if (isnull[1L]) return(invisible(NULL))
+  if (class(isnull)[1L] != "logical") {
+    return(invisible(NULL))
+  }
+  if (isnull[1L]) {
+    return(invisible(NULL))
+  }
 
   txt <- paste0(class(obj)[1L], " [", prnt, "]")
   objlbl <- attr(obj, "label")
-  if (!is.null(objlbl))
+  if (!is.null(objlbl)) {
     txt <- append(
       txt,
       c("", paste0("**", format_text(objlbl, " ", "\x14"), "**"))
     )
+  }
   if (is.data.frame(obj)) {
     txt <- append(txt, paste0("dim: ", nrow(obj), " x ", ncol(obj)))
   } else if (is.list(obj)) {
@@ -315,8 +332,12 @@ nvim.min.info <- function(obj, prnt) {
 #' @param prnt Parent environment
 nvim.get.summary <- function(obj, prnt) {
   isnull <- try(is.null(obj), silent = TRUE)
-  if (class(isnull)[1L] != "logical") return(invisible(NULL))
-  if (isnull[1L]) return(invisible(NULL))
+  if (class(isnull)[1L] != "logical") {
+    return(invisible(NULL))
+  }
+  if (isnull[1L]) {
+    return(invisible(NULL))
+  }
 
   owd <- getOption("width")
   width <- as.integer(Sys.getenv("CMPR_DOC_WIDTH"))
@@ -401,7 +422,18 @@ nvim.plot <- function(x) {
   }
 }
 
-# Terminal plot functionality
+# Display PNG image in terminal using Kitty graphics protocol
+# Adapted from https://codeberg.org/djvanderlaan/kitty.r
+png2terminal <- function(filename) {
+  d <- base64enc::base64encode(filename, 4096L)
+  for (i in seq_along(d)) {
+    cat(paste0("\033_Ga=T,f=100,m=1;", d[i], "\033\\"))
+  }
+  cat("\033_Ga=T,f=100,m=0\033\\")
+  cat("\n")
+  invisible(NULL)
+}
+
 show_plot_in_terminal <- function(
   expr,
   width = NULL,
@@ -416,14 +448,20 @@ show_plot_in_terminal <- function(
       if (length(dims) == 2L) {
         term_rows <- dims[1L]
         term_cols <- dims[2L]
-        char_width <- 12L # pixels per character
-        char_height <- 24L # pixels per character line
-        if (is.null(width)) width <- as.integer(term_cols * char_width)
+        # pixels per character
+        char_width <- 12L
+        # pixels per character line
+        char_height <- 24L
+        if (is.null(width)) {
+          width <- as.integer(term_cols * char_width)
+        }
         if (is.null(height)) height <- as.integer(term_rows * char_height * 0.7)
       }
     }
 
-    if (is.null(width)) width <- 800L
+    if (is.null(width)) {
+      width <- 800L
+    }
     if (is.null(height)) height <- 600L
   }
 
@@ -456,24 +494,13 @@ show_plot_in_terminal <- function(
   }
 
   term <- Sys.getenv("TERM")
+  supported_terminals <- c("xterm-kitty", "wezterm")
 
-  if (term == "xterm-kitty") {
-    result <- system2(
-      "kitty",
-      c("+kitten", "icat", png_file),
-      stdout = TRUE,
-      stderr = TRUE
-    )
-    cat("\n\n\n")
-    cat(paste(result, collapse = " "))
-    cat("\n\n\n")
+  if (term %in% supported_terminals) {
+    png2terminal(png_file)
   } else {
-    cat("DEBUG: No suitable image display tool found\n")
-    cat("DEBUG: Available tools:\n")
-    cat("  - kitty:", Sys.which("kitty"), "\n")
-    # Fallback to regular plot display
     warning(
-      "Terminal plot display not supported. Install imgcat, timg, chafa, or use Kitty terminal."
+      "Terminal plot display not supported."
     )
     return()
   }
@@ -528,7 +555,9 @@ nvim.names <- function(x) {
 #' Get the class of object.
 #' @param x R object.
 nvim.getclass <- function(x) {
-  if (missing(x) || length(charToRaw(x)) == 0L) return("#E#")
+  if (missing(x) || length(charToRaw(x)) == 0L) {
+    return("#E#")
+  }
 
   if (x == "#c#") {
     return("character")
@@ -544,7 +573,9 @@ nvim.getclass <- function(x) {
   options(warn = -1L)
   on.exit(options(warn = saved.warn))
   tr <- try(cls <- class(get(x, envir = .GlobalEnv)), silent = TRUE)
-  if (inherits(tr, "try-error")) return("#E#")
+  if (inherits(tr, "try-error")) {
+    return("#E#")
+  }
 
   return(cls)
 }
@@ -566,12 +597,13 @@ nvim.getmethod <- function(fname, objclass) {
           frm <- formals(fun)
           luatbl <- sapply(
             frm,
-            function(x)
+            function(x) {
               if (length(x) == 0L) {
                 return("")
               } else {
                 return(" = ")
               }
+            }
           )
           env <- paste0("#\x02", fnm)
           clpstr <- paste0("', cls = 'a', env = '", env, "'}, {label = '")
@@ -683,8 +715,9 @@ update_params <- function(fname) {
       rm(params, envir = .GlobalEnv)
     }
   } else {
-    if (!require(knitr, quietly = TRUE))
+    if (!require(knitr, quietly = TRUE)) {
       stop("Please, install the 'knitr' package.")
+    }
     flines <- readLines(fname)
     params <- knitr::knit_params(flines)
     assign(
