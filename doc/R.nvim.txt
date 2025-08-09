@@ -1612,21 +1612,19 @@ config:
 ------------------------------------------------------------------------------
 6.17. Terminal plotting                                       *terminal_plot*
 
-R.nvim can display plots directly in the terminal for interactive R sessions.
-This feature automatically detects the terminal size and renders plots using
-terminal capabilites.
-
-To enable terminal plotting functionality, add to your config:
+R.nvim can display plots directly in the terminal for interactive R sessions
+when R is running in an external terminal emulator. This feature automatically
+detects the terminal size and renders plots using terminal capabilites. To
+enable terminal plotting functionality, add to your config:
 >lua
    terminal_plot = true
 <
 When enabled, plots will be displayed in the terminal using the current
 terminal dimensions for optimal sizing. 
 
-Note: This feature is experimental and only work in interactive R sessions.
-It works with base R plots and `ggplot2` but may not support all plotting
-libraries or plot types. Incremental plots (using `plot()` followed by
-`points()`, `lines()`, etc.) are not supported.
+Note: This feature is experimental and only work in interactive R sessions. It
+works with `base::plot` and `ggplot2::ggplot`. Incremental plots (using
+`plot()` followed by `points()`, `lines()`, etc.) are not supported.
 
 
 ------------------------------------------------------------------------------
