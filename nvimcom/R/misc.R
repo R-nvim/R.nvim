@@ -441,14 +441,15 @@ show_plot_in_terminal <- function(
   dpi = 100L
 ) {
   # Check terminal support first
-  term <- Sys.getenv("TERM")
-  supported_terminals <- c("xterm-kitty", "wezterm")
+  has_terminal_img_support <- (Sys.getenv(
+    "TERM_PROGRAM"
+  ) %in%
+    c("Ghostty", "WarpTerminal", "WezTerm") ||
+    nzchar(Sys.getenv("KONSOLE_VERSION")) ||
+    Sys.getenv("TERM") %in% c("xterm-kitty", "st-256color", "wayst"))
 
-  if (!term %in% supported_terminals) {
-    warning(
-      "Terminal plot display not supported."
-    )
-    return()
+  if (!has_terminal_img_support) {
+    return(invisible(NULL))
   }
 
   # Get terminal dimensions if width/height not specified
@@ -509,7 +510,11 @@ show_plot_in_terminal <- function(
 
 # Setup terminal plotting - called from nvimcom.R .onAttach
 setup_terminal_plotting <- function() {
-  if (interactive() && getOption("nvimcom.terminal_plot", FALSE)) {
+  if (!interactive()) {
+    return(invisible(NULL))
+  }
+
+  if (getOption("nvimcom.terminal_plot", FALSE)) {
     assign(".base_plot", base::plot, envir = .GlobalEnv)
 
     plot <- function(...) {
