@@ -211,7 +211,7 @@ firm commitment to backwards compatibility.
   how to create custom key bindings.
 
 - In a Quarto or RMarkdown document, when the cursor is over a chunk header
-  and you tries to send the current line and go to the next line, the whole
+  and you try to send the current line and go to the next line, the whole
   chunk is sent to R and the cursor jumps to the next chunk of either R or
   Python code.
 
