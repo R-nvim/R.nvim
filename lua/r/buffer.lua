@@ -16,7 +16,7 @@ M.create_r_buffer = function()
 
     if filetype == "r" then return bufnr end
 
-    if filetype ~= "quarto" and filetype ~= "rmd" then
+    if not vim.tbl_contains({ "markdown", "rmd", "quarto" }, filetype) then
         inform("Not yet supported in '" .. filetype .. "' files.")
         return
     end

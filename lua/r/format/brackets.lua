@@ -61,7 +61,8 @@ M.formatsubsetting = function(bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
 
     local filetype = vim.bo[bufnr].filetype
-    if filetype ~= "r" and filetype ~= "quarto" and filetype ~= "rmd" then
+
+    if not vim.tbl_contains({ "r", "markdown", "rmd", "quarto" }, filetype) then
         warn("This function is not available for " .. filetype .. " files.")
         return
     end

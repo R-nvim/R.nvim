@@ -326,7 +326,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     vim.g.R_Nvim_status = 7
     if
         config.set_params ~= "no"
-        and (vim.o.filetype == "quarto" or vim.o.filetype == "rmd")
+        and vim.tbl_contains({ "markdown", "rmd", "quarto" }, vim.o.filetype)
         and require("r.rmd").params_status() == "new"
     then
         local bn = vim.api.nvim_buf_get_name(0)

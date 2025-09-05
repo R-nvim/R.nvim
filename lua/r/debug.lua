@@ -156,7 +156,9 @@ local find_func = function(srcref)
                 s.winnr = vim.api.nvim_get_current_win()
                 s.func_offset = s.func_offset - 1
                 if srcref == "<text>" then
-                    if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
+                    if
+                        vim.tbl_contains({ "markdown", "rmd", "quarto" }, vim.bo.filetype)
+                    then
                         s.func_offset = vim.fn.search("^\\s*```\\s*{\\s*r", "nb")
                     elseif vim.bo.filetype == "rnoweb" then
                         s.func_offset = vim.fn.search("^<<", "nb")

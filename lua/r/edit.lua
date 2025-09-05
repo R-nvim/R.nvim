@@ -94,16 +94,17 @@ M.pipe = function()
 end
 
 M.buf_enter = function()
-    if
-        vim.o.filetype == "r"
-        or vim.o.filetype == "rnoweb"
-        or vim.o.filetype == "rmd"
-        or vim.o.filetype == "quarto"
-        or vim.o.filetype == "rhelp"
-    then
-        rscript_buf = vim.api.nvim_get_current_buf()
+    if vim.g.R_filetypes then
+        if vim.tbl_contains(vim.g.R_filetypes, vim.o.filetype) then
+            rscript_buf = vim.api.nvim_get_current_buf()
+        end
+    else
+        local rft = { "r", "rnoweb", "rmd", "markdown", "quarto", "rhelp" }
+        if vim.tbl_contains(rft, vim.o.filetype) then
+            rscript_buf = vim.api.nvim_get_current_buf()
+        end
     end
-    if vim.o.filetype == "rmd" or vim.o.filetype == "quarto" then
+    if vim.tbl_contains({ "markdown", "rmd", "quarto" }, vim.o.filetype) then
         require("r.rmd").update_params()
     end
 end

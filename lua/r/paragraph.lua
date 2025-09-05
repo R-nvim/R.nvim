@@ -18,7 +18,7 @@ M.get_current = function()
             line == ""
             or (vim.o.filetype == "rnoweb" and line:find("^<<"))
             or (
-                (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
+                vim.tbl_contains({ "markdown", "rmd", "quarto" }, vim.o.filetype)
                 and line:find("^```%{")
             )
         then
