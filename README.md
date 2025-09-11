@@ -215,6 +215,9 @@ firm commitment to backwards compatibility.
   chunk is sent to R and the cursor jumps to the next chunk of either R or
   Python code.
 
+- Markdown documents are treated as RMarkdown if "markdown" is in
+  `vim.g.R_filetypes`.
+
 ### New features
 
 #### New commands

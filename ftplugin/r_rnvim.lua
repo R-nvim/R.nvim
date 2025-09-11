@@ -1,7 +1,7 @@
 if
     vim.g.R_filetypes
     and type(vim.g.R_filetypes) == "table"
-    and vim.fn.index(vim.g.R_filetypes, "r") == -1
+    and not vim.tbl_contains(vim.g.R_filetypes, "r")
 then
     return
 end

@@ -240,7 +240,7 @@ end
 local edit = function(file_type)
     create_maps("i", "RInsertPipe", ",", "<Cmd>lua require('r.edit').pipe()", 2)
     create_maps("i", "RInsertAssign", "<M-->", "<Cmd>lua require('r.edit').assign()", 3)
-    if file_type == "rmd" or file_type == "quarto" then
+    if vim.tbl_contains({ "markdown", "rmd", "quarto" }, file_type) then
         create_maps("i", "RmdInsertChunk", "<M-r>", "<Cmd>lua require('r.rmd').write_chunk()", 3)
     end
     if file_type == "rnoweb" then
@@ -292,7 +292,7 @@ local send = function(file_type)
         create_maps("ni",  "RSendFile",       "aa", "<Cmd>lua require('r.send').source_file()")
         create_maps("ni",  "RShowRout",       "ao", "<Cmd>lua require('r').show_R_out()")
     end
-    if file_type == "rmd" or file_type == "quarto" then
+    if vim.tbl_contains({ "markdown", "rmd", "quarto" }, file_type) then
         create_maps("nvi", "RKnit",           "kn", "<Cmd>lua require('r.run').knit()")
         create_maps("ni",  "RSendChunk",      "cc", "<Cmd>lua require('r.rmd').send_current_chunk(false)")
         create_maps("ni",  "RDSendChunk",     "cd", "<Cmd>lua require('r.rmd').send_current_chunk(true)")
@@ -321,7 +321,7 @@ local send = function(file_type)
         create_maps("n", "RNextRChunk",     "gn", "<Cmd>lua require('r.rnw').next_chunk()")
         create_maps("n", "RPreviousRChunk", "gN", "<Cmd>lua require('r.rnw').previous_chunk()")
     end
-    if file_type == "rnoweb" or file_type == "rmd" or file_type == "quarto" then
+    if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, file_type) then
         create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
         if config.rm_knit_cache then
             create_maps("nvi", "RKnitRmCache", "kc", "<Cmd>lua require('r.rnw').rm_knit_cache()")

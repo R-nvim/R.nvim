@@ -442,7 +442,7 @@ M.selection = function(m)
     local lang = utils.get_lang()
 
     if
-        (vim.o.filetype == "rmd" or vim.o.filetype == "quarto")
+        vim.tbl_contains({ "markdown", "rmd", "quarto" }, vim.o.filetype)
         and not quarto.is_supported_lang(lang)
         and not vim.api.nvim_get_current_line():find("`r ")
     then
@@ -553,11 +553,7 @@ M.line = function(m)
 
     local ok = false
 
-    if
-        vim.bo.filetype == "rnoweb"
-        or vim.bo.filetype == "rmd"
-        or vim.bo.filetype == "quarto"
-    then
+    if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, vim.bo.filetype) then
         if quarto.is_python(lang) then
             line = 'reticulate::py_run_string(r"(' .. line .. ')")'
             ok = M.cmd(line)
