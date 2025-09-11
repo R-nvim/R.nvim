@@ -503,6 +503,9 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
     } else if (Rf_isS4(*x)) {
         p = str_cat(p, "\006<\006");
         xgroup = 4;
+    } else if (Rf_inherits(*x, "S7_object")) {
+        p = str_cat(p, "\006>\006");
+        xgroup = 7;
     } else if (Rf_isEnvironment(*x)) {
         p = str_cat(p, "\006:\006");
     } else if (TYPEOF(*x) == PROMSXP) {
@@ -568,18 +571,42 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
             int er = 0;
             PROTECT(sn = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
             if (er)
-                REprintf("nvimcom error executing command: slotNames(%s%s)\n",
-                         curenv, xname);
+                REprintf("nvimcom error executing command: %s\n", buf);
             else
                 len = length(sn);
             UNPROTECT(1);
         } else {
-            REprintf("nvimcom error: invalid value in slotNames(%s%s)\n",
-                     curenv, xname);
+            REprintf("nvimcom error: invalid value in %s\n", buf);
         }
         UNPROTECT(2);
         snprintf(buf, 127, "\xc2\xa0[%d]", len);
         p = str_cat(p, buf);
+    } else if (xgroup == 7) {
+        SEXP cls, cmdSexp, cmdexpr;
+        ParseStatus status;
+        snprintf(buf, 575, "%s%s", curenv, xname);
+        nvimcom_backtick(buf, bbuf);
+        snprintf(buf, 575, "S7::S7_class(%s)", bbuf);
+        PROTECT(cmdSexp = allocVector(STRSXP, 1));
+        SET_STRING_ELT(cmdSexp, 0, mkChar(buf));
+        PROTECT(cmdexpr = R_ParseVector(cmdSexp, -1, &status, R_NilValue));
+        if (status == PARSE_OK) {
+            int er = 0;
+            PROTECT(cls = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
+            if (er) {
+                REprintf("nvimcom error executing command: %s\n", buf);
+            } else {
+                SEXP ppt;
+                PROTECT(ppt = R_do_slot(cls, Rf_install("properties")));
+                sn = getAttrib(ppt, R_NamesSymbol);
+                UNPROTECT(1);
+                len = length(sn);
+            }
+            UNPROTECT(1);
+        } else {
+            REprintf("nvimcom error: invalid value in %s\n", buf);
+        }
+        UNPROTECT(2);
     }
 
     // finish the line
@@ -590,7 +617,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
         SEXP elmt = R_NilValue;
         const char *ename;
 
-        if (xgroup == 4) {
+        if (xgroup == 4 || xgroup == 7) {
             snprintf(newenv, 575, "%s%s@", curenv, xname);
             if (len > 0) {
                 for (int i = 0; i < len; i++) {

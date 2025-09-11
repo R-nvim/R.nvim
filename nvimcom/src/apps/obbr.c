@@ -143,7 +143,8 @@ static const char *write_ob_line(const char *p, const char *bs, char *prfx,
     if (*p == 0)
         return p;
 
-    if (f[1][0] == '[' || f[1][0] == '$' || f[1][0] == '<' || f[1][0] == ':') {
+    if (f[1][0] == '[' || f[1][0] == '$' || f[1][0] == '<' || f[1][0] == '>' ||
+        f[1][0] == ':') {
         s = f[6];
         s++;
         s++;
