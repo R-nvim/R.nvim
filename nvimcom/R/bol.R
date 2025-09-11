@@ -379,7 +379,7 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
             } else {
                 info <- nvim.getInfo(printenv, x)
                 if (info == "\006\006") {
-                    xattr <- try(attr(xx, "label"), silent = TRUE)
+                    xattr <- try(attr(xx, "label", exact = TRUE), silent = TRUE)
                     if (
                         !inherits(xattr, "try-error") &&
                             !is.null(xattr) &&

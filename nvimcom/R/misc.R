@@ -263,8 +263,8 @@ nvim_insert <- function(cmd, howto = "tabnew") {
     return(invisible(NULL))
 }
 
-format_text <- function(txt, delim, nl) {
-    txt <- .Call(fmt_txt, txt, delim, nl)
+format_text <- function(txt) {
+    txt <- .Call(fmt_txt, txt[1])
     txt
 }
 
@@ -304,11 +304,11 @@ nvim.min.info <- function(obj, prnt) {
     }
 
     txt <- paste0(class(obj)[1], " [", prnt, "]")
-    objlbl <- attr(obj, "label")
-    if (!is.null(objlbl)) {
+    objlbl <- attr(obj, "label", exact = TRUE)
+    if (!is.null(objlbl) && is.character(objlbl)) {
         txt <- append(
             txt,
-            c("", paste0("**", format_text(objlbl, " ", "\x14"), "**"))
+            c("", paste0("**", format_text(objlbl), "**"))
         )
     }
     if (is.data.frame(obj)) {
@@ -346,9 +346,9 @@ nvim.get.summary <- function(obj, prnt) {
     }
     options(width = width)
     txt <- paste0(class(obj)[1], " [", prnt, "]")
-    objlbl <- attr(obj, "label")
-    if (!is.null(objlbl)) {
-        objlbl <- format_text(objlbl, " ", "\x14")
+    objlbl <- attr(obj, "label", exact = TRUE)
+    if (!is.null(objlbl) && is.character(objlbl)) {
+        objlbl <- format_text(objlbl)
         objlbl <- nvim.fix.string(objlbl)
         txt <- append(txt, c("", objlbl))
     }

@@ -155,12 +155,10 @@ static void escape_str(char *s) {
     }
 }
 
-SEXP fmt_txt(SEXP txt, SEXP delim, SEXP nl) {
+SEXP fmt_txt(SEXP txt) {
     const char *s = CHAR(STRING_ELT(txt, 0));
-    const char *d = CHAR(STRING_ELT(delim, 0));
-    const char *n = CHAR(STRING_ELT(nl, 0));
     char *b = calloc(strlen(s) + 1, sizeof(char));
-    format(s, b, d[0], n[0]);
+    format(s, b, ' ', '\x14');
     SEXP ans = R_NilValue;
     PROTECT(ans = NEW_CHARACTER(1));
     SET_STRING_ELT(ans, 0, mkChar(b));
