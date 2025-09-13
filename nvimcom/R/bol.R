@@ -400,31 +400,20 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
     if (curlevel <= maxlevel) {
         if ((is.list(xx) || is.environment(xx))) {
             obj.names <- names(xx)
-            curlevel <- curlevel + 1
-            xxl <- length(xx)
-            if (!is.null(xxl) && xxl > 0) {
-                for (k in obj.names) {
-                    nvim.cmpl.line(paste0(x, "$", k), envir, printenv, curlevel, maxlevel)
-                }
-            }
+            s <- "$"
         } else if (x.group == "<") {
             obj.names <- slotNames(xx)
-            curlevel <- curlevel + 1
-            xxl <- length(xx)
-            if (!is.null(xxl) && xxl > 0) {
-                for (k in obj.names) {
-                    nvim.cmpl.line(paste0(x, "@", k), envir, printenv, curlevel, maxlevel)
-                }
-            }
+            s <- "@"
         } else if (x.group == ">") {
             s7c <- S7::S7_class(xx)
             obj.names <- names(s7c@properties)
-            curlevel <- curlevel + 1
-            xxl <- length(xx)
-            if (!is.null(xxl) && xxl > 0) {
-                for (k in obj.names) {
-                    nvim.cmpl.line(paste0(x, "@", k), envir, printenv, curlevel, maxlevel)
-                }
+            s <- "@"
+        } else {
+            obj.names <- NULL
+        }
+        if (!is.null(obj.names) && length(obj.names) > 0) {
+            for (k in obj.names) {
+                nvim.cmpl.line(paste0(x, s, k), envir, printenv, curlevel + 1, maxlevel)
             }
         }
     }
