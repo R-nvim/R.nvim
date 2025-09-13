@@ -24,6 +24,7 @@ syn match rbrowserList	"\[#.*\t" contains=rbrowserDelim,rbrowserTab
 syn match rbrowserLogical	"%#.*\t" contains=rbrowserDelim,rbrowserTab
 syn match rbrowserLibrary	"##.*\t" contains=rbrowserDelim,rbrowserTab
 syn match rbrowserS4	"<#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserS7	">#.*\t" contains=rbrowserDelim,rbrowserTab
 syn match rbrowserEnv	":#.*\t" contains=rbrowserDelim,rbrowserTab
 syn match rbrowserLazy	"&#.*\t" contains=rbrowserDelim,rbrowserTab
 syn match rbrowserUnknown	"\*#.*\t" contains=rbrowserDelim,rbrowserTab
@@ -44,7 +45,7 @@ syn match rbrowserTab contained "\t"
 syn match rbrowserLen " \[[0-9]\+, [0-9]\+\]$" contains=rbrowserEspSpc
 syn match rbrowserLen " \[[0-9]\+\]$" contains=rbrowserEspSpc
 syn match rbrowserErr /Error: label isn't "character"./
-syn match rbrowserDelim contained /!#\|\~#\|(#\|\$#\|\[#\|{#\|%#\|##\|<#\|:#\|;#\|&#\|\*#/ conceal
+syn match rbrowserDelim contained /!#\|\~#\|(#\|\$#\|\[#\|{#\|%#\|##\|<#\|>#\|:#\|;#\|&#\|\*#/ conceal
 
 hi def link rbrowserNmSpace	Title
 hi def link rbrowserNumeric	Number
@@ -58,6 +59,7 @@ hi def link rbrowserLogical	Boolean
 hi def link rbrowserFunction	Function
 hi def link rbrowserControl 	Statement
 hi def link rbrowserS4		Structure
+hi def link rbrowserS7		Typedef
 hi def link rbrowserEnv		Include
 hi def link rbrowserLazy	Comment
 hi def link rbrowserUnknown	Normal

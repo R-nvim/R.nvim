@@ -211,13 +211,13 @@ local function find_parent(child, curline, curpos)
             if line:find("%[#") or line:find("%$#") then
                 suffix = "$"
                 break
-            elseif line:find("<#") then
+            elseif line:find("<#") or line:find(">#") then
                 suffix = "@"
                 break
             else
                 local msg = "Unrecognized type of parent: `"
                     .. parent
-                    .. "`\nKnown types are `data.frame`s, `list`s, and `S4` objects."
+                    .. "`\nKnown types are `data.frame`s, `list`s, and S4 and S7 objects."
                 vim.notify(msg, vim.log.levels.ERROR, { title = "R.nvim" })
                 return ""
             end
@@ -466,6 +466,7 @@ function M.on_double_click()
             curline:find("%[#.*\t")
             or curline:find("%$#.*\t")
             or curline:find("<#.*\t")
+            or curline:find(">#.*\t")
             or curline:find(":#.*\t")
         then
             -- Expand or collapse the object
@@ -486,6 +487,7 @@ function M.on_double_click()
                 or curline:find("%[#.*\t")
                 or curline:find("%$#.*\t")
                 or curline:find("<#.*\t")
+                or curline:find(">#.*\t")
                 or curline:find(":#.*\t")
             then
                 -- Expand or collapse the object in libraries view
