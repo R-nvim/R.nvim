@@ -8,8 +8,11 @@ local ts_available, treesitter_parsers = pcall(require, "nvim-treesitter.parsers
 ---@param parser_name string
 ---@return boolean
 local function parser_installed(parser_name)
-    return (ts_available and treesitter_parsers.has_parser(parser_name))
-        or pcall(vim.treesitter.query.get, parser_name, "highlights")
+    return (
+        ts_available
+        and treesitter_parsers.has_parser
+        and treesitter_parsers.has_parser(parser_name)
+    ) or pcall(vim.treesitter.query.get, parser_name, "highlights")
 end
 
 --- Create a buffer and check the languages at different cursor positions
