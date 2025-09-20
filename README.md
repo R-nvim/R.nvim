@@ -117,13 +117,14 @@ sources simultaneously is not advised.
 
 ### Tree-sitter
 
-Tree-sitter is required to enable much of the functionality of R.nvim, and can
-be minimally configured like so:
+Tree-sitter is required to enable much of the functionality of R.nvim. Note that nvim-treesitter has been completely rewritten on the [main branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/main) and the configuration used in the [master branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/master) is not compatible with the new version. In the example below, we provide minimal configurations for both branches. Please choose the one that matches your installation.
+
+If you are using [nvim-treesitter master branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/master):
 
 ```lua
 {
     "nvim-treesitter/nvim-treesitter",
-    run = ":TSUpdate",
+    build = ":TSUpdate",
     config = function ()
         require("nvim-treesitter.configs").setup({
             ensure_installed = { "markdown", "markdown_inline", "r", "rnoweb", "yaml", "latex", "csv" },
@@ -131,6 +132,28 @@ be minimally configured like so:
         })
     end
 },
+```
+
+If you are using [nvim-treesitter main branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/main):
+
+```lua
+{
+    "nvim-treesitter/nvim-treesitter",
+    branch = "main",
+    lazy = false,
+    build = ":TSUpdate",
+    config = function()
+        local langs = { "markdown", "markdown_inline", "r", "rnoweb", "yaml", "latex", "csv" }
+        require("nvim-treesitter").install(langs)
+
+        vim.api.nvim_create_autocmd("FileType", {
+            pattern = langs,
+            callback = function()
+                vim.treesitter.start()
+            end,
+        })
+    end,
+}
 ```
 
 ## Usage
@@ -175,7 +198,6 @@ firm commitment to backwards compatibility.
   [execution-options](https://quarto.org/docs/computations/execution-options.html).
 
 - Integration with `Rapp` on macOS was removed (option `applescript`).
-
 
 ### Changes
 
