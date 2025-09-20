@@ -37,6 +37,9 @@ local check_buffer = function(ft, lines, langs)
     vim.api.nvim_set_option_value("filetype", ft, { buf = b })
     vim.cmd("redraw")
 
+    -- Wait for treesitter to parse the buffer, likely a racing issue here
+    vim.wait(100)
+
     for k, v in pairs(langs) do
         vim.api.nvim_win_set_cursor(w, { v[2], v[3] })
         langs[k][4] = require("r.utils").get_lang()
