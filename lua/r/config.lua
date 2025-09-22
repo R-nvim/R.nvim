@@ -1021,6 +1021,7 @@ M.real_setup = function()
     if config.register_treesitter then
         vim.treesitter.language.register("markdown", { "quarto", "rmd" })
     end
+    vim.treesitter.start()
 end
 
 --- Return the table with the final configure variables: the default values
