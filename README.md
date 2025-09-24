@@ -174,7 +174,7 @@ notes for any breaking changes when upgrading.
 Eventually we plan to release a version 1.0.0, at which point we will make a
 firm commitment to backwards compatibility.
 
-## Transitioning from Nvim-R
+## Transitioning from Vim-R (Nvim-R)
 
 ### Removed features
 

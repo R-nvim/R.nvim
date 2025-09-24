@@ -528,7 +528,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
            here but it's too big. So, it's better to call nvimcom:::nvim.args()
            during auto completion. FORMALS() may return an object that will
            later crash R:
-           https://github.com/jalvesaq/Nvim-R/issues/543#issuecomment-748981771
+           https://github.com/jalvesaq/Vim-R/issues/543#issuecomment-748981771
          */
         p = str_cat(p, ">not_checked<");
     }
@@ -726,7 +726,7 @@ static void nvimcom_globalenv_list(void) {
     for (int i = 0; i < Rf_length(envVarsSEXP); i++) {
         varName = CHAR(STRING_ELT(envVarsSEXP, i));
         if (R_BindingIsActive(Rf_install(varName), R_GlobalEnv)) {
-            // See: https://github.com/jalvesaq/Nvim-R/issues/686
+            // See: https://github.com/jalvesaq/Vim-R/issues/686
             PROTECT(varSEXP = R_ActiveBindingFunction(Rf_install(varName),
                                                       R_GlobalEnv));
         } else {

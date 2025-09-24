@@ -27,7 +27,7 @@ a feature? Tell us and we may add an option to disable it.
 The plugin should emit useful warnings if you do things it was not programmed
 to deal with. Cryptic error message are bugs... Please report them at:
 
-    https://github.com/jalvesaq/Nvim-R/discussions
+    https://github.com/R-nvim/R.nvim
 
 Git pull requests are welcome.
 
@@ -183,9 +183,7 @@ Note: The <LocalLeader> is '\' by default.
 The plugin is a |file-type| plugin. It will be active only if you are editing
 a .R, .Rnw, .Rd, .Rmd or .qmd file. The key bindings will not be active while
 editing either unnamed files or files with name extensions other than the
-mentioned above: However, see:
-
-  https://github.com/jalvesaq/Nvim-R/wiki/Enable-Nvim-R-for-any-file-type
+mentioned above.
 
 If the plugin is active, pressing <LocalLeader>rf should start R.
 
@@ -292,13 +290,13 @@ be mapped in combination with the CTRL key.
 In Rnoweb files, if the cursor is in an empty line in Insert mode, pressing
 `<M-r>`  will insert `<<>>=\n@`. If the line is not empty, it will insert
 `\Sexpr{}`. You can map the "less than" symbol to `<Plug>RnwInsertChunk` to
-emulate Nvim-R behavior.
+emulate Vim-R behavior.
 
 In Rmd and Quarto files, typing <M-r> in Insert mode will insert chunk
 delimiters. In addition to creating an empty chunk block, the key strokes will
 be converted to inline R delimiters if the cursor is not at the beginning of
 the line. You can map a single backtick to `<Plug>RmdInsertChunk` to emulate
-the default behavior of Nvim-R.
+the default behavior of Vim-R.
 
 The plugin commands that send code to R Console are the most commonly used. If
 the code to be sent to R has a single line it is sent directly to R Console.
@@ -709,9 +707,8 @@ on your system.
 ------------------------------------------------------------------------------
 5.3. Object Browser and auto-completion limitations
 
-New lines in list names (which includes column names in data frames and
-matrices) are replaced with blank spaces in the data used by `cmp-r` and the
-Object Browser.
+New lines in list names and column names in data frames and matrices are
+replaced with blank spaces in the data used by `cmp-r` and the Object Browser.
 
 Objects from environments accessed with the `browser()` function are not
 listed in the Object Browser or during auto-completion with `cmp-r`.
@@ -772,11 +769,11 @@ You should write:
 
 It seems that if you put the command `syntax enable` in your `init.vim` on
 macOS, file type plugins are immediately sourced. Consequently, all R.nvim
-variables will be used at their default values. The workaround is do not
-include the superfluous command `syntax enable` in the `init.vim`. For
+variables will be used at their default values. The workaround is to avoid the
+inclusion of the superfluous command `syntax enable` in the `init.vim`. For
 details, please, access:
 
-   https://github.com/jalvesaq/Nvim-R/issues/668
+   https://github.com/jalvesaq/Vim-R/issues/668
 
 
 ------------------------------------------------------------------------------
@@ -2297,7 +2294,7 @@ bindings. Examples:
            vim.api.nvim_buf_set_keymap(0, "v", "<Enter>",
 	       "<Plug>RSendSelection", { noremap = true })
 
-	   -- Emulate some of Nvim-R's default key bindings:
+	   -- Emulate some of Vim-R's default key bindings:
            vim.api.nvim_buf_set_keymap(0, "i", "_",
 	       "<Plug>RInsertAssign", { noremap = true })
            if vim.bo.filetype == "rnoweb" then
@@ -2364,7 +2361,7 @@ inside the function passed to `hook.on_filetype` as in the examples below
 See: https://www.vim.org/scripts/script.php?script_id=2628
      https://groups.google.com/g/vim-r-plugin
      https://github.com/jcfaria/Vim-R-plugin
-     https://github.com/jalvesaq/Nvim-R
+     https://github.com/jalvesaq/Vim-R
      https://github.com/R-nvim
 
 
