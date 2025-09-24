@@ -1,0 +1,911 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Quarto Document",
+  "description": "Schema for Quarto document YAML frontmatter",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Document title"
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "Document subtitle"
+    },
+    "author": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Author's full name"
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "Author's email address"
+                  },
+                  "orcid": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{4}-\\d{4}-\\d{3}[\\dX]$",
+                    "description": "Author's ORCID identifier (e.g., 0000-0003-1689-0557)"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Author's personal or professional website"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Author's phone number"
+                  },
+                  "fax": {
+                    "type": "string",
+                    "description": "Author's fax number"
+                  },
+                  "corresponding": {
+                    "type": "boolean",
+                    "description": "Whether this author is the corresponding author"
+                  },
+                  "equal-contributor": {
+                    "type": "boolean",
+                    "description": "Whether this author contributed equally"
+                  },
+                  "deceased": {
+                    "type": "boolean",
+                    "description": "Whether this author is deceased"
+                  },
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "conceptualization",
+                        "data-curation",
+                        "formal-analysis",
+                        "funding-acquisition",
+                        "investigation",
+                        "methodology",
+                        "project-administration",
+                        "resources",
+                        "software",
+                        "supervision",
+                        "validation",
+                        "visualization",
+                        "writing-original-draft",
+                        "writing-review-editing"
+                      ]
+                    },
+                    "description": "Author's roles using CRediT taxonomy"
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "Additional note about the author"
+                  },
+                  "affiliation": {
+                    "oneOf": [
+                      { "type": "string" },
+                      { "type": "array", "items": { "type": "string" } }
+                    ],
+                    "description": "Simple affiliation as string or array of strings"
+                  },
+                  "affiliations": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        { "type": "string" },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "description": "Institution name"
+                            },
+                            "department": {
+                              "type": "string",
+                              "description": "Department or division within the institution"
+                            },
+                            "address": {
+                              "type": "string",
+                              "description": "Street address"
+                            },
+                            "city": {
+                              "type": "string",
+                              "description": "City"
+                            },
+                            "region": {
+                              "type": "string",
+                              "description": "State, province, or region"
+                            },
+                            "country": {
+                              "type": "string",
+                              "description": "Country"
+                            },
+                            "postal-code": {
+                              "type": "string",
+                              "description": "Postal or ZIP code"
+                            },
+                            "url": {
+                              "type": "string",
+                              "description": "Institution website URL"
+                            }
+                          },
+                          "required": ["name"]
+                        }
+                      ]
+                    },
+                    "description": "Detailed affiliation information as array of objects"
+                  }
+                },
+                "required": ["name"]
+              }
+            ]
+          }
+        }
+      ],
+      "description": "Document author(s)"
+    },
+    "date": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "value": { "type": "string" },
+            "format": { "type": "string" }
+          },
+          "required": ["value"]
+        }
+      ],
+      "description": "Document date"
+    },
+    "date-format": {
+      "type": "string",
+      "description": "Date format specification"
+    },
+    "date-modified": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "value": { "type": "string" },
+            "format": { "type": "string" }
+          },
+          "required": ["value"]
+        }
+      ],
+      "description": "Document date modified"
+    },
+    "institute": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } },
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "address": { "type": "string" }
+            }
+          }
+        }
+      ],
+      "description": "Institution or affiliation"
+    },
+    "abstract": {
+      "type": "string",
+      "description": "Document abstract"
+    },
+    "abstract-title": {
+      "type": "string",
+      "description": "Title used to label document abstract"
+    },
+    "description": {
+      "type": "string",
+      "description": "Document description"
+    },
+    "categories": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Document categories"
+    },
+    "keywords": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "description": "Document keywords"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Document subject"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Document tags"
+    },
+    "lang": {
+      "type": "string",
+      "description": "Document language"
+    },
+    "order": {
+      "type": "number",
+      "description": "Order for document when included in website automatic sidebar menu"
+    },
+    "doi": {
+      "type": "string",
+      "description": "Document Digital Object Identifier"
+    },
+    "thanks": {
+      "type": "string",
+      "description": "Acknowledgments footnote after document title"
+    },
+    "format": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "html",
+            "html4",
+            "html5",
+            "pdf",
+            "docx",
+            "odt",
+            "rtf",
+            "epub",
+            "revealjs",
+            "beamer",
+            "pptx",
+            "slidy",
+            "s5",
+            "dzslides",
+            "typst",
+            "jats",
+            "dashboard",
+            "manuscript",
+            "ipynb",
+            "asciidoc",
+            "org",
+            "native",
+            "json",
+            "commonmark",
+            "gfm",
+            "markua",
+            "muse",
+            "plain",
+            "rst",
+            "mediawiki",
+            "dokuwiki",
+            "xwiki",
+            "zimwiki",
+            "jira",
+            "context",
+            "latex",
+            "man",
+            "ms",
+            "texinfo",
+            "tei",
+            "textile"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "html": {
+              "type": "object",
+              "properties": {
+                "theme": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "HTML theme"
+                },
+                "toc": {
+                  "type": "boolean",
+                  "description": "Include table of contents"
+                },
+                "toc-location": {
+                  "type": "string",
+                  "enum": ["left", "body", "right"],
+                  "description": "TOC placement"
+                },
+                "code-tools": {
+                  "oneOf": [{ "type": "boolean" }, { "type": "object" }],
+                  "description": "Code tools configuration"
+                },
+                "code-fold": {
+                  "oneOf": [
+                    { "type": "boolean" },
+                    { "type": "string", "enum": ["true", "false", "show"] }
+                  ],
+                  "description": "Fold code blocks"
+                },
+                "anchor-sections": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Enable hover anchor links on section headers"
+                },
+                "smooth-scroll": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Enable smooth scrolling within the page"
+                },
+                "link-external-newwindow": {
+                  "type": "boolean",
+                  "description": "Open external links in new window"
+                },
+                "link-external-icon": {
+                  "type": "boolean",
+                  "description": "Show icon next to external links"
+                },
+                "html-math-method": {
+                  "type": "string",
+                  "enum": ["mathjax", "katex", "webtex", "gladtex", "mathml"],
+                  "description": "Method for rendering math in HTML"
+                },
+                "lightbox": {
+                  "oneOf": [{ "type": "boolean" }, { "type": "object" }],
+                  "description": "Enable lightbox treatment for images"
+                },
+                "page-layout": {
+                  "type": "string",
+                  "enum": ["article", "full", "custom"],
+                  "default": "article",
+                  "description": "Page layout"
+                },
+                "grid": {
+                  "type": "object",
+                  "description": "Grid system configuration"
+                },
+                "embed-resources": {
+                  "type": "boolean",
+                  "description": "Embed resources in output"
+                }
+              }
+            },
+            "html4": { "type": "object" },
+            "html5": { "type": "object" },
+            "pdf": {
+              "type": "object",
+              "properties": {
+                "documentclass": {
+                  "type": "string",
+                  "enum": [
+                    "article",
+                    "report",
+                    "book",
+                    "scrartcl",
+                    "scrreprt",
+                    "scrbook"
+                  ],
+                  "default": "article",
+                  "description": "LaTeX document class"
+                },
+                "classoption": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "LaTeX class options"
+                },
+                "geometry": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "Page geometry options"
+                },
+                "fontsize": {
+                  "type": "string",
+                  "description": "Font size"
+                },
+                "fontfamily": {
+                  "type": "string",
+                  "description": "Font family"
+                },
+                "mainfont": {
+                  "type": "string",
+                  "description": "Main font for XeTeX/LuaTeX"
+                },
+                "sansfont": {
+                  "type": "string",
+                  "description": "Sans serif font"
+                },
+                "monofont": {
+                  "type": "string",
+                  "description": "Monospace font"
+                },
+                "colorlinks": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Use colored links instead of boxes"
+                },
+                "papersize": {
+                  "type": "string",
+                  "enum": ["a4", "letter", "a3", "a5"],
+                  "description": "Paper size"
+                },
+                "margin-left": {
+                  "type": "string",
+                  "description": "Left margin"
+                },
+                "margin-right": {
+                  "type": "string",
+                  "description": "Right margin"
+                },
+                "margin-top": {
+                  "type": "string",
+                  "description": "Top margin"
+                },
+                "margin-bottom": {
+                  "type": "string",
+                  "description": "Bottom margin"
+                }
+              }
+            },
+            "docx": { "type": "object" },
+            "odt": { "type": "object" },
+            "rtf": { "type": "object" },
+            "epub": { "type": "object" },
+            "revealjs": {
+              "type": "object",
+              "properties": {
+                "help": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Show a help overlay when the ? key is pressed"
+                },
+                "footer": {
+                  "type": "string",
+                  "description": "Footer content"
+                },
+                "height": {
+                  "type": "number",
+                  "description": "Slide height"
+                },
+                "width": {
+                  "type": "number",
+                  "description": "Slide width"
+                },
+                "slide-number": {
+                  "oneOf": [{ "type": "boolean" }, { "type": "string" }],
+                  "description": "Display slide numbers"
+                },
+                "transition": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "fade",
+                    "slide",
+                    "convex",
+                    "concave",
+                    "zoom"
+                  ],
+                  "default": "slide",
+                  "description": "Slide transition"
+                },
+                "background-transition": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "fade",
+                    "slide",
+                    "convex",
+                    "concave",
+                    "zoom"
+                  ],
+                  "default": "fade",
+                  "description": "Background transition"
+                },
+                "theme": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "Reveal.js theme"
+                },
+                "center": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Vertical centering of slides"
+                },
+                "controls": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Display presentation control arrows"
+                },
+                "progress": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Display a presentation progress bar"
+                },
+                "hash": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Add the current slide to the URL hash"
+                },
+                "history": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Push each slide change to the browser history"
+                },
+                "keyboard": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Enable keyboard shortcuts for navigation"
+                },
+                "touch": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Enable touch navigation on devices with touch input"
+                },
+                "loop": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Loop the presentation"
+                },
+                "mouse-wheel": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Enable slide navigation via mouse wheel"
+                },
+                "overview": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Enable the slide overview mode"
+                },
+                "scrollable": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Allow the presentation to scroll if content is larger than the slide"
+                },
+                "smaller": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Use a smaller text size"
+                },
+                "auto-slide": {
+                  "type": "number",
+                  "description": "Number of milliseconds between automatically proceeding to the next slide"
+                },
+                "menu": {
+                  "oneOf": [{ "type": "boolean" }, { "type": "object" }],
+                  "description": "Configuration for revealjs menu"
+                },
+                "chalkboard": {
+                  "oneOf": [{ "type": "boolean" }, { "type": "object" }],
+                  "description": "Configuration for revealjs chalkboard"
+                }
+              }
+            },
+            "beamer": { "type": "object" },
+            "pptx": { "type": "object" },
+            "slidy": { "type": "object" },
+            "s5": { "type": "object" },
+            "dzslides": { "type": "object" },
+            "typst": { "type": "object" },
+            "jats": { "type": "object" },
+            "dashboard": { "type": "object" },
+            "manuscript": { "type": "object" },
+            "ipynb": { "type": "object" },
+            "asciidoc": { "type": "object" },
+            "org": { "type": "object" },
+            "native": { "type": "object" },
+            "json": { "type": "object" },
+            "commonmark": { "type": "object" },
+            "gfm": { "type": "object" },
+            "markua": { "type": "object" },
+            "muse": { "type": "object" },
+            "plain": { "type": "object" },
+            "rst": { "type": "object" },
+            "mediawiki": { "type": "object" },
+            "dokuwiki": { "type": "object" },
+            "xwiki": { "type": "object" },
+            "zimwiki": { "type": "object" },
+            "jira": { "type": "object" },
+            "context": { "type": "object" },
+            "latex": { "type": "object" },
+            "man": { "type": "object" },
+            "ms": { "type": "object" },
+            "texinfo": { "type": "object" },
+            "tei": { "type": "object" },
+            "textile": { "type": "object" }
+          }
+        }
+      ],
+      "description": "Output format configuration"
+    },
+    "toc": {
+      "type": "boolean",
+      "description": "Include automatically generated table of contents"
+    },
+    "toc-title": {
+      "type": "string",
+      "description": "Table of contents title"
+    },
+    "toc-depth": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 6,
+      "default": 3,
+      "description": "Number of section levels to include in TOC"
+    },
+    "toc-location": {
+      "type": "string",
+      "enum": ["body", "left", "right", "left-body", "right-body"],
+      "description": "TOC placement"
+    },
+    "number-sections": {
+      "type": "boolean",
+      "description": "Number sections"
+    },
+    "bibliography": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "description": "Bibliography files"
+    },
+    "csl": {
+      "type": "string",
+      "description": "Citation style file"
+    },
+    "citation": {
+      "oneOf": [{ "type": "boolean" }, { "type": "object" }],
+      "description": "Citation information for document (CSL YAML format)"
+    },
+    "citations-hover": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable hover popup for citations"
+    },
+    "citation-location": {
+      "type": "string",
+      "enum": ["document", "margin"],
+      "default": "document",
+      "description": "Where citation information should be displayed"
+    },
+    "cite-method": {
+      "type": "string",
+      "description": "Citation method configuration"
+    },
+    "execute": {
+      "type": "object",
+      "properties": {
+        "echo": { "type": "boolean", "description": "Show code in output" },
+        "eval": { "type": "boolean", "description": "Evaluate code chunks" },
+        "include": {
+          "type": "boolean",
+          "description": "Include chunk in output"
+        },
+        "warning": { "type": "boolean", "description": "Show warnings" },
+        "error": { "type": "boolean", "description": "Show errors" },
+        "cache": { "type": "boolean", "description": "Cache chunk results" },
+        "freeze": {
+          "oneOf": [{ "type": "boolean" }, { "type": "string" }],
+          "description": "Freeze execution"
+        }
+      },
+      "description": "Execution options"
+    },
+    "code-fold": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "string", "enum": ["true", "false", "show"] }
+      ],
+      "description": "Fold code blocks"
+    },
+    "code-summary": {
+      "type": "string",
+      "description": "Code block summary text"
+    },
+    "code-tools": {
+      "oneOf": [{ "type": "boolean" }, { "type": "object" }],
+      "description": "Code tools configuration"
+    },
+    "highlight-style": {
+      "type": "string",
+      "description": "Code highlighting style"
+    },
+    "fig-width": {
+      "type": "number",
+      "description": "Default figure width"
+    },
+    "fig-height": {
+      "type": "number",
+      "description": "Default figure height"
+    },
+    "fig-cap": {
+      "type": "string",
+      "description": "Figure caption"
+    },
+    "fig-align": {
+      "type": "string",
+      "enum": ["default", "left", "right", "center"],
+      "description": "Figure alignment"
+    },
+    "fig-dpi": {
+      "type": "number",
+      "description": "Figure DPI (dots per inch)"
+    },
+    "engine": {
+      "type": "string",
+      "enum": ["knitr", "jupyter", "julia", "markdown"],
+      "description": "Engine used for executable code blocks"
+    },
+    "jupyter": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "string" },
+        { "type": "object" }
+      ],
+      "description": "Configures the Jupyter engine"
+    },
+    "julia": {
+      "type": "object",
+      "properties": {
+        "exeflags": { "type": "array", "items": { "type": "string" } },
+        "env": { "type": "object" }
+      },
+      "description": "Configures the Julia engine"
+    },
+    "knitr": {
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "properties": {
+            "opts_knit": { "type": "object" },
+            "opts_chunk": { "type": "object" }
+          }
+        }
+      ],
+      "description": "Set Knitr options"
+    },
+    "filters": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Pandoc filters"
+    },
+    "keep-md": {
+      "type": "boolean",
+      "description": "Keep intermediate markdown files"
+    },
+    "prefer-html": {
+      "type": "boolean",
+      "description": "Prefer HTML output over images"
+    },
+    "embed-resources": {
+      "type": "boolean",
+      "description": "Embed resources in output"
+    },
+    "standalone": {
+      "type": "boolean",
+      "description": "Produce standalone output"
+    },
+    "output-file": {
+      "type": "string",
+      "description": "Output file name"
+    },
+    "output-dir": {
+      "type": "string",
+      "description": "Output directory"
+    },
+    "theme": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } },
+        {
+          "type": "object",
+          "properties": {
+            "light": { "type": "string" },
+            "dark": { "type": "string" }
+          }
+        }
+      ],
+      "description": "Theme configuration"
+    },
+    "brand": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "boolean" },
+        { "type": "object" }
+      ],
+      "description": "Branding information"
+    },
+    "template": {
+      "type": "string",
+      "description": "Custom template file path"
+    },
+    "template-partials": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "description": "Template partials files"
+    },
+    "from": {
+      "type": "string",
+      "default": "markdown",
+      "description": "Format to read from"
+    },
+    "output-ext": {
+      "type": "string",
+      "description": "Extension for generated output file"
+    },
+    "code-copy": {
+      "oneOf": [{ "type": "boolean" }, { "type": "string", "enum": ["hover"] }],
+      "default": "hover",
+      "description": "Enable code copy icon"
+    },
+    "code-link": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable hyper-linking of functions"
+    },
+    "code-annotations": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "string", "enum": ["hover", "select", "below", "none"] }
+      ],
+      "default": "below",
+      "description": "Code annotation style"
+    },
+    "code-overflow": {
+      "type": "string",
+      "enum": ["scroll", "wrap"],
+      "default": "scroll",
+      "description": "How to handle code overflow when lines are too wide"
+    },
+    "code-line-numbers": {
+      "oneOf": [{ "type": "boolean" }, { "type": "string" }],
+      "default": false,
+      "description": "Include line numbers in code block output"
+    },
+    "copyright": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "year": { "type": "string" },
+            "holder": { "type": "string" },
+            "statement": { "type": "string" }
+          }
+        }
+      ],
+      "description": "Copyright information"
+    },
+    "license": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } },
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "type": { "type": "string" },
+              "url": { "type": "string" }
+            }
+          }
+        }
+      ],
+      "description": "License information"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  }
+}
