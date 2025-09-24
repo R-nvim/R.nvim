@@ -932,7 +932,7 @@ local do_common_global = function()
     vim.env.RNVIM_SECRET = vim.fn.rand()
 
     -- Avoid problems if either R_rconsole_width or R_rconsole_height is a float number
-    -- (https://github.com/jalvesaq/Nvim-R/issues/751#issuecomment-1742784447).
+    -- (https://github.com/jalvesaq/Vim-R/issues/751#issuecomment-1742784447).
     if type(config.rconsole_width) == "number" then
         config.rconsole_width = math.floor(config.rconsole_width)
     end
@@ -960,7 +960,7 @@ local global_setup = function()
     -- Fix some invalid values
     -- Calls to system() and executable() must run
     -- asynchronously to avoid slow startup on macOS.
-    -- See https://github.com/jalvesaq/Nvim-R/issues/625
+    -- See https://github.com/jalvesaq/Vim-R/issues/625
     do_common_global()
 
     if config.is_windows then
@@ -1031,13 +1031,6 @@ M.get_config = function() return config end
 
 M.check_health = function()
     local htime = uv.hrtime()
-
-    -- Check if either Vim-R-plugin or Nvim-R is installed
-    if vim.fn.exists("*WaitVimComStart") ~= 0 then
-        swarn("Please, uninstall Vim-R-plugin before using R.nvim.")
-    elseif vim.fn.exists("*RWarningMsg") ~= 0 then
-        swarn("Please, uninstall Nvim-R before using R.nvim.")
-    end
 
     -- Check R_app asynchronously
     utils.check_executable(config.R_app, function(exists)

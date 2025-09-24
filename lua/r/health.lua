@@ -138,10 +138,10 @@ M.check = function()
         vim.health.error("C compiler (`gcc` or `clang`) not found.")
     end
 
-    if vim.fn.exists("*WaitVimComStart") ~= 0 then
+    if vim.fn.exists("*RWarningMsg") ~= 0 then
+        vim.health.error("Please, uninstall Vim-R before using R.nvim.")
+    elseif vim.fn.exists("*WaitVimComStart") ~= 0 then
         vim.health.error("Please, uninstall Vim-R-plugin before using R.nvim.")
-    elseif vim.fn.exists("*RWarningMsg") ~= 0 then
-        vim.health.error("Please, uninstall Nvim-R before using R.nvim.")
     end
 
     if pcall(require, "cmp") then

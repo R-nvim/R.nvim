@@ -149,7 +149,7 @@ M.show = function(rkeyword, txt)
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
     elseif rkeyword:find("%.Rd$") then
         -- Called by devtools::load_all().
-        -- See https://github.com/jalvesaq/Nvim-R/issues/482
+        -- See https://github.com/jalvesaq/Vim-R/issues/482
         vim.api.nvim_set_option_value("filetype", "rhelp", { scope = "local" })
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
     else
