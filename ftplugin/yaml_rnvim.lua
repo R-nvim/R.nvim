@@ -2,7 +2,6 @@
 local filename = vim.fn.expand("%:t")
 
 if filename == "_quarto.yml" or filename == "_quarto.yaml" then
-    print("Loading YAML ftplugin for " .. filename)
     -- Load the quarto configuration
     dofile(
         vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h")
