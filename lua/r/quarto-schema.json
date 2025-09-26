@@ -765,7 +765,322 @@
           "type": "object",
           "properties": {
             "opts_knit": { "type": "object" },
-            "opts_chunk": { "type": "object" }
+            "opts_chunk": {
+              "type": "object",
+              "properties": {
+                "eval": {
+                  "oneOf": [
+                    { "type": "boolean" },
+                    { "type": "number" },
+                    { "type": "array", "items": { "type": "number" } }
+                  ],
+                  "default": true,
+                  "description": "Whether to evaluate the code chunk"
+                },
+                "echo": {
+                  "oneOf": [
+                    { "type": "boolean" },
+                    { "type": "number" },
+                    { "type": "array", "items": { "type": "number" } }
+                  ],
+                  "default": true,
+                  "description": "Whether to display the source code in the output"
+                },
+                "results": {
+                  "type": "string",
+                  "enum": ["markup", "asis", "hold", "hide"],
+                  "default": "markup",
+                  "description": "How to display the text results"
+                },
+                "warning": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether to preserve warnings"
+                },
+                "error": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether to preserve errors"
+                },
+                "message": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether to preserve messages"
+                },
+                "include": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether to include the chunk in the output document"
+                },
+                "cache": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Whether to cache the results of the code chunk"
+                },
+                "cache.path": {
+                  "type": "string",
+                  "description": "Path to save the cache files"
+                },
+                "cache.vars": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Variables to be saved in the cache database"
+                },
+                "cache.lazy": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether to lazyLoad the cache database"
+                },
+                "dependson": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "Character vector of chunk labels on which this chunk depends"
+                },
+                "autodep": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Whether to automatically figure out chunk dependencies"
+                },
+                "fig.width": {
+                  "type": "number",
+                  "default": 7,
+                  "description": "Width of the plot in inches"
+                },
+                "fig.height": {
+                  "type": "number",
+                  "default": 7,
+                  "description": "Height of the plot in inches"
+                },
+                "fig.asp": {
+                  "type": "number",
+                  "description": "Aspect ratio of the plot (height/width)"
+                },
+                "fig.dim": {
+                  "type": "array",
+                  "items": { "type": "number" },
+                  "maxItems": 2,
+                  "description": "Width and height of the plot in inches"
+                },
+                "out.width": {
+                  "type": "string",
+                  "description": "Width of the plot in the output document"
+                },
+                "out.height": {
+                  "type": "string",
+                  "description": "Height of the plot in the output document"
+                },
+                "fig.align": {
+                  "type": "string",
+                  "enum": ["default", "left", "right", "center"],
+                  "default": "default",
+                  "description": "Alignment of figures in the output document"
+                },
+                "fig.path": {
+                  "type": "string",
+                  "default": "figure/",
+                  "description": "Prefix to be used for figure filenames"
+                },
+                "fig.cap": {
+                  "type": "string",
+                  "description": "Figure caption"
+                },
+                "fig.scap": {
+                  "type": "string",
+                  "description": "Short caption for figures"
+                },
+                "fig.subcap": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "Subcaptions for subfigures"
+                },
+                "fig.ncol": {
+                  "type": "number",
+                  "description": "Number of columns for subfigures"
+                },
+                "fig.sep": {
+                  "type": "string",
+                  "description": "Separator for subfigures"
+                },
+                "fig.pos": {
+                  "type": "string",
+                  "description": "Position of figures in LaTeX"
+                },
+                "fig.env": {
+                  "type": "string",
+                  "description": "LaTeX environment for figures"
+                },
+                "fig.show": {
+                  "type": "string",
+                  "enum": ["asis", "hold", "animate", "hide"],
+                  "default": "asis",
+                  "description": "How to show figures"
+                },
+                "fig.keep": {
+                  "type": "string",
+                  "enum": ["high", "none", "all", "first", "last"],
+                  "default": "high",
+                  "description": "Which plots to keep"
+                },
+                "fig.showtext": {
+                  "type": "boolean",
+                  "description": "Whether to use showtext package for fonts in R plots"
+                },
+                "dev": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "Graphics device for plots"
+                },
+                "dev.args": {
+                  "type": "object",
+                  "description": "Arguments to be passed to the graphics device"
+                },
+                "dpi": {
+                  "type": "number",
+                  "default": 72,
+                  "description": "DPI for bitmap graphics devices"
+                },
+                "external": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether to externalize tikz graphics"
+                },
+                "sanitize": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Whether to sanitize tikz graphics"
+                },
+                "interval": {
+                  "type": "number",
+                  "default": 1,
+                  "description": "Time interval for animations"
+                },
+                "aniopts": {
+                  "type": "string",
+                  "default": "controls,loop",
+                  "description": "Options for HTML5 animations"
+                },
+                "ref.label": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "Reference to other chunk labels to inherit code"
+                },
+                "child": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "Filenames of child documents to be knitted"
+                },
+                "engine": {
+                  "type": "string",
+                  "default": "R",
+                  "description": "Language engine for the code chunk"
+                },
+                "engine.path": {
+                  "type": "string",
+                  "description": "Path to the executable of the engine"
+                },
+                "engine.opts": {
+                  "type": "string",
+                  "description": "Options to be passed to the engine"
+                },
+                "opts.label": {
+                  "type": "string",
+                  "description": "Options template to inherit from"
+                },
+                "purl": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether to include this chunk when purling"
+                },
+                "R.options": {
+                  "type": "object",
+                  "description": "Local R options for the code chunk"
+                },
+                "collapse": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Whether to merge text output with source code"
+                },
+                "prompt": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Whether to add prompts to source code"
+                },
+                "comment": {
+                  "type": "string",
+                  "default": "##",
+                  "description": "Prefix to be added before text output"
+                },
+                "highlight": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether to syntax highlight the source code"
+                },
+                "strip.white": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether to remove blank lines in the beginning or end"
+                },
+                "tidy": {
+                  "oneOf": [{ "type": "boolean" }, { "type": "string" }],
+                  "default": false,
+                  "description": "Whether to tidy up the source code"
+                },
+                "tidy.opts": {
+                  "type": "object",
+                  "description": "Options to be passed to the tidy function"
+                },
+                "size": {
+                  "type": "string",
+                  "default": "normalsize",
+                  "description": "Font size for code chunks in LaTeX"
+                },
+                "background": {
+                  "type": "string",
+                  "default": "#F7F7F7",
+                  "description": "Background color for code chunks"
+                },
+                "class.source": {
+                  "type": "string",
+                  "description": "Class names for source code blocks"
+                },
+                "class.output": {
+                  "type": "string",
+                  "description": "Class names for text output blocks"
+                },
+                "class.message": {
+                  "type": "string",
+                  "description": "Class names for messages"
+                },
+                "class.warning": {
+                  "type": "string",
+                  "description": "Class names for warnings"
+                },
+                "class.error": {
+                  "type": "string",
+                  "description": "Class names for errors"
+                },
+                "attr.source": {
+                  "type": "string",
+                  "description": "Attributes for source code blocks"
+                },
+                "attr.output": {
+                  "type": "string",
+                  "description": "Attributes for text output blocks"
+                }
+              },
+              "additionalProperties": true,
+              "description": "Knitr chunk options for controlling code execution and output"
+            }
           }
         }
       ],
