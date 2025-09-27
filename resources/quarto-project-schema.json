@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Quarto Project Configuration",
+  "description": "Schema for _quarto.yml project files",
+  "properties": {
+    "project": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["default", "website", "book", "manuscript"],
+          "description": "Project type"
+        },
+        "title": {
+          "type": "string",
+          "description": "Project title"
+        },
+        "execute-dir": {
+          "type": "string",
+          "enum": ["file", "project"],
+          "description": "Working directory for computations"
+        },
+        "output-dir": {
+          "type": "string",
+          "description": "Output directory"
+        },
+        "lib-dir": {
+          "type": "string",
+          "description": "HTML library (JS/CSS/etc.) directory"
+        },
+        "render": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files to render (defaults to all files)"
+        },
+        "resources": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ],
+          "description": "Additional file resources to be copied to output directory"
+        },
+        "pre-render": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ],
+          "description": "Scripts to run as a pre-render step"
+        },
+        "post-render": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ],
+          "description": "Scripts to run as a post-render step"
+        }
+      }
+    },
+    "website": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Website title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Website description"
+        },
+        "site-url": {
+          "type": "string",
+          "description": "Base URL for published website"
+        },
+        "repo-url": {
+          "type": "string",
+          "description": "Base URL for website source code repository"
+        },
+        "favicon": {
+          "type": "string",
+          "description": "The path to the favicon for this website"
+        },
+        "navbar": {
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "oneOf": [{ "type": "string" }, { "type": "boolean" }],
+                  "description": "The navbar title"
+                },
+                "logo": {
+                  "type": "string",
+                  "description": "Logo image for navbar"
+                },
+                "search": {
+                  "type": "boolean",
+                  "description": "Include search box in navbar"
+                },
+                "left": {
+                  "type": "array",
+                  "description": "Items for left side of navbar",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "string",
+                        "description": "Display text for navbar item"
+                      },
+                      "href": {
+                        "type": "string",
+                        "description": "URL or path for navbar item link"
+                      },
+                      "icon": {
+                        "type": "string",
+                        "description": "Icon for navbar item"
+                      },
+                      "menu": {
+                        "type": "array",
+                        "description": "Dropdown menu items",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "text": {
+                              "type": "string",
+                              "description": "Display text for menu item"
+                            },
+                            "href": {
+                              "type": "string",
+                              "description": "URL or path for menu item link"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "type": "array",
+                  "description": "Items for right side of navbar",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "string",
+                        "description": "Display text for navbar item"
+                      },
+                      "href": {
+                        "type": "string",
+                        "description": "URL or path for navbar item link"
+                      },
+                      "icon": {
+                        "type": "string",
+                        "description": "Icon for navbar item"
+                      },
+                      "menu": {
+                        "type": "array",
+                        "description": "Dropdown menu items",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "text": {
+                              "type": "string",
+                              "description": "Display text for menu item"
+                            },
+                            "href": {
+                              "type": "string",
+                              "description": "URL or path for menu item link"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Navigation bar configuration"
+        },
+        "sidebar": {
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "oneOf": [{ "type": "string" }, { "type": "boolean" }],
+                  "description": "The sidebar title"
+                },
+                "search": {
+                  "type": "boolean",
+                  "description": "Include search in sidebar"
+                },
+                "contents": {
+                  "type": "array",
+                  "description": "Sidebar contents"
+                }
+              }
+            }
+          ],
+          "description": "Sidebar configuration"
+        },
+        "search": {
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "type": "object",
+              "properties": {
+                "location": {
+                  "type": "string",
+                  "enum": ["navbar", "sidebar"],
+                  "description": "Location for search widget"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["overlay", "textbox"],
+                  "description": "Search widget type"
+                }
+              }
+            }
+          ],
+          "description": "Full text search for website"
+        }
+      }
+    },
+    "book": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Book title"
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Book subtitle"
+        },
+        "author": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ],
+          "description": "Author or authors of the book"
+        },
+        "date": {
+          "type": "string",
+          "description": "Book publication date"
+        },
+        "chapters": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "properties": {
+                  "part": { "type": "string" },
+                  "chapters": { "type": "array" }
+                }
+              }
+            ]
+          },
+          "description": "Book chapters"
+        },
+        "downloads": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["pdf", "epub", "docx"]
+          },
+          "description": "Download formats to make available"
+        }
+      }
+    },
+    "manuscript": {
+      "type": "object",
+      "properties": {
+        "article": {
+          "type": "string",
+          "description": "The input document that will serve as the root document for this manuscript"
+        },
+        "notebooks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Notebooks to include with manuscript"
+        },
+        "meca-bundle": {
+          "oneOf": [{ "type": "boolean" }, { "type": "string" }],
+          "description": "Whether to generate a MECA bundle for this manuscript"
+        }
+      }
+    }
+  }
+}
+

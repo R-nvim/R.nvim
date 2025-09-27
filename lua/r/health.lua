@@ -164,6 +164,14 @@ M.check = function()
         )
     end
 
+    if vim.fn.executable("yaml-language-server") == 1 then
+        vim.health.ok("`yaml-language-server` found.")
+    else
+        vim.health.warn(
+            "`yaml-language-server` not found. You can ignore this if you do not want YAML completion in Quarto files."
+        )
+    end
+
     vim.health.start("Checking tree-sitter parsers:")
 
     for _, parser in ipairs({

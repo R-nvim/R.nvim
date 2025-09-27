@@ -1,0 +1,29 @@
+name: Validate Quarto YAML
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+jobs:
+  validate-schemas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install Biome
+        run: npm install -g @biomejs/biome
+
+      - name: Validate JSON with Biome
+        run: |
+          echo "Validating JSON files with Biome..."
+          biome lint resources/quarto-schema.json resources/quarto-project-schema.json

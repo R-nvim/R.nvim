@@ -8,3 +8,4 @@ end
 
 require("r.config").real_setup()
 require("r.rmd").setup()
+require("r.yaml").setup()

@@ -46,6 +46,7 @@ Git pull requests are welcome.
       - function arguments.
       - knitr chunk options.
       - Quarto cell options.
+      - Quarto YAML frontmatter and project configuration (via yamlls).
   * Ability to see R's documentation in an editor buffer:
       - Automatic formatting of the text to fit the panel width.
       - Send code and commands to R (useful to run examples).
@@ -469,6 +470,42 @@ R.nvim does not complete the names of all functions of all installed packages
 
 For both `library()` and `require()`, when completing the first argument, the
 popup list shows the names of installed packages.
+
+
+------------------------------------------------------------------------------
+4.3.1. Quarto YAML completion                          *R.nvim-quarto-completion*
+
+R.nvim provides intelligent YAML completion for Quarto documents and project
+files through integration with the YAML Language Server (yamlls). This feature
+offers schema-based autocompletion for Quarto configuration options.
+
+Note: This feature is experimental and may have limitations.
+
+The completion system automatically activates when editing:
+  - Quarto document frontmatter (YAML sections in .qmd files)
+  - Quarto project files (_quarto.yml or _quarto.yaml)
+
+Prerequisites:
+  - yaml-language-server must be installed and available in your PATH
+
+Features include:
+  - Autocompletion for Quarto configuration keys and values
+  - Support for both document-level and project-level configurations
+
+The completion system uses JSON schemas that define valid Quarto configuration
+options, including:
+  - Format options (html, pdf, docx, etc.)
+  - Document metadata (title, author, date)
+  - Rendering options
+  - Project configuration settings
+  - And many other Quarto-specific options
+
+Note: Due to the extensive number of possible Quarto configuration options,
+the schemas do not cover all possibilities. We aim to expand coverage in
+future updates and welcome user requests for specific missing options.
+
+Note: This feature requires Neovim's built-in LSP client and will only work
+if `vim.lsp.config` is available (Neovim 0.11+).
 
 
 ------------------------------------------------------------------------------
