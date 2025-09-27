@@ -31,12 +31,12 @@ M.setup = function()
         },
     }
 
-    vim.lsp.config.yamlls = {
-        cmd = { "yaml-language-server", "--stdio" },
-        filetypes = { "quarto", "yaml" },
-        root_markers = { ".git", "_quarto.yml", "_quarto.yaml" },
-        settings = yaml_settings,
-    }
+    -- vim.lsp.config.yamlls = {
+    --     cmd = { "yaml-language-server", "--stdio" },
+    --     filetypes = { "quarto", "yaml" },
+    --     root_markers = { ".git", "_quarto.yml", "_quarto.yaml" },
+    --     settings = yaml_settings,
+    -- }
 
     local function start_yamlls_with_schemas()
         vim.lsp.start({
