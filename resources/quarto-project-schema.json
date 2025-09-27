@@ -17,7 +17,7 @@
           "description": "Project title"
         },
         "execute-dir": {
-          "type": "string", 
+          "type": "string",
           "enum": ["file", "project"],
           "description": "Working directory for computations"
         },
@@ -65,7 +65,7 @@
           "description": "Website title"
         },
         "description": {
-          "type": "string", 
+          "type": "string",
           "description": "Website description"
         },
         "site-url": {
@@ -87,10 +87,7 @@
               "type": "object",
               "properties": {
                 "title": {
-                  "oneOf": [
-                    { "type": "string" },
-                    { "type": "boolean" }
-                  ],
+                  "oneOf": [{ "type": "string" }, { "type": "boolean" }],
                   "description": "The navbar title"
                 },
                 "logo": {
@@ -140,7 +137,7 @@
                   }
                 },
                 "right": {
-                  "type": "array", 
+                  "type": "array",
                   "description": "Items for right side of navbar",
                   "items": {
                     "type": "object",
@@ -189,10 +186,7 @@
               "type": "object",
               "properties": {
                 "title": {
-                  "oneOf": [
-                    { "type": "string" },
-                    { "type": "boolean" }
-                  ],
+                  "oneOf": [{ "type": "string" }, { "type": "boolean" }],
                   "description": "The sidebar title"
                 },
                 "search": {
@@ -239,7 +233,7 @@
           "description": "Book title"
         },
         "subtitle": {
-          "type": "string", 
+          "type": "string",
           "description": "Book subtitle"
         },
         "author": {
@@ -292,41 +286,11 @@
           "description": "Notebooks to include with manuscript"
         },
         "meca-bundle": {
-          "oneOf": [
-            { "type": "boolean" },
-            { "type": "string" }
-          ],
+          "oneOf": [{ "type": "boolean" }, { "type": "string" }],
           "description": "Whether to generate a MECA bundle for this manuscript"
         }
       }
-    },
-    "format": {
-      "oneOf": [
-        {
-          "type": "string",
-          "enum": ["html", "pdf", "docx", "epub", "revealjs", "beamer"]
-        },
-        {
-          "type": "object",
-          "description": "Format-specific options"
-        }
-      ],
-      "description": "Default output format(s) for project"
-    },
-    "execute": {
-      "type": "object",
-      "properties": {
-        "echo": { "type": "boolean", "description": "Show code in output" },
-        "eval": { "type": "boolean", "description": "Evaluate code chunks" },
-        "warning": { "type": "boolean", "description": "Show warnings" },
-        "error": { "type": "boolean", "description": "Show errors" },
-        "cache": { "type": "boolean", "description": "Cache chunk results" },
-        "freeze": {
-          "oneOf": [{ "type": "boolean" }, { "type": "string" }],
-          "description": "Freeze execution"
-        }
-      },
-      "description": "Default execution options for project"
     }
   }
 }
+

@@ -8,8 +8,8 @@ M.setup = function()
     if vim.fn.executable("yaml-language-server") == 0 then return end
 
     local plugin_root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h:h")
-    local document_schema = plugin_root .. "/ressources/quarto-schema.json"
-    local project_schema = plugin_root .. "/ressources/quarto-project-schema.json"
+    local document_schema = plugin_root .. "/resources/quarto-schema.json"
+    local project_schema = plugin_root .. "/resources/quarto-project-schema.json"
 
     local yaml_settings = {
         yaml = {

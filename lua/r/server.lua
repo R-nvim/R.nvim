@@ -389,7 +389,7 @@ M.check_nvimcom_version = function()
     local libs = list_libs_from_buffer()
     table.insert(flines, 'nvim_r_home <- "' .. config.rnvim_home .. '"')
     table.insert(flines, "libs <- c(" .. libs .. ")")
-    vim.list_extend(flines, vim.fn.readfile(config.rnvim_home .. "/ressources/before_rns.R"))
+    vim.list_extend(flines, vim.fn.readfile(config.rnvim_home .. "/resources/before_rns.R"))
 
     local scrptnm = config.tmpdir .. "/before_rns.R"
     vim.fn.writefile(flines, scrptnm)

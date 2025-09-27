@@ -13,7 +13,7 @@ mkdir -p .git/hooks
 
 # Create a symlink for pre-commit hook
 cd .git/hooks
-ln -sf ../../ressources/pre-commit
+ln -sf ../../resources/pre-commit
 ```
 
 ## Formatting
