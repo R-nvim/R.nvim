@@ -14,7 +14,11 @@ M.setup = function()
     local yaml_settings = {
         yaml = {
             schemas = {
-                ["file://" .. document_schema] = "*.qmd",
+                ["file://" .. document_schema] = {
+                    "*.qmd",
+                    "_quarto.yml",
+                    "_quarto.yaml",
+                },
                 ["file://" .. project_schema] = { "_quarto.yml", "_quarto.yaml" },
             },
             schemaStore = {
@@ -101,4 +105,3 @@ M.setup = function()
 end
 
 return M
-
