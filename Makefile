@@ -1,7 +1,7 @@
 .PHONY: test clean
 
 test: deps/lazy.nvim
-	./scripts/test
+	./ressources/test
 
 deps/lazy.nvim:
 	mkdir -p deps

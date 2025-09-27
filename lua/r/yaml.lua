@@ -7,9 +7,9 @@ M.setup = function()
     -- Check prerequisites before configuring yamlls
     if vim.fn.executable("yaml-language-server") == 0 then return end
 
-    local schema_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h")
-    local document_schema = schema_dir .. "/quarto-schema.json"
-    local project_schema = schema_dir .. "/quarto-project-schema.json"
+    local plugin_root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h:h")
+    local document_schema = plugin_root .. "/ressources/quarto-schema.json"
+    local project_schema = plugin_root .. "/ressources/quarto-project-schema.json"
 
     local yaml_settings = {
         yaml = {
