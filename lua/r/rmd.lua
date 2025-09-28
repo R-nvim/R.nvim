@@ -238,9 +238,9 @@ local setup_yaml_hl = function()
         [[
 ; extends
 ; From quarto.nvim, YAML header for code blocks.
-((comment) @comment (#match? @comment "^\\#\\|")) @define
+((comment) @comment (#match? @comment "^\\#\\|")) @attribute
 ; Cell delimiter for Jupyter
-((comment) @content (#match? @content "^\\# ?\\%\\%")) @delimiter
+((comment) @content (#match? @content "^\\# ?\\%\\%")) @string.special
 ]]
     )
 
@@ -250,9 +250,9 @@ local setup_yaml_hl = function()
         [[
 ; extends
 ; YAML header for code blocks
-((comment) @comment (#match? @comment "^\\#\\|")) @define
+((comment) @comment (#match? @comment "^\\#\\|")) @attribute
 ; Cell delimiter for Jupyter
-((comment) @content (#match? @content "^\\# ?\\%\\%")) @class.outer @delimiter
+((comment) @content (#match? @content "^\\# ?\\%\\%")) @class.outer @string.special
 ]]
     )
 end
