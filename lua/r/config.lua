@@ -612,7 +612,8 @@ local apply_user_opts = function()
         -----------------------------------------------------------------------
         if type(default_val) ~= type(user_opt) then
             swarn(
-                ("Invalid option type for `%s`. Type should be %s, not %s."):format(
+                string.format(
+                    "Invalid option type for `%s`. Type should be %s, not %s.",
                     key_name,
                     type(default_val),
                     type(user_opt)
@@ -627,7 +628,8 @@ local apply_user_opts = function()
         local expected_values = valid_values[key_name]
         if expected_values and vim.fn.index(expected_values, user_opt) == -1 then
             swarn(
-                ('Invalid option value for `%s`. Value should be %s, not "%s"'):format(
+                string.format(
+                    'Invalid option value for `%s`. Value should be %s, not "%s"',
                     key_name,
                     utils.msg_join(expected_values, ", ", ", or "),
                     user_opt

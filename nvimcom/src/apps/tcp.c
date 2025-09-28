@@ -280,7 +280,6 @@ static void get_whole_msg(char *b) {
     // Get the message size
     p[9] = 0;
     msg_size = atoi(p);
-    p += 10;
 
     // Allocate enough memory to the final buffer
     if (finalbuffer) {

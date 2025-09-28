@@ -50,7 +50,7 @@ char *str_cat(char *dest, const char *src) {
 void format(const char *orig, char *dest, char delim, char nl) {
     size_t sz = strlen(orig);
     size_t i = 0, n = 0, s = 0;
-    while (orig[i] && i < sz) {
+    while (i < sz && orig[i]) {
         if (orig[i] == delim)
             s = i;
         dest[i] = orig[i];

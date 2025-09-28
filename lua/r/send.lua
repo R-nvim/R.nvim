@@ -360,6 +360,8 @@ end
 M.motion = function()
     local startPos, endPos =
         vim.api.nvim_buf_get_mark(0, "["), vim.api.nvim_buf_get_mark(0, "]")
+    if not startPos or not endPos then return end
+
     local startLine, endLine = startPos[1], endPos[1]
 
     -- Check if the marks are valid
@@ -465,6 +467,7 @@ M.selection = function(m)
 
     local start_pos = vim.api.nvim_buf_get_mark(0, "<")
     local end_pos = vim.api.nvim_buf_get_mark(0, ">")
+    if not start_pos or not end_pos then return end
     local lines = vim.api.nvim_buf_get_lines(0, start_pos[1] - 1, end_pos[1], true)
 
     local vmode = vim.fn.visualmode()

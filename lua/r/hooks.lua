@@ -1,8 +1,6 @@
---[[
-This module implements functions that manage the execution of
-user-defined hooks. These are defined in the `config.hooks` table in
-the user configuration.
-]]
+--- This module implements functions that manage the execution of
+--- user-defined hooks. These are defined in the `config.hooks` table in
+--- the user configuration.
 
 local M = {}
 

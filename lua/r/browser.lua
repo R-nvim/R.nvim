@@ -1,23 +1,4 @@
---[[
-This module implements the Object Browser functionality for the R.nvim Neovim plugin.
-It provides an interactive interface within Neovim to browse and inspect R objects,
-such as variables, data frames, lists, and libraries, directly from the editor.
-
-Key components:
-
-- `start_OB`: Opens or closes the Object Browser window in Neovim.
-- `M.start`: Initiates the Object Browser if R is running.
-- `M.on_double_click`: Handles double-click events within the Object Browser to
-  toggle views or inspect objects.
-- `M.get_name`, `M.get_pkg_name`: Utility functions to retrieve object names and
-  package names from the current cursor position.
-- `add_backticks`: Escapes invalid R object names by wrapping them in backticks.
-- Custom key mappings: Allows users to bind arbitrary commands or Lua functions
-  to keys within the Object Browser.
-
-This file integrates with `r.config`, `r.job`, `r.run`, and `r.send` to communicate
-with the R backend and update the Object Browser interface accordingly.
-]]
+-- This module implements the Lua client part of the Object Browser
 
 local config = require("r.config").get_config()
 local warn = require("r.log").warn

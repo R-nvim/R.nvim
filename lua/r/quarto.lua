@@ -65,7 +65,9 @@ function Chunk:get_lang() return self.lang end
 --- Get the type of the code chunk
 ---@return string
 function Chunk:get_chunk_section_at_cursor()
-    local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    if not cursor then return "error" end
+    local row, _ = unpack(cursor)
 
     if
         (self.info_string_params.child or self.comment_params.child)
@@ -224,7 +226,9 @@ end
 ---@param bufnr integer The buffer number.
 ---@return table
 M.get_current_code_chunk = function(bufnr)
-    local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    if not cursor then return {} end
+    local row, _ = unpack(cursor)
 
     local chunks = M.get_code_chunks(bufnr)
     if not chunks then return {} end
@@ -241,7 +245,9 @@ end
 ---@param bufnr integer The buffer number.
 ---@return table
 M.get_chunks_above_cursor = function(bufnr)
-    local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    if not cursor then return {} end
+    local row, _ = unpack(cursor)
 
     local chunks = M.get_code_chunks(bufnr)
 
@@ -262,7 +268,9 @@ end
 ---@param bufnr integer The buffer number.
 ---@return table
 M.get_chunks_below_cursor = function(bufnr)
-    local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    if not cursor then return {} end
+    local row, _ = unpack(cursor)
 
     local chunks = M.get_code_chunks(bufnr)
 

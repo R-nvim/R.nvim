@@ -17,11 +17,13 @@ M.assign = function()
         if assign_key == "_" then
             local line = vim.api.nvim_get_current_line()
             local pos = vim.api.nvim_win_get_cursor(0)
-            if line:len() > 4 and line:sub(pos[2] - 3, pos[2]) == " <- " then
-                line = line:sub(0, pos[2] - 4) .. "_" .. line:sub(pos[2] + 1, -1)
-                vim.api.nvim_buf_set_lines(0, pos[1] - 1, pos[1], true, { line })
-                vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] - 3 })
-                return
+            if pos then
+                if line:len() > 4 and line:sub(pos[2] - 3, pos[2]) == " <- " then
+                    line = line:sub(0, pos[2] - 4) .. "_" .. line:sub(pos[2] + 1, -1)
+                    vim.api.nvim_buf_set_lines(0, pos[1] - 1, pos[1], true, { line })
+                    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] - 3 })
+                    return
+                end
             end
         end
         vim.fn.feedkeys(" <- ", "n")
@@ -66,7 +68,9 @@ M.pipe = function()
 
     for _, key in pairs(temp_remaps) do
         vim.keymap.set("i", key, function()
-            local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+            local cursor = vim.api.nvim_win_get_cursor(0)
+            if not cursor then return end
+            local row, col = unpack(cursor)
             -- Delete the trailing whitespace
             vim.api.nvim_buf_set_text(0, row - 1, col - 1, row - 1, col, {})
             -- Move the cursor back one column. This only makes a difference if

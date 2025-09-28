@@ -226,8 +226,9 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
                         while (*s != '\n') {
                             if (*s == 0) {
                                 while (*s != '\005') {
-                                    // Look for \0 or ' ' because some arguments share
-                                    // the same documentation item. Example: lm()
+                                    // Look for \0 or ' ' because some arguments
+                                    // share the same documentation item.
+                                    // Example: lm()
                                     if (*s == 0 || *s == ' ') {
                                         s++;
                                         if (str_here(s, itm)) {
@@ -236,16 +237,16 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
                                                 while (*s && *s != '\005')
                                                     s++;
                                                 s++;
-                                                char *b =
-                                                    calloc(strlen(s) + 2, sizeof(char));
+                                                char *b = calloc(strlen(s) + 2,
+                                                                 sizeof(char));
                                                 format(s, b, ' ', '\x14');
-                                                printf("lua %s('%s')\n", resolve_cb, b);
+                                                printf("lua %s('%s')\n",
+                                                       resolve_cb, b);
                                                 fflush(stdout);
                                                 free(b);
                                                 return;
                                             }
                                         }
-
                                     }
                                     s++;
                                 }
@@ -390,7 +391,7 @@ char *complete_args(char *p, char *funcnm) {
     char a[64];
     int i;
     while (pd) {
-        if (pd->objls && (pkg == NULL || (pkg && strcmp(pd->name, pkg) == 0))) {
+        if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0))) {
             s = pd->objls;
             while (*s != 0) {
                 if (strcmp(s, funcnm) == 0) {
@@ -570,7 +571,7 @@ void complete(const char *id, char *base, char *funcnm, char *dtfrm,
     }
 
     while (pd) {
-        if (pd->objls && (pkg == NULL || (pkg && strcmp(pd->name, pkg) == 0)))
+        if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0)))
             p = parse_objls(pd->objls, base, pkg, pd->name, p);
         pd = pd->next;
     }

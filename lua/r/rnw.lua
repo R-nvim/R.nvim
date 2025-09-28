@@ -155,6 +155,7 @@ local M = {}
 
 M.write_chunk = function()
     local curpos = vim.api.nvim_win_get_cursor(0)
+    if not curpos then return end
     local curline = vim.api.nvim_get_current_line()
     local lang = get_lang()
 
