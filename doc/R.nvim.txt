@@ -1778,13 +1778,13 @@ config, as in the examples:
 R.nvim changes the background color of code blocks and adds a virtual text
 with the language of the code block to the right side of the header of the
 block. It also highlights YAML comments (prefixed with `#|`) with the
-foreground color of the tree-sitter highlighting group `@define` and comments
-prefixed with `# %%` with the foreground color of `@delimiter`. The background
-color is taken from |hl-CursorColumn| and the highlighting is updated on the
-|BufEnter| and |InsertLeave| events. The code of chunks with the field `eval:
-false` are highlighted with foreground color of |hl-Comment|, and chunks with
-the field `child` are highlighted with the foreground color of |hl-Ignore|.
-Below is an example of how to configure the highlighting:
+foreground color of the tree-sitter highlighting group `@attribute` and
+comments prefixed with `# %%` with the foreground color of `@string.special`.
+The background color is taken from |hl-CursorColumn| and the highlighting is
+updated on the |BufEnter| and |InsertLeave| events. The code of chunks with
+the field `eval: false` are highlighted with foreground color of |hl-Comment|,
+and chunks with the field `child` are highlighted with the foreground color of
+|hl-Ignore|. Below is an example of how to configure the highlighting:
 >lua
    quarto_chunk_hl = {
      highlight = false,               -- Highlight code blocks?
