@@ -429,6 +429,8 @@ nvim.plot <- function(x) {
 nvim.names <- function(x) {
     if (isS4(x)) {
         slotNames(x)
+    } else if (inherits(x, 'S7_object')) {
+        names(attributes(x))
     } else {
         names(x)
     }
