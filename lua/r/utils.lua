@@ -96,6 +96,7 @@ function M.get_lang()
     if not parser then return "" end
 
     local pos = vim.api.nvim_win_get_cursor(0)
+    if not pos then return "" end
     return parser:language_for_range({ pos[1] - 1, pos[2], pos[1] - 1, pos[2] }):lang()
 end
 

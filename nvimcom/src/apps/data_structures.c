@@ -301,11 +301,11 @@ void update_inst_libs(void) {
 
     // New libraries found. Overwrite ~/.cache/R.nvim/inst_libs
     if (n) {
-        char fname[1032];
-        snprintf(fname, 1031, "%s/inst_libs", compldir);
-        FILE *f = fopen(fname, "w");
+        char fnm[1032];
+        snprintf(fnm, 1031, "%s/inst_libs", compldir);
+        FILE *f = fopen(fnm, "w");
         if (f == NULL) {
-            fprintf(stderr, "Could not write to '%s'\n", fname);
+            fprintf(stderr, "Could not write to '%s'\n", fnm);
             fflush(stderr);
         } else {
             il = instlibs;
@@ -440,13 +440,11 @@ static char *check_omils_buffer(char *b, int *size) {
     if (!b)
         return NULL;
 
-    if (b) {
-        char *p = b;
-        while (*p) {
-            if (*p == '\006')
-                *p = 0;
-            p++;
-        }
+    char *p = b;
+    while (*p) {
+        if (*p == '\006')
+            *p = 0;
+        p++;
     }
     return b;
 }
@@ -838,7 +836,7 @@ static void finish_bol(void) {
     snprintf(buf, 511, "%s/libs_in_rns_%s", localtmpdir, getenv("RNVIM_ID"));
     FILE *f = fopen(buf, "w");
     if (f) {
-        PkgData *pkg = pkgList;
+        pkg = pkgList;
         while (pkg) {
             if (pkg->loaded && pkg->built && pkg->objls)
                 fprintf(f, "%s_%s\n", pkg->name, pkg->version);

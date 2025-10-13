@@ -26,10 +26,12 @@ M.insert_roxygen = function(bufnr)
     end
 
     local parser = vim.treesitter.get_parser(bufnr, "r")
+    if not parser then return end
     local tree = parser:parse()[1]
     local root = tree:root()
 
     local cursor_pos = vim.api.nvim_win_get_cursor(0)
+    if not cursor_pos then return end
     local cursor_line = cursor_pos[1] - 1
 
     local query = vim.treesitter.query.parse(

@@ -71,7 +71,7 @@ void init_obbr_vars(void) {
  */
 static void copy_str_to_ob(const char *o, char *d, int sz) {
     int i = 0;
-    while (o[i] && i < sz) {
+    while (i < sz && o[i]) {
         if (o[i] == '\x13') {
             d[i] = '\'';
         } else if (o[i] == '\x12') {

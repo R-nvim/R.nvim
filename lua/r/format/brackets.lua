@@ -71,6 +71,7 @@ M.formatsubsetting = function(bufnr)
     if not parser then return end
 
     local node = vim.treesitter.get_node()
+    if not node then return end
 
     local node_type = node:type()
 
