@@ -63,7 +63,6 @@ hi def link rbrowserS7		Typedef
 hi def link rbrowserEnv		Include
 hi def link rbrowserLazy	Comment
 hi def link rbrowserUnknown	Normal
-hi def link rbrowserWarn	WarningMsg
 hi def link rbrowserErr 	ErrorMsg
 hi def link rbrowserTreePart	Comment
 hi def link rbrowserDelim	Ignore
