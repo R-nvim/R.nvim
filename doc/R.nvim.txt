@@ -533,24 +533,33 @@ be used to draw lines in the Object Browser. This is the case of most Linux
 distributions.
 
 In the Libraries view, you can either double click or press <Enter> on a
-library name to see its objects. In the Object Browser, the libraries have the
-color defined by the PreProc highlighting group. The other objects have
-their colors defined by the return value of some R functions. Each line in the
-table below shows a highlighting group and the corresponding type of R object:
+library name to see its objects. In the Object Browser, objects have their
+colors defined by the return value of some R functions and your |colorscheme|.
+Each line in the table below shows the name of a default highlight group, the
+name used in `syntax/rbrowser.vim` and the corresponding type of R object:
 
-         PreProc        libraries
-         Include        environment
-         Number                numeric
-         String                character
-         Special        factor
-         Boolean        logical
-         Type                data.frame
-         StorageClass        list
-         Structure        s4
-         Function        function
-         Statement        control flow (for, while, break, etc)
-         Comment        promise (lazy load object)
+   Boolean        rbrowserLogical    logical
+   Comment        rbrowserLazy       promise (lazy load object)
+   ErrorMsg       rbrowserErr        Error in label attribute
+   Function       rbrowserFunction   function
+   Include        rbrowserEnv        environment
+   Normal         rbrowserUnknown    unknown type
+   Number         rbrowserNumeric    numeric
+   PreProc        rbrowserLibrary    libraries
+   Special        rbrowserFactor     factor
+   Statement      rbrowserControl    control flow (for, while, break, etc)
+   StorageClass   rbrowserList       list
+   String         rbrowserCharacter  character
+   Structure      rbrowserS4         s4
+   Type           rbrowserDF         data.frame
+   Typedef        rbrowserS7         s7
 
+If you want to change a specific color in the Object Browser without changing
+your colorscheme, you should change the highlighting of the `rbrowser`
+specific group in your `init.lua` as in the example:
+>lua
+ vim.api.nvim_set_hl(0, "rbrowserNumeric", { fg = "#00ffff" })
+<
 One limitation of the Object Browser is that objects made available by the
 command `data()` are only links to the actual objects (promises of lazily
 loading the object when needed) and their real classes are not recognized in
