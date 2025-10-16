@@ -360,6 +360,7 @@ end
 M.motion = function()
     local startPos, endPos =
         vim.api.nvim_buf_get_mark(0, "["), vim.api.nvim_buf_get_mark(0, "]")
+
     if not startPos or not endPos then return end
 
     local startLine, endLine = startPos[1], endPos[1]
@@ -374,9 +375,6 @@ M.motion = function()
         return
     end
 
-    -- Adjust endLine to include the line under the ']` mark
-    endLine = endLine < vim.api.nvim_buf_line_count(0) and endLine or endLine - 1
-
     -- Fetch the lines from the buffer
     local lines = vim.api.nvim_buf_get_lines(0, startLine - 1, endLine, false)
 
@@ -385,6 +383,44 @@ M.motion = function()
         M.source_lines(lines, "block")
     else
         warn("No lines to send")
+    end
+end
+
+-- Wrapper for motion operator that handles edge cases like last line
+M.motion_wrapper = function()
+    local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
+    local last_line = vim.api.nvim_buf_line_count(0)
+
+    local motion = ""
+    local ok, char = pcall(vim.fn.getcharstr)
+    if not ok or char == "\27" then return end -- ESC pressed
+
+    motion = char
+
+    -- If first char is a digit, keep reading digits
+    while char:match("%d") do
+        ok, char = pcall(vim.fn.getcharstr)
+        if not ok or char == "\27" then return end
+        motion = motion .. char
+    end
+
+    local count_str = motion:match("^(%d+)")
+    local motion_char = motion:match("%a$")
+
+    if motion_char == "j" and cursor_line == last_line then
+        vim.api.nvim_buf_set_mark(0, "[", cursor_line, 0, {})
+        vim.api.nvim_buf_set_mark(0, "]", cursor_line, vim.fn.col("$") - 1, {})
+        M.motion()
+    elseif motion_char == "k" and cursor_line == last_line then
+        local count = count_str and tonumber(count_str) or 1
+        local start_line = math.max(1, cursor_line - count)
+        vim.api.nvim_buf_set_mark(0, "[", start_line, 0, {})
+        vim.api.nvim_buf_set_mark(0, "]", last_line, vim.fn.col("$") - 1, {})
+        M.motion()
+    else
+        -- Normal case: use g@ with the motion
+        vim.o.opfunc = "v:lua.require'r.send'.motion"
+        vim.cmd("normal! g@" .. motion)
     end
 end
 
