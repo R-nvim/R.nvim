@@ -144,18 +144,6 @@ M.check = function()
         vim.health.error("Please, uninstall Vim-R-plugin before using R.nvim.")
     end
 
-    if pcall(require, "cmp") then
-        if pcall(require, "cmp_r") then
-            vim.health.ok("`R-nvim/cmp-r` found.")
-        else
-            vim.health.warn("`R-nvim/cmp-r` not found. It's required for autocompletion.")
-        end
-    else
-        vim.health.warn(
-            "`hrsh7th/nvim-cmp` not found. It's required for autocompletion along with `R-nvim/cmp-r`."
-        )
-    end
-
     if ts_available then
         vim.health.ok("`nvim-treesitter/nvim-treesitter` found.")
     else

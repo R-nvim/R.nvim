@@ -112,7 +112,7 @@ M.command = function(what)
 end
 
 --- Helper function to get code block from Rmd or Quarto document.
---- The function is called by cmp_r too.
+--- The function is called by r_ls too.
 ---@param bufnr  integer The buffer number.
 ---@return table|nil
 M.get_code_chunks = function(bufnr)

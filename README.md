@@ -94,22 +94,7 @@ possible options. You can also consult the [Wiki](https://github.com/R-nvim/R.nv
 
 ### Autocompletion
 
-R autocompletion should be configured via another plugin. We recommend
-[cmp-r](https://github.com/R-nvim/cmp-r), which can be minimally configured
-like so:
-
-```lua
-{
-    "R-nvim/cmp-r",
-    {
-        "hrsh7th/nvim-cmp",
-        config = function()
-            require("cmp").setup({ sources = {{ name = "cmp_r" }}})
-            require("cmp_r").setup({})
-        end,
-    },
-},
-```
+R autocompletion is provided by a built-in language server.
 
 Note that [languageserver](https://github.com/REditorSupport/languageserver)
 can also be used for autocompletions, but using autocompletions from both
@@ -180,8 +165,7 @@ firm commitment to backwards compatibility.
 
 - reStructuredText support (no longer seems to be widely used).
 
-- Legacy omni-completion (we now recommend
-  [nvim-cmp](https://github.com/hrsh7th/nvim-cmp)).
+- Legacy omni-completion (we now recommend the built-in LSP).
 
 - Highlighting functions from `.GlobalEnv` (difficult to make compatible with
   tree-sitter + LSP highlighting).
@@ -333,9 +317,6 @@ information is transmitted through the TCP connection to the _rnvimserver_,
 but temporary files are used in a few cases.
 
 ## See also:
-
-- [cmp-r](https://github.com/R-nvim/cmp-r): autocompletion source for
-  [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) using R.nvim as backend.
 
 - [languageserver](https://github.com/REditorSupport/languageserver): a
   language server for R.

@@ -881,11 +881,6 @@ local do_common_global = function()
 
     if config.R_app:find("radian") then config.hl_term = false end
 
-    -- The environment variables RNVIM_COMPLCB and RNVIM_COMPLInfo must be defined
-    -- before starting the rnvimserver because it needs them at startup.
-    vim.env.RNVIM_COMPL_CB = "require('cmp_r').complete_cb"
-    vim.env.RNVIM_RSLV_CB = "require('cmp_r').resolve_cb"
-
     -- Look for invalid options
     local objbrplace = vim.split(config.objbr_place, ",")
     if #objbrplace > 2 then swarn("Too many options for R_objbr_place.") end
@@ -1024,6 +1019,7 @@ M.real_setup = function()
         vim.treesitter.language.register("markdown", { "quarto", "rmd" })
     end
     vim.treesitter.start()
+    require("r.lsp").start()
 end
 
 --- Return the table with the final configure variables: the default values

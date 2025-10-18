@@ -9,13 +9,9 @@
 #include "tcp.h"
 #include "complete.h"
 
-static char compl_cb[64];   // Completion callback buffer
-static char resolve_cb[64]; // Completion info buffer
-
-void init_compl_vars(void) {
-    strncpy(compl_cb, getenv("RNVIM_COMPL_CB"), 63);
-    strncpy(resolve_cb, getenv("RNVIM_RSLV_CB"), 63);
-}
+// Lua callback functions
+static const char compl_cb[] = "require('r.lsp').complete_cb";
+static const char resolve_cb[] = "require('r.lsp').resolve_cb";
 
 /**
  * Checks if the string `b` can be found through string `a`.

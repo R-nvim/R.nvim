@@ -87,7 +87,6 @@ static void init(void) {
 
     init_global_vars();
     init_obbr_vars();
-    init_compl_vars();
     init_ds_vars();
 
     update_inst_libs();

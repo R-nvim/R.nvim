@@ -66,7 +66,6 @@ start_R2 = function()
 
     local start_options = {
         'Sys.setenv(R_DEFAULT_PACKAGES = "' .. rdp:gsub(",nvimcom", "") .. '")',
-        'Sys.setenv(RNVIM_RSLV_CB = "' .. vim.env.RNVIM_RSLV_CB .. '")',
         "options(nvimcom.max_depth = " .. tostring(config.compl_data.max_depth) .. ")",
         "options(nvimcom.max_size = " .. tostring(config.compl_data.max_size) .. ")",
         "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")",
@@ -88,12 +87,9 @@ start_R2 = function()
         table.insert(start_options, "options(nvimcom.texerrs = FALSE)")
     end
 
-    local has_cmp_r, _ = pcall(require, "cmp_r")
-    if has_cmp_r then
-        table.insert(start_options, "options(nvimcom.autoglbenv = 2)")
-    else
-        table.insert(start_options, "options(nvimcom.autoglbenv = 0)")
-    end
+    -- Required by our language server (r_ls)
+    table.insert(start_options, "options(nvimcom.autoglbenv = 2)")
+
     if config.setwidth == 2 then
         table.insert(start_options, "options(nvimcom.setwidth = TRUE)")
     else

@@ -322,7 +322,7 @@ nvim.min.info <- function(obj, prnt) {
 
     .C(
         nvimcom_msg_to_nvim,
-        paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')")
+        paste0("lua require('r.lsp').resolve_cb('", txt, "')")
     )
     return(invisible(NULL))
 }
