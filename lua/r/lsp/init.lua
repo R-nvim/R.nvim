@@ -1,53 +1,42 @@
 local send_to_nvimcom = require("r.run").send_to_nvimcom
+local warn = require("r.log").warn
 
-local r_ls = {
-    initialized = false,
-    stopped = true,
-}
+local client_id
 
-local last_compl_item
-local cb_cmp
-local cb_rsv
-local compl_id = 0
 -- local ter = nil
 local qcell_opts = nil
 local chunk_opts = nil
-local rhelp_keys = nil
 local compl_region = true
 
 local options = {
     doc_width = 58,
-    trigger_characters = { " ", ":", "(", '"', "@", "$" },
+    trigger_characters = { ".", " ", ":", "(", '"', "@", "$" },
     fun_data_1 = { "select", "rename", "mutate", "filter" },
     fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
     quarto_intel = nil,
 }
 
 -- Translate symbols added by nvimcom to LSP kinds
-local kindtbl = {
-    ["("] = vim.lsp.protocol.CompletionItemKind.Function, -- function
-    ["$"] = vim.lsp.protocol.CompletionItemKind.Struct, -- data.frame
-    ["%"] = vim.lsp.protocol.CompletionItemKind.Method, -- logical
-    ["~"] = vim.lsp.protocol.CompletionItemKind.Text, -- character
-    ["{"] = vim.lsp.protocol.CompletionItemKind.Value, -- numeric
-    ["!"] = vim.lsp.protocol.CompletionItemKind.Field, -- factor
-    [";"] = vim.lsp.protocol.CompletionItemKind.Constructor, -- control
-    ["["] = vim.lsp.protocol.CompletionItemKind.Struct, -- list
-    ["<"] = vim.lsp.protocol.CompletionItemKind.Class, -- S4
-    [">"] = vim.lsp.protocol.CompletionItemKind.Class, -- S7
-    [":"] = vim.lsp.protocol.CompletionItemKind.Interface, -- environment
-    ["&"] = vim.lsp.protocol.CompletionItemKind.Event, -- promise
-    ["l"] = vim.lsp.protocol.CompletionItemKind.Module, -- library
-    ["a"] = vim.lsp.protocol.CompletionItemKind.Variable, -- function argument
-    ["c"] = vim.lsp.protocol.CompletionItemKind.Field, -- data.frame column
-    ["*"] = vim.lsp.protocol.CompletionItemKind.TypeParameter, -- other
-}
+-- local kindtbl = {
+--     ["("] = vim.lsp.protocol.CompletionItemKind.Function, -- function
+--     ["$"] = vim.lsp.protocol.CompletionItemKind.Struct, -- data.frame
+--     ["%"] = vim.lsp.protocol.CompletionItemKind.Method, -- logical
+--     ["~"] = vim.lsp.protocol.CompletionItemKind.Text, -- character
+--     ["{"] = vim.lsp.protocol.CompletionItemKind.Value, -- numeric
+--     ["!"] = vim.lsp.protocol.CompletionItemKind.Field, -- factor
+--     [";"] = vim.lsp.protocol.CompletionItemKind.Constructor, -- control
+--     ["["] = vim.lsp.protocol.CompletionItemKind.Struct, -- list
+--     ["<"] = vim.lsp.protocol.CompletionItemKind.Class, -- S4
+--     [">"] = vim.lsp.protocol.CompletionItemKind.Class, -- S7
+--     [":"] = vim.lsp.protocol.CompletionItemKind.Interface, -- environment
+--     ["&"] = vim.lsp.protocol.CompletionItemKind.Event, -- promise
+--     ["l"] = vim.lsp.protocol.CompletionItemKind.Module, -- library
+--     ["a"] = vim.lsp.protocol.CompletionItemKind.Variable, -- function argument
+--     ["c"] = vim.lsp.protocol.CompletionItemKind.Field, -- data.frame column
+--     ["*"] = vim.lsp.protocol.CompletionItemKind.TypeParameter, -- other
+-- }
 
-local send_to_nrs = function(msg)
-    if vim.g.R_Nvim_status and vim.g.R_Nvim_status > 2 then
-        require("r.job").stdin("Server", msg)
-    end
-end
+local M = {}
 
 local fix_doc = function(txt)
     -- The rnvimserver replaces ' with \019 and \n with \020. We have to revert this:
@@ -200,40 +189,31 @@ local need_R_args = function(line, lnum)
     return resp
 end
 
-local reset_r_compl = function()
-    -- for _, v in pairs(cmp.core.sources or {}) do
-    --     if v.name == "cmp_r" then
-    --         v:reset()
-    --         break
-    --     end
-    -- end
-    vim.notify("NOT IMPLEMENTED: reset_r_compl")
-end
+local reset_r_compl = function() vim.notify("NOT IMPLEMENTED: reset_r_compl") end
 
-local resolve = function(itm, callback)
-    -- itm = params = {
-    --     kind = 6,
-    --     label = "Henrich (2016) The secret of our success: how culture is d⋯",
-    --     textEdit = {
-    --         newText = "DHA5RLLS-Henrich-2016",
-    --         range = {
-    --             ["end"] = { character = 2, line = 9 },
-    --             start = { character = 1, line = 9 }
-    --         },
+--- Resolve
+---@param req_id string
+---@param itm_str string
+M.resolve = function(req_id, itm_str)
+    local itm = vim.json.decode(itm_str)
+    -- vim.notify(tostring(req_id) .. "\n" .. itm_str .. "\n" .. vim.inspect(itm))
+
+    if not itm.cls then return nil end
+
+    -- ter = {
+    --     start = {
+    --         line = lnum + 1,
+    --         character = cnum - 1,
+    --     },
+    --     ["end"] = {
+    --         line = lnum + 1,
+    --         character = cnum,
     --     },
     -- }
 
-    cb_rsv = callback
-    last_compl_item = itm
-
-    if not itm.cls then
-        callback(itm)
-        return nil
-    end
-
     if itm.env == ".GlobalEnv" then
         if itm.cls == "a" then
-            callback(itm)
+            vim.notify("RESOLVE A")
         elseif itm.cls == "!" or itm.cls == "%" or itm.cls == "~" or itm.cls == "{" then
             send_to_nvimcom(
                 "E",
@@ -268,13 +248,13 @@ local resolve = function(itm, callback)
     elseif itm.cls == "a" then
         local i = itm.label:gsub(" = ", "")
         local pf = vim.fn.split(itm.env, "\002")
-        send_to_nrs("7" .. pf[1] .. "\002" .. pf[2] .. "\002" .. i .. "\n")
+        M.send_msg(string.format("7%s|%s|%s|%s|%s", pf[1], pf[2], i, req_id, itm.kind))
     elseif itm.cls == "l" then
         itm.documentation = {
             value = fix_doc(itm.env),
             kind = vim.lsp.MarkupKind.Markdown,
         }
-        callback(itm)
+        vim.notify("RESOLVE L")
     elseif
         itm.label:find("%$")
         and (itm.cls == "!" or itm.cls == "%" or itm.cls == "~" or itm.cls == "{")
@@ -284,35 +264,31 @@ local resolve = function(itm, callback)
             "nvimcom:::nvim.get.summary(" .. itm.label .. ", '" .. itm.env .. "')"
         )
     else
-        send_to_nrs("6" .. itm.label .. "\002" .. itm.env .. "\n")
+        M.send_msg("6" .. itm.label .. "|" .. itm.env)
+        M.send_msg(string.format("6%s|%s|%s|%s", itm.label, itm.env, req_id, itm.kind))
     end
 end
 
-local complete = function(params, callback)
-    -- params = {
-    --     context = {
-    --         triggerKind = 1
-    --     },
-    --     position = {
-    --         character = 2,
-    --         line = 9
-    --     },
-    --     textDocument = {
-    --         uri = "file:///home/aquino/src/issues/test.md"
-    --     }
-    -- }
+-- TODO: Delete this function
+local send_items = function(req_id, tbl)
+    local jstr = vim.json.encode(tbl)
+    -- Log(jstr)
+    vim.notify("CALLBACK [" .. tostring(req_id) .. "]\n" .. jstr)
+end
+
+--- Complete
+---@param req_id string
+---@param lnum integer
+---@param cnum integer
+M.complete = function(req_id, lnum, cnum)
     if not compl_region then return end
-    if vim.g.R_Nvim_status < 3 then return end
-    cb_cmp = callback
-    local cnum = params.position.character
-    local lnum = params.position.line
     -- In cmp-r: cline = request.context.cursor_before_line
     local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
 
     -- Check if this is Rmd and the cursor is in the chunk header
     if vim.bo.filetype == "rmd" and cline:find("^```{r") then
         if not chunk_opts then chunk_opts = require("r.lsp.chunk").get_opts() end
-        callback({ items = chunk_opts })
+        send_items(req_id, chunk_opts)
         return
     end
 
@@ -329,9 +305,9 @@ local complete = function(params, callback)
                     reset_r_compl()
                 elseif wrd:find("^@[tf]") then
                     local lbls = require("r.lsp.figtbl").get_labels(wrd)
-                    callback({ items = lbls })
+                    send_items(req_id, { items = lbls })
                 end
-                return {}
+                return
             end
         elseif vim.bo.filetype == "rnoweb" then
             for i = lnum, 1, -1 do
@@ -339,7 +315,7 @@ local complete = function(params, callback)
                     lang = "r"
                     break
                 elseif string.find(lines[i], "^@") then
-                    return {}
+                    return
                 end
             end
         elseif vim.bo.filetype == "rhelp" then
@@ -358,13 +334,10 @@ local complete = function(params, callback)
                 local wrd = cline:sub(cnum)
                 if #wrd == 0 then
                     reset_r_compl()
-                    return nil
+                    return
                 end
                 if wrd == "\\" then
-                    if not rhelp_keys then
-                        rhelp_keys = require("r.lsp.rhelp").get_keys()
-                    end
-                    callback({ items = rhelp_keys })
+                    M.send_msg("CH")
                     return
                 end
             end
@@ -378,7 +351,7 @@ local complete = function(params, callback)
             if not qcell_opts then
                 qcell_opts = require("r.lsp.quarto").get_cell_opts(options.quarto_intel)
             end
-            callback({ items = qcell_opts })
+            send_items(req_id, { items = qcell_opts })
             return
         end
     end
@@ -393,7 +366,7 @@ local complete = function(params, callback)
             if v.capture == "string" then
                 snm = "rString"
             elseif v.capture == "comment" then
-                return nil
+                return
             end
         end
     else
@@ -402,21 +375,8 @@ local complete = function(params, callback)
         if snm == "rComment" then return nil end
     end
 
-    -- required by rnvimserver
-    compl_id = compl_id + 1
-
     local wrd = cline:sub(cnum)
     wrd = string.gsub(wrd, "`", "")
-    -- ter = {
-    --     start = {
-    --         line = lnum + 1,
-    --         character = cnum - 1,
-    --     },
-    --     ["end"] = {
-    --         line = lnum + 1,
-    --         character = cnum,
-    --     },
-    -- }
 
     -- Should we complete function arguments?
     local nra
@@ -430,37 +390,27 @@ local complete = function(params, callback)
             (nra.fnm == "library" or nra.fnm == "require")
             and (not nra.firstobj or nra.firstobj == wrd)
         then
-            send_to_nrs("5" .. compl_id .. "\003\004" .. wrd .. "\n")
-            return nil
+            M.send_msg("5" .. req_id .. "|l" .. wrd)
+            return
         end
 
-        if snm == "rString" then return nil end
+        if snm == "rString" then return end
 
         if vim.g.R_Nvim_status < 7 then
             -- Get the arguments of the first function whose name matches nra.fnm
             if nra.lib then
-                send_to_nrs(
-                    "5"
-                        .. compl_id
-                        .. "\003\005"
-                        .. wrd
-                        .. "\005"
-                        .. nra.lib
-                        .. "::"
-                        .. nra.fnm
-                        .. "\n"
+                M.send_msg(
+                    "5" .. req_id .. "|o" .. wrd .. "|" .. nra.lib .. "::" .. nra.fnm
                 )
             else
-                send_to_nrs(
-                    "5" .. compl_id .. "\003\005" .. wrd .. "\005" .. nra.fnm .. "\n"
-                )
+                M.send_msg("5" .. req_id .. "|a" .. wrd .. "|" .. nra.fnm)
             end
-            return nil
+            return
         else
             -- Get arguments according to class of first object
             local msg
             msg = 'nvimcom:::nvim_complete_args("'
-                .. compl_id
+                .. req_id
                 .. '", "'
                 .. nra.fnm
                 .. '", "'
@@ -476,7 +426,7 @@ local complete = function(params, callback)
 
             -- Save documentation of arguments to be used by rnvimserver
             send_to_nvimcom("E", msg)
-            return nil
+            return
         end
     end
 
@@ -484,141 +434,49 @@ local complete = function(params, callback)
 
     if #wrd == 0 then
         reset_r_compl()
-        return nil
+        return
     end
 
-    send_to_nrs("5" .. compl_id .. "\003" .. wrd .. "\n")
-
-    return nil
+    M.send_msg("5" .. req_id .. "|o" .. wrd)
 end
 
---- Hover implementation
-local hover = function(lnum, cnum)
-    vim.notify(string.format("HOVER not implemented: [%d, %d]", lnum, cnum))
+--- Execute lua command sent by rnvimserver
+local function exe_cmd(_, result, _)
+    vim.schedule(function() vim.fn.execute("lua " .. result.command) end)
 end
 
---- This function receives 4 arguments: method, params, callback, notify_callback
-local function lsp_request(method, params, callback, notify_callback)
-    if method == "textDocument/completion" then
-        complete(params, callback)
-    elseif method == "completionItem/resolve" then
-        resolve(params, callback)
-    elseif method == "textDocument/hover" then
-        if not compl_region then return end
-        local res = hover(params.position.line, params.position.character)
-        if res then callback(nil, res) end
-    elseif method == "initialize" then
-        local serverCapabilities = {
-            capabilities = {
-                textDocument = {
-                    completion = {
-                        completionItem = {
-                            resolveSupport = {
-                                properties = {
-                                    "documentation",
-                                    "detail",
-                                    "additionalTextEdits",
-                                },
-                            },
-                        },
-                    },
-                },
-                hoverProvider = true,
-                completionProvider = {
-                    resolveProvider = true,
-                    triggerCharacters = options.trigger_characters,
-                },
-            },
-        }
-        callback(nil, serverCapabilities)
-    else
-        vim.notify(
-            string.format(
-                "REQUEST\nmethod: %s\nparams: %s\ncallback: %s\nnotify_callback: %s",
-                vim.inspect(method),
-                vim.inspect(params),
-                vim.inspect(callback),
-                vim.inspect(notify_callback)
-            )
-        )
-    end
-end
-
---- This function receives two arguments: method, params
-local function lsp_notify(method, _)
-    if method == "initialized" then
-        r_ls.initialized = true
-        r_ls.stopped = false
-    end
-end
-
--- Ver ~/.local/share/nvim/site/pack/core/opt/none-ls.nvim/lua/null-ls/rpc.lua
-local function lsp_start(_, _)
-    return {
-        request = lsp_request,
-        notify = lsp_notify,
-        is_closing = function() return r_ls.stopped end,
-        terminate = function() r_ls.stopped = true end,
-    }
-end
-
-local M = {}
-
-function M.start()
+function M.start(rns_path, rns_env)
     -- TODO: remove this when nvim 0.12 is released
     if not vim.lsp.config then return end
 
-    vim.lsp.config("r_ls", {})
-    vim.lsp.start({ name = "r_ls", cmd = lsp_start })
+    vim.lsp.handlers["client/exeRnvimCmd"] = exe_cmd
+    for k, v in pairs(rns_env) do
+        vim.env[k] = v
+    end
+
+    -- require("r.job").start("Server", {
+    --     "valgrind",
+    --     "--leak-check=full",
+    --     "--log-file=/tmp/rnvimserver_valgrind_log",
+    --     rns_path,
+    -- }, rns_opts)
+    -- require("r.job").start("Server", { rns_path }, rns_opts)
+    client_id = vim.lsp.start({ name = "r_ls", cmd = { rns_path } })
+    for k, _ in pairs(rns_env) do
+        vim.env[k] = nil
+    end
     -- vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
     --     buffer = vim.api.nvim_get_current_buf(),
     --     callback = on_cursor_move,
     -- })
+    if client_id then vim.lsp.completion.enable(true, client_id, 0) end
 end
 
----Callback function for the "resolve" method. When we doesn't have the necessary
----data for resolving the completion (which happens in most cases), we request
----the data to rnvimserver which calls back this function.
----@param txt string The text almost ready to be displayed.
-M.resolve_cb = function(txt)
-    local s = fix_doc(txt)
-    if last_compl_item.def then
-        s = last_compl_item.label .. fix_doc(last_compl_item.def) .. "\n---\n" .. s
-    end
-    last_compl_item.documentation = { kind = "markdown", value = s }
-    cb_rsv(nil, last_compl_item)
-end
-
----Callback function for the "complete" method. When we doesn't have the
----necessary data for completion (which happens in most cases), we request the
----completion data to rnvimserver which calls back this function.
----@param cid number The completion ID.
----@param compl table The completion data.
-M.complete_cb = function(cid, compl)
-    if cid ~= compl_id then return nil end
-    -- vim.notify(vim.inspect(ter))
-
-    local resp = {}
-    for _, v in pairs(compl) do
-        local lbl = v.label:gsub("\019", "'")
-        local k = kindtbl[v.cls]
-        table.insert(resp, {
-            label = lbl,
-            env = v.env,
-            cls = v.cls,
-            def = v.def or nil,
-            kind = k,
-            -- sortText = v.cls == "a" and "0" or "9",
-            insertText = backtick(lbl),
-            -- textEdit = { newText = backtick(lbl), range = ter },
-        })
-    end
-    cb_cmp(nil, {
-        isIncomplete = false,
-        is_incomplete_forward = false,
-        is_incomplete_backward = true,
-        items = resp,
-    })
+function M.send_msg(code)
+    -- lua_ls will warn that "exeRnvimCmd" is not a valid method
+    local buf = require("r.edit").get_rscript_buf()
+    local res = vim.lsp.buf_notify(buf, "exeRnvimCmd", { code = code })
+    if not res then warn("Failed to send message to r_ls: " .. code) end
 end
 
 return M

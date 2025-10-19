@@ -15,5 +15,6 @@
 
 char *grow_buffer(char **b, unsigned long *sz, unsigned long inc);
 void replace_char(char *s, char find, char replace);
+char *read_file(const char *fn, int verbose);
 
 #endif

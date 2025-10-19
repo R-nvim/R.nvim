@@ -801,7 +801,7 @@ static void nvimcom_eval_expr(const char *buf) {
          * a semicolon. */
         PROTECT(ans = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
         if (er && verbose > 1) {
-            strcpy(rep, "lua require('r.log').warn('Error running: ");
+            strcpy(rep, "require('r.log').warn('Error running: ");
             strncat(rep, buf2, 80);
             strcat(rep, "')");
             send_to_nvim(rep);
@@ -809,7 +809,7 @@ static void nvimcom_eval_expr(const char *buf) {
         UNPROTECT(1);
     } else {
         if (verbose > 1) {
-            strcpy(rep, "lua require('r.log').warn('Invalid command: ");
+            strcpy(rep, "require('r.log').warn('Invalid command: ");
             strncat(rep, buf2, 80);
             strcat(rep, "')");
             send_to_nvim(rep);
@@ -1012,7 +1012,7 @@ static void nvimcom_fire(void) {
 static void SrcrefInfo(void) {
     // Adapted from SrcrefPrompt(), at src/main/eval.c
     if (debugging == 0) {
-        send_to_nvim("lua require('r.debug').stop()");
+        send_to_nvim("require('r.debug').stop()");
         return;
     }
 
@@ -1025,9 +1025,8 @@ static void SrcrefInfo(void) {
             char *buf2 = calloc(sizeof(char), (2 * slen + 56));
             snprintf(buf, 2 * slen + 1, "%s", CHAR(STRING_ELT(filename, 0)));
             nvimcom_squo(buf, buf2, 2 * slen + 32);
-            snprintf(buf, 2 * slen + 55,
-                     "lua require('r.debug').jump('%s', %d)", buf2,
-                     asInteger(R_Srcref));
+            snprintf(buf, 2 * slen + 55, "require('r.debug').jump('%s', %d)",
+                     buf2, asInteger(R_Srcref));
             send_to_nvim(buf);
             free(buf);
             free(buf2);
@@ -1080,12 +1079,12 @@ static void nvimcom_send_running_info(const char *r_info, const char *nvv) {
 
 #ifdef _WIN64
     snprintf(msg, 2175,
-             "lua require('r.run').set_nvimcom_info('%s', %" PRId64
-             ", '%" PRId64 "', %s)",
+             "require('r.run').set_nvimcom_info('%s', %" PRId64 ", '%" PRId64
+             "', %s)",
              nvv, R_PID, (long long)GetForegroundWindow(), r_info);
 #else
     snprintf(msg, 2175,
-             "lua require('r.run').set_nvimcom_info('%s', %d, '%ld', %s)", nvv,
+             "require('r.run').set_nvimcom_info('%s', %d, '%ld', %s)", nvv,
              R_PID, (long)GetForegroundWindow(), r_info);
 #endif
     send_to_nvim(msg);

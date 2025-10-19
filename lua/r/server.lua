@@ -151,41 +151,28 @@ local start_rnvimserver = function()
 
     local rns_dir = rns_path:gsub("/rnvimserver.*", "")
 
-    local rns_env = {}
-
     -- Some pdf viewers run rnvimserver to send SyncTeX messages back to Neovim
     if config.is_windows then
-        rns_env["PATH"] = rns_dir .. ";" .. vim.env.PATH
+        vim.env.PATH = rns_dir .. ";" .. vim.env.PATH
     else
-        rns_env["PATH"] = rns_dir .. ":" .. vim.env.PATH
+        vim.env.PATH = rns_dir .. ":" .. vim.env.PATH
     end
 
     -- Options in the rnvimserver application are set through environment variables
-    if config.objbr_opendf then rns_env["RNVIM_OPENDF"] = "TRUE" end
-    if config.objbr_openlist then rns_env["RNVIM_OPENLS"] = "TRUE" end
-    if config.objbr_allnames then rns_env["RNVIM_OBJBR_ALLNAMES"] = "TRUE" end
-    rns_env["RNVIM_RPATH"] = config.R_cmd
-    rns_env["RNVIM_LOCAL_TMPDIR"] = config.localtmpdir
-    rns_env["RNVIM_MAX_DEPTH"] = tostring(config.compl_data.max_depth)
+    local rns_env = {}
+    if config.objbr_opendf then rns_env.RNVIM_OPENDF = "TRUE" end
+    if config.objbr_openlist then rns_env.RNVIM_OPENLS = "TRUE" end
+    if config.objbr_allnames then rns_env.RNVIM_OBJBR_ALLNAMES = "TRUE" end
+    rns_env.RNVIM_RPATH = config.R_cmd
+    rns_env.RNVIM_LOCAL_TMPDIR = config.localtmpdir
+    rns_env.RNVIM_MAX_DEPTH = tostring(config.compl_data.max_depth)
 
     -- We have to set R's home directory on Windows because rnvimserver will
     -- run R to build the list for auto completion.
     if config.is_windows then require("r.windows").set_R_home() end
 
-    local rns_opts = {
-        on_stdout = require("r.job").on_stdout,
-        on_stderr = require("r.job").on_stderr,
-        on_exit = require("r.job").on_exit,
-        env = rns_env,
-    }
-    -- require("r.job").start("Server", {
-    --     "valgrind",
-    --     "--leak-check=full",
-    --     "--log-file=/tmp/rnvimserver_valgrind_log",
-    --     rns_path,
-    -- }, rns_opts)
-    require("r.job").start("Server", { rns_path }, rns_opts)
     vim.g.R_Nvim_status = 2
+    require("r.lsp").start(rns_path:match(".*/(.*)"), rns_env)
 
     if config.is_windows then require("r.windows").unset_R_home() end
 
@@ -284,9 +271,9 @@ local build_objls_exit = function()
     )
     building_objls = false
     if vim.env.CMPR_DOC_WIDTH then
-        job.stdin("Server", "41" .. vim.env.CMPR_DOC_WIDTH .. "\n")
+        require("r.lsp").send_msg("41" .. vim.env.CMPR_DOC_WIDTH)
     else
-        job.stdin("Server", "41\n")
+        require("r.lsp").send_msg("41")
     end
 end
 
@@ -421,9 +408,10 @@ M.check_nvimcom_version = function()
 end
 
 --- Build objls_ files
----@param olist string[] List of packages whose completion files need to be
+---@param objs string List of packages whose completion files need to be
 ---built.
-M.build_objls = function(olist)
+M.build_objls = function(objs)
+    local olist = vim.split(objs, " ", { trimempty = true })
     local Rcode = {
         "library('nvimcom', character.only = TRUE, warn.conflicts = FALSE,",
         "  verbose = FALSE, quietly = TRUE, mask.ok = 'vi')",
@@ -447,7 +435,7 @@ M.build_objls = function(olist)
 end
 
 -- Get information from rnvimserver (currently only the names of loaded libraries).
-M.request_rns_info = function() job.stdin("Server", "42\n") end
+M.request_rns_info = function() require("r.lsp").send_msg("42") end
 
 -- Called by rnvimserver when it gets an error running R code
 M.show_bol_error = function(stt)

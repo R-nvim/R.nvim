@@ -10,6 +10,7 @@
 #include "logging.h"
 #include "data_structures.h"
 #include "tcp.h"
+#include "lsp.h"
 
 static int building_objls;     // Flag for building compl lists
 static int more_to_build;      // Flag for more lists to build
@@ -19,60 +20,6 @@ static ListStatus *listTree;   // Root node of the list status tree
 static int max_depth = 2;      // Max list depth in nvimcom
 
 void set_max_depth(int m) { max_depth = m; }
-
-/**
- * @brief Reads the entire contents of a specified file into a buffer.
- *
- * This function opens the file specified by the filename and reads its entire
- * content into a dynamically allocated buffer. It ensures that the file is read
- * in binary mode to preserve the data format. This function is typically used
- * to load files containing data relevant to the R.nvim plugin, such as
- * completion lists or configuration data.
- *
- * @param fn The name of the file to be read.
- * @param verbose Flag to indicate whether to print error messages. If set to a
- * non-zero value, error messages are printed to stderr.
- * @return Returns a pointer to a buffer containing the file's content if
- * successful. Returns NULL if the file cannot be opened or in case of a read
- * error.
- */
-static char *read_file(const char *fn, int verbose) {
-    FILE *f = fopen(fn, "rb");
-    if (!f) {
-        if (verbose) {
-            fprintf(stderr, "Error opening '%s'", fn);
-            fflush(stderr);
-        }
-        return NULL;
-    }
-    fseek(f, 0L, SEEK_END);
-    long sz = ftell(f);
-    if (sz == 0) {
-        // List of objects is empty. Perhaps no object was created yet.
-        // The args_datasets files is empty
-        fclose(f);
-        return calloc(1, sizeof(char));
-    }
-
-    char *b = calloc(1, sz + 1);
-    if (!b) {
-        fclose(f);
-        fputs("Error allocating memory\n", stderr);
-        fflush(stderr);
-        return NULL;
-    }
-
-    rewind(f);
-    if (1 != fread(b, sz, 1, f)) {
-        fclose(f);
-        free(b);
-        fprintf(stderr, "Error reading '%s'\n", fn);
-        fflush(stderr);
-        return NULL;
-    }
-    fclose(f);
-    return b;
-}
 
 /**
  * Compares two ASCII strings in a case-insensitive manner.
@@ -796,9 +743,8 @@ void build_objls(void) {
             if (compl_buffer_size < nsz)
                 p = grow_buffer(&compl_buffer, &compl_buffer_size,
                                 nsz - compl_buffer_size + 32768);
-            p = str_cat(p, "'");
             p = str_cat(p, pkg->name);
-            p = str_cat(p, "', ");
+            p = str_cat(p, " ");
             pkg->to_build = 1;
             k++;
         }
@@ -807,8 +753,10 @@ void build_objls(void) {
 
     if (k > 0) {
         // Build all the objls_ files.
-        printf("lua require('r.server').build_objls({%s})\n", compl_buffer);
-        fflush(stdout);
+        char *cmd = (char *)malloc((124 + strlen(compl_buffer)) * sizeof(char));
+        sprintf(cmd, "require('r.server').build_objls('%s')", compl_buffer);
+        send_cmd_to_nvim(cmd);
+        free(cmd);
     }
 }
 
@@ -846,8 +794,7 @@ static void finish_bol(void) {
     }
 
     // Message to Neovim: Update both syntax and Rhelp_list
-    printf("lua require('r.server').update_Rhelp_list()\n");
-    fflush(stdout);
+    send_cmd_to_nvim("require('r.server').update_Rhelp_list()");
 }
 
 // This function is called by lua/r/server.lua when R finishes building

@@ -8,6 +8,7 @@
 #include "../common.h"
 #include "obbr.h"
 #include "utilities.h"
+#include "lsp.h"
 
 static int nLibObjs;        // Number of library objects
 static int nvimcom_is_utf8; // Flag for UTF-8 encoding
@@ -257,10 +258,8 @@ void compl2ob(void) {
     }
 
     fclose(f);
-    if (auto_obbr) {
-        fputs("lua require('r.browser').update_OB('GlobalEnv')\n", stdout);
-        fflush(stdout);
-    }
+    if (auto_obbr)
+        send_cmd_to_nvim("require('r.browser').update_OB('GlobalEnv')");
 }
 
 void lib2ob(void) {
@@ -309,6 +308,5 @@ void lib2ob(void) {
     }
 
     fclose(f);
-    fputs("lua require('r.browser').update_OB('libraries')\n", stdout);
-    fflush(stdout);
+    send_cmd_to_nvim("require('r.browser').update_OB('libraries')");
 }

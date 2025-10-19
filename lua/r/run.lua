@@ -220,7 +220,7 @@ M.start_R = function(whatr)
     if vim.g.R_Nvim_status == 3 then
         vim.g.R_Nvim_status = 4
         require("r.send").set_send_cmd_fun()
-        job.stdin("Server", "1\n") -- Start the TCP server
+        require("r.lsp").send_msg("1")
         what_R = whatr
         vim.fn.timer_start(30, start_R2)
         return
@@ -298,11 +298,6 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         require("r.term.kitten").set_r_wid(r_info.kitty_wid)
     end
 
-    if not job.is_running("Server") then
-        warn("Server not running.")
-        return
-    end
-
     if config.objbr_auto_start then
         if config.is_windows then
             -- Give R some time to be ready
@@ -343,7 +338,7 @@ M.clear_R_info = function()
     if config.external_term == "" then require("r.term.builtin").close_term() end
     if job.is_running("Server") then
         vim.g.R_Nvim_status = 3
-        job.stdin("Server", "43\n")
+        require("r.lsp").send_msg("43")
     else
         vim.g.R_Nvim_status = 1
     end
@@ -362,17 +357,11 @@ M.send_to_nvimcom = function(code, attch)
         warn("R is not running")
         return
     end
-
     if vim.g.R_Nvim_status < 7 then
         warn("R is not ready yet")
         return
     end
-
-    if not job.is_running("Server") then
-        warn("Server not running.")
-        return
-    end
-    job.stdin("Server", "2" .. code .. vim.env.RNVIM_ID .. attch .. "\n")
+    require("r.lsp").send_msg("2" .. code .. vim.env.RNVIM_ID .. attch)
 end
 
 M.quit_R = function(how)

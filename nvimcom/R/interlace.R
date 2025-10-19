@@ -380,7 +380,7 @@ nvim.interlace.rnoweb <- function(
             }
             .C(
                 nvimcom_msg_to_nvim,
-                paste0("lua require('r.doc').open('", pdff, "', '')")
+                paste0("require('r.doc').open('", pdff, "', '')")
             )
         }
     }
@@ -446,7 +446,7 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
     }
     .C(
         nvimcom_msg_to_nvim,
-        paste0("lua require('r.doc').open('", res, "', '", brwsr, "')")
+        paste0("require('r.doc').open('", res, "', '", brwsr, "')")
     )
     return(invisible(NULL))
 }

@@ -8,10 +8,9 @@
 #include "../common.h"
 #include "tcp.h"
 #include "complete.h"
+#include "lsp.h"
 
-// Lua callback functions
-static const char compl_cb[] = "require('r.lsp').complete_cb";
-static const char resolve_cb[] = "require('r.lsp').resolve_cb";
+const char *rhelp_menu;
 
 /**
  * Checks if the string `b` can be found through string `a`.
@@ -64,10 +63,9 @@ static char *find_obj(char *objls, const char *dfbase) {
 
 static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
     size_t skip = strlen(dtfrm) + 1; // The data.frame name + "$"
-    unsigned long nsz;
     char dfbase[64];
     snprintf(dfbase, 63, "%s$%s", dtfrm, base);
-    char *s = NULL;
+    const char *s = NULL;
 
     if (glbnv_buffer)
         s = find_obj(glbnv_buffer, dfbase);
@@ -90,22 +88,21 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
     while (*s && str_here(s, dfbase)) {
         // Avoid buffer overflow if the information is bigger than
         // compl_buffer.
-        nsz = strlen(s) + 1024 + (p - compl_buffer);
+        unsigned long nsz = strlen(s) + 1024 + (p - compl_buffer);
         if (compl_buffer_size < nsz)
             p = grow_buffer(&compl_buffer, &compl_buffer_size,
                             nsz - compl_buffer_size + 32768);
 
-        p = str_cat(p, "{label = '");
+        p = str_cat(p, "{\"label\":\"");
         p = str_cat(p, s + skip);
-        p = str_cat(p, "', cls = 'c', env = '");
+        p = str_cat(p, "\",\"cls\":\"c\",\"env\":\"");
         p = str_cat(p, dtfrm);
-        p = str_cat(p, "'}, ");
+        p = str_cat(p, "\"},");
 
         while (*s != '\n')
             s++;
         s++;
     }
-
     return p;
 }
 
@@ -113,7 +110,7 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
 // usage, and tittle and description of objects to avoid extremely large data
 // transfer.
 static char *parse_objls(const char *s, const char *base, const char *pkg,
-                         char *lib, char *p) {
+                         const char *lib, char *p) {
     int i;
     unsigned long nsz;
     const char *f[7];
@@ -150,19 +147,19 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
                 p = grow_buffer(&compl_buffer, &compl_buffer_size,
                                 nsz - compl_buffer_size + 32768);
 
-            p = str_cat(p, "{label = '");
+            p = str_cat(p, "{\"label\":\"");
             if (pkg) {
                 p = str_cat(p, pkg);
                 p = str_cat(p, "::");
             }
             p = str_cat(p, f[0]);
-            p = str_cat(p, "', cls = '");
+            p = str_cat(p, "\",\"cls\":\"");
             p = str_cat(p, f[1]);
             if (lib) {
-                p = str_cat(p, "', env = '");
+                p = str_cat(p, "\",\"env\":\"");
                 p = str_cat(p, lib);
             }
-            p = str_cat(p, "'}, ");
+            p = str_cat(p, "\"},");
             // big data will be truncated.
         } else {
             while (*s != '\n')
@@ -174,8 +171,8 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
 }
 
 void get_alias(char **pkg, char **fun) {
-    char *s = malloc(strlen(*pkg) + strlen(*fun) + 3);
-    sprintf(s, "%s\n", *fun);
+    char s[64];
+    snprintf(s, 63, "%s\n", *fun);
     char *p;
     char *f;
     PkgData *pd = pkgList;
@@ -193,7 +190,6 @@ void get_alias(char **pkg, char **fun) {
                 if (*f && str_here(f, s)) {
                     *pkg = pd->name;
                     *fun = p;
-                    free(s);
                     return;
                 }
                 p = f;
@@ -205,11 +201,18 @@ void get_alias(char **pkg, char **fun) {
         pd = pd->next;
     }
     *pkg = NULL;
-    free(s);
 }
 
-void resolve_arg_item(char *pkg, char *fnm, char *itm) {
-    Log("resolve_arg_item: %s, %s, %s", pkg, fnm, itm);
+void resolve_arg_item(char *args) {
+    char *pkg = strtok(args, "|");
+    char *fnm = strtok(NULL, "|");
+    const char *itm = strtok(NULL, "|");
+    const char *rid = strtok(NULL, "|");
+    const char *knd = strtok(NULL, "|");
+    Log("resolve_arg_item: %s, %s, %s, %s, %s", pkg, fnm, itm, rid, knd);
+    get_alias(&pkg, &fnm);
+    if (!pkg)
+        return;
     PkgData *p = pkgList;
     while (p) {
         if (strcmp(p->name, pkg) == 0) {
@@ -236,9 +239,7 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
                                                 char *b = calloc(strlen(s) + 2,
                                                                  sizeof(char));
                                                 format(s, b, ' ', '\x14');
-                                                printf("lua %s('%s')\n",
-                                                       resolve_cb, b);
-                                                fflush(stdout);
+                                                send_item_doc(b, rid, itm, knd);
                                                 free(b);
                                                 return;
                                             }
@@ -249,8 +250,6 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
                             }
                             s++;
                         }
-                        printf("lua %s('')\n", resolve_cb);
-                        fflush(stdout);
                         return;
                     } else {
                         while (*s != '\n')
@@ -263,8 +262,6 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
         }
         p = p->next;
     }
-    printf("lua %s('')\n", resolve_cb);
-    fflush(stdout);
 }
 
 /*
@@ -275,8 +272,12 @@ void resolve_arg_item(char *pkg, char *fnm, char *itm) {
  * @param wrd:
  * @param pkg:
  * */
-void resolve(const char *wrd, const char *pkg) {
-    Log("resolve: %s, %s", wrd, pkg);
+void resolve(char *args) {
+    const char *wrd = strtok(args, "|");
+    const char *pkg = strtok(NULL, "|");
+    const char *rid = strtok(NULL, "|");
+    const char *knd = strtok(NULL, "|");
+    Log("resolve: %s, %s, %s, %s", wrd, pkg, rid, knd);
     int i;
     unsigned long nsz;
     const char *f[7];
@@ -352,16 +353,13 @@ void resolve(const char *wrd, const char *pkg) {
                 p = str_cat(p, b);
                 free(b);
             }
-            printf("lua %s('%s')\n", resolve_cb, compl_buffer);
-            fflush(stdout);
+            send_item_doc(compl_buffer, rid, wrd, knd);
             return;
         }
         while (*s != '\n')
             s++;
         s++;
     }
-    printf("lua %s('')\n", resolve_cb);
-    fflush(stdout);
 }
 
 /*
@@ -383,12 +381,11 @@ char *complete_args(char *p, char *funcnm) {
     }
 
     PkgData *pd = pkgList;
-    char *s;
     char a[64];
     int i;
     while (pd) {
         if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0))) {
-            s = pd->objls;
+            const char *s = pd->objls;
             while (*s != 0) {
                 if (strcmp(s, funcnm) == 0) {
                     while (*s)
@@ -404,7 +401,7 @@ char *complete_args(char *p, char *funcnm) {
                         s++;
                         while (*s) {
                             i = 0;
-                            p = str_cat(p, "{label = '");
+                            p = str_cat(p, "{\"label\":\"");
                             while (*s != '\x05' && *s != '\x04' && i < 63) {
                                 a[i] = *s;
                                 i++;
@@ -414,7 +411,7 @@ char *complete_args(char *p, char *funcnm) {
                             p = str_cat(p, a);
                             p = str_cat(p, " = ");
                             if (*s == '\x04') {
-                                p = str_cat(p, "', def = '");
+                                p = str_cat(p, "\", \"def\":\"");
                                 i = 0;
                                 s++;
                                 while (*s != '\x05' && i < 63) {
@@ -425,11 +422,11 @@ char *complete_args(char *p, char *funcnm) {
                                 a[i] = 0;
                                 p = str_cat(p, a);
                             }
-                            p = str_cat(p, "', cls = 'a', env='");
+                            p = str_cat(p, "\",\"cls\":\"a\",\"env\":\"");
                             p = str_cat(p, pd->name);
                             p = str_cat(p, "\x02");
                             p = str_cat(p, funcnm);
-                            p = str_cat(p, "'},");
+                            p = str_cat(p, "\"},");
                             s++;
                         }
                         break;
@@ -451,21 +448,20 @@ char *complete_args(char *p, char *funcnm) {
 }
 
 // Read the DESCRIPTION of all installed libraries
-static char *complete_instlibs(char *p, const char *base) {
+static void complete_instlibs(char *p, const char *base) {
     update_inst_libs();
 
     Log("instlibs = %p", (void *)instlibs);
     if (!instlibs)
-        return p;
+        return;
 
-    unsigned long len;
     InstLibs *il;
     size_t sz = 1024;
     char *buffer = malloc(sz);
 
     il = instlibs;
     while (il) {
-        len = strlen(il->descr) + (p - compl_buffer) + 1024;
+        unsigned long len = strlen(il->descr) + (p - compl_buffer) + 1024;
         if (compl_buffer_size < len)
             p = grow_buffer(&compl_buffer, &compl_buffer_size,
                             len - compl_buffer_size + 32768);
@@ -477,20 +473,22 @@ static char *complete_instlibs(char *p, const char *base) {
                 buffer = malloc(sz);
             }
 
-            p = str_cat(p, "{label = '");
+            p = str_cat(p, "{\"label\":\"");
             p = str_cat(p, il->name);
-            p = str_cat(p, "', cls = 'l', env = '**");
+            p = str_cat(p, "\",\"cls\":\"l\",\"env\":\"**");
             format(il->title, buffer, ' ', '\x14');
             p = str_cat(p, buffer);
             p = str_cat(p, "**\x14\x14");
             format(il->descr, buffer, ' ', '\x14');
             p = str_cat(p, buffer);
-            p = str_cat(p, "\x14'},");
+            p = str_cat(p, "\x14\"},");
         }
         il = il->next;
     }
     free(buffer);
-    return p;
+    // Delete the last comma
+    p--;
+    *p = '\0';
 }
 
 /*
@@ -506,9 +504,8 @@ static char *complete_instlibs(char *p, const char *base) {
  * argument of a function listed in either fun_data_1 or fun_data_2.
  * @param funargs Function arguments from a .GlobalEnv function.
  */
-void complete(const char *id, char *base, char *funcnm, char *dtfrm,
-              char *funargs) {
-    Log("complete(%s, %s, %s, %s, %s)", id, base, funcnm, dtfrm, funargs);
+void complete(char *base, char *funcnm, char *dtfrm, char *funargs) {
+    Log("complete(%s, %s, %s, %s)", base, funcnm, dtfrm, funargs);
     char *p;
 
     memset(compl_buffer, 0, compl_buffer_size);
@@ -516,12 +513,8 @@ void complete(const char *id, char *base, char *funcnm, char *dtfrm,
 
     // Get menu completion for installed libraries
     if (funcnm && *funcnm == '\004') {
-        p = complete_instlibs(p, base);
-        printf("\x11%" PRI_SIZET "\x11"
-               "lua %s(%s, {%s})\n",
-               strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 10,
-               compl_cb, id, compl_buffer);
-        fflush(stdout);
+        complete_instlibs(p, base);
+        send_menu_items(compl_buffer);
         return;
     }
 
@@ -541,11 +534,9 @@ void complete(const char *id, char *base, char *funcnm, char *dtfrm,
 
         // base will be empty if completing only function arguments
         if (base[0] == 0) {
-            printf("\x11%" PRI_SIZET "\x11"
-                   "lua %s(%s, {%s})\n",
-                   strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 10,
-                   compl_cb, id, compl_buffer);
-            fflush(stdout);
+            p--;
+            *p = '\0';
+            send_menu_items(compl_buffer);
             return;
         }
     }
@@ -571,10 +562,23 @@ void complete(const char *id, char *base, char *funcnm, char *dtfrm,
             p = parse_objls(pd->objls, base, pkg, pd->name, p);
         pd = pd->next;
     }
-
-    printf("\x11%" PRI_SIZET "\x11"
-           "lua %s(%s, {%s})\n",
-           strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 10, compl_cb,
-           id, compl_buffer);
-    fflush(stdout);
+    p--;
+    *p = '\0';
+    send_menu_items(compl_buffer);
 }
+
+void complete_rhelp(void) {
+    Log("complete_rhelp");
+    if (!rhelp_menu) {
+        char fpath[128];
+        snprintf(fpath, 127, "%s/resources/rhelp_keywords",
+                 getenv("RNVIM_HOME"));
+        Log("rnvim_home: >>>%s<<<", fpath);
+        rhelp_menu = read_file(fpath, 1);
+    }
+    if (rhelp_menu)
+        send_menu_items(rhelp_menu);
+}
+
+void complete_rmd_chunk(void) {}
+void complete_quarto_block(void) {}

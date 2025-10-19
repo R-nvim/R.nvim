@@ -311,7 +311,7 @@ function M.start(_)
     state.is_running = true
 
     -- Request data from R to populate the Object Browser
-    job.stdin("Server", "31\n")
+    require("r.lsp").send_msg("31")
     send_to_nvimcom("A", "RObjBrowser")
 
     start_OB()
@@ -326,10 +326,10 @@ function M.get_curview() return state.curview end
 function M.toggle_view()
     if state.curview == "libraries" then
         state.curview = "GlobalEnv"
-        job.stdin("Server", "31\n")
+        require("r.lsp").send_msg("31")
     else
         state.curview = "libraries"
-        job.stdin("Server", "321\n")
+        require("r.lsp").send_msg("321")
     end
 end
 
@@ -389,7 +389,7 @@ end
 
 --- Expand or collapse lists and data frames in the Object Browser
 ---@param stt string
-function M.open_close_lists(stt) job.stdin("Server", "34" .. stt .. state.curview .. "\n") end
+function M.open_close_lists(stt) require("r.lsp").send_msg("34" .. stt .. state.curview) end
 
 --- Update the Object Browser content
 ---@param what string
@@ -452,7 +452,7 @@ function M.on_double_click()
         then
             -- Expand or collapse the object
             key = key:gsub("`", "")
-            job.stdin("Server", "33G" .. key .. "\n")
+            require("r.lsp").send_msg("33G" .. key)
         else
             -- Run str() on the object
             require("r.send").cmd("str(" .. key .. ")")
@@ -472,7 +472,7 @@ function M.on_double_click()
                 or curline:find(":#.*\t")
             then
                 -- Expand or collapse the object in libraries view
-                job.stdin("Server", "33L" .. key .. "\n")
+                require("r.lsp").send_msg("33L" .. key)
             else
                 require("r.send").cmd("str(" .. key .. ")")
             end

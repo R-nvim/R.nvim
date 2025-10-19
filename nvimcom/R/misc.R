@@ -23,7 +23,7 @@ nvim.edit <- function(name, file, title) {
     dput(name)
     sink()
 
-    .C(nvimcom_msg_to_nvim, paste0("lua require('r.edit').obj('", editf, "')"))
+    .C(nvimcom_msg_to_nvim, paste0("require('r.edit').obj('", editf, "')"))
 
     while (file.exists(waitf)) {
         Sys.sleep(1)
@@ -49,7 +49,7 @@ nvim_capture_source_output <- function(s, nm) {
     o <- gsub("'", "\x13", o)
     .C(
         nvimcom_msg_to_nvim,
-        paste0("lua require('r.edit').get_output('", nm, "', '", o, "')")
+        paste0("require('r.edit').get_output('", nm, "', '", o, "')")
     )
 }
 
@@ -64,7 +64,7 @@ nvim_dput <- function(oname, howto = "tabnew") {
     .C(
         nvimcom_msg_to_nvim,
         paste0(
-            "lua require('r.run').show_obj('",
+            "require('r.run').show_obj('",
             howto,
             "', '",
             oname,
@@ -112,7 +112,7 @@ nvim_viewobj <- function(
             .C(
                 nvimcom_msg_to_nvim,
                 paste0(
-                    "lua require('r.log').warn('",
+                    "require('r.log').warn('",
                     '"',
                     oname,
                     '"',
@@ -134,7 +134,7 @@ nvim_viewobj <- function(
             .C(
                 nvimcom_msg_to_nvim,
                 paste0(
-                    "lua vim.schedule(function() require('r.send').cmd('",
+                    "vim.schedule(function() require('r.send').cmd('",
                     cmd,
                     "') end)"
                 )
@@ -166,7 +166,7 @@ nvim_viewobj <- function(
         }
         .C(
             nvimcom_msg_to_nvim,
-            paste0("lua require('r.edit').view_df('", oname, "', '", txt, "')")
+            paste0("require('r.edit').view_df('", oname, "', '", txt, "')")
         )
     } else {
         nvim_dput(oname)
@@ -246,7 +246,7 @@ nvim_insert <- function(cmd, howto = "tabnew") {
         .C(
             nvimcom_msg_to_nvim,
             paste0(
-                "lua require('r.log').warn('Error trying to execute the command \"",
+                "require('r.log').warn('Error trying to execute the command \"",
                 cmd,
                 "\"')"
             )
@@ -257,7 +257,7 @@ nvim_insert <- function(cmd, howto = "tabnew") {
         o <- paste0(o, collapse = "\x14")
         .C(
             nvimcom_msg_to_nvim,
-            paste0("lua require('r.edit').finish_inserting('", howto, "', '", o, "')")
+            paste0("require('r.edit').finish_inserting('", howto, "', '", o, "')")
         )
     }
     return(invisible(NULL))
@@ -286,7 +286,7 @@ nvim.GlobalEnv.fun.args <- function(funcname) {
     txt <- paste0("function [.GlobalEnv]", txt)
     .C(
         nvimcom_msg_to_nvim,
-        paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')")
+        paste0("require('r.lsp').resolve_cb('", txt, "')")
     )
     return(invisible(NULL))
 }
@@ -322,7 +322,7 @@ nvim.min.info <- function(obj, prnt) {
 
     .C(
         nvimcom_msg_to_nvim,
-        paste0("lua require('r.lsp').resolve_cb('", txt, "')")
+        paste0("require('r.lsp').resolve_cb('", txt, "')")
     )
     return(invisible(NULL))
 }
@@ -368,7 +368,7 @@ nvim.get.summary <- function(obj, prnt) {
 
     .C(
         nvimcom_msg_to_nvim,
-        paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')")
+        paste0("require('r.lsp').resolve_cb('", txt, "')")
     )
     return(invisible(NULL))
 }

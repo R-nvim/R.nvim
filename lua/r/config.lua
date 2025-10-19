@@ -666,7 +666,10 @@ end
 
 local set_directories = function()
     -- config.rnvim_home should be the directory where the plugin files are.
-    config.rnvim_home = vim.fn.expand("<script>:h:h")
+    local rndir = debug.getinfo(1, "S").short_src
+    rndir = rndir:match("(.*)/lua/r/.*")
+    config.rnvim_home = rndir
+    vim.env.RNVIM_HOME = rndir
 
     -- config.uservimfiles must be a writable directory. It will be config.rnvim_home
     -- unless it's not writable. Then it wil be ~/.vim or ~/vimfiles.
@@ -1018,8 +1021,7 @@ M.real_setup = function()
     if config.register_treesitter then
         vim.treesitter.language.register("markdown", { "quarto", "rmd" })
     end
-    vim.treesitter.start()
-    require("r.lsp").start()
+    if vim.bo.filetype ~= "rhelp" then vim.treesitter.start() end
 end
 
 --- Return the table with the final configure variables: the default values

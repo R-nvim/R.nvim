@@ -25,6 +25,7 @@
 #include "complete.h"
 #include "obbr.h"
 #include "tcp.h"
+#include "lsp.h"
 
 #ifdef WIN32
 static HANDLE Tid; // Identifier of thread running TCP connection loop.
@@ -97,7 +98,7 @@ static void ParseMsg(char *b) {
             while (*b != 0 && *b != '\n')
                 b++;
             *b = 0;
-            complete(id, base, *fnm ? fnm : NULL, *dtfrm ? dtfrm : NULL,
+            complete(base, *fnm ? fnm : NULL, *dtfrm ? dtfrm : NULL,
                      *args ? args : NULL);
             break;
         case 'D': // set max_depth of lists in the completion data
@@ -109,15 +110,20 @@ static void ParseMsg(char *b) {
     }
 
     // Send the command to R.nvim
-    printf("\x11%" PRI_SIZET "\x11%s\n", strlen(b), b);
-    fflush(stdout);
+    char *cmd = (char *)malloc(sizeof(char) * strlen(b) + 1);
+    if (cmd) {
+        strcpy(cmd, b);
+        send_cmd_to_nvim(b);
+        free(cmd);
+    }
 }
 
 static void RegisterPort(int bindportn) // Function to register port number to R
 {
     // Register the port:
-    printf("lua require('r.run').set_rns_port('%d')\n", bindportn);
-    fflush(stdout);
+    char pcmd[128];
+    sprintf(pcmd, "require('r.run').set_rns_port('%d')", bindportn);
+    send_cmd_to_nvim(pcmd);
 }
 
 /**
