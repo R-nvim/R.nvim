@@ -129,10 +129,10 @@ static int read_field_data(char *s, int i) {
 static void parse_descr(char *descr, const char *fnm) {
     int i = 0;
     int dlen = strlen(descr);
-    char *title, *description;
+    const char *title, *description;
     title = NULL;
     description = NULL;
-    InstLibs *lib, *ptr, *prev;
+    InstLibs *lib, *ptr;
     while (i < dlen) {
         if ((i == 0 || descr[i - 1] == '\n' || descr[i - 1] == 0) &&
             str_here(descr + i, "Title: ")) {
@@ -160,8 +160,8 @@ static void parse_descr(char *descr, const char *fnm) {
                 lib->next = instlibs;
                 instlibs = lib;
             } else {
+                InstLibs *prev = NULL;
                 ptr = instlibs;
-                prev = NULL;
                 while (ptr && ascii_ic_cmp(fnm, ptr->name) > 0) {
                     prev = ptr;
                     ptr = ptr->next;
@@ -199,7 +199,7 @@ static void parse_descr(char *descr, const char *fnm) {
 void update_inst_libs(void) {
     Log("update_inst_libs()");
     DIR *d;
-    struct dirent *dir;
+    const struct dirent *dir;
     char fname[512];
     char *descr;
     InstLibs *il;

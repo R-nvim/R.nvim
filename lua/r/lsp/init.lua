@@ -38,9 +38,8 @@ local options = {
 -- This function should never be called. It should be deleted when we consider
 -- the LSP completion free of logical bugs.
 local err_msg = function(msg)
-    local di = debug.getinfo(2, "S")
-    local info = string.format("[%s, %d]", di.short_src, di.currentline)
-    vim.notify(msg .. "\n" .. info, vim.log.levels.ERROR, { title = "r_ls" })
+    local info = debug.getinfo(1, "S").short_src
+    vim.notify(info .. ":\n\n" .. msg, vim.log.levels.ERROR, { title = "r_ls" })
 end
 
 local M = {}
@@ -150,7 +149,7 @@ local need_R_args = function(line, lnum)
     local lib = nil
     lib, funname, firstobj, nline, nlnum, cnum = get_first_obj(line, lnum)
 
-    -- Check if this is function for which we expect to complete data frame column names
+    -- Check if this is a function for which we expect to complete data frame column names
     if funname then
         -- Check if the data.frame is supposed to be the first argument:
         for _, v in pairs(options.fun_data_1) do
@@ -196,9 +195,14 @@ local need_R_args = function(line, lnum)
     return resp
 end
 
-local reset_r_compl = function() vim.notify("NOT IMPLEMENTED: reset_r_compl") end
+local warned_no_reset = false
+local reset_r_compl = function()
+    if warned_no_reset then return end
+    vim.notify("NOT IMPLEMENTED: reset_r_compl")
+    warned_no_reset = true
+end
 
---- Resolve
+-- FIXME: the whole "resolve" function must be converted to C and put in rnvimserver.c
 ---@param req_id string
 ---@param itm_str string
 M.resolve = function(req_id, itm_str)
@@ -208,6 +212,8 @@ M.resolve = function(req_id, itm_str)
 
     if not itm.cls then return nil end
 
+    -- FIXME: It seems that we don't need this. This would be only part of the
+    -- code that possibly could no be transfered to C.
     -- ter = {
     --     start = {
     --         line = lnum + 1,
@@ -271,7 +277,7 @@ M.resolve = function(req_id, itm_str)
         )
     elseif itm.cls == "a" then
         local lbl = itm.label:gsub(" = ", "")
-        local pf = vim.fn.split(itm.env, "\002")
+        local pf = vim.fn.split(itm.env, ":")
         M.send_msg(string.format("7%s|%s|%s|%s|%s", req_id, itm.kind, lbl, pf[1], pf[2]))
     elseif itm.cls == "L" then
         itm.documentation = {
@@ -304,6 +310,18 @@ local send_items = function(req_id, tbl)
     vim.notify("CALLBACK [" .. tostring(req_id) .. "]\n" .. jstr)
 end
 
+-- FIXME: only works with accii characters
+local get_word = function(line, cnum)
+    local i = cnum
+    while i > 0 do
+        if not line:sub(i, i):find("[%w0-9_\\.\\$@]") then break end
+        i = i - 1
+    end
+    local wrd = line:sub(i + 1, cnum)
+    if not wrd or wrd == "" or wrd:sub(1, 1):find("[0-9]") then return nil end
+    return wrd
+end
+
 --- Complete
 ---@param req_id string
 ---@param lnum integer
@@ -312,6 +330,8 @@ M.complete = function(req_id, lnum, cnum)
     if not compl_region then return end
     -- In cmp-r: cline = request.context.cursor_before_line
     local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
+
+    local wrd = get_word(cline, cnum)
 
     -- Check if this is Rmd and the cursor is in the chunk header
     if vim.bo.filetype == "rmd" and cline:find("^```{r") then
@@ -328,10 +348,9 @@ M.complete = function(req_id, lnum, cnum)
         if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
             lang = require("r.utils").get_lang()
             if lang == "markdown_inline" then
-                local wrd = cline:sub(cnum)
                 if wrd == "@" then
                     reset_r_compl()
-                elseif wrd:find("^@[tf]") then
+                elseif wrd and wrd:find("^@[tf]") then
                     local lbls = require("r.lsp.figtbl").get_labels(wrd)
                     send_items(req_id, { items = lbls })
                 end
@@ -359,12 +378,11 @@ M.complete = function(req_id, lnum, cnum)
                 end
             end
             if lang ~= "r" then
-                local wrd = cline:sub(cnum)
-                if #wrd == 0 then
+                if not wrd then
                     reset_r_compl()
                     return
                 end
-                if wrd:find("\\", 1, true) == 1 then
+                if wrd and wrd:find("\\", 1, true) == 1 then
                     M.send_msg("CH" .. req_id)
                     return
                 end
@@ -384,7 +402,7 @@ M.complete = function(req_id, lnum, cnum)
         end
     end
 
-    if lang ~= "r" then return {} end
+    if lang ~= "r" then return end
 
     -- check if the cursor is within comment or string
     local snm = ""
@@ -403,23 +421,22 @@ M.complete = function(req_id, lnum, cnum)
         if snm == "rComment" then return nil end
     end
 
-    local wrd = cline:sub(cnum)
-    wrd = string.gsub(wrd, "`", "")
-
     -- Should we complete function arguments?
     local nra
-    nra = need_R_args(cline, lnum)
+    nra = need_R_args(cline:sub(1, cnum), lnum)
 
+    vim.notify(vim.inspect(nra))
     if nra.fnm then
-        -- We are passing arguments for a function
+        -- We are passing arguments for a function.
+        -- An empty word will be treated as NULL at nvimcom/src/apps/complete.c
+        local arg = wrd and wrd or " "
 
         -- Special completion for library and require
         if
             (nra.fnm == "library" or nra.fnm == "require")
-            and (not nra.firstobj or nra.firstobj == wrd)
+            and (not nra.firstobj or nra.firstobj == arg)
         then
-            if wrd ~= "test_error_message" then err_msg("Empty word!") end
-            M.send_msg(string.format("5%s|%s|#| | ", req_id, wrd))
+            M.send_msg(string.format("5%s|%s|#| | ", req_id, arg))
             return
         end
 
@@ -429,10 +446,10 @@ M.complete = function(req_id, lnum, cnum)
             -- Get the arguments of the first function whose name matches nra.fnm
             if nra.lib then
                 M.send_msg(
-                    string.format("5%s|%s|%s::%s| | ", req_id, wrd, nra.lib, nra.fnm)
+                    string.format("5%s|%s|%s::%s| | ", req_id, arg, nra.lib, nra.fnm)
                 )
             else
-                M.send_msg(string.format("5%s|%s|#|%s| ", req_id, wrd, nra.fnm))
+                M.send_msg(string.format("5%s|%s|%s| | ", req_id, arg, nra.fnm))
             end
             return
         else
@@ -442,7 +459,7 @@ M.complete = function(req_id, lnum, cnum)
                 'nvimcom:::nvim_complete_args("%s", "%s", "%s"',
                 req_id,
                 nra.fnm,
-                wrd
+                arg
             )
             if nra.firstobj then
                 msg = msg .. ', firstobj = "' .. nra.firstobj .. '"'
@@ -460,7 +477,7 @@ M.complete = function(req_id, lnum, cnum)
 
     if snm == "rString" then return nil end
 
-    if #wrd == 0 then
+    if not wrd then
         reset_r_compl()
         return
     end
@@ -481,16 +498,16 @@ function M.start(rns_path, rns_env)
     for k, v in pairs(rns_env) do
         vim.env[k] = v
     end
-    -- client_id = vim.lsp.start({
-    --     name = "r_ls",
-    --     cmd = {
-    --         "valgrind",
-    --         "--leak-check=full",
-    --         "--log-file=/tmp/rnvimserver_valgrind_log",
-    --         rns_path,
-    --     },
-    -- })
-    client_id = vim.lsp.start({ name = "r_ls", cmd = { rns_path } })
+    client_id = vim.lsp.start({
+        name = "r_ls",
+        cmd = {
+            "valgrind",
+            "--leak-check=full",
+            "--log-file=/tmp/rnvimserver_valgrind_log",
+            rns_path,
+        },
+    })
+    -- client_id = vim.lsp.start({ name = "r_ls", cmd = { rns_path } })
     for k, _ in pairs(rns_env) do
         vim.env[k] = nil
     end

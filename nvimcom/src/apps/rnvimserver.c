@@ -114,10 +114,10 @@ static void init(void) {
  */
 void send_ls_response(const char *json_payload) {
 #ifdef Debug_NRS
-    if (strlen(json_payload) > 180) {
-        char begin[160] = {0};
+    if (strlen(json_payload) > 380) {
+        char begin[360] = {0};
         char end[16] = {0};
-        memcpy(begin, json_payload, 159);
+        memcpy(begin, json_payload, 359);
         memcpy(end, json_payload + strlen(json_payload) - 15, 15);
         Log("SEND_LS_RESPONSE:\n%s [...] %s\n", begin, end);
     } else {
@@ -450,6 +450,13 @@ void lsp_loop(void) {
                 }
                 p[j] = '\0';
                 char compl_command[1024];
+                // FIXME: All "resolve" events should be done here, not in Lua.
+                // Example for the completion a library:
+                // {"jsonrpc":"2.0","id":9,"method":"completionItem/resolve","params":{"kind":9,"label":"abind","cls":"L"}}
+                //
+                // Write a code parse the line byte by byte and case/match the
+                // fields that we need.
+
                 snprintf(compl_command, 1024,
                          "require('r.lsp').resolve('%s', '%s')", request_id, p);
                 send_cmd_to_nvim(compl_command);

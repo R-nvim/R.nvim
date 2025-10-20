@@ -456,9 +456,10 @@ char *complete_args(char *p, char *funcnm) {
                                 a[i] = 0;
                                 p = str_cat(p, a);
                             }
-                            p = str_cat(p, "\",\"cls\":\"a\",\"env\":\"");
+                            p = str_cat(
+                                p, "\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
                             p = str_cat(p, pd->name);
-                            p = str_cat(p, "\x02");
+                            p = str_cat(p, ":");
                             p = str_cat(p, funcnm);
                             p = str_cat(p, "\"},");
                             s++;
@@ -490,8 +491,6 @@ static void complete_instlibs(char *p, const char *base) {
         return;
 
     InstLibs *il;
-    size_t sz = 1024;
-    char *buffer = malloc(sz);
 
     il = instlibs;
     while (il) {
@@ -500,26 +499,21 @@ static void complete_instlibs(char *p, const char *base) {
             p = grow_buffer(&compl_buffer, &compl_buffer_size,
                             len - compl_buffer_size + 32768);
 
-        if (str_here(il->name, base) && il->si) {
-            if ((strlen(il->title) + strlen(il->descr)) > sz) {
-                free(buffer);
-                sz = strlen(il->title) + strlen(il->descr) + 1;
-                buffer = malloc(sz);
-            }
-
+        if (!base || (str_here(il->name, base) && il->si)) {
             p = str_cat(p, "{\"label\":\"");
             p = str_cat(p, il->name);
-            p = str_cat(p, "\",\"cls\":\"L\",\"env\":\"**");
-            format(il->title, buffer, ' ', '\x14');
-            p = str_cat(p, buffer);
-            p = str_cat(p, "**\x14\x14");
-            format(il->descr, buffer, ' ', '\x14');
-            p = str_cat(p, buffer);
-            p = str_cat(p, "\x14\"},");
+            p = str_cat(p, "\",\"cls\":\"L\",\"kind\":9},");
+
+            // FIXME: get title and descr during resolve event
+            // format(il->title, buffer, ' ', '\x14');
+            // p = str_cat(p, buffer);
+            // p = str_cat(p, "**\x14\x14");
+            // format(il->descr, buffer, ' ', '\x14');
+            // p = str_cat(p, buffer);
+            // p = str_cat(p, "\x14\"},");
         }
         il = il->next;
     }
-    free(buffer);
 }
 
 /*

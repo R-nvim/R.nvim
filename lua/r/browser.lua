@@ -2,7 +2,6 @@
 
 local config = require("r.config").get_config()
 local warn = require("r.log").warn
-local job = require("r.job")
 local hooks = require("r.hooks")
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 
