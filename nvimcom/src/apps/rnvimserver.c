@@ -10,6 +10,7 @@
 #include "tcp.h"
 #include "obbr.h"
 #include "lsp.h"
+#include "utilities.h"
 #include "../common.h"
 
 /*
@@ -114,13 +115,13 @@ static void init(void) {
 void send_ls_response(const char *json_payload) {
     Log("SEND_LS_RESPONSE:\n%s\n", json_payload);
     // 1. Send Content-Length header
-    fprintf(stdout, "Content-Length: %zu\r\n", strlen(json_payload));
+    fprintf(stdout, "Content-Length: %zu\r\n\r\n", strlen(json_payload));
 
     // 2. Send Content-Type header (optional, but good practice)
-    fprintf(stdout, "Content-Type: application/json\r\n");
+    // fprintf(stdout, "Content-Type: application/json\r\n");
 
     // 3. Send the mandatory two newline characters to end the headers
-    fprintf(stdout, "\r\n");
+    // fprintf(stdout, "\r\n");
 
     // 4. Send the JSON payload
     fprintf(stdout, "%s", json_payload);
@@ -183,31 +184,27 @@ void handle_initialize(const char *request_id) {
 void send_item_doc(const char *doc, const char *id, const char *label,
                    const char *kind) {
     const char *fmt =
-        "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"label\":\"%s\",\"kind\":%"
-        "s,\"documentation\":{\"kind\":\"markdown\",\"value\":\"%s\"}}}";
+        "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"label\":\"%s\",\"kind\":"
+        "\"%s\",\"documentation\":{\"kind\":\"markdown\",\"value\":\"%s\"}}}";
 
-    size_t len = strlen(doc);
+    char *edoc = esc_json(doc);
+    size_t len = strlen(edoc);
     char *res = (char *)malloc(sizeof(char) * len + 128);
-    sprintf(res, fmt, request_id, label, kind, doc);
-    char *p = res;
-    while (*p) {
-        if (*p == '\x14')
-            *p = '\n';
-        p++;
-    }
+    sprintf(res, fmt, request_id, label, kind, edoc);
 
     send_ls_response(res);
     free(res);
+    free(edoc);
 }
 
-void send_menu_items(const char *compl_items) {
+void send_menu_items(const char *compl_items, const char *req_id) {
     const char *fmt =
         "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"isIncomplete\":0,\"is_"
         "incomplete_forward\":0,\"is_incomplete_backward\":1,\"items\":[%s]}}";
 
     size_t len = strlen(compl_items);
     char *res = (char *)malloc(sizeof(char) * len + 128);
-    sprintf(res, fmt, request_id, compl_items);
+    sprintf(res, fmt, req_id, compl_items);
     send_ls_response(res);
     free(res);
 }
@@ -217,16 +214,17 @@ void handle_exe_cmd(char *code) {
     char *msg;
     char t;
     msg = code;
+    // TODO: use letters instead of number?
     switch (*msg) {
     case 'C':
         Log("Case C: %s", msg);
         msg++;
         if (*msg == 'H')
-            complete_rhelp();
+            complete_rhelp(++msg);
         else if (*msg == 'C')
-            complete_rmd_chunk();
+            complete_rmd_chunk(++msg);
         else if (*msg == 'B')
-            complete_quarto_block();
+            complete_quarto_block(++msg);
         break;
     case '1': // Start server and wait nvimcom connection
         start_server();
@@ -295,26 +293,7 @@ void handle_exe_cmd(char *code) {
         break;
     case '5': // format: "id|Tword[|arg]"
         msg++;
-        char *id = msg;
-        while (*msg != '|')
-            msg++;
-        *msg = 0;
-        if (strcmp(id, request_id) != 0) {
-            Log("Diff request id: %s vs %s", id, request_id);
-            break;
-        }
-        msg++;
-        if (*msg == 'l') {
-            msg++;
-            complete(msg, "\004", NULL, NULL);
-        } else if (*msg == 'a') {
-            msg++;
-            char *base = msg;
-            complete(base, msg, NULL, NULL);
-        } else {
-            msg++;
-            complete(msg, NULL, NULL, NULL);
-        }
+        complete(msg);
         break;
     case '6':
         msg++;

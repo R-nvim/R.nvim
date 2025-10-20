@@ -70,36 +70,7 @@ static void ParseMsg(char *b) {
             break;
         case 'C': // strtok doesn't work here because "base" might be empty.
             b++;
-            char *id = b;
-            char *base = id;
-            char *fnm;
-            char *dtfrm;
-            char *args;
-            while (*base != ';')
-                base++;
-            *base = 0;
-            base++;
-            fnm = base;
-            while (*fnm != ';')
-                fnm++;
-            *fnm = 0;
-            fnm++;
-            dtfrm = fnm;
-            while (*dtfrm != ';')
-                dtfrm++;
-            *dtfrm = 0;
-            dtfrm++;
-            args = dtfrm;
-            while (*args != 0 && *args != ';')
-                args++;
-            *args = 0;
-            args++;
-            b = args;
-            while (*b != 0 && *b != '\n')
-                b++;
-            *b = 0;
-            complete(base, *fnm ? fnm : NULL, *dtfrm ? dtfrm : NULL,
-                     *args ? args : NULL);
+            complete(b);
             break;
         case 'D': // set max_depth of lists in the completion data
             b++;

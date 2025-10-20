@@ -277,6 +277,10 @@ void resolve(char *args) {
     const char *pkg = strtok(NULL, "|");
     const char *rid = strtok(NULL, "|");
     const char *knd = strtok(NULL, "|");
+    pkg = *pkg == ' ' ? NULL : pkg;
+    rid = *rid == ' ' ? NULL : rid;
+    knd = *knd == ' ' ? NULL : knd;
+
     Log("resolve: %s, %s, %s, %s", wrd, pkg, rid, knd);
     int i;
     unsigned long nsz;
@@ -496,7 +500,7 @@ static void complete_instlibs(char *p, const char *base) {
  *
  * @desc:
  * @param id: Completion ID (integer incremented at each completion), possibily
- * used by cmp to abort outdated completion.
+ * used by nvim to abort outdated completion.
  * @param base: Keyword being completed.
  * @param funcnm: Function name when the keyword being completed is one of its
  * arguments.
@@ -504,8 +508,17 @@ static void complete_instlibs(char *p, const char *base) {
  * argument of a function listed in either fun_data_1 or fun_data_2.
  * @param funargs Function arguments from a .GlobalEnv function.
  */
-void complete(char *base, char *funcnm, char *dtfrm, char *funargs) {
-    Log("complete(%s, %s, %s, %s)", base, funcnm, dtfrm, funargs);
+void complete(char *args) {
+    const char *req_id = strtok(args, "|");
+    char *base = strtok(NULL, "|");
+    char *funcnm = strtok(NULL, "|");
+    char *dtfrm = strtok(NULL, "|");
+    char *funargs = strtok(NULL, "|");
+    funcnm = *funcnm == ' ' ? NULL : funcnm;
+    dtfrm = *dtfrm == ' ' ? NULL : dtfrm;
+    funargs = *funargs == ' ' ? NULL : funargs;
+
+    Log("complete(%s, %s, %s, %s, %s)", req_id, base, funcnm, dtfrm, funargs);
     char *p;
 
     memset(compl_buffer, 0, compl_buffer_size);
@@ -514,7 +527,7 @@ void complete(char *base, char *funcnm, char *dtfrm, char *funargs) {
     // Get menu completion for installed libraries
     if (funcnm && *funcnm == '\004') {
         complete_instlibs(p, base);
-        send_menu_items(compl_buffer);
+        send_menu_items(compl_buffer, req_id);
         return;
     }
 
@@ -536,7 +549,7 @@ void complete(char *base, char *funcnm, char *dtfrm, char *funargs) {
         if (base[0] == 0) {
             p--;
             *p = '\0';
-            send_menu_items(compl_buffer);
+            send_menu_items(compl_buffer, req_id);
             return;
         }
     }
@@ -564,10 +577,10 @@ void complete(char *base, char *funcnm, char *dtfrm, char *funargs) {
     }
     p--;
     *p = '\0';
-    send_menu_items(compl_buffer);
+    send_menu_items(compl_buffer, req_id);
 }
 
-void complete_rhelp(void) {
+void complete_rhelp(const char *req_id) {
     Log("complete_rhelp");
     if (!rhelp_menu) {
         char fpath[128];
@@ -577,8 +590,8 @@ void complete_rhelp(void) {
         rhelp_menu = read_file(fpath, 1);
     }
     if (rhelp_menu)
-        send_menu_items(rhelp_menu);
+        send_menu_items(rhelp_menu, req_id);
 }
 
-void complete_rmd_chunk(void) {}
-void complete_quarto_block(void) {}
+void complete_rmd_chunk(const char *req_id) {}
+void complete_quarto_block(const char *req_id) {}

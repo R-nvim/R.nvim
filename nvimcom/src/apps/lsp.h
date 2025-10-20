@@ -3,7 +3,7 @@
 
 void send_ls_response(const char *json_payload);
 void send_cmd_to_nvim(const char *cmd);
-void send_menu_items(const char *compl_items);
+void send_menu_items(const char *compl_items, const char *id);
 void send_item_doc(const char *doc, const char *id, const char *label,
                    const char *kind);
 #endif

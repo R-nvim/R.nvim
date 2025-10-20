@@ -88,3 +88,69 @@ char *read_file(const char *fn, int verbose) {
     fclose(f);
     return b;
 }
+
+// Function to escape a string for JSON
+char *esc_json(const char *input) {
+    if (input == NULL) {
+        return NULL;
+    }
+
+    size_t ilen = strlen(input);
+    // Allocate enough memory for the escaped string (worst case: all chars
+    // escaped) Plus 1 for null terminator
+    char *b = (char *)malloc(ilen * 6 + 1);
+    if (b == NULL) {
+        return NULL;
+    }
+
+    size_t j = 0;
+    for (size_t i = 0; i < ilen; i++) {
+        char c = input[i];
+        switch (c) {
+        case '\x14':
+            b[j++] = '\\';
+            b[j++] = 'n';
+            break;
+        case '\x13':
+            b[j++] = '\'';
+            break;
+        case '\x12':
+            b[j++] = '\\';
+            b[j++] = '\\';
+            break;
+        case '"':
+            b[j++] = '\\';
+            b[j++] = '"';
+            break;
+        case '\\':
+            b[j++] = '\\';
+            b[j++] = '\\';
+            break;
+        case '\n':
+            b[j++] = '\\';
+            b[j++] = 'n';
+            break;
+        case '\r':
+            b[j++] = '\\';
+            b[j++] = 'r';
+            break;
+        case '\t':
+            b[j++] = '\\';
+            b[j++] = 't';
+            break;
+        case '\b':
+            b[j++] = '\\';
+            b[j++] = 'b';
+            break;
+        case '\f':
+            b[j++] = '\\';
+            b[j++] = 'f';
+            break;
+        default:
+            b[j++] = c;
+            break;
+        }
+    }
+    b[j] = '\0';
+    return b;
+}

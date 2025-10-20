@@ -535,7 +535,7 @@ nvim_complete_args <- function(
             paste(argsl, collapse = "', cls = 'a', env = '.GlobalEnv'}, {label = '"),
             "', cls = 'a', env = '.GlobalEnv'}, "
         )
-        msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";;", args)
+        msg <- paste0("+C", id, "|", argkey, "|", rkeyword, "| |", args)
         .C(nvimcom_msg_to_nvim, msg)
         return(invisible(NULL))
     }
@@ -544,20 +544,20 @@ nvim_complete_args <- function(
         # Completion of columns of data.frame
         if (ldf && is.data.frame(get(firstobj))) {
             if (is.null(lib)) {
-                msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";", firstobj, ";")
+                msg <- paste0("+C", id, "|", argkey, "|", rkeyword, "|", firstobj, "| ")
             } else {
                 msg <- paste0(
                     "+C",
                     id,
-                    ";",
+                    "|",
                     argkey,
-                    ";",
+                    "|",
                     lib,
                     "::",
                     rkeyword,
-                    ";",
+                    "|",
                     firstobj,
-                    ";"
+                    "| "
                 )
             }
             .C(nvimcom_msg_to_nvim, msg)
@@ -569,7 +569,7 @@ nvim_complete_args <- function(
         if (objclass[1] != "#E#" && objclass[1] != "") {
             mthd <- nvim.getmethod(rkeyword, objclass)
             if (mthd != rkeyword) {
-                msg <- paste0("+C", id, ";", argkey, ";;;", mthd, ", ")
+                msg <- paste0("+C", id, "|", argkey, "| | |", mthd)
                 .C(nvimcom_msg_to_nvim, msg)
                 return(invisible(NULL))
             }
@@ -578,9 +578,9 @@ nvim_complete_args <- function(
 
     # Normal completion of arguments
     if (is.null(lib)) {
-        msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";;")
+        msg <- paste0("+C", id, "|", argkey, "|", rkeyword, "| | ")
     } else {
-        msg <- paste0("+C", id, ";", argkey, ";", lib, "::", rkeyword, ";;")
+        msg <- paste0("+C", id, "|", argkey, "|", lib, "::", rkeyword, "| | ")
     }
     .C(nvimcom_msg_to_nvim, msg)
     return(invisible(NULL))

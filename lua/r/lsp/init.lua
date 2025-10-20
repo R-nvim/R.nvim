@@ -264,7 +264,6 @@ M.resolve = function(req_id, itm_str)
             "nvimcom:::nvim.get.summary(" .. itm.label .. ", '" .. itm.env .. "')"
         )
     else
-        M.send_msg("6" .. itm.label .. "|" .. itm.env)
         M.send_msg(string.format("6%s|%s|%s|%s", itm.label, itm.env, req_id, itm.kind))
     end
 end
@@ -336,8 +335,8 @@ M.complete = function(req_id, lnum, cnum)
                     reset_r_compl()
                     return
                 end
-                if wrd == "\\" then
-                    M.send_msg("CH")
+                if wrd:find("\\", 1, true) == 1 then
+                    M.send_msg("CH" .. req_id)
                     return
                 end
             end
@@ -390,7 +389,7 @@ M.complete = function(req_id, lnum, cnum)
             (nra.fnm == "library" or nra.fnm == "require")
             and (not nra.firstobj or nra.firstobj == wrd)
         then
-            M.send_msg("5" .. req_id .. "|l" .. wrd)
+            M.send_msg(string.format("5%s|%s|%s| | ", req_id, "\004"))
             return
         end
 
@@ -400,22 +399,21 @@ M.complete = function(req_id, lnum, cnum)
             -- Get the arguments of the first function whose name matches nra.fnm
             if nra.lib then
                 M.send_msg(
-                    "5" .. req_id .. "|o" .. wrd .. "|" .. nra.lib .. "::" .. nra.fnm
+                    string.format("5%s|%s|%s::%s| | ", req_id, wrd, nra.lib, nra.fnm)
                 )
             else
-                M.send_msg("5" .. req_id .. "|a" .. wrd .. "|" .. nra.fnm)
+                M.send_msg(string.format("5%s|%s|\004|%s| ", req_id, wrd, nra.fnm))
             end
             return
         else
             -- Get arguments according to class of first object
             local msg
-            msg = 'nvimcom:::nvim_complete_args("'
-                .. req_id
-                .. '", "'
-                .. nra.fnm
-                .. '", "'
-                .. wrd
-                .. '"'
+            msg = string.format(
+                'nvimcom:::nvim_complete_args("%s", "%s", "%s"',
+                req_id,
+                nra.fnm,
+                wrd
+            )
             if nra.firstobj then
                 msg = msg .. ', firstobj = "' .. nra.firstobj .. '"'
             elseif nra.lib then
@@ -437,7 +435,7 @@ M.complete = function(req_id, lnum, cnum)
         return
     end
 
-    M.send_msg("5" .. req_id .. "|o" .. wrd)
+    M.send_msg(string.format("5%s|%s| | | ", req_id, wrd))
 end
 
 --- Execute lua command sent by rnvimserver
@@ -453,14 +451,15 @@ function M.start(rns_path, rns_env)
     for k, v in pairs(rns_env) do
         vim.env[k] = v
     end
-
-    -- require("r.job").start("Server", {
-    --     "valgrind",
-    --     "--leak-check=full",
-    --     "--log-file=/tmp/rnvimserver_valgrind_log",
-    --     rns_path,
-    -- }, rns_opts)
-    -- require("r.job").start("Server", { rns_path }, rns_opts)
+    -- client_id = vim.lsp.start({
+    --     name = "r_ls",
+    --     cmd = {
+    --         "valgrind",
+    --         "--leak-check=full",
+    --         "--log-file=/tmp/rnvimserver_valgrind_log",
+    --         rns_path,
+    --     },
+    -- })
     client_id = vim.lsp.start({ name = "r_ls", cmd = { rns_path } })
     for k, _ in pairs(rns_env) do
         vim.env[k] = nil
