@@ -24,6 +24,8 @@ __attribute__((format(printf, 1, 2))) void Log(const char *fmt, ...) {
 #ifdef Debug_NRS
     va_list argptr;
     FILE *f = fopen("/dev/shm/rnvimserver_log", "a");
+    if (!f)
+        return;
     va_start(argptr, fmt);
     vfprintf(f, fmt, argptr);
     fprintf(f, "\n");
@@ -37,6 +39,8 @@ void init_logging(void) {
     time_t t;
     time(&t);
     FILE *f = fopen("/dev/shm/rnvimserver_log", "w");
+    if (!f)
+        return;
     fprintf(f, "NSERVER LOG | %s\n\n", ctime(&t));
     fclose(f);
 }

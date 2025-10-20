@@ -121,14 +121,14 @@ static const char *write_ob_line(const char *p, const char *bs, char *prfx,
 
     if (closeddf)
         df = 0;
-    else if (f[1][0] == '$')
+    else if (f[1][0] == 'd')
         df = OpenDF;
     else
         df = OpenLS;
 
     copy_str_to_ob(f[0], nm, 159);
 
-    if (f[1][0] == '(')
+    if (f[1][0] == 'F')
         s = f[5];
     else
         s = f[6];
@@ -144,19 +144,19 @@ static const char *write_ob_line(const char *p, const char *bs, char *prfx,
     if (*p == 0)
         return p;
 
-    if (f[1][0] == '[' || f[1][0] == '$' || f[1][0] == '<' || f[1][0] == '>' ||
-        f[1][0] == ':') {
+    if (f[1][0] == 'l' || f[1][0] == 'd' || f[1][0] == '4' || f[1][0] == '7' ||
+        f[1][0] == 'e') {
         s = f[6];
         s++;
         s++;
         s++; // Number of elements (list)
-        if (f[1][0] == '$') {
+        if (f[1][0] == 'd') {
             while (*s && *s != ' ')
                 s++;
             s++; // Number of columns (data.frame)
         }
         ne = atoi(s);
-        if (f[1][0] == '[' || f[1][0] == '$' || f[1][0] == ':') {
+        if (f[1][0] == 'l' || f[1][0] == 'd' || f[1][0] == 'e') {
             snprintf(base1, 127, "%s$", bsnm);  // Named list
             snprintf(base2, 127, "%s[[", bsnm); // Unnamed list
         } else {

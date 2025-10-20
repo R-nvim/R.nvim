@@ -484,34 +484,34 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
     p = str_cat(p, ebuf);
 
     if (Rf_isLogical(*x)) {
-        p = str_cat(p, "\006%\006");
+        p = str_cat(p, "\006b\006");
     } else if (Rf_isNumeric(*x)) {
-        p = str_cat(p, "\006{\006");
+        p = str_cat(p, "\006n\006");
     } else if (Rf_isFactor(*x)) {
-        p = str_cat(p, "\006!\006");
+        p = str_cat(p, "\006f\006");
     } else if (Rf_isValidString(*x)) {
-        p = str_cat(p, "\006~\006");
+        p = str_cat(p, "\006T\006");
     } else if (Rf_isFunction(*x)) {
-        p = str_cat(p, "\006(\006");
+        p = str_cat(p, "\006F\006");
         xgroup = 1;
     } else if (Rf_isFrame(*x)) {
-        p = str_cat(p, "\006$\006");
+        p = str_cat(p, "\006d\006");
         xgroup = 2;
     } else if (Rf_isNewList(*x)) {
-        p = str_cat(p, "\006[\006");
+        p = str_cat(p, "\006l\006");
         xgroup = 3;
     } else if (Rf_isS4(*x)) {
-        p = str_cat(p, "\006<\006");
+        p = str_cat(p, "\0064\006");
         xgroup = 4;
     } else if (Rf_inherits(*x, "S7_object")) {
-        p = str_cat(p, "\006>\006");
+        p = str_cat(p, "\0067\006");
         xgroup = 7;
     } else if (Rf_isEnvironment(*x)) {
-        p = str_cat(p, "\006:\006");
+        p = str_cat(p, "\006e\006");
     } else if (TYPEOF(*x) == PROMSXP) {
-        p = str_cat(p, "\006&\006");
+        p = str_cat(p, "\006p\006");
     } else {
-        p = str_cat(p, "\006*\006");
+        p = str_cat(p, "\006o\006");
     }
 
     // Specific class of object, if any

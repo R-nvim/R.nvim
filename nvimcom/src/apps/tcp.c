@@ -68,9 +68,18 @@ static void ParseMsg(char *b) {
             if (auto_obbr)
                 lib2ob();
             break;
-        case 'C': // strtok doesn't work here because "base" might be empty.
+        case 'C':
             b++;
             complete(b);
+            break;
+        case 'R':
+            b++;
+            const char *rid = strtok(b, "|");
+            const char *lbl = strtok(NULL, "|");
+            const char *knd = strtok(NULL, "|");
+            const char *doc = strtok(NULL, "|");
+            Log("Before send_item_doc: %s, %s, %s, %s", doc, rid, lbl, knd);
+            send_item_doc(doc, rid, lbl, knd);
             break;
         case 'D': // set max_depth of lists in the completion data
             b++;

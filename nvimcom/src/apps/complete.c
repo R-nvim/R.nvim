@@ -10,7 +10,35 @@
 #include "complete.h"
 #include "lsp.h"
 
-const char *rhelp_menu;
+// The kind numbers are from vim.lsp.protocol.CompletionItemKind
+static const char *kind_tbl[16][2] = {
+    {"a", "6"},  //  function arg      Variable
+    {"c", "5"},  //  data.frame column Field
+    {"n", "12"}, //  numeric           Value
+    {"f", "5"},  //  factor            Field
+    {"t", "1"},  //  character         Text
+    {"F", "3"},  //  function          Function
+    {"d", "22"}, //  data.frame        Struct
+    {"l", "22"}, //  list              Struct
+    {"4", "7"},  //  S4                Class
+    {"7", "7"},  //  S7                Class
+    {"b", "2"},  //  logical           Method
+    {"L", "9"},  //  library           Module
+    {"C", "4"},  //  control           Constructor
+    {"e", "8"},  //  environment       Interface
+    {"p", "23"}, //  promise           Event
+    {"o", "25"}, //  other             TypeParameter
+};
+
+static char *rhelp_menu;
+
+static const char *get_kind(const char *cls) {
+    for (size_t i = 0; i < 16; i++)
+        if (*kind_tbl[i][0] == *cls)
+            return kind_tbl[i][1];
+    Log("get_kind: %s", cls);
+    return kind_tbl[15][1];
+}
 
 /**
  * Checks if the string `b` can be found through string `a`.
@@ -155,8 +183,10 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
             p = str_cat(p, f[0]);
             p = str_cat(p, "\",\"cls\":\"");
             p = str_cat(p, f[1]);
+            p = str_cat(p, "\",\"kind\":");
+            p = str_cat(p, get_kind(f[1]));
             if (lib) {
-                p = str_cat(p, "\",\"env\":\"");
+                p = str_cat(p, ",\"env\":\"");
                 p = str_cat(p, lib);
             }
             p = str_cat(p, "\"},");
@@ -204,11 +234,14 @@ void get_alias(char **pkg, char **fun) {
 }
 
 void resolve_arg_item(char *args) {
-    char *pkg = strtok(args, "|");
-    char *fnm = strtok(NULL, "|");
-    const char *itm = strtok(NULL, "|");
-    const char *rid = strtok(NULL, "|");
+    const char *rid = strtok(args, "|");
     const char *knd = strtok(NULL, "|");
+    const char *itm = strtok(NULL, "|");
+    char *pkg = strtok(NULL, "|");
+    char *fnm = strtok(NULL, "|");
+    pkg = *pkg == ' ' ? NULL : pkg;
+    fnm = *fnm == ' ' ? NULL : fnm;
+
     Log("resolve_arg_item: %s, %s, %s, %s, %s", pkg, fnm, itm, rid, knd);
     get_alias(&pkg, &fnm);
     if (!pkg)
@@ -269,17 +302,14 @@ void resolve_arg_item(char *args) {
  *
  * @desc: Return user_data of a specific item with function usage, title and
  * description to be displayed in the float window
- * @param wrd:
- * @param pkg:
+ * @param args: List of arguments
  * */
 void resolve(char *args) {
-    const char *wrd = strtok(args, "|");
-    const char *pkg = strtok(NULL, "|");
-    const char *rid = strtok(NULL, "|");
+    const char *rid = strtok(args, "|");
     const char *knd = strtok(NULL, "|");
+    const char *wrd = strtok(NULL, "|");
+    const char *pkg = strtok(NULL, "|");
     pkg = *pkg == ' ' ? NULL : pkg;
-    rid = *rid == ' ' ? NULL : rid;
-    knd = *knd == ' ' ? NULL : knd;
 
     Log("resolve: %s, %s, %s, %s", wrd, pkg, rid, knd);
     int i;
@@ -322,7 +352,7 @@ void resolve(char *args) {
             if (*s == '\n')
                 s++;
 
-            if (f[1][0] == '(' && str_here(f[4], ">not_checked<")) {
+            if (f[1][0] == 'F' && str_here(f[4], ">not_checked<")) {
                 snprintf(compl_buffer, 1024,
                          "E%snvimcom:::nvim.GlobalEnv.fun.args(\"%s\")\n",
                          getenv("RNVIM_ID"), wrd);
@@ -352,7 +382,7 @@ void resolve(char *args) {
             format(f[6], buffer, ' ', '\x14');
             p = str_cat(p, buffer);
             free(buffer);
-            if (f[1][0] == '(') {
+            if (f[1][0] == 'F') {
                 char *b = format_usage(f[0], f[4]);
                 p = str_cat(p, b);
                 free(b);
@@ -395,7 +425,7 @@ char *complete_args(char *p, char *funcnm) {
                     while (*s)
                         s++;
                     s++;
-                    if (*s == '(') { // Check if it's a function
+                    if (*s == 'F') { // Check if it's a function
                         i = 3;
                         while (i) {
                             s++;
@@ -479,7 +509,7 @@ static void complete_instlibs(char *p, const char *base) {
 
             p = str_cat(p, "{\"label\":\"");
             p = str_cat(p, il->name);
-            p = str_cat(p, "\",\"cls\":\"l\",\"env\":\"**");
+            p = str_cat(p, "\",\"cls\":\"L\",\"env\":\"**");
             format(il->title, buffer, ' ', '\x14');
             p = str_cat(p, buffer);
             p = str_cat(p, "**\x14\x14");
@@ -490,30 +520,48 @@ static void complete_instlibs(char *p, const char *base) {
         il = il->next;
     }
     free(buffer);
-    // Delete the last comma
-    p--;
-    *p = '\0';
 }
 
 /*
  * TODO: Candidate for completion_services.c
  *
- * @desc:
- * @param id: Completion ID (integer incremented at each completion), possibily
+ * desc:
+ * param id: Completion ID (integer incremented at each completion), possibily
  * used by nvim to abort outdated completion.
- * @param base: Keyword being completed.
- * @param funcnm: Function name when the keyword being completed is one of its
+ * param base: Keyword being completed.
+ * param funcnm: Function name when the keyword being completed is one of its
  * arguments.
- * @param dtfrm: Name of data.frame when the keyword being completed is an
- * argument of a function listed in either fun_data_1 or fun_data_2.
- * @param funargs Function arguments from a .GlobalEnv function.
+ * param dtfrm: Name of data.frame when the keyword being completed is an
+ * rgument of a function listed in either fun_data_1 or fun_data_2.
+ * param funargs Function arguments from a .GlobalEnv function.
  */
+
+// void get_args(char *args, char **arglist, int argc) {
+//     int i = 0;
+//     while (i < argc) {
+//         arglist[i] = *args == ' ' ? NULL : args;
+//         while (*args != '|')
+//             args++;
+//         *args = '\0';
+//         args++;
+//     }
+// }
+
 void complete(char *args) {
+    // char *arglist[5];
+    // get_args(args, arglist, 5);
+    // const char *req_id = arglist[0];
+    // char *base = arglist[1];
+    // char *funcnm = arglist[2];
+    // const char *dtfrm = arglist[3];
+    // const char *funargs = arglist[4];
+
     const char *req_id = strtok(args, "|");
     char *base = strtok(NULL, "|");
     char *funcnm = strtok(NULL, "|");
     char *dtfrm = strtok(NULL, "|");
     char *funargs = strtok(NULL, "|");
+    base = *base == ' ' ? NULL : base;
     funcnm = *funcnm == ' ' ? NULL : funcnm;
     dtfrm = *dtfrm == ' ' ? NULL : dtfrm;
     funargs = *funargs == ' ' ? NULL : funargs;
@@ -525,7 +573,7 @@ void complete(char *args) {
     p = compl_buffer;
 
     // Get menu completion for installed libraries
-    if (funcnm && *funcnm == '\004') {
+    if (funcnm && *funcnm == '#') {
         complete_instlibs(p, base);
         send_menu_items(compl_buffer, req_id);
         return;
@@ -546,37 +594,33 @@ void complete(char *args) {
         }
 
         // base will be empty if completing only function arguments
-        if (base[0] == 0) {
-            p--;
-            *p = '\0';
+        if (!base) {
             send_menu_items(compl_buffer, req_id);
             return;
         }
     }
 
     // Finish filling the compl_buffer
-    if (glbnv_buffer)
+    if (glbnv_buffer && base)
         p = parse_objls(glbnv_buffer, base, NULL, ".GlobalEnv", p);
 
-    PkgData *pd = pkgList;
-
-    // Check if base is "pkg::fun"
-    char *pkg = NULL;
-    if (strstr(base, "::")) {
-        pkg = base;
-        base = strstr(base, "::");
-        *base = 0;
-        base++;
-        base++;
+    if (base) {
+        PkgData *pd = pkgList;
+        // Check if base is "pkg::fun"
+        char *pkg = NULL;
+        if (strstr(base, "::")) {
+            pkg = base;
+            base = strstr(base, "::");
+            *base = 0;
+            base++;
+            base++;
+        }
+        while (pd) {
+            if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0)))
+                p = parse_objls(pd->objls, base, pkg, pd->name, p);
+            pd = pd->next;
+        }
     }
-
-    while (pd) {
-        if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0)))
-            p = parse_objls(pd->objls, base, pkg, pd->name, p);
-        pd = pd->next;
-    }
-    p--;
-    *p = '\0';
     send_menu_items(compl_buffer, req_id);
 }
 

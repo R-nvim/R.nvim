@@ -17,24 +17,31 @@ local options = {
 }
 
 -- Translate symbols added by nvimcom to LSP kinds
--- local kindtbl = {
---     ["("] = vim.lsp.protocol.CompletionItemKind.Function, -- function
---     ["$"] = vim.lsp.protocol.CompletionItemKind.Struct, -- data.frame
---     ["%"] = vim.lsp.protocol.CompletionItemKind.Method, -- logical
---     ["~"] = vim.lsp.protocol.CompletionItemKind.Text, -- character
---     ["{"] = vim.lsp.protocol.CompletionItemKind.Value, -- numeric
---     ["!"] = vim.lsp.protocol.CompletionItemKind.Field, -- factor
---     [";"] = vim.lsp.protocol.CompletionItemKind.Constructor, -- control
---     ["["] = vim.lsp.protocol.CompletionItemKind.Struct, -- list
---     ["<"] = vim.lsp.protocol.CompletionItemKind.Class, -- S4
---     [">"] = vim.lsp.protocol.CompletionItemKind.Class, -- S7
---     [":"] = vim.lsp.protocol.CompletionItemKind.Interface, -- environment
---     ["&"] = vim.lsp.protocol.CompletionItemKind.Event, -- promise
---     ["l"] = vim.lsp.protocol.CompletionItemKind.Module, -- library
---     ["a"] = vim.lsp.protocol.CompletionItemKind.Variable, -- function argument
---     ["c"] = vim.lsp.protocol.CompletionItemKind.Field, -- data.frame column
---     ["*"] = vim.lsp.protocol.CompletionItemKind.TypeParameter, -- other
--- }
+--    old    new    LSP name          R type
+--    ["("]  ["F"]  Function         function
+--    ["$"]  ["d"]  Struct           data.frame
+--    ["%"]  ["b"]  Method           logical
+--    ["~"]  ["t"]  Text             character
+--    ["{"]  ["n"]  Value            numeric
+--    ["!"]  ["f"]  Field            factor
+--    [";"]  ["C"]  Constructor      control
+--    ["["]  ["l"]  Struct           list
+--    ["<"]  ["4"]  Class            S4
+--    [">"]  ["7"]  Class            S7
+--    [":"]  ["e"]  Interface        environment
+--    ["&"]  ["p"]  Event            promise
+--    ["l"]  ["L"]  Module           library
+--    ["a"]  ["a"]  Variable         function argument
+--    ["c"]  ["c"]  Field            data.frame column
+--    ["*"]  ["o"]  TypeParameter    other
+
+-- This function should never be called. It should be deleted when we consider
+-- the LSP completion free of logical bugs.
+local err_msg = function(msg)
+    local di = debug.getinfo(2, "S")
+    local info = string.format("[%s, %d]", di.short_src, di.currentline)
+    vim.notify(msg .. "\n" .. info, vim.log.levels.ERROR, { title = "r_ls" })
+end
 
 local M = {}
 
@@ -195,6 +202,7 @@ local reset_r_compl = function() vim.notify("NOT IMPLEMENTED: reset_r_compl") en
 ---@param req_id string
 ---@param itm_str string
 M.resolve = function(req_id, itm_str)
+    -- vim.notify(tostring(req_id) .. "\n" .. itm_str)
     local itm = vim.json.decode(itm_str)
     -- vim.notify(tostring(req_id) .. "\n" .. itm_str .. "\n" .. vim.inspect(itm))
 
@@ -213,21 +221,37 @@ M.resolve = function(req_id, itm_str)
 
     if itm.env == ".GlobalEnv" then
         if itm.cls == "a" then
-            vim.notify("RESOLVE A")
-        elseif itm.cls == "!" or itm.cls == "%" or itm.cls == "~" or itm.cls == "{" then
+            err_msg("RESOLVE A")
+        elseif itm.cls == "f" or itm.cls == "b" or itm.cls == "t" or itm.cls == "n" then
             send_to_nvimcom(
                 "E",
-                "nvimcom:::nvim.get.summary(" .. itm.label .. ", '" .. itm.env .. "')"
+                string.format(
+                    "nvimcom:::nvim.get.summary('%s', '%s', '%s', %s, '%s')",
+                    req_id,
+                    itm.kind,
+                    itm.label,
+                    itm.label,
+                    itm.env
+                )
             )
-        elseif itm.cls == "(" then
+        elseif itm.cls == "F" then
             send_to_nvimcom(
                 "E",
-                'nvimcom:::nvim.GlobalEnv.fun.args("' .. itm.label .. '")'
+                string.format(
+                    "nvimcom:::nvim.GlobalEnv.fun.args('%s', '%s')",
+                    req_id,
+                    itm.label
+                )
             )
         else
             send_to_nvimcom(
                 "E",
-                "nvimcom:::nvim.min.info(" .. itm.label .. ", '" .. itm.env .. "')"
+                string.format(
+                    "nvimcom:::nvim.min.info('%s', %s, '%s')",
+                    req_id,
+                    itm.label,
+                    itm.env
+                )
             )
         end
         return nil
@@ -237,19 +261,19 @@ M.resolve = function(req_id, itm_str)
     if itm.cls == "c" then
         send_to_nvimcom(
             "E",
-            "nvimcom:::nvim.get.summary("
-                .. itm.env
-                .. "$"
-                .. itm.label
-                .. ", '"
-                .. itm.env
-                .. "')"
+            string.format(
+                "nvimcom:::nvim.get.summary('%s', %s$%s, '%s')",
+                req_id,
+                itm.env,
+                itm.label,
+                itm.env
+            )
         )
     elseif itm.cls == "a" then
-        local i = itm.label:gsub(" = ", "")
+        local lbl = itm.label:gsub(" = ", "")
         local pf = vim.fn.split(itm.env, "\002")
-        M.send_msg(string.format("7%s|%s|%s|%s|%s", pf[1], pf[2], i, req_id, itm.kind))
-    elseif itm.cls == "l" then
+        M.send_msg(string.format("7%s|%s|%s|%s|%s", req_id, itm.kind, lbl, pf[1], pf[2]))
+    elseif itm.cls == "L" then
         itm.documentation = {
             value = fix_doc(itm.env),
             kind = vim.lsp.MarkupKind.Markdown,
@@ -257,14 +281,19 @@ M.resolve = function(req_id, itm_str)
         vim.notify("RESOLVE L")
     elseif
         itm.label:find("%$")
-        and (itm.cls == "!" or itm.cls == "%" or itm.cls == "~" or itm.cls == "{")
+        and (itm.cls == "f" or itm.cls == "b" or itm.cls == "t" or itm.cls == "n")
     then
         send_to_nvimcom(
             "E",
-            "nvimcom:::nvim.get.summary(" .. itm.label .. ", '" .. itm.env .. "')"
+            string.format(
+                "nvimcom:::nvim.get.summary('%s', %s, '%s')",
+                req_id,
+                itm.label,
+                itm.env
+            )
         )
     else
-        M.send_msg(string.format("6%s|%s|%s|%s", itm.label, itm.env, req_id, itm.kind))
+        M.send_msg(string.format("6%s|%s|%s|%s", req_id, itm.kind, itm.label, itm.env))
     end
 end
 
@@ -389,7 +418,8 @@ M.complete = function(req_id, lnum, cnum)
             (nra.fnm == "library" or nra.fnm == "require")
             and (not nra.firstobj or nra.firstobj == wrd)
         then
-            M.send_msg(string.format("5%s|%s|%s| | ", req_id, "\004"))
+            if wrd ~= "test_error_message" then err_msg("Empty word!") end
+            M.send_msg(string.format("5%s|%s|#| | ", req_id, wrd))
             return
         end
 
@@ -402,7 +432,7 @@ M.complete = function(req_id, lnum, cnum)
                     string.format("5%s|%s|%s::%s| | ", req_id, wrd, nra.lib, nra.fnm)
                 )
             else
-                M.send_msg(string.format("5%s|%s|\004|%s| ", req_id, wrd, nra.fnm))
+                M.send_msg(string.format("5%s|%s|#|%s| ", req_id, wrd, nra.fnm))
             end
             return
         else

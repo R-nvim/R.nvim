@@ -1,6 +1,6 @@
 Package: nvimcom
-Version: 0.9.76.1
-Date: 2025-10-19
+Version: 0.9.76.2
+Date: 2025-10-20
 Title: Intermediate the Communication Between R and Neovim
 Author: Jakson Aquino
 Maintainer: Jakson Alves de Aquino <jalvesaq@gmail.com>

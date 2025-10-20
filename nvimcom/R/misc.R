@@ -278,8 +278,9 @@ format_usage <- function(fnm, args) {
 #' Called by rnvimserver when the user selects a function created in the
 #' .GlobalEnv environment in the completion menu.
 #' menu.
+#' @param req_id ID of language server's request.
 #' @param funcname Name of function selected in the completion menu.
-nvim.GlobalEnv.fun.args <- function(funcname) {
+nvim.GlobalEnv.fun.args <- function(req_id, funcname) {
     txt <- nvim.args(funcname)
     # txt <- gsub("\\\\", "\\\\\\\\", txt)
     txt <- format_usage(funcname, txt)
@@ -292,9 +293,10 @@ nvim.GlobalEnv.fun.args <- function(funcname) {
 }
 
 #' Output the minimal information on an object during auto-completion.
+#' @param req_id ID of language server's request.
 #' @param obj Object selected in the completion menu.
 #' @param prnt Parent environment
-nvim.min.info <- function(obj, prnt) {
+nvim.min.info <- function(req_id, obj, prnt) {
     isnull <- try(is.null(obj), silent = TRUE)
     if (class(isnull)[1] != "logical") {
         return(invisible(NULL))
@@ -328,9 +330,10 @@ nvim.min.info <- function(obj, prnt) {
 }
 
 #' Output the summary as extra information on an object during auto-completion.
+#' @param req_id ID of language server's request.
 #' @param obj Object selected in the completion menu.
 #' @param prnt Parent environment
-nvim.get.summary <- function(obj, prnt) {
+nvim.get.summary <- function(req_id, kind, lbl, obj, prnt) {
     isnull <- try(is.null(obj), silent = TRUE)
     if (class(isnull)[1] != "logical") {
         return(invisible(NULL))
@@ -366,10 +369,7 @@ nvim.get.summary <- function(obj, prnt) {
     txt <- gsub("'", "\x13", txt)
     txt <- paste0(txt, collapse = "\x14")
 
-    .C(
-        nvimcom_msg_to_nvim,
-        paste0("require('r.lsp').resolve_cb('", txt, "')")
-    )
+    .C(nvimcom_msg_to_nvim, paste0("+R", req_id, "|", lbl, "|", kind, "|", txt))
     return(invisible(NULL))
 }
 
@@ -509,7 +509,7 @@ nvim.getmethod <- function(fname, objclass) {
 
 #' Complete arguments of functions.
 #' Called during nvim-cmp completion with cmp-r as source.
-#' @param id Completion identification number.
+#' @param req_id ID of language server's request.
 #' @param rkeyword Name of function whose arguments are being completed.
 #' @param argkey First characters of argument to be completed.
 #' @param firstobj First parameter of function being completed.
@@ -517,7 +517,7 @@ nvim.getmethod <- function(fname, objclass) {
 #' (example: `library::function`).
 #' @param ldf Whether the function is in `R_fun_data_1` or not.
 nvim_complete_args <- function(
-    id,
+    req_id,
     rkeyword,
     argkey,
     firstobj = "",
@@ -535,7 +535,7 @@ nvim_complete_args <- function(
             paste(argsl, collapse = "', cls = 'a', env = '.GlobalEnv'}, {label = '"),
             "', cls = 'a', env = '.GlobalEnv'}, "
         )
-        msg <- paste0("+C", id, "|", argkey, "|", rkeyword, "| |", args)
+        msg <- paste0("+C", req_id, "|", argkey, "|", rkeyword, "| |", args)
         .C(nvimcom_msg_to_nvim, msg)
         return(invisible(NULL))
     }
@@ -544,11 +544,21 @@ nvim_complete_args <- function(
         # Completion of columns of data.frame
         if (ldf && is.data.frame(get(firstobj))) {
             if (is.null(lib)) {
-                msg <- paste0("+C", id, "|", argkey, "|", rkeyword, "|", firstobj, "| ")
+                msg <- paste0(
+                    "+C",
+                    req_id,
+                    "|",
+                    argkey,
+                    "|",
+                    rkeyword,
+                    "|",
+                    firstobj,
+                    "| "
+                )
             } else {
                 msg <- paste0(
                     "+C",
-                    id,
+                    req_id,
                     "|",
                     argkey,
                     "|",
@@ -569,7 +579,7 @@ nvim_complete_args <- function(
         if (objclass[1] != "#E#" && objclass[1] != "") {
             mthd <- nvim.getmethod(rkeyword, objclass)
             if (mthd != rkeyword) {
-                msg <- paste0("+C", id, "|", argkey, "| | |", mthd)
+                msg <- paste0("+C", req_id, "|", argkey, "| | |", mthd)
                 .C(nvimcom_msg_to_nvim, msg)
                 return(invisible(NULL))
             }
@@ -578,9 +588,9 @@ nvim_complete_args <- function(
 
     # Normal completion of arguments
     if (is.null(lib)) {
-        msg <- paste0("+C", id, "|", argkey, "|", rkeyword, "| | ")
+        msg <- paste0("+C", req_id, "|", argkey, "|", rkeyword, "| | ")
     } else {
-        msg <- paste0("+C", id, "|", argkey, "|", lib, "::", rkeyword, "| | ")
+        msg <- paste0("+C", req_id, "|", argkey, "|", lib, "::", rkeyword, "| | ")
     }
     .C(nvimcom_msg_to_nvim, msg)
     return(invisible(NULL))

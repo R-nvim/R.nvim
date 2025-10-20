@@ -113,7 +113,17 @@ static void init(void) {
  * @param json_payload The JSON string to send.
  */
 void send_ls_response(const char *json_payload) {
-    Log("SEND_LS_RESPONSE:\n%s\n", json_payload);
+#ifdef Debug_NRS
+    if (strlen(json_payload) > 180) {
+        char begin[160] = {0};
+        char end[16] = {0};
+        memcpy(begin, json_payload, 159);
+        memcpy(end, json_payload + strlen(json_payload) - 15, 15);
+        Log("SEND_LS_RESPONSE:\n%s [...] %s\n", begin, end);
+    } else {
+        Log("SEND_LS_RESPONSE:\n%s\n", json_payload);
+    }
+#endif
     // 1. Send Content-Length header
     fprintf(stdout, "Content-Length: %zu\r\n\r\n", strlen(json_payload));
 
@@ -197,12 +207,17 @@ void send_item_doc(const char *doc, const char *id, const char *label,
     free(edoc);
 }
 
-void send_menu_items(const char *compl_items, const char *req_id) {
+void send_menu_items(char *compl_items, const char *req_id) {
     const char *fmt =
         "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"isIncomplete\":0,\"is_"
         "incomplete_forward\":0,\"is_incomplete_backward\":1,\"items\":[%s]}}";
 
     size_t len = strlen(compl_items);
+
+    // remove last superfluous comma to avoid json error:
+    if (len > 3 && compl_items[len - 1] == ',') {
+        compl_items[len - 1] = '\0';
+    }
     char *res = (char *)malloc(sizeof(char) * len + 128);
     sprintf(res, fmt, req_id, compl_items);
     send_ls_response(res);

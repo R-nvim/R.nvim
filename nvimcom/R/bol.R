@@ -235,9 +235,10 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
         }
     }
 
+    # See kind_tbl at nvim/src/apps/complete.c
     if (is.null(xx)) {
         x.class <- ""
-        x.group <- "*"
+        x.group <- "o"
     } else {
         if (
             x == "break" ||
@@ -247,32 +248,32 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
                 x == "repeat" ||
                 x == "while"
         ) {
-            x.group <- ";"
+            x.group <- "C"
             x.class <- "flow-control"
         } else {
             x.class <- class(xx)[1]
             if (is.function(xx)) {
-                x.group <- "f"
-            } else if (is.list(xx)) {
-                x.group <- "["
-            } else if (isS4(xx)) {
-                x.group <- "<"
-            } else if (inherits(xx, "S7_object")) {
-                x.group <- ">"
-            } else if (is.numeric(xx)) {
-                x.group <- "{"
-            } else if (is.factor(xx)) {
-                x.group <- "!"
-            } else if (is.character(xx)) {
-                x.group <- "~"
-            } else if (is.logical(xx)) {
-                x.group <- "%"
+                x.group <- "F"
             } else if (is.data.frame(xx)) {
-                x.group <- "$"
+                x.group <- "d"
+            } else if (is.list(xx)) {
+                x.group <- "l"
+            } else if (isS4(xx)) {
+                x.group <- "4"
+            } else if (inherits(xx, "S7_object")) {
+                x.group <- "7"
+            } else if (is.numeric(xx)) {
+                x.group <- "n"
+            } else if (is.factor(xx)) {
+                x.group <- "f"
+            } else if (is.character(xx)) {
+                x.group <- "t"
+            } else if (is.logical(xx)) {
+                x.group <- "b"
             } else if (is.environment(xx)) {
-                x.group <- ":"
+                x.group <- "e"
             } else {
-                x.group <- "*"
+                x.group <- "o"
             }
         }
     }
@@ -280,12 +281,12 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
     n <- nvim.fix.string(x)
 
     if (curlevel == maxlevel || maxlevel == 0) {
-        if (x.group == "f") {
+        if (x.group == "F") {
             if (curlevel == 0) {
                 info <- nvim.getInfo(printenv, x)
                 cat(
                     n,
-                    "\006(\006function\006",
+                    "\006F\006function\006",
                     printenv,
                     "\006",
                     nvim.args(x, pkg = printenv),
@@ -297,7 +298,7 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
                 # some libraries have functions as list elements
                 cat(
                     n,
-                    "\006(\006function\006",
+                    "\006F\006function\006",
                     printenv,
                     "\006\006\006\006\n",
                     sep = ""
@@ -401,10 +402,10 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
         if ((is.list(xx) || is.environment(xx))) {
             obj.names <- names(xx)
             s <- "$"
-        } else if (x.group == "<") {
+        } else if (x.group == "4") {
             obj.names <- slotNames(xx)
             s <- "@"
-        } else if (x.group == ">") {
+        } else if (x.group == "7") {
             s7c <- S7::S7_class(xx)
             obj.names <- names(s7c@properties)
             s <- "@"
