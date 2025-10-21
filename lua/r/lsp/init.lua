@@ -16,8 +16,8 @@ local options = {
     quarto_intel = nil,
 }
 
--- Translate symbols added by nvimcom to LSP kinds
---    old    new    LSP name          R type
+-- Correspondence between nvimcom "cls" and LSP "kind".
+--    old    new    LSP name         R type
 --    ["("]  ["F"]  Function         function
 --    ["$"]  ["d"]  Struct           data.frame
 --    ["%"]  ["b"]  Method           logical
@@ -503,16 +503,16 @@ function M.start(rns_path, rns_env)
     for k, v in pairs(rns_env) do
         vim.env[k] = v
     end
-    client_id = vim.lsp.start({
-        name = "r_ls",
-        cmd = {
-            "valgrind",
-            "--leak-check=full",
-            "--log-file=/tmp/rnvimserver_valgrind_log",
-            rns_path,
-        },
-    })
-    -- client_id = vim.lsp.start({ name = "r_ls", cmd = { rns_path } })
+    -- client_id = vim.lsp.start({
+    --     name = "r_ls",
+    --     cmd = {
+    --         "valgrind",
+    --         "--leak-check=full",
+    --         "--log-file=/tmp/rnvimserver_valgrind_log",
+    --         rns_path,
+    --     },
+    -- })
+    client_id = vim.lsp.start({ name = "r_ls", cmd = { rns_path } })
     for k, _ in pairs(rns_env) do
         vim.env[k] = nil
     end
@@ -524,8 +524,8 @@ function M.start(rns_path, rns_env)
 end
 
 function M.send_msg(code)
-    -- lua_ls will warn that "exeRnvimCmd" is not a valid method
     local buf = require("r.edit").get_rscript_buf()
+    -- lua_ls will warn that "exeRnvimCmd" is not a valid method
     local res = vim.lsp.buf_notify(buf, "exeRnvimCmd", { code = code })
     if not res then warn("Failed to send message to r_ls: " .. code) end
 end
