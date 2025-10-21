@@ -310,15 +310,20 @@ local send_items = function(req_id, tbl)
     vim.notify("CALLBACK [" .. tostring(req_id) .. "]\n" .. jstr)
 end
 
--- FIXME: only works with accii characters
+--- Get the word before the cursor, considering that Unicode
+--- characters use more bytes than occupy display cells
+---@param line string Current line
+---@param cnum integer Cursor position in number of display cells
 local get_word = function(line, cnum)
     local i = cnum
-    while i > 0 do
-        if not line:sub(i, i):find("[%w0-9_\\.\\$@]") then break end
-        i = i - 1
+    local preline
+    while true do
+        preline = line:sub(1, i)
+        if cnum == vim.fn.strwidth(preline) then break end
+        i = i + 1
     end
-    local wrd = line:sub(i + 1, cnum)
-    if not wrd or wrd == "" or wrd:sub(1, 1):find("[0-9]") then return nil end
+    local pattern = "([%a\192-\244\128-\191_.][%w_.@$\192-\244\128-\191]*)$"
+    local wrd = preline:match(pattern)
     return wrd
 end
 
