@@ -8,14 +8,16 @@ local qcell_opts = nil
 local chunk_opts = nil
 local compl_region = true
 
+-- TODO: incorporate the options into normal R.nvim config at lua/r/config.lua
 local options = {
     doc_width = 58,
-    trigger_characters = { ".", " ", ":", "(", '"', "@", "$" },
+    trigger_characters = { ".", " ", ":", "(", '"', "@", "$" }, -- TODO: different trigger_characters for different filetypes
     fun_data_1 = { "select", "rename", "mutate", "filter" },
     fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
     quarto_intel = nil,
 }
 
+-- TODO: delete this table before merging the pull request
 -- Correspondence between nvimcom "cls" and LSP "kind".
 --    old    new    LSP name         R type
 --    ["("]  ["F"]  Function         function
@@ -52,33 +54,34 @@ local fix_doc = function(txt)
     return txt
 end
 
-local backtick = function(s)
-    local t1 = {}
-    for token in string.gmatch(s, "[^$]+") do
-        table.insert(t1, token)
-    end
-
-    local t3 = {}
-    for _, v in pairs(t1) do
-        local t2 = {}
-        for token in string.gmatch(v, "[^@]+") do
-            if
-                (not string.find(token, " = $"))
-                and (
-                    string.find(token, " ")
-                    or string.find(token, "^_")
-                    or string.find(token, "^[0-9]")
-                )
-            then
-                table.insert(t2, "`" .. token .. "`")
-            else
-                table.insert(t2, token)
-            end
-        end
-        table.insert(t3, table.concat(t2, "@"))
-    end
-    return table.concat(t3, "$")
-end
+-- TODO: Use or delete
+-- local backtick = function(s)
+--     local t1 = {}
+--     for token in string.gmatch(s, "[^$]+") do
+--         table.insert(t1, token)
+--     end
+--
+--     local t3 = {}
+--     for _, v in pairs(t1) do
+--         local t2 = {}
+--         for token in string.gmatch(v, "[^@]+") do
+--             if
+--                 (not string.find(token, " = $"))
+--                 and (
+--                     string.find(token, " ")
+--                     or string.find(token, "^_")
+--                     or string.find(token, "^[0-9]")
+--                 )
+--             then
+--                 table.insert(t2, "`" .. token .. "`")
+--             else
+--                 table.insert(t2, token)
+--             end
+--         end
+--         table.insert(t3, table.concat(t2, "@"))
+--     end
+--     return table.concat(t3, "$")
+-- end
 
 local get_piped_obj
 get_piped_obj = function(line, lnum)
@@ -97,6 +100,7 @@ get_piped_obj = function(line, lnum)
     return nil
 end
 
+-- TODO: document all functions for lua_ls
 local get_first_obj = function(line, lnum)
     local no
     local piece
@@ -314,7 +318,8 @@ end
 --- characters use more bytes than occupy display cells
 ---@param line string Current line
 ---@param cnum integer Cursor position in number of display cells
-local get_word = function(line, cnum)
+---@param pttrn? string Pattern to get word for completion TODO: delete this argument if not used
+local get_word = function(line, cnum, pttrn)
     local i = cnum
     local preline
     while true do
@@ -322,7 +327,8 @@ local get_word = function(line, cnum)
         if cnum == vim.fn.strwidth(preline) then break end
         i = i + 1
     end
-    local pattern = "([%a\192-\244\128-\191_.][%w_.@$\192-\244\128-\191]*)$"
+    local pattern = pttrn and pttrn
+        or "([%a\192-\244\128-\191_.][%w_.@$\192-\244\128-\191]*)$"
     local wrd = preline:match(pattern)
     return wrd
 end
@@ -383,14 +389,8 @@ M.complete = function(req_id, lnum, cnum)
                 end
             end
             if lang ~= "r" then
-                if not wrd then
-                    reset_r_compl()
-                    return
-                end
-                if wrd and wrd:find("\\", 1, true) == 1 then
-                    M.send_msg("CH" .. req_id)
-                    return
-                end
+                if cline:sub(cnum, cnum) == "\\" then M.send_msg("CH" .. req_id) end
+                return
             end
         end
     end
@@ -429,8 +429,9 @@ M.complete = function(req_id, lnum, cnum)
     -- Should we complete function arguments?
     local nra
     nra = need_R_args(cline:sub(1, cnum), lnum)
+    -- TODO: check if need_R_args is working well in all cases
+    -- vim.notify(vim.inspect(nra))
 
-    vim.notify(vim.inspect(nra))
     if nra.fnm then
         -- We are passing arguments for a function.
         -- An empty word will be treated as NULL at nvimcom/src/apps/complete.c
@@ -516,6 +517,7 @@ function M.start(rns_path, rns_env)
     for k, _ in pairs(rns_env) do
         vim.env[k] = nil
     end
+    -- TODO: enable/disable the language server on CursorMoved event
     -- vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
     --     buffer = vim.api.nvim_get_current_buf(),
     --     callback = on_cursor_move,

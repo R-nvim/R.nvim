@@ -11,6 +11,7 @@
 #include "obbr.h"
 #include "lsp.h"
 #include "utilities.h"
+#include "rhelp.h"
 #include "../common.h"
 
 /*
@@ -183,7 +184,7 @@ void handle_initialize(const char *request_id) {
         "\"hoverProvider\": 1,"
         "\"completionProvider\": {"
         "\"resolveProvider\": 1,"
-        "\"triggerCharacters\": [\".\",\" \",\":\",\"(\",\"@\",\"$\"],"
+        "\"triggerCharacters\": [\".\",\" \",\":\",\"(\",\"@\",\"$\",\"\\\\\"],"
         "\"allCommitCharacters\": [\" \", \"\n\", \";\", \",\"]}}}}";
 
     char res[1024];
@@ -241,7 +242,7 @@ void handle_exe_cmd(char *code) {
         else if (*msg == 'B')
             complete_quarto_block(++msg);
         break;
-    case '1': // Start server and wait nvimcom connection
+    case '1': // Start TCP server and wait nvimcom connection
         start_server();
         break;
     case '2': // Send message

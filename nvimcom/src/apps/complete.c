@@ -30,8 +30,6 @@ static const char *kind_tbl[16][2] = {
     {"o", "25"}, //  other             TypeParameter
 };
 
-static char *rhelp_menu;
-
 static const char *get_kind(const char *cls) {
     for (size_t i = 0; i < 16; i++)
         if (*kind_tbl[i][0] == *cls)
@@ -298,8 +296,6 @@ void resolve_arg_item(char *args) {
 }
 
 /*
- * TODO: Candidate for completion_services.c
- *
  * @desc: Return user_data of a specific item with function usage, title and
  * description to be displayed in the float window
  * @param args: List of arguments
@@ -397,7 +393,11 @@ void resolve(char *args) {
 }
 
 /*
- * TODO: Candidate for completion_services.c
+ * TODO: set the sortText field. From an AI:
+ * sortText: This string is the primary method for a server to influence sort
+ * order. It allows the server to prioritize certain items without changing
+ * their displayed label. For example, a server might set sortText to _a_ for
+ * highly relevant completions to ensure they appear at the top of the list.
  *
  * @desc:
  * @param p:
@@ -616,19 +616,6 @@ void complete(char *args) {
         }
     }
     send_menu_items(compl_buffer, req_id);
-}
-
-void complete_rhelp(const char *req_id) {
-    Log("complete_rhelp");
-    if (!rhelp_menu) {
-        char fpath[128];
-        snprintf(fpath, 127, "%s/resources/rhelp_keywords",
-                 getenv("RNVIM_HOME"));
-        Log("rnvim_home: >>>%s<<<", fpath);
-        rhelp_menu = read_file(fpath, 1);
-    }
-    if (rhelp_menu)
-        send_menu_items(rhelp_menu, req_id);
 }
 
 void complete_rmd_chunk(const char *req_id) {}

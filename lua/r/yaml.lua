@@ -88,6 +88,8 @@ M.setup = function()
     vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
         buffer = 0,
         callback = function()
+            -- TODO: integrate with r_ls and only run if cursor line has changed
+            -- TODO: check if it works in blocks of R/Python code
             local in_yaml = is_in_quarto_yaml()
 
             local clients = vim.lsp.get_clients({ name = "yamlls", bufnr = 0 })

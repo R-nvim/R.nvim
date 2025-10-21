@@ -35,21 +35,13 @@ void replace_char(char *s, char find, char replace) {
     }
 }
 
+// TODO: remove excess of text from all functions documentation.
+
 /**
  * @brief Reads the entire contents of a specified file into a buffer.
- *
- * This function opens the file specified by the filename and reads its entire
- * content into a dynamically allocated buffer. It ensures that the file is read
- * in binary mode to preserve the data format. This function is typically used
- * to load files containing data relevant to the R.nvim plugin, such as
- * completion lists or configuration data.
- *
  * @param fn The name of the file to be read.
- * @param verbose Flag to indicate whether to print error messages. If set to a
- * non-zero value, error messages are printed to stderr.
- * @return Returns a pointer to a buffer containing the file's content if
- * successful. Returns NULL if the file cannot be opened or in case of a read
- * error.
+ * @param verbose Flag to indicate whether to print error messages.
+ * @return Returns a pointer to a buffer containing the file's or NULL.
  */
 char *read_file(const char *fn, int verbose) {
     FILE *f = fopen(fn, "rb");
