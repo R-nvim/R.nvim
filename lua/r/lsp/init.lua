@@ -336,7 +336,7 @@ end
 ---@param req_id string
 ---@param lnum integer
 ---@param cnum integer
-M.complete = function(req_id, lnum, cnum)
+function M.complete(req_id, lnum, cnum)
     if not compl_region then return end
     -- In cmp-r: cline = request.context.cursor_before_line
     local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
@@ -481,6 +481,7 @@ M.complete = function(req_id, lnum, cnum)
             if nra.firstobj and nra.listdf then msg = msg .. ", ldf = TRUE" end
             msg = msg .. ")"
 
+            -- FIXME: Is this correct? Documentation should be during resolve event.
             -- Save documentation of arguments to be used by rnvimserver
             send_to_nvimcom("E", msg)
             return
@@ -502,27 +503,73 @@ local function exe_cmd(_, result, _)
     vim.schedule(function() vim.fn.execute("lua " .. result.command) end)
 end
 
+local function notification(arg1, arg2, arg3)
+    vim.notify(
+        "LSP_Notification:"
+            .. vim.inspect(arg1)
+            .. "\n"
+            .. vim.inspect(arg2)
+            .. "\n"
+            .. vim.inspect(arg3)
+    )
+end
+
+local function server_request(arg1, arg2, arg3)
+    vim.notify(
+        "LSP_server_request:"
+            .. vim.inspect(arg1)
+            .. "\n"
+            .. vim.inspect(arg2)
+            .. "\n"
+            .. vim.inspect(arg3)
+    )
+end
+
+local function on_exit(arg1, arg2, arg3)
+    vim.notify(
+        "LSP_on_exit:"
+            .. vim.inspect(arg1)
+            .. "\n"
+            .. vim.inspect(arg2)
+            .. "\n"
+            .. vim.inspect(arg3)
+    )
+    vim.cmd("sleep 1")
+end
+
+local function on_error(arg1, arg2, arg3)
+    -- see vim.lsp.rpc.client_errors
+    vim.notify(
+        "LSP_on_error:"
+            .. vim.inspect(arg1)
+            .. "\n"
+            .. vim.inspect(arg2)
+            .. "\n"
+            .. vim.inspect(arg3)
+    )
+end
+
 function M.start(rns_path, rns_env)
     -- TODO: remove this when nvim 0.12 is released
     if not vim.lsp.config then return end
 
-    vim.lsp.handlers["client/exeRnvimCmd"] = exe_cmd
-    for k, v in pairs(rns_env) do
-        vim.env[k] = v
-    end
     client_id = vim.lsp.start({
         name = "r_ls",
+        cmd = { rns_path },
         -- cmd = {
         --     "valgrind",
         --     "--leak-check=full",
         --     "--log-file=/tmp/rnvimserver_valgrind_log",
         --     rns_path,
         -- },
+        cmd_env = rns_env,
+        on_exit = on_exit,
+        on_error = on_error,
+        trace = "verbose",
+        handlers = {
+            ["client/exeRnvimCmd"] = exe_cmd,
+        },
     })
-    client_id = vim.lsp.start({ name = "r_ls", cmd = { rns_path } })
-    for k, _ in pairs(rns_env) do
-        vim.env[k] = nil
-    end
     -- TODO: enable/disable the language server on CursorMoved event
     -- vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
     --     buffer = vim.api.nvim_get_current_buf(),
