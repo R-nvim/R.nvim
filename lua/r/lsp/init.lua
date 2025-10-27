@@ -500,58 +500,54 @@ end
 
 --- Execute lua command sent by rnvimserver
 local function exe_cmd(_, result, _)
-    vim.schedule(function() vim.fn.execute("lua " .. result.command) end)
+    -- vim.schedule(function() vim.fn.execute("lua " .. result.command) end)
+    vim.schedule(function()
+        local f = loadstring(result.command)
+        if f then f() end
+    end)
 end
 
-local function notification(arg1, arg2, arg3)
+--- Callback invoked when client attaches to a buffer.
+---@param client vim.lsp.Client
+---@param bnr integer
+local function on_attach(client, bnr)
+    vim.notify("LSP_on_attach:\n" .. tostring(client) .. "\n" .. tostring(bnr))
+end
+
+--- Callback invoked after LSP "initialize"
+---@param client vim.lsp.Client
+---@param init_res lsp.InitializeResult
+local function on_init(client, init_res)
+    vim.notify("LSP_on_init:\n" .. tostring(client) .. "\n" .. tostring(init_res))
+end
+
+--- Callback invoked on client exit.
+---@param code integer Exit code of the process
+---@param signal integer Number describing the signal used to terminate (if any)
+---@param client integer Client handle
+local function on_exit(code, signal, client)
     vim.notify(
-        "LSP_Notification:"
-            .. vim.inspect(arg1)
-            .. "\n"
-            .. vim.inspect(arg2)
-            .. "\n"
-            .. vim.inspect(arg3)
+        "LSP_on_exit:\n  code: "
+            .. vim.inspect(code)
+            .. "\n  signal: "
+            .. vim.inspect(signal)
+            .. "\n  client_id: "
+            .. vim.inspect(client)
     )
 end
 
-local function server_request(arg1, arg2, arg3)
-    vim.notify(
-        "LSP_server_request:"
-            .. vim.inspect(arg1)
-            .. "\n"
-            .. vim.inspect(arg2)
-            .. "\n"
-            .. vim.inspect(arg3)
-    )
-end
-
-local function on_exit(arg1, arg2, arg3)
-    vim.notify(
-        "LSP_on_exit:"
-            .. vim.inspect(arg1)
-            .. "\n"
-            .. vim.inspect(arg2)
-            .. "\n"
-            .. vim.inspect(arg3)
-    )
-    vim.cmd("sleep 1")
-end
-
-local function on_error(arg1, arg2, arg3)
-    -- see vim.lsp.rpc.client_errors
-    vim.notify(
-        "LSP_on_error:"
-            .. vim.inspect(arg1)
-            .. "\n"
-            .. vim.inspect(arg2)
-            .. "\n"
-            .. vim.inspect(arg3)
-    )
+--- Callback invoked when the client operation throws an error.
+--- @param code number Number describing the error. See vim.lsp.rpc.client_errors
+--- @param err string Error message
+local function on_error(code, err)
+    vim.notify("LSP_on_error:" .. vim.inspect(code) .. "\n" .. err)
 end
 
 function M.start(rns_path, rns_env)
     -- TODO: remove this when nvim 0.12 is released
     if not vim.lsp.config then return end
+
+    vim.lsp.config("r_ls", {})
 
     client_id = vim.lsp.start({
         name = "r_ls",
@@ -563,6 +559,8 @@ function M.start(rns_path, rns_env)
         --     rns_path,
         -- },
         cmd_env = rns_env,
+        on_init = on_init,
+        on_attach = on_attach,
         on_exit = on_exit,
         on_error = on_error,
         trace = "verbose",
