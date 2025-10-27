@@ -12,6 +12,7 @@
 #include "lsp.h"
 #include "utilities.h"
 #include "rhelp.h"
+#include "chunk.h"
 #include "../common.h"
 
 /*
@@ -115,7 +116,7 @@ static void init(void) {
  */
 void send_ls_response(const char *json_payload) {
 #ifdef Debug_NRS
-    if (strlen(json_payload) > 380) {
+    if (strlen(json_payload) > 8380) {
         char begin[360] = {0};
         char end[16] = {0};
         memcpy(begin, json_payload, 359);
@@ -237,10 +238,8 @@ void handle_exe_cmd(char *code) {
         msg++;
         if (*msg == 'H')
             complete_rhelp(++msg);
-        else if (*msg == 'C')
-            complete_rmd_chunk(++msg);
-        else if (*msg == 'B')
-            complete_quarto_block(++msg);
+        else
+            complete_chunk_opts(msg);
         break;
     case '1': // Start TCP server and wait nvimcom connection
         start_server();
@@ -452,11 +451,11 @@ void lsp_loop(void) {
                 p[j] = '\0';
                 char compl_command[1024];
                 // FIXME: All "resolve" events should be done here, not in Lua.
-                // Example for the completion a library:
+                // Example for the completion of a library:
                 // {"jsonrpc":"2.0","id":9,"method":"completionItem/resolve","params":{"kind":9,"label":"abind","cls":"L"}}
                 //
-                // Write a code parse the line byte by byte and case/match the
-                // fields that we need.
+                // Write a code to parse the line byte by byte and case/match
+                // the fields that we need.
 
                 snprintf(compl_command, 1024,
                          "require('r.lsp').resolve('%s', '%s')", request_id, p);
@@ -480,6 +479,5 @@ void lsp_loop(void) {
 
 int main(int argc, char **argv) {
     lsp_loop();
-    // stdin_loop();
     return 0;
 }

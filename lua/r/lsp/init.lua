@@ -4,8 +4,7 @@ local warn = require("r.log").warn
 local client_id
 
 -- local ter = nil
-local qcell_opts = nil
-local chunk_opts = nil
+local qcell_opts = false
 local compl_region = true
 
 -- TODO: incorporate the options into normal R.nvim config at lua/r/config.lua
@@ -346,8 +345,11 @@ M.complete = function(req_id, lnum, cnum)
 
     -- Check if this is Rmd and the cursor is in the chunk header
     if vim.bo.filetype == "rmd" and cline:find("^```{r") then
-        if not chunk_opts then chunk_opts = require("r.lsp.chunk").get_opts() end
-        send_items(req_id, chunk_opts)
+        if wrd then
+            M.send_msg(string.format("CC%d|%s|", req_id, wrd))
+        else
+            M.send_msg(string.format("CC%d| |", req_id))
+        end
         return
     end
 
@@ -402,7 +404,11 @@ M.complete = function(req_id, lnum, cnum)
             if not qcell_opts then
                 qcell_opts = require("r.lsp.quarto").get_cell_opts(options.quarto_intel)
             end
-            send_items(req_id, { items = qcell_opts })
+            if wrd then
+                M.send_msg(string.format("CB%d|%s|", req_id, wrd))
+            else
+                M.send_msg(string.format("CB%d| |", req_id))
+            end
             return
         end
     end
@@ -504,15 +510,15 @@ function M.start(rns_path, rns_env)
     for k, v in pairs(rns_env) do
         vim.env[k] = v
     end
-    -- client_id = vim.lsp.start({
-    --     name = "r_ls",
-    --     cmd = {
-    --         "valgrind",
-    --         "--leak-check=full",
-    --         "--log-file=/tmp/rnvimserver_valgrind_log",
-    --         rns_path,
-    --     },
-    -- })
+    client_id = vim.lsp.start({
+        name = "r_ls",
+        -- cmd = {
+        --     "valgrind",
+        --     "--leak-check=full",
+        --     "--log-file=/tmp/rnvimserver_valgrind_log",
+        --     rns_path,
+        -- },
+    })
     client_id = vim.lsp.start({ name = "r_ls", cmd = { rns_path } })
     for k, _ in pairs(rns_env) do
         vim.env[k] = nil

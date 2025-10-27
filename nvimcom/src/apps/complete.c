@@ -617,6 +617,3 @@ void complete(char *args) {
     }
     send_menu_items(compl_buffer, req_id);
 }
-
-void complete_rmd_chunk(const char *req_id) {}
-void complete_quarto_block(const char *req_id) {}

@@ -60,6 +60,11 @@ end
 local M = {}
 
 M.get_cell_opts = function(qmd_intel)
+    local fname = vim.env.RNVIM_COMPLDIR .. "/quarto_block_items"
+
+    -- FIXME check date of yml file and compare with fname
+    if vim.fn.filereadable(fname) == 1 then return true end
+
     local qopts = {}
     local quarto_yaml_intel
 
@@ -69,15 +74,15 @@ M.get_cell_opts = function(qmd_intel)
         quarto_yaml_intel = find_quarto_intel()
     end
 
-    if not quarto_yaml_intel then return nil end
+    if not quarto_yaml_intel then return false end
 
     local f = io.open(quarto_yaml_intel, "r")
-    if not f then return nil end
+    if not f then return false end
     local yaml_txt = f:read("*all")
     f:close()
 
     local intel = vim.fn.json_decode(yaml_txt)
-    if not intel then return nil end
+    if not intel then return false end
 
     local cell_keys = {
         "schema/cell-attributes.yml",
@@ -100,19 +105,13 @@ M.get_cell_opts = function(qmd_intel)
                 else
                     descr = item["description"]["long"]
                 end
-                table.insert(qopts, {
-                    label = lbl,
-                    kind = vim.lsp.protocol.CompletionItemKind.Field,
-                    sortText = "0",
-                    documentation = {
-                        kind = vim.lsp.protocol.MarkupKind.Markdown,
-                        value = descr,
-                    },
-                })
+                descr = descr:gsub("\n", "\\n")
+                table.insert(qopts, lbl .. "|" .. descr)
             end
         end
     end
-    return qopts
+    vim.fn.writefile(qopts, fname)
+    return true
 end
 
 return M
