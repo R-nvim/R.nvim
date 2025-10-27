@@ -7,6 +7,7 @@
 #include "data_structures.h"
 #include "logging.h"
 #include "complete.h"
+#include "resolve.h"
 #include "tcp.h"
 #include "obbr.h"
 #include "lsp.h"

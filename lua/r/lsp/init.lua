@@ -216,8 +216,8 @@ M.resolve = function(req_id, itm_str)
 
     if not itm.cls then return nil end
 
-    -- FIXME: It seems that we don't need this. This would be only part of the
-    -- code that possibly could no be transfered to C.
+    -- FIXME: It seems that we don't need this, and this would be only part of the
+    -- code that would be difficult do transfer to rnvimserver.
     -- ter = {
     --     start = {
     --         line = lnum + 1,
