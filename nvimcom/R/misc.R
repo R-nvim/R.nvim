@@ -280,14 +280,14 @@ format_usage <- function(fnm, args) {
 #' menu.
 #' @param req_id ID of language server's request.
 #' @param funcname Name of function selected in the completion menu.
-nvim.GlobalEnv.fun.args <- function(req_id, funcname) {
+nvim.GlobalEnv.fun.args <- function(req_id, funcname, kind) {
     txt <- nvim.args(funcname)
     # txt <- gsub("\\\\", "\\\\\\\\", txt)
     txt <- format_usage(funcname, txt)
     txt <- paste0("function [.GlobalEnv]", txt)
     .C(
         nvimcom_msg_to_nvim,
-        paste0("require('r.lsp').resolve_cb('", txt, "')")
+        paste0("+R", req_id, "|", funcname, "|", kind, "|", txt)
     )
     return(invisible(NULL))
 }
@@ -296,7 +296,7 @@ nvim.GlobalEnv.fun.args <- function(req_id, funcname) {
 #' @param req_id ID of language server's request.
 #' @param obj Object selected in the completion menu.
 #' @param prnt Parent environment
-nvim.min.info <- function(req_id, obj, prnt) {
+nvim.min.info <- function(req_id, obj, lbl, prnt, kind) {
     isnull <- try(is.null(obj), silent = TRUE)
     if (class(isnull)[1] != "logical") {
         return(invisible(NULL))
@@ -324,7 +324,7 @@ nvim.min.info <- function(req_id, obj, prnt) {
 
     .C(
         nvimcom_msg_to_nvim,
-        paste0("require('r.lsp').resolve_cb('", txt, "')")
+        paste0("+R", req_id, "|", lbl, "|", kind, "|", txt)
     )
     return(invisible(NULL))
 }

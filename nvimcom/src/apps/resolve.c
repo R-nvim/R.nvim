@@ -240,39 +240,6 @@ void fix_doc(char *str) {
     }
 }
 
-// --- Helper Functions for Lua Features ---
-
-// A simple substitute for vim.fn.split(str, pattern)
-// In a real application, you'd use a more robust split function.
-// This simple version assumes the pattern is a single character.
-// It finds the first occurrence and returns two dynamically allocated strings.
-static char **simple_split(const char *str, char delimiter) {
-    char **parts = (char **)malloc(2 * sizeof(char *));
-    if (!parts)
-        return NULL;
-
-    const char *delim_pos = strchr(str, delimiter);
-
-    if (delim_pos == NULL) {
-        // No delimiter found, return original string as first part, empty
-        // string as second
-        parts[0] = strdup(str);
-        parts[1] = strdup("");
-    } else {
-        size_t len1 = delim_pos - str;
-        // First part
-        parts[0] = (char *)malloc(len1 + 1);
-        strncpy(parts[0], str, len1);
-        parts[0][len1] = '\0';
-
-        // Second part (starting after the delimiter)
-        parts[1] = strdup(delim_pos + 1);
-    }
-    return parts;
-}
-
-// --- Main Function (Conversion of 'resolve') ---
-
 void resolve_json(const char *req_id, const char *json) {
     Log("resolve_json: %s\n%s", req_id, json);
     // {"env":"base","label":"read.dcf","cls":"F","kind":3}
@@ -304,13 +271,15 @@ void resolve_json(const char *req_id, const char *json) {
 
         } else if (*cls == 'F') {
             char buffer[512];
-            sprintf(buffer, "nvimcom:::nvim.GlobalEnv.fun.args('%s', '%s')",
-                    req_id, lbl);
+            sprintf(buffer,
+                    "nvimcom:::nvim.GlobalEnv.fun.args('%s', '%s', '%s')",
+                    req_id, lbl, knd);
             nvimcom_eval(buffer);
         } else {
             char buffer[512];
-            sprintf(buffer, "nvimcom:::nvim.min.info('%s', %s, '%s')", req_id,
-                    lbl, env);
+            sprintf(buffer,
+                    "nvimcom:::nvim.min.info('%s', %s, '%s', '%s', '%s')",
+                    req_id, lbl, lbl, env, knd);
             nvimcom_eval(buffer);
         }
         return;
@@ -322,6 +291,7 @@ void resolve_json(const char *req_id, const char *json) {
                 env, lbl, env);
         nvimcom_eval(buffer);
     } else if (*cls == 'a') {
+        // Delete " = "
         char *p = lbl;
         while (*p) {
             if (*p == ' ') {
@@ -331,20 +301,17 @@ void resolve_json(const char *req_id, const char *json) {
             p++;
         }
 
-        // 2. Lua: local pf = vim.fn.split(itm_env, ":")
-        // Use our simple helper function
-        char **pf = simple_split(env, ':');
-        if (pf == NULL)
-            return; // Error handling
+        // Split "library:function"
+        char *lib = env;
+        char *func = lib;
+        while (*func) {
+            if (*func == ':') {
+                *func = 0;
+                func++;
+            }
+        }
+        resolve_arg_item(req_id, knd, lbl, lib, func);
 
-        resolve_arg_item(req_id, knd, lbl, pf[0], pf[1]);
-
-        // Memory cleanup for split result
-        free(pf[0]);
-        free(pf[1]);
-        free(pf);
-
-        // Lua: elseif itm_cls == "L" then
     } else if (*cls == 'L') {
         // Lua: print("value" .. fix_doc(itm_env)("\n") .. "kind" ..
         // vim.lsp.MarkupKind.Markdown) This line is complex due to the chained

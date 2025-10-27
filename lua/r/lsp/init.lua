@@ -3,7 +3,6 @@ local warn = require("r.log").warn
 
 local client_id
 
--- local ter = nil
 local qcell_opts = false
 local compl_region = true
 local lsp_debug = false
@@ -37,51 +36,7 @@ local options = {
 --    ["c"]  ["c"]  Field            data.frame column
 --    ["*"]  ["o"]  TypeParameter    other
 
--- This function should never be called. It should be deleted when we consider
--- the LSP completion free of logical bugs.
--- local err_msg = function(msg)
---     local info = debug.getinfo(1, "S").short_src
---     vim.notify(info .. ":\n\n" .. msg, vim.log.levels.ERROR, { title = "r_ls" })
--- end
-
 local M = {}
-
--- local fix_doc = function(txt)
---     -- The rnvimserver replaces ' with \019 and \n with \020. We have to revert this:
---     txt = string.gsub(txt, "\020", "\n")
---     txt = string.gsub(txt, "\019", "'")
---     txt = string.gsub(txt, "\018", "\\")
---     return txt
--- end
-
--- TODO: Use or delete
--- local backtick = function(s)
---     local t1 = {}
---     for token in string.gmatch(s, "[^$]+") do
---         table.insert(t1, token)
---     end
---
---     local t3 = {}
---     for _, v in pairs(t1) do
---         local t2 = {}
---         for token in string.gmatch(v, "[^@]+") do
---             if
---                 (not string.find(token, " = $"))
---                 and (
---                     string.find(token, " ")
---                     or string.find(token, "^_")
---                     or string.find(token, "^[0-9]")
---                 )
---             then
---                 table.insert(t2, "`" .. token .. "`")
---             else
---                 table.insert(t2, token)
---             end
---         end
---         table.insert(t3, table.concat(t2, "@"))
---     end
---     return table.concat(t3, "$")
--- end
 
 local get_piped_obj
 get_piped_obj = function(line, lnum)
@@ -205,107 +160,6 @@ local reset_r_compl = function()
     vim.notify("NOT IMPLEMENTED: reset_r_compl")
     warned_no_reset = true
 end
-
--- FIXME: the whole "resolve" function must be converted to C and put in rnvimserver.c
--- ---@param req_id string
--- ---@param itm_str string
--- M.resolve = function(req_id, itm_str)
---     -- vim.notify(tostring(req_id) .. "\n" .. itm_str)
---     local itm = vim.json.decode(itm_str)
---     -- vim.notify(tostring(req_id) .. "\n" .. itm_str .. "\n" .. vim.inspect(itm))
---
---     if not itm.cls then return nil end
---
---     -- FIXME: It seems that we don't need this, and this would be only part of the
---     -- code that would be difficult do transfer to rnvimserver.
---     -- ter = {
---     --     start = {
---     --         line = lnum + 1,
---     --         character = cnum - 1,
---     --     },
---     --     ["end"] = {
---     --         line = lnum + 1,
---     --         character = cnum,
---     --     },
---     -- }
---
---     if itm.env == ".GlobalEnv" then
---         if itm.cls == "a" then
---             err_msg("RESOLVE A")
---         elseif itm.cls == "f" or itm.cls == "b" or itm.cls == "t" or itm.cls == "n" then
---             send_to_nvimcom(
---                 "E",
---                 string.format(
---                     "nvimcom:::nvim.get.summary('%s', '%s', '%s', %s, '%s')",
---                     req_id,
---                     itm.kind,
---                     itm.label,
---                     itm.label,
---                     itm.env
---                 )
---             )
---         elseif itm.cls == "F" then
---             send_to_nvimcom(
---                 "E",
---                 string.format(
---                     "nvimcom:::nvim.GlobalEnv.fun.args('%s', '%s')",
---                     req_id,
---                     itm.label
---                 )
---             )
---         else
---             send_to_nvimcom(
---                 "E",
---                 string.format(
---                     "nvimcom:::nvim.min.info('%s', %s, '%s')",
---                     req_id,
---                     itm.label,
---                     itm.env
---                 )
---             )
---         end
---         return nil
---     end
---
---     -- Column of data.frame for fun_data_1 or fun_data_2
---     if itm.cls == "c" then
---         send_to_nvimcom(
---             "E",
---             string.format(
---                 "nvimcom:::nvim.get.summary('%s', %s$%s, '%s')",
---                 req_id,
---                 itm.env,
---                 itm.label,
---                 itm.env
---             )
---         )
---     elseif itm.cls == "a" then
---         local lbl = itm.label:gsub(" = ", "")
---         local pf = vim.fn.split(itm.env, ":")
---         M.send_msg(string.format("7%s|%s|%s|%s|%s", req_id, itm.kind, lbl, pf[1], pf[2]))
---     elseif itm.cls == "L" then
---         itm.documentation = {
---             value = fix_doc(itm.env),
---             kind = vim.lsp.MarkupKind.Markdown,
---         }
---         vim.notify("RESOLVE L")
---     elseif
---         itm.label:find("%$")
---         and (itm.cls == "f" or itm.cls == "b" or itm.cls == "t" or itm.cls == "n")
---     then
---         send_to_nvimcom(
---             "E",
---             string.format(
---                 "nvimcom:::nvim.get.summary('%s', %s, '%s')",
---                 req_id,
---                 itm.label,
---                 itm.env
---             )
---         )
---     else
---         M.send_msg(string.format("6%s|%s|%s|%s", req_id, itm.kind, itm.label, itm.env))
---     end
--- end
 
 -- TODO: Delete this function
 local send_items = function(req_id, tbl)
