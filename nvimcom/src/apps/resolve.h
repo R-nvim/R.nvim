@@ -1,7 +1,6 @@
 #ifndef RESOLVE_H
 #define RESOLVE_H
 
-void resolve(char *args);
-void resolve_arg_item(char *args);
+void resolve_json(const char *req_id, const char *json);
 
 #endif

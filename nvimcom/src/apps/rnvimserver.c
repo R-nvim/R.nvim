@@ -311,14 +311,6 @@ void handle_exe_cmd(char *code) {
         msg++;
         complete(msg);
         break;
-    case '6':
-        msg++;
-        resolve(msg);
-        break;
-    case '7':
-        msg++;
-        resolve_arg_item(msg);
-        break;
     case '9': // Quit now
         stop_server();
         exit(0);
@@ -450,7 +442,7 @@ void lsp_loop(void) {
                     j++;
                 }
                 p[j] = '\0';
-                char compl_command[1024];
+                // char compl_command[1024];
                 // FIXME: All "resolve" events should be done here, not in Lua.
                 // Example for the completion of a library:
                 // {"jsonrpc":"2.0","id":9,"method":"completionItem/resolve","params":{"kind":9,"label":"abind","cls":"L"}}
@@ -458,9 +450,11 @@ void lsp_loop(void) {
                 // Write a code to parse the line byte by byte and case/match
                 // the fields that we need.
 
-                snprintf(compl_command, 1024,
-                         "require('r.lsp').resolve('%s', '%s')", request_id, p);
-                send_cmd_to_nvim(compl_command);
+                // snprintf(compl_command, 1024,
+                //          "require('r.lsp').resolve('%s', '%s')", request_id,
+                //          p);
+                // send_cmd_to_nvim(compl_command);
+                resolve_json(request_id, p);
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(request_id);
             } else if (strcmp(method, "initialized") == 0) {
