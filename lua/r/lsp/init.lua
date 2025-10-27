@@ -6,6 +6,7 @@ local client_id
 -- local ter = nil
 local qcell_opts = false
 local compl_region = true
+local lsp_debug = false
 
 -- TODO: incorporate the options into normal R.nvim config at lua/r/config.lua
 local options = {
@@ -559,8 +560,8 @@ function M.start(rns_path, rns_env)
         --     rns_path,
         -- },
         cmd_env = rns_env,
-        on_init = on_init,
-        on_attach = on_attach,
+        on_init = lsp_debug and on_init or nil,
+        on_attach = lsp_debug and on_attach or nil,
         on_exit = on_exit,
         on_error = on_error,
         trace = "verbose",
