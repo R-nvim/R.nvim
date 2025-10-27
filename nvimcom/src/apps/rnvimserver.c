@@ -116,7 +116,7 @@ static void init(void) {
  */
 void send_ls_response(const char *json_payload) {
 #ifdef Debug_NRS
-    if (strlen(json_payload) > 8380) {
+    if (strlen(json_payload) > 380) {
         char begin[360] = {0};
         char end[16] = {0};
         memcpy(begin, json_payload, 359);
@@ -332,8 +332,8 @@ void handle_exe_cmd(char *code) {
 /**
  * @brief Handles the 'exit' notification to shut down the server.
  */
-void handle_exit(void) {
-    Log("LSP: Received exit notification. Shutting down.\n");
+void handle_exit(const char *method) {
+    Log("LSP: Received \"%s\" notification. Shutting down.\n", method);
     exit(0);
 }
 
@@ -464,8 +464,9 @@ void lsp_loop(void) {
                 handle_initialize(request_id);
             } else if (strcmp(method, "initialized") == 0) {
                 init();
-            } else if (strcmp(method, "exit") == 0) {
-                handle_exit();
+            } else if (strcmp(method, "exit") == 0 ||
+                       strcmp(method, "shutdown") == 0) {
+                handle_exit(method);
             } else {
                 Log("LSP: Unhandled method: %s\n", method);
             }
