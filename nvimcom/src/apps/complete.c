@@ -445,16 +445,20 @@ char *complete_args(char *p, char *funcnm) {
                             p = str_cat(p, a);
                             p = str_cat(p, " = ");
                             if (*s == '\x04') {
-                                p = str_cat(p, "\", \"def\":\"");
-                                i = 0;
+                                /* FIXME: remove this "def" (default value) from
+                                 * omnils file */
+                                // p = str_cat(p, "\", \"def\":\"");
+                                // i = 0;
                                 s++;
                                 while (*s != '\x05' && i < 63) {
-                                    a[i] = *s;
+                                    // a[i] = *s;
                                     i++;
                                     s++;
                                 }
-                                a[i] = 0;
-                                p = str_cat(p, a);
+                                // a[i] = 0;
+                                // char *esc = esc_json(a);
+                                // p = str_cat(p, esc);
+                                // free(esc);
                             }
                             p = str_cat(
                                 p, "\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
