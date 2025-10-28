@@ -63,15 +63,13 @@ static void fill_compl_buffer(const char *word, ChunkItem *root) {
     }
 }
 
-void complete_chunk_opts(char *args) {
-    Log("complete_chunk args: '%s'", args);
-    const char kind = *args;
-    args++;
-    const char *req_id = strtok(args, "|");
-    const char *word = strtok(NULL, "|");
-    if (*word == ' ')
-        word = NULL;
-    Log("complete_chunk [%s]: '%s'", req_id, word);
+void complete_chunk_opts(char kind, const char *params) {
+    Log("complete_chunk params: '%s'", params);
+    char *id = strstr(params, "\"orig_id\":");
+    char *word = strstr(params, "\"word\":\"");
+    cut_json_int(&id, 10);
+    cut_json_str(&word, 8);
+    Log("complete_chunk [%s]: '%s'", id, word);
 
     char fname[128];
 
@@ -91,5 +89,5 @@ void complete_chunk_opts(char *args) {
         fill_compl_buffer(word, broot);
     }
 
-    send_menu_items(cbuffer, req_id);
+    send_menu_items(cbuffer, id);
 }

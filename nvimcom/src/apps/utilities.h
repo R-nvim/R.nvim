@@ -17,5 +17,7 @@ char *grow_buffer(char **b, unsigned long *sz, unsigned long inc);
 void replace_char(char *s, char find, char replace);
 char *read_file(const char *fn, int verbose);
 char *esc_json(const char *input);
+void cut_json_int(char **str, unsigned len);
+void cut_json_str(char **str, unsigned len);
 
 #endif

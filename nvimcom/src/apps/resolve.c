@@ -49,8 +49,31 @@ static void get_alias(char **pkg, char **fun) {
     *pkg = NULL;
 }
 
-void resolve_arg_item(const char *rid, const char *knd, const char *itm,
-                      char *pkg, char *fnm) {
+static void resolve_lib_name(const char *req_id, const char *lbl,
+                             const char *cls) {
+    Log("resolve_lib_name: %s, %s", req_id, lbl);
+
+    if (!instlibs)
+        return;
+
+    InstLibs *il;
+
+    il = instlibs;
+    while (il) {
+        if (strcmp(il->name, lbl) == 0) {
+            char *b = (char *)malloc(
+                sizeof(char) * (strlen(il->title) + strlen(il->descr) + 32));
+            sprintf(b, "**%s**\x14\x14%s\x14", il->title, il->descr);
+            send_item_doc(b, req_id, lbl, "9", cls);
+            free(b);
+            break;
+        }
+        il = il->next;
+    }
+}
+
+static void resolve_arg_item(const char *rid, const char *knd, const char *cls,
+                             const char *itm, char *pkg, char *fnm) {
 
     Log("resolve_arg_item: %s, %s, %s, %s, %s", pkg, fnm, itm, rid, knd);
     get_alias(&pkg, &fnm);
@@ -82,7 +105,8 @@ void resolve_arg_item(const char *rid, const char *knd, const char *itm,
                                                 char *b = calloc(strlen(s) + 2,
                                                                  sizeof(char));
                                                 format(s, b, ' ', '\x14');
-                                                send_item_doc(b, rid, itm, knd);
+                                                send_item_doc(b, rid, itm, knd,
+                                                              cls);
                                                 free(b);
                                                 return;
                                             }
@@ -112,8 +136,8 @@ void resolve_arg_item(const char *rid, const char *knd, const char *itm,
  * description to be displayed in the float window
  * @param args: List of arguments
  * */
-void resolve(const char *rid, const char *knd, const char *wrd,
-             const char *pkg) {
+static void resolve(const char *rid, const char *knd, const char *cls,
+                    const char *wrd, const char *pkg) {
 
     Log("resolve: %s, %s, %s, %s", wrd, pkg, rid, knd);
     int i;
@@ -157,8 +181,10 @@ void resolve(const char *rid, const char *knd, const char *wrd,
                 s++;
 
             if (f[1][0] == 'F' && str_here(f[4], ">not_checked<")) {
-                snprintf(compl_buffer, 1024,
-                         "nvimcom:::nvim.GlobalEnv.fun.args(\"%s\")\n", wrd);
+                snprintf(
+                    compl_buffer, 1024,
+                    "nvimcom:::nvim.GlobalEnv.fun.args('%s', '%s', '%s', '%s')",
+                    rid, wrd, knd, cls);
                 nvimcom_eval(compl_buffer);
                 return;
             }
@@ -190,7 +216,7 @@ void resolve(const char *rid, const char *knd, const char *wrd,
                 p = str_cat(p, b);
                 free(b);
             }
-            send_item_doc(compl_buffer, rid, wrd, knd);
+            send_item_doc(compl_buffer, rid, wrd, knd, cls);
             return;
         }
         while (*s != '\n')
@@ -199,87 +225,47 @@ void resolve(const char *rid, const char *knd, const char *wrd,
     }
 }
 
-static void cut_json_int(char **str, unsigned len) {
-    char *p = *str + len;
-    *str = p + 1;
-    *p = '\0';
-    p++;
-    while (*p >= '0' && *p <= '9')
-        p++;
-    *p = '\0';
-}
-
-static void cut_json_str(char **str, unsigned len) {
-    if (*str == NULL)
-        return;
-    char *p = *str + len;
-    *str = p + 1;
-    *p = '\0';
-    while (*p != '"')
-        p++;
-    *p = '\0';
-}
-
-// local fix_doc = function(txt)
-//     -- The rnvimserver replaces ' with \019 and \n with \020. We have to
-//     revert this: txt = string.gsub(txt, "\020", "\n") txt = string.gsub(txt,
-//     "\019", "'") txt = string.gsub(txt, "\018", "\\") return txt
-// end
-
-// Simulate the fix_doc function
-// Note: In C, we must manage the memory for the returned string!
-void fix_doc(char *str) {
-    while (*str) {
-        if (*str == '\x12')
-            *str = '\'';
-        else if (*str == '\x13')
-            *str = '"';
-        else if (*str == '\x14')
-            *str = '\n';
-        str++;
-    }
-}
-
-void resolve_json(const char *req_id, const char *json) {
-    Log("resolve_json: %s\n%s", req_id, json);
+void resolve_json(const char *req_id, const char *params) {
+    Log("resolve_json: %s\n%s", req_id, params);
     // {"env":"base","label":"read.dcf","cls":"F","kind":3}
-    char *env = strstr(json, "\"env\":\"");
-    char *lbl = strstr(json, "\"label\":\"");
-    char *cls = strstr(json, "\"cls\":\"");
-    char *knd = strstr(json, "\"kind\":");
+    char *env = strstr(params, "\"env\":\"");
+    char *lbl = strstr(params, "\"label\":\"");
+    char *cls = strstr(params, "\"cls\":\"");
+    char *knd = strstr(params, "\"kind\":");
 
     if (!cls)
         return;
 
-    cut_json_str(&env, 6);
-    cut_json_str(&cls, 6);
-    cut_json_str(&lbl, 8);
-    cut_json_int(&knd, 6);
+    cut_json_str(&env, 7);
+    cut_json_str(&cls, 7);
+    cut_json_str(&lbl, 9);
+    cut_json_int(&knd, 7);
 
-    Log("resolve_json: %s | %s | %s | %s", env, lbl, cls, knd);
+    Log("resolve_json: '%s', '%s', '%c', '%s'", env, lbl, *cls, knd);
 
-    if (strcmp(env, ".GlobalEnv") == 0) {
+    if (env && strcmp(env, ".GlobalEnv") == 0) {
         if (*cls == 'a') {
             Log("RESOLVE A");
 
         } else if (*cls == 'f' || *cls == 'b' || *cls == 't' || *cls == 'n') {
             char buffer[512];
-            sprintf(buffer,
-                    "nvimcom:::nvim.get.summary('%s', '%s', '%s', %s, '%s')",
-                    req_id, knd, lbl, lbl, env);
+            sprintf(
+                buffer,
+                "nvimcom:::nvim.get.summary('%s', '%s', '%s', '%s', %s, '%s')",
+                req_id, knd, cls, lbl, lbl, env);
             nvimcom_eval(buffer);
 
         } else if (*cls == 'F') {
             char buffer[512];
             sprintf(buffer,
-                    "nvimcom:::nvim.GlobalEnv.fun.args('%s', '%s', '%s')",
-                    req_id, lbl, knd);
+                    "nvimcom:::nvim.GlobalEnv.fun.args('%s', '%s', '%s', '%s')",
+                    req_id, lbl, knd, cls);
             nvimcom_eval(buffer);
         } else {
             char buffer[512];
             sprintf(buffer,
-                    "nvimcom:::nvim.min.info('%s', %s, '%s', '%s', '%s')",
-                    req_id, lbl, lbl, env, knd);
+                    "nvimcom:::nvim.min.info('%s', %s, '%s', '%s', '%s', '%s')",
+                    req_id, lbl, lbl, env, knd, cls);
             nvimcom_eval(buffer);
         }
         return;
@@ -287,8 +273,10 @@ void resolve_json(const char *req_id, const char *json) {
 
     if (*cls == 'c') {
         char buffer[512];
-        sprintf(buffer, "nvimcom:::nvim.get.summary('%s', %s$%s, '%s')", req_id,
-                env, lbl, env);
+        sprintf(
+            buffer,
+            "nvimcom:::nvim.get.summary('%s', '%s', '%s', '%s', %s$%s, '%s')",
+            req_id, knd, cls, lbl, env, lbl, env);
         nvimcom_eval(buffer);
     } else if (*cls == 'a') {
         // Delete " = "
@@ -308,37 +296,21 @@ void resolve_json(const char *req_id, const char *json) {
             if (*func == ':') {
                 *func = 0;
                 func++;
+                break;
             }
+            func++;
         }
-        resolve_arg_item(req_id, knd, lbl, lib, func);
-
+        resolve_arg_item(req_id, knd, cls, lbl, lib, func);
     } else if (*cls == 'L') {
-        // Lua: print("value" .. fix_doc(itm_env)("\n") .. "kind" ..
-        // vim.lsp.MarkupKind.Markdown) This line is complex due to the chained
-        // function call `fix_doc(itm_env)("\n")` which looks like a Lua
-        // closure. Assuming it's meant to print "value" + fix_doc result +
-        // "kind" + a constant:
-
-        // char *fixed_env = fix_doc(env);
-        // // Note: Assuming a placeholder for vim.lsp.MarkupKind.Markdown
-        // const char *MARKUP_KIND_MARKDOWN = "markdown";
-        //
-        // printf("value%skind%s\n", fixed_env, MARKUP_KIND_MARKDOWN);
-        // free(fixed_env); // Free the memory from fix_doc
-        //
-        Log("RESOLVE L\n");
-
-        // Lua: elseif itm_label:find("%$") and (itm_cls == "f" or itm_cls ==
-        // "b" or itm_cls == "t" or itm_cls == "n") then
+        resolve_lib_name(req_id, lbl, cls);
     } else if (strstr(lbl, "$") != NULL &&
                (*cls == 'f' || *cls == 'b' || *cls == 't' || *cls == 'n')) {
         char buffer[512];
-        sprintf(buffer, "nvimcom:::nvim.get.summary('%s', %s, '%s')", req_id,
-                lbl, env);
+        sprintf(buffer,
+                "nvimcom:::nvim.get.summary('%s', '%s', '%s', '%s', %s, '%s')",
+                req_id, knd, cls, lbl, lbl, env);
         nvimcom_eval(buffer);
-
-        // Lua: else
     } else {
-        resolve(req_id, knd, lbl, env);
+        resolve(req_id, knd, cls, lbl, env);
     }
 }

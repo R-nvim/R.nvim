@@ -310,7 +310,7 @@ function M.start(_)
     state.is_running = true
 
     -- Request data from R to populate the Object Browser
-    require("r.lsp").send_msg("31")
+    require("r.lsp").send_msg({ code = "31" })
     send_to_nvimcom("A", "RObjBrowser")
 
     start_OB()
@@ -325,10 +325,10 @@ function M.get_curview() return state.curview end
 function M.toggle_view()
     if state.curview == "libraries" then
         state.curview = "GlobalEnv"
-        require("r.lsp").send_msg("31")
+        require("r.lsp").send_msg({ code = "31" })
     else
         state.curview = "libraries"
-        require("r.lsp").send_msg("321")
+        require("r.lsp").send_msg({ code = "321" })
     end
 end
 
@@ -388,7 +388,9 @@ end
 
 --- Expand or collapse lists and data frames in the Object Browser
 ---@param stt string
-function M.open_close_lists(stt) require("r.lsp").send_msg("34" .. stt .. state.curview) end
+function M.open_close_lists(stt)
+    require("r.lsp").send_msg({ code = "34" .. stt .. state.curview })
+end
 
 --- Update the Object Browser content
 ---@param what string
@@ -451,7 +453,7 @@ function M.on_double_click()
         then
             -- Expand or collapse the object
             key = key:gsub("`", "")
-            require("r.lsp").send_msg("33G" .. key)
+            require("r.lsp").send_msg({ code = "33G" .. key })
         else
             -- Run str() on the object
             require("r.send").cmd("str(" .. key .. ")")
@@ -471,7 +473,7 @@ function M.on_double_click()
                 or curline:find(":#.*\t")
             then
                 -- Expand or collapse the object in libraries view
-                require("r.lsp").send_msg("33L" .. key)
+                require("r.lsp").send_msg({ code = "33L" .. key })
             else
                 require("r.send").cmd("str(" .. key .. ")")
             end

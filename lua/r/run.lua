@@ -220,7 +220,7 @@ M.start_R = function(whatr)
     if vim.g.R_Nvim_status == 3 then
         vim.g.R_Nvim_status = 4
         require("r.send").set_send_cmd_fun()
-        require("r.lsp").send_msg("1")
+        require("r.lsp").send_msg({ code = "1" })
         what_R = whatr
         vim.fn.timer_start(30, start_R2)
         return
@@ -338,7 +338,7 @@ M.clear_R_info = function()
     if config.external_term == "" then require("r.term.builtin").close_term() end
     if job.is_running("Server") then
         vim.g.R_Nvim_status = 3
-        require("r.lsp").send_msg("43")
+        require("r.lsp").send_msg({ code = "43" })
     else
         vim.g.R_Nvim_status = 1
     end
@@ -361,7 +361,7 @@ M.send_to_nvimcom = function(code, attch)
         warn("R is not ready yet")
         return
     end
-    require("r.lsp").send_msg("2" .. code .. vim.env.RNVIM_ID .. attch)
+    require("r.lsp").send_msg({ code = "2" .. code .. vim.env.RNVIM_ID .. attch })
 end
 
 M.quit_R = function(how)

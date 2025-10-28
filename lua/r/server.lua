@@ -271,9 +271,9 @@ local build_objls_exit = function()
     )
     building_objls = false
     if vim.env.CMPR_DOC_WIDTH then
-        require("r.lsp").send_msg("41" .. vim.env.CMPR_DOC_WIDTH)
+        require("r.lsp").send_msg({ code = "41" .. vim.env.CMPR_DOC_WIDTH })
     else
-        require("r.lsp").send_msg("41")
+        require("r.lsp").send_msg({ code = "41" })
     end
 end
 
@@ -435,7 +435,7 @@ M.build_objls = function(objs)
 end
 
 -- Get information from rnvimserver (currently only the names of loaded libraries).
-M.request_rns_info = function() require("r.lsp").send_msg("42") end
+M.request_rns_info = function() require("r.lsp").send_msg({ code = "42" }) end
 
 -- Called by rnvimserver when it gets an error running R code
 M.show_bol_error = function(stt)

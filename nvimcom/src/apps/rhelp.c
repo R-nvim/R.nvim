@@ -1,7 +1,10 @@
+#include <string.h>
+
 #include "rhelp.h"
 #include "logging.h"
 #include "lsp.h"
 #include "../common.h"
+#include "utilities.h"
 
 #define N_RHELP_KEYS 119
 static const char *rhelp_keywords[N_RHELP_KEYS] = {
@@ -31,8 +34,10 @@ static const char *rhelp_keywords[N_RHELP_KEYS] = {
     "var",          "verb",       "xi",          "zeta",
 };
 
-void complete_rhelp(const char *req_id) {
-    Log("complete_rhelp");
+void complete_rhelp(const char *params) {
+    char *id = strstr(params, "\"orig_id\":");
+    cut_json_int(&id, 10);
+    Log("complete_rhelp: %s", id);
     char rhelp_menu[4096] = {0};
     char *p = rhelp_menu;
     for (int i = 0; i < N_RHELP_KEYS; i++) {
@@ -40,5 +45,5 @@ void complete_rhelp(const char *req_id) {
         p = str_cat(p, rhelp_keywords[i]);
         p = str_cat(p, "\",\"kind\":14},");
     }
-    send_menu_items(rhelp_menu, req_id);
+    send_menu_items(rhelp_menu, id);
 }

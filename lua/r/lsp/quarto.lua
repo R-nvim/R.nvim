@@ -62,7 +62,7 @@ local M = {}
 M.get_cell_opts = function(qmd_intel)
     local fname = vim.env.RNVIM_COMPLDIR .. "/quarto_block_items"
 
-    -- FIXME check date of yml file and compare with fname
+    -- FIXME: compare the modification dates of the yml and the fname
     if vim.fn.filereadable(fname) == 1 then return true end
 
     local qopts = {}

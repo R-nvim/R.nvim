@@ -201,9 +201,9 @@ function M.complete(req_id, lnum, cnum)
     -- Check if this is Rmd and the cursor is in the chunk header
     if vim.bo.filetype == "rmd" and cline:find("^```{r") then
         if wrd then
-            M.send_msg(string.format("CC%d|%s|", req_id, wrd))
+            M.send_msg({ code = "CC", orig_id = req_id, base = wrd })
         else
-            M.send_msg(string.format("CC%d| |", req_id))
+            M.send_msg({ code = "CC", orig_id = req_id })
         end
         return
     end
@@ -246,7 +246,9 @@ function M.complete(req_id, lnum, cnum)
                 end
             end
             if lang ~= "r" then
-                if cline:sub(cnum, cnum) == "\\" then M.send_msg("CH" .. req_id) end
+                if cline:sub(cnum, cnum) == "\\" then
+                    M.send_msg({ code = "CH", orig_id = req_id })
+                end
                 return
             end
         end
@@ -260,9 +262,9 @@ function M.complete(req_id, lnum, cnum)
                 qcell_opts = require("r.lsp.quarto").get_cell_opts(options.quarto_intel)
             end
             if wrd then
-                M.send_msg(string.format("CB%d|%s|", req_id, wrd))
+                M.send_msg({ code = "CB", orig_id = req_id, base = wrd })
             else
-                M.send_msg(string.format("CB%d| |", req_id))
+                M.send_msg({ code = "CB", orig_id = req_id })
             end
             return
         end
@@ -303,7 +305,7 @@ function M.complete(req_id, lnum, cnum)
             (nra.fnm == "library" or nra.fnm == "require")
             and (not nra.firstobj or nra.firstobj == arg)
         then
-            M.send_msg(string.format("5%s|%s|#| | ", req_id, arg))
+            M.send_msg({ code = "5", orig_id = req_id, base = wrd, fnm = "#" })
             return
         end
 
@@ -312,11 +314,14 @@ function M.complete(req_id, lnum, cnum)
         if vim.g.R_Nvim_status < 7 then
             -- Get the arguments of the first function whose name matches nra.fnm
             if nra.lib then
-                M.send_msg(
-                    string.format("5%s|%s|%s::%s| | ", req_id, arg, nra.lib, nra.fnm)
-                )
+                M.send_msg({
+                    code = "5",
+                    orig_id = req_id,
+                    base = wrd,
+                    fnm = nra.lib .. "::" .. nra.fnm,
+                })
             else
-                M.send_msg(string.format("5%s|%s|%s| | ", req_id, arg, nra.fnm))
+                M.send_msg({ code = "5", orig_id = req_id, base = wrd, fnm = nra.fnm })
             end
             return
         else
@@ -350,7 +355,7 @@ function M.complete(req_id, lnum, cnum)
         return
     end
 
-    M.send_msg(string.format("5%s|%s| | | ", req_id, wrd))
+    M.send_msg({ code = "5", orig_id = req_id, base = wrd })
 end
 
 --- Execute lua command sent by rnvimserver
@@ -431,11 +436,11 @@ function M.start(rns_path, rns_env)
     if client_id then vim.lsp.completion.enable(true, client_id, 0) end
 end
 
-function M.send_msg(code)
+function M.send_msg(params)
     local buf = require("r.edit").get_rscript_buf()
     -- lua_ls will warn that "exeRnvimCmd" is not a valid method
-    local res = vim.lsp.buf_notify(buf, "exeRnvimCmd", { code = code })
-    if not res then warn("Failed to send message to r_ls: " .. code) end
+    local res = vim.lsp.buf_notify(buf, "exeRnvimCmd", params)
+    if not res then warn("Failed to send message to r_ls: " .. vim.inspect(params)) end
 end
 
 return M

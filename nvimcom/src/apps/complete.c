@@ -350,55 +350,48 @@ static void complete_instlibs(char *p, const char *base) {
 //     }
 // }
 
-void complete(char *args) {
-    // char *arglist[5];
-    // get_args(args, arglist, 5);
-    // const char *req_id = arglist[0];
-    // char *base = arglist[1];
-    // char *funcnm = arglist[2];
-    // const char *dtfrm = arglist[3];
-    // const char *funargs = arglist[4];
+void complete(const char *params) {
+    char *id = strstr(params, "\"orig_id\":");
+    char *base = strstr(params, "\"base\":\"");
+    char *fnm = strstr(params, "\"fnm\":\"");
+    char *df = strstr(params, "\"df\":\"");
+    char *fargs = strstr(params, "\"fargs\":\"");
+    cut_json_int(&id, 10);
+    cut_json_str(&base, 8);
+    cut_json_str(&fnm, 7);
+    cut_json_str(&df, 6);
+    cut_json_str(&fargs, 9);
 
-    const char *req_id = strtok(args, "|");
-    char *base = strtok(NULL, "|");
-    char *funcnm = strtok(NULL, "|");
-    char *dtfrm = strtok(NULL, "|");
-    char *funargs = strtok(NULL, "|");
-    base = *base == ' ' ? NULL : base;
-    funcnm = *funcnm == ' ' ? NULL : funcnm;
-    dtfrm = *dtfrm == ' ' ? NULL : dtfrm;
-    funargs = *funargs == ' ' ? NULL : funargs;
-
-    Log("complete(%s, %s, %s, %s, %s)", req_id, base, funcnm, dtfrm, funargs);
+    Log("complete(%s, %s, %s, %s, %s)", id, base, fnm, df, fargs);
     char *p;
 
     memset(compl_buffer, 0, compl_buffer_size);
     p = compl_buffer;
 
     // Get menu completion for installed libraries
-    if (funcnm && *funcnm == '#') {
+    if (fnm && *fnm == '#') {
         complete_instlibs(p, base);
-        send_menu_items(compl_buffer, req_id);
+        send_menu_items(compl_buffer, id);
         return;
     }
 
-    if (funargs || funcnm) {
-        if (funargs) {
+    if (fargs || fnm) {
+        if (fargs) {
             // Insert arguments of .GlobalEnv function
-            p = str_cat(p, funargs);
-        } else if (funcnm) {
+            p = str_cat(p, fargs);
+        } else if (fnm) {
             // Completion of arguments of a library's function
-            p = complete_args(p, funcnm);
+            p = complete_args(p, fnm);
 
             // Add columns of a data.frame
-            if (dtfrm) {
-                p = get_df_cols(dtfrm, base, p);
+            if (df) {
+                p = get_df_cols(df, base, p);
             }
         }
 
         // base will be empty if completing only function arguments
         if (!base) {
-            send_menu_items(compl_buffer, req_id);
+            send_menu_items(compl_buffer, id);
             return;
         }
     }
@@ -424,5 +417,5 @@ void complete(char *args) {
             pd = pd->next;
         }
     }
-    send_menu_items(compl_buffer, req_id);
+    send_menu_items(compl_buffer, id);
 }

@@ -77,9 +77,11 @@ static void ParseMsg(char *b) {
             const char *rid = strtok(b, "|");
             const char *lbl = strtok(NULL, "|");
             const char *knd = strtok(NULL, "|");
+            const char *cls = strtok(NULL, "|");
             const char *doc = strtok(NULL, "|");
-            Log("Before send_item_doc: %s, %s, %s, %s", doc, rid, lbl, knd);
-            send_item_doc(doc, rid, lbl, knd);
+            Log("Before send_item_doc: %s, %s, %s, %s, %s", doc, rid, lbl, knd,
+                cls);
+            send_item_doc(doc, rid, lbl, knd, cls);
             break;
         case 'D': // set max_depth of lists in the completion data
             b++;

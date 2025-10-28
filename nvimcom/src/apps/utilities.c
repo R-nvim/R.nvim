@@ -146,3 +146,25 @@ char *esc_json(const char *input) {
     b[j] = '\0';
     return b;
 }
+
+// Advance the pointer to the value and NULL terminate the string
+void cut_json_int(char **str, unsigned len) {
+    if (*str == NULL)
+        return;
+    char *p = *str + len;
+    *str = p;
+    while (*p >= '0' && *p <= '9')
+        p++;
+    *p = '\0';
+}
+
+// Advance the pointer to the value and NULL terminate the string
+void cut_json_str(char **str, unsigned len) {
+    if (*str == NULL)
+        return;
+    char *p = *str + len;
+    *str = p;
+    while (*p != '"')
+        p++;
+    *p = '\0';
+}
