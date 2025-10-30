@@ -225,13 +225,27 @@ static void resolve(const char *rid, const char *knd, const char *cls,
     }
 }
 
-void resolve_json(const char *req_id, const char *params) {
+void resolve_json(const char *req_id, char *params) {
     Log("resolve_json: %s\n%s", req_id, params);
     // {"env":"base","label":"read.dcf","cls":"F","kind":3}
+
+    char *doc = strstr(params, "\"documentation\":{");
     char *env = strstr(params, "\"env\":\"");
     char *lbl = strstr(params, "\"label\":\"");
     char *cls = strstr(params, "\"cls\":\"");
     char *knd = strstr(params, "\"kind\":");
+
+    if (doc) {
+        cut_json_bkt(&params, 9);
+        Log("%s", params);
+        const char *fmt = "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":%s}";
+        size_t len = sizeof(char) * (strlen(params) + 64);
+        char *res = (char *)malloc(len);
+        snprintf(res, len - 1, fmt, req_id, params);
+        send_ls_response(res);
+        free(res);
+        return;
+    }
 
     if (!cls)
         return;

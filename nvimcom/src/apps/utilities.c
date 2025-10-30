@@ -168,3 +168,20 @@ void cut_json_str(char **str, unsigned len) {
         p++;
     *p = '\0';
 }
+
+// Advance the pointer to the opening bracket and NULL terminate the string
+// after the closing bracket
+void cut_json_bkt(char **str, unsigned len) {
+    char *p = *str + len;
+    *str = p;
+    size_t j = 1;
+    int n_braces = 1;
+    while (n_braces > 0 && p[j]) {
+        if (p[j] == '{')
+            n_braces++;
+        else if (p[j] == '}')
+            n_braces--;
+        j++;
+    }
+    p[j] = '\0';
+}

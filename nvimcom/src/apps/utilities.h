@@ -19,5 +19,6 @@ char *read_file(const char *fn, int verbose);
 char *esc_json(const char *input);
 void cut_json_int(char **str, unsigned len);
 void cut_json_str(char **str, unsigned len);
+void cut_json_bkt(char **str, unsigned len);
 
 #endif

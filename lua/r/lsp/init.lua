@@ -7,7 +7,7 @@ local qcell_opts = false
 local compl_region = true
 local lsp_debug = false
 
-local options = require("r.config").get_config().r_ls
+local options = require("r.config").get_config().r_ls or {}
 
 -- TODO: delete this table before merging the pull request
 -- Correspondence between nvimcom "cls" and LSP "kind".

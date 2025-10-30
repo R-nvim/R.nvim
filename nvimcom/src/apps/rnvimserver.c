@@ -227,7 +227,6 @@ static void handle_exe_cmd(const char *params) {
         if (*code == 'H') {
             complete_rhelp(params);
         } else {
-            code++;
             complete_chunk_opts(*code, params);
         }
         break;
