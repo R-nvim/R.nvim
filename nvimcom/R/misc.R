@@ -590,7 +590,15 @@ nvim_complete_args <- function(
         if (objclass[1] != "#E#" && objclass[1] != "") {
             mthd <- nvim.getmethod(rkeyword, objclass)
             if (mthd != rkeyword) {
-                msg <- paste0("+C", req_id, "|", argkey, "| | |", mthd)
+                msg <- paste0(
+                    '+C{"orig_id":',
+                    req_id,
+                    ',"base":"',
+                    argkey,
+                    '","fars":"',
+                    mthd,
+                    '"}'
+                )
                 .C(nvimcom_msg_to_nvim, msg)
                 return(invisible(NULL))
             }

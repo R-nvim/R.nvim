@@ -1306,7 +1306,7 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
         strncpy(rns_port, getenv("RNVIM_PORT"), 15);
 
     // FIXME
-    set_doc_width(getenv("CMPR_DOC_WIDTH"));
+    set_doc_width(getenv("R_LS_DOC_WIDTH"));
 
     if (verbose > 0)
         REprintf("nvimcom %s loaded\n", CHAR(STRING_ELT(nvv, 0)));
@@ -1314,7 +1314,7 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
         if (getenv("NVIM_IP_ADDRESS")) {
             REprintf("  NVIM_IP_ADDRESS: %s\n", getenv("NVIM_IP_ADDRESS"));
         }
-        REprintf("  CMPR_DOC_WIDTH: %s\n", getenv("CMPR_DOC_WIDTH"));
+        REprintf("  R_LS_DOC_WIDTH: %s\n", getenv("R_LS_DOC_WIDTH"));
         REprintf("  RNVIM_PORT: %s\n", rns_port);
         REprintf("  RNVIM_ID: %s\n", getenv("RNVIM_ID"));
         REprintf("  RNVIM_TMPDIR: %s\n", tmpdir);

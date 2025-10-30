@@ -173,21 +173,18 @@ static void handle_sigterm(__attribute__((unused)) int s) { exit(0); }
 
 // --- LSP Request Handlers ---
 
-/*
- * @desc: used before stdin_loop() in main() to initialize the server.
+/**
+ * @brief Handles the 'initialize' request (LSP Handshake).
+ * * @param request_id The ID from the client's request.
  */
-static void handle_initialized(void) {
-#ifdef Debug_NRS
-    init_logging();
-#endif
-
+static void handle_initialize(const char *request_id) {
     // Finish immediately with SIGTERM
     signal(SIGTERM, handle_sigterm);
 
     // initialize global variables;
     strncpy(compldir, getenv("RNVIM_COMPLDIR"), 255);
     strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 255);
-
+    set_doc_width(getenv("R_LS_DOC_WIDTH"));
     if (getenv("RNVIM_LOCAL_TMPDIR")) {
         strncpy(localtmpdir, getenv("RNVIM_LOCAL_TMPDIR"), 255);
     } else {
@@ -203,15 +200,6 @@ static void handle_initialized(void) {
     update_pkg_list(NULL);
     build_objls();
 
-    send_cmd_to_nvim("vim.g.R_Nvim_status = 3");
-    Log("init() finished");
-}
-
-/**
- * @brief Handles the 'initialize' request (LSP Handshake).
- * * @param request_id The ID from the client's request.
- */
-static void handle_initialize(const char *request_id) {
     const char *fmt =
         "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"capabilities\":{"
         "\"textDocumentSync\": 0,"
@@ -324,7 +312,7 @@ static void handle_exe_cmd(const char *params) {
 }
 
 /**
- * @brief Handles the 'exit' notification to shut down the server.
+ * @brief Handles 'exit' and 'shutdown' notifications.
  */
 static void handle_exit(const char *method) {
     Log("LSP: Received \"%s\" notification. Shutting down.\n", method);
@@ -413,20 +401,6 @@ static void lsp_loop(void) {
                 break;
             }
 
-            // if (params) {
-            //     params = params + 9;
-            //     char *p = params;
-            //     size_t j = 1;
-            //     int n_braces = 1;
-            //     while (n_braces > 0 && p[j] && j < 900) {
-            //         if (p[j] == '{')
-            //             n_braces++;
-            //         else if (p[j] == '}')
-            //             n_braces--;
-            //         j++;
-            //     }
-            //     p[j] = '\0';
-            // }
             cut_json_str(&method, 10);
             cut_json_int(&id, 5);
 
@@ -442,7 +416,7 @@ static void lsp_loop(void) {
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {
-                handle_initialized();
+                send_cmd_to_nvim("vim.g.R_Nvim_status = 3");
             } else if (strcmp(method, "exit") == 0 ||
                        strcmp(method, "shutdown") == 0) {
                 handle_exit(method);

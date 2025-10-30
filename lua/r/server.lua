@@ -270,11 +270,7 @@ local build_objls_exit = function()
         table.concat(o_err, "\n")
     )
     building_objls = false
-    if vim.env.CMPR_DOC_WIDTH then
-        require("r.lsp").send_msg({ code = "41" .. vim.env.CMPR_DOC_WIDTH })
-    else
-        require("r.lsp").send_msg({ code = "41" })
-    end
+    require("r.lsp").send_msg({ code = "41" })
 end
 
 -- List R libraries from buffer

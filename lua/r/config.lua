@@ -2,6 +2,12 @@ local utils = require("r.utils")
 local uv = vim.uv
 local hooks = require("r.hooks")
 
+---@class RLSConfigOpts
+---@field doc_width? integer
+---@field trigger_characters? string[]
+---@field fun_data_1? string[]
+---@field fun_data_2? table
+---@field quarto_intel? string
 
 ---@class RConfigUserOpts
 ---
@@ -93,6 +99,9 @@ local hooks = require("r.hooks")
 ---Options for fine-grained control of the object browser. Do `:help compl_data`
 ---for more information.
 ---@field compl_data? { max_depth: integer, max_size: integer, max_time: integer }
+---
+---Options for the r_ls (R.nvim's built-in language server)
+---@field r_ls? RLSConfigOpts
 ---
 ---Whether to use R.nvim's configuration for Tmux if running R in an external
 ---terminal emulator. Set to `false` if you want to use your own `.tmux.conf`.
@@ -405,6 +414,12 @@ local config = {
         max_depth = 3,
         max_size = 1000000,
         max_time = 100,
+    },
+    r_ls                = {
+        doc_width = 58,
+        fun_data_1 = { "select", "rename", "mutate", "filter" },
+        fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
+        quarto_intel = nil,
     },
     config_tmux         = true,
     debug               = true,
@@ -861,6 +876,9 @@ end
 local do_common_global = function()
     config.uname = uv.os_uname().sysname
     config.is_windows = config.uname:find("Windows", 1, true) ~= nil
+    vim.env.R_LS_DOC_WIDTH = tostring(config.r_ls.doc_width)
+
+    -- Environment variable to nvimcom and rnvimserver
 
     set_pdf_viewer()
     set_directories()
@@ -954,7 +972,6 @@ local global_setup = function()
 
     if config.external_term == "" then config.auto_quit = true end
 
-    -- Load functions that were not converted to Lua yet
     -- Configure more values that depend on either system features or other
     -- config values.
     -- Fix some invalid values

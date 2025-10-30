@@ -7,14 +7,7 @@ local qcell_opts = false
 local compl_region = true
 local lsp_debug = false
 
--- TODO: incorporate the options into normal R.nvim config at lua/r/config.lua
-local options = {
-    doc_width = 58,
-    trigger_characters = { ".", " ", ":", "(", '"', "@", "$" }, -- TODO: different trigger_characters for different filetypes
-    fun_data_1 = { "select", "rename", "mutate", "filter" },
-    fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
-    quarto_intel = nil,
-}
+local options = require("r.config").get_config().r_ls
 
 -- TODO: delete this table before merging the pull request
 -- Correspondence between nvimcom "cls" and LSP "kind".
