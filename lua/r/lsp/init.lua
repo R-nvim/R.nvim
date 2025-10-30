@@ -154,13 +154,6 @@ local reset_r_compl = function()
     warned_no_reset = true
 end
 
--- TODO: Delete this function
-local send_items = function(req_id, tbl)
-    local jstr = vim.json.encode(tbl)
-    -- Log(jstr)
-    vim.notify("CALLBACK [" .. tostring(req_id) .. "]\n" .. jstr)
-end
-
 --- Get the word before the cursor, considering that Unicode
 --- characters use more bytes than occupy display cells
 ---@param line string Current line
@@ -209,11 +202,10 @@ function M.complete(req_id, lnum, cnum)
         if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
             lang = require("r.utils").get_lang()
             if lang == "markdown_inline" then
-                if wrd == "@" then
-                    reset_r_compl()
-                elseif wrd and wrd:find("^@[tf]") then
-                    local lbls = require("r.lsp.figtbl").get_labels(wrd)
-                    send_items(req_id, { items = lbls })
+                local wrd2 = get_word(cline, cnum, "(@[tf]%S*)")
+                if wrd2 and wrd2:find("^@") then
+                    local lbls = require("r.lsp.figtbl").get_labels(wrd2)
+                    M.send_msg({ code = "C@", orig_id = req_id, items = lbls })
                 end
                 return
             end

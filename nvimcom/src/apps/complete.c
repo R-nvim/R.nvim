@@ -419,3 +419,22 @@ void complete(const char *params) {
     }
     send_menu_items(compl_buffer, id);
 }
+
+void complete_fig_tbl(const char *params) {
+    Log("complete_fig_tbl: %s", params);
+
+    char *id = strstr(params, "\"orig_id\":");
+    char *items = strstr(params, "\"items\":[{") + 9;
+
+    cut_json_int(&id, 10);
+    char *end_items = strstr(items, "}],");
+    if (end_items) {
+        end_items++;
+    } else {
+        end_items = strstr(items, "]}");
+    }
+    if (!end_items)
+        return;
+    *end_items = '\0';
+    send_menu_items(items, id);
+}

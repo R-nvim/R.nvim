@@ -226,6 +226,8 @@ static void handle_exe_cmd(const char *params) {
         code++;
         if (*code == 'H') {
             complete_rhelp(params);
+        } else if (*code == '@') {
+            complete_fig_tbl(params);
         } else {
             complete_chunk_opts(*code, params);
         }
@@ -276,9 +278,6 @@ static void handle_exe_cmd(const char *params) {
         code++;
         switch (*code) {
         case '1':
-            code++;
-            if (*code)
-                set_doc_width(code);
             finished_building_objls();
             break;
         case '2':
@@ -344,10 +343,11 @@ static void lsp_loop(void) {
     Log("LSP loop started.\n");
 
     // The main buffer to read the Content-Length header
-    char header[128];
+    char header[1024];
     // The main buffer for the JSON payload. Needs to be large enough for
     // typical messages.
-    char content[8192];
+    size_t clen = 1024;
+    char *content = (char *)malloc(clen);
 
     // Server loop: continuously read messages from stdin
     while (1) {
@@ -359,11 +359,18 @@ static void lsp_loop(void) {
         if (fgets(header, sizeof(header), stdin) == NULL)
             break;
 
+        Log("header:\n%s", header);
         if (sscanf(header, "Content-Length: %ld", &content_length) != 1) {
             // Error handling for missing/malformed header.
             // For a simple server, we might just continue or break.
             Log("LSP: Malformed header: %s", header);
-            break;
+            continue;
+        }
+        if (content_length >= clen) {
+            free(content);
+            clen = content_length + 1024;
+            content = (char *)malloc(clen);
+            Log("LENGTH after : %zu", clen);
         }
 
         // 2. Consume the remaining headers until the blank line (\r\n\r\n)
@@ -378,7 +385,7 @@ static void lsp_loop(void) {
         } while (1);
 
         // 3. Read the JSON payload
-        if (content_length > 0 && content_length < sizeof(content)) {
+        if (content_length > 0) {
             // Read exactly content_length bytes into the content buffer
             size_t bytes_read = fread(content, 1, content_length, stdin);
             content[bytes_read] = '\0'; // Null-terminate the JSON string
@@ -422,10 +429,6 @@ static void lsp_loop(void) {
             } else {
                 Log("LSP: Unhandled method: %s\n", method);
             }
-
-        } else {
-            Log("Error reading content or invalid length:\n%s\n%s", header,
-                content);
         }
     }
 }

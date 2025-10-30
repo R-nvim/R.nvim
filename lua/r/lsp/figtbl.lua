@@ -27,8 +27,11 @@ M.get_labels = function(input)
                     cap = c.comment_params["tbl-cap"]
                 end
                 if cap then
+                    -- "}]" is the string used to identify the end of the
+                    -- list of items. We have to replace it.
+                    cap = cap:gsub("%}%]", "}|")
                     item.documentation = {
-                        kind = vim.lsp.protocol.MarkupKind.Markdown,
+                        kind = "markdown",
                         value = cap,
                     }
                 end
