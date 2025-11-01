@@ -17,10 +17,10 @@ nvim.hmsg <- function(files, header, title, delete.file) {
 #' @param w The width that lines should have in the formatted document.
 #' @param firstobj The first argument of `topic`, if any. There will be a first
 #' object if the user requests the documentation of `topic(firstobj)`.
-#' @param package The name of the package, if any. There will be a package if
+#' @param pkg The name of the package, if any. There will be a package if
 #' the user request the documentation from the Object Browser or the cursor is
 #' over `package::topic`.
-nvim.help <- function(topic, w, firstobj, package) {
+nvim.help <- function(topic, w, firstobj, pkg) {
     if (!missing(firstobj) && firstobj != "") {
         objclass <- nvim.getclass(firstobj)
         if (objclass[1] != "#E#" && objclass[1] != "") {
@@ -61,7 +61,7 @@ nvim.help <- function(topic, w, firstobj, package) {
         if (!inherits(ret, "try-error")) {
             suppressMessages(print(ret))
             return(invisible(NULL))
-        } else if (!missing(package) && pkgload::is_dev_package(package)) {
+        } else if (!missing(pkg) && pkgload::is_dev_pkg(pkg)) {
             warn(ret)
             return(invisible(NULL))
         }
@@ -72,16 +72,16 @@ nvim.help <- function(topic, w, firstobj, package) {
 
         if (!inherits(ret, "try-error")) {
             return(invisible(NULL))
-        } else if (!missing(package) && package %in% devtools::dev_packages()) {
+        } else if (!missing(pkg) && pkg %in% devtools::dev_pkgs()) {
             warn(ret)
             return(invisible(NULL))
         }
     }
 
-    if (missing(package)) {
+    if (missing(pkg)) {
         h <- utils::help(topic, help_type = "text")
     } else {
-        h <- utils::help(topic, package = as.character(package), help_type = "text")
+        h <- utils::help(topic, pkg = as.character(pkg), help_type = "text")
     }
 
     if (length(h) == 0) {
@@ -94,7 +94,7 @@ nvim.help <- function(topic, w, firstobj, package) {
         return(invisible(NULL))
     }
     if (length(h) > 1) {
-        if (missing(package)) {
+        if (missing(pkg)) {
             h <- sub("/help/.*", "", h)
             h <- sub(".*/", "", h)
             .C(
@@ -109,11 +109,11 @@ nvim.help <- function(topic, w, firstobj, package) {
             )
             return(invisible(NULL))
         } else {
-            h <- h[grep(paste0("/", package, "/"), h)]
+            h <- h[grep(paste0("/", pkg, "/"), h)]
             if (length(h) == 0) {
                 msg <- paste0(
                     "Package '",
-                    package,
+                    pkg,
                     "' has no documentation for '",
                     topic,
                     "'"

@@ -27,11 +27,11 @@ M.ask_R_help = function(topic)
 end
 
 --- Request R documentation on an object through nvimcom
----@param rkeyword string The topic of the requested help
----@param package string Library of the object
+---@param rkwrd string The topic of the requested help
+---@param pkg string Library of the object
 ---@param getclass boolean If the object is a function, whether R should check the class of the first argument passed to it to retrieve documentation on the appropriate method.
-M.ask_R_doc = function(rkeyword, package, getclass)
-    local firstobj = ""
+M.ask_R_doc = function(rkwrd, pkg, getclass)
+    local fobj = ""
     local cb = vim.api.nvim_get_current_buf()
     local rb = require("r.term.builtin").get_buf_nr()
     local bb = require("r.browser").get_buf_nr()
@@ -41,30 +41,18 @@ M.ask_R_doc = function(rkeyword, package, getclass)
         vim.cmd.sb(require("r.edit").get_rscript_buf())
         vim.cmd("set switchbuf=" .. savesb)
     else
-        if getclass then firstobj = cursor.get_first_obj() end
+        if getclass then fobj = cursor.get_first_obj() end
     end
 
     local htw = get_win_width()
     local rcmd
-    if firstobj == "" and package == "" then
-        rcmd = 'nvimcom:::nvim.help("' .. rkeyword .. '", ' .. htw .. "L)"
-    elseif package ~= "" then
-        rcmd = 'nvimcom:::nvim.help("'
-            .. rkeyword
-            .. '", '
-            .. htw
-            .. 'L, package="'
-            .. package
-            .. '")'
+    if fobj == "" and pkg == "" then
+        rcmd = "nvimcom:::nvim.help('" .. rkwrd .. "', " .. htw .. "L)"
+    elseif pkg ~= "" then
+        rcmd = string.format("nvimcom:::nvim.help('%s', %dL, pkg='%s')", rkwrd, htw, pkg)
     else
-        firstobj = firstobj:gsub('"', '\\"')
-        rcmd = 'nvimcom:::nvim.help("'
-            .. rkeyword
-            .. '", '
-            .. htw
-            .. 'L, "'
-            .. firstobj
-            .. '")'
+        fobj = fobj:gsub('"', '\\"')
+        rcmd = string.format("nvimcom:::nvim.help('%s', %dL, '%s')", rkwrd, htw, fobj)
     end
 
     send_to_nvimcom("E", rcmd)
