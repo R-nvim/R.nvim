@@ -27,7 +27,7 @@ M.send_cmd = function(command)
         return false
     end
     local cmd = command:gsub('"', '\\"')
-    require("r.run").send_to_nvimcom("E", 'sendToConsole("' .. cmd .. '", execute=TRUE)')
+    require("r.run").send_to_nvimcom("E", "sendToConsole('" .. cmd .. "', execute=TRUE)")
     return true
 end
 

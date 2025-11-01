@@ -216,8 +216,7 @@ static void handle_initialize(const char *request_id) {
 
 static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
-    char *code = strstr(params, "\"code\":\"");
-    cut_json_str(&code, 8);
+    char *code = strstr(params, "\"code\":\"") + 8;
     Log("code:%s", code);
     char t;
     // TODO: use letters instead of number?
@@ -237,7 +236,7 @@ static void handle_exe_cmd(const char *params) {
         start_server();
         break;
     case '2': // Send message
-        code++;
+        cut_json_str(&code, 1);
         send_to_nvimcom(code);
         break;
     case '3':

@@ -326,6 +326,7 @@ static void complete_instlibs(char *p, const char *base) {
 }
 
 void complete(const char *params) {
+    Log("complete: %s", params);
     char *id = strstr(params, "\"orig_id\":");
     char *base = strstr(params, "\"base\":\"");
     char *fnm = strstr(params, "\"fnm\":\"");

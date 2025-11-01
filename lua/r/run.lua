@@ -324,7 +324,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         if config.is_windows then bn = bn:gsub("\\", "\\\\") end
         vim.schedule(function()
             uv.sleep(100)
-            M.send_to_nvimcom("E", 'nvimcom:::update_params("' .. bn .. '")')
+            M.send_to_nvimcom("E", "nvimcom:::update_params('" .. bn .. "')")
         end)
     end
     hooks.run(config, "after_R_start", true)
@@ -433,7 +433,7 @@ end
 ---@param type string
 M.insert = function(cmd, type)
     if vim.g.R_Nvim_status < 7 then return end
-    M.send_to_nvimcom("E", "nvimcom:::nvim_insert(" .. cmd .. ', "' .. type .. '")')
+    M.send_to_nvimcom("E", "nvimcom:::nvim_insert(" .. cmd .. ", '" .. type .. "')")
 end
 
 M.insert_commented = function()
@@ -580,7 +580,7 @@ M.action = function(rcmd, mode, args)
     end
 
     if config.open_example and rcmd == "example" then
-        M.send_to_nvimcom("E", 'nvimcom:::nvim.example("' .. rkeyword .. '")')
+        M.send_to_nvimcom("E", "nvimcom:::nvim.example('" .. rkeyword .. "')")
         return
     end
 
@@ -598,7 +598,7 @@ M.action = function(rcmd, mode, args)
             end
             cmd = cmd:gsub("'", '"')
             cmd = cmd:gsub('"', '\\"')
-            argmnts = argmnts .. ', R_df_viewer = "' .. cmd .. '"'
+            argmnts = argmnts .. ", R_df_viewer = '" .. cmd .. "'"
         end
         if config.view_df.save_fun and config.view_df.save_fun ~= "" then
             argmnts = argmnts .. ", save_fun = " .. config.view_df.save_fun
@@ -611,11 +611,11 @@ M.action = function(rcmd, mode, args)
         else
             local fenc = config.is_windows
                     and vim.o.encoding == "utf-8"
-                    and ', fenc="UTF-8"'
+                    and ", fenc='UTF-8'"
                 or ""
             M.send_to_nvimcom(
                 "E",
-                'nvimcom:::nvim_viewobj("' .. rkeyword .. '"' .. argmnts .. fenc .. ")"
+                "nvimcom:::nvim_viewobj('" .. rkeyword .. "'" .. argmnts .. fenc .. ")"
             )
         end
         return
