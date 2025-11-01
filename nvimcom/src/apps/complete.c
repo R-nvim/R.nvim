@@ -325,31 +325,6 @@ static void complete_instlibs(char *p, const char *base) {
     }
 }
 
-/*
- * TODO: Candidate for completion_services.c
- *
- * desc:
- * param id: Completion ID (integer incremented at each completion), possibily
- * used by nvim to abort outdated completion.
- * param base: Keyword being completed.
- * param funcnm: Function name when the keyword being completed is one of its
- * arguments.
- * param dtfrm: Name of data.frame when the keyword being completed is an
- * rgument of a function listed in either fun_data_1 or fun_data_2.
- * param funargs Function arguments from a .GlobalEnv function.
- */
-
-// void get_args(char *args, char **arglist, int argc) {
-//     int i = 0;
-//     while (i < argc) {
-//         arglist[i] = *args == ' ' ? NULL : args;
-//         while (*args != '|')
-//             args++;
-//         *args = '\0';
-//         args++;
-//     }
-// }
-
 void complete(const char *params) {
     char *id = strstr(params, "\"orig_id\":");
     char *base = strstr(params, "\"base\":\"");

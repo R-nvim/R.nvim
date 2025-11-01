@@ -5,7 +5,7 @@ local client_id
 
 local qcell_opts = false
 local compl_region = true
-local lsp_debug = false
+local lsp_debug = true
 
 local options = require("r.config").get_config().r_ls or {}
 
@@ -32,23 +32,28 @@ local options = require("r.config").get_config().r_ls or {}
 local M = {}
 
 local get_piped_obj
+
+---Return object piped through either `|>` or `%>%`
+---@param line string | nil
+---@param lnum integer
+---@return string | nil
 get_piped_obj = function(line, lnum)
     local l
     l = vim.fn.getline(lnum - 1)
-    if type(l) == "string" and string.find(l, "|>%s*$") then
-        return get_piped_obj(l, lnum - 1)
+    if l then
+        if l:find("|>%s*$") then return get_piped_obj(l, lnum - 1) end
+        if l:find("%%>%%%s*$") then return get_piped_obj(l, lnum - 1) end
     end
-    if type(l) == "string" and string.find(l, "%%>%%%s*$") then
-        return get_piped_obj(l, lnum - 1)
-    end
-    if string.find(line, "|>") then return string.match(line, ".-([%w%._]+)%s*|>") end
-    if string.find(line, "%%>%%") then
-        return string.match(line, ".-([%w%._]+)%s*%%>%%")
+    if line then
+        if line:find("|>") then return line:match(".-([%w%._]+)%s*|>") end
+        if line:find("%%>%%") then return line:match(".-([%w%._]+)%s*%%>%%") end
     end
     return nil
 end
 
--- TODO: document all functions for lua_ls
+---Return first argument of function
+---@param line string
+---@param lnum integer
 local get_first_obj = function(line, lnum)
     local no
     local piece
@@ -89,6 +94,9 @@ local get_first_obj = function(line, lnum)
     return pkg, funname, firstobj, line, lnum, idx
 end
 
+---Check if we need to complete function arguments
+---@param line string
+---@param lnum integer
 local need_R_args = function(line, lnum)
     local funname = nil
     local firstobj = nil
@@ -158,7 +166,7 @@ end
 --- characters use more bytes than occupy display cells
 ---@param line string Current line
 ---@param cnum integer Cursor position in number of display cells
----@param pttrn? string Pattern to get word for completion TODO: delete this argument if not used
+---@param pttrn? string Pattern to get word for completion
 local get_word = function(line, cnum, pttrn)
     local i = cnum
     local preline
@@ -173,7 +181,7 @@ local get_word = function(line, cnum, pttrn)
     return wrd
 end
 
---- Complete
+---Identify what should be completed and send request back to rnvimserver
 ---@param req_id string
 ---@param lnum integer
 ---@param cnum integer
@@ -268,7 +276,7 @@ function M.complete(req_id, lnum, cnum)
                 return
             end
         end
-    else
+    elseif vim.bo.filetype == "rhelp" then
         -- We still need to call synIDattr because there is no treesitter parser for rhelp
         snm = vim.fn.synIDattr(vim.fn.synID(lnum, cnum - 1, 1), "name")
         if snm == "rComment" then return nil end
@@ -310,7 +318,7 @@ function M.complete(req_id, lnum, cnum)
             end
             return
         else
-            -- Get arguments according to class of first object
+            -- Request arguments according to class of first object
             local msg
             msg = string.format(
                 "nvimcom:::nvim_complete_args('%s', '%s', '%s'",
@@ -325,9 +333,6 @@ function M.complete(req_id, lnum, cnum)
             end
             if nra.firstobj and nra.listdf then msg = msg .. ", ldf = TRUE" end
             msg = msg .. ")"
-
-            -- FIXME: Is this correct? Documentation should be during resolve event.
-            -- Save documentation of arguments to be used by rnvimserver
             send_to_nvimcom("E", msg)
             return
         end
@@ -345,7 +350,6 @@ end
 
 --- Execute lua command sent by rnvimserver
 local function exe_cmd(_, result, _)
-    -- vim.schedule(function() vim.fn.execute("lua " .. result.command) end)
     vim.schedule(function()
         local f = loadstring(result.command)
         if f then f() end
@@ -362,32 +366,26 @@ end
 --- Callback invoked after LSP "initialize"
 ---@param client vim.lsp.Client
 ---@param init_res lsp.InitializeResult
-local function on_init(client, init_res)
-    vim.notify("LSP_on_init:\n" .. tostring(client) .. "\n" .. tostring(init_res))
-end
+local function on_init(client, init_res) vim.notify("r_ls init") end
 
 --- Callback invoked on client exit.
 ---@param code integer Exit code of the process
 ---@param signal integer Number describing the signal used to terminate (if any)
 ---@param client integer Client handle
 local function on_exit(code, signal, client)
-    vim.notify(
-        "LSP_on_exit:\n  code: "
-            .. vim.inspect(code)
-            .. "\n  signal: "
-            .. vim.inspect(signal)
-            .. "\n  client_id: "
-            .. vim.inspect(client)
-    )
+    vim.notify(string.format("r_ls exit (%d, %d, %d)", code, signal, client))
 end
 
---- Callback invoked when the client operation throws an error.
+--- Callback invoked when the client operation prints to stderr
 --- @param code number Number describing the error. See vim.lsp.rpc.client_errors
 --- @param err string Error message
 local function on_error(code, err)
     vim.notify("LSP_on_error:" .. vim.inspect(code) .. "\n" .. err)
 end
 
+--- Start rnvimserver
+---@param rns_path string Full rnvimserver path
+---@param rns_env table Environment variables
 function M.start(rns_path, rns_env)
     -- TODO: remove this when nvim 0.12 is released
     if not vim.lsp.config then return end
@@ -421,6 +419,8 @@ function M.start(rns_path, rns_env)
     if client_id then vim.lsp.completion.enable(true, client_id, 0) end
 end
 
+---Send a custom notification to rnvimserver
+---@param params table A valid json LSP params
 function M.send_msg(params)
     local buf = require("r.edit").get_rscript_buf()
     -- lua_ls will warn that "exeRnvimCmd" is not a valid method

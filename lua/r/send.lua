@@ -355,7 +355,6 @@ M.chunks_up_to_here = function()
     if #lines > 0 then M.source_lines(lines, "chunk") end
 end
 
--- TODO: Test if this version works: git blame me to see previous version.
 -- Send to R Console the code under a Vim motion
 M.motion = function()
     local startPos, endPos =
