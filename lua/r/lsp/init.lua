@@ -313,15 +313,15 @@ function M.complete(req_id, lnum, cnum)
             -- Get arguments according to class of first object
             local msg
             msg = string.format(
-                'nvimcom:::nvim_complete_args("%s", "%s", "%s"',
+                "nvimcom:::nvim_complete_args('%s', '%s', '%s'",
                 req_id,
                 nra.fnm,
                 arg
             )
             if nra.firstobj then
-                msg = msg .. ', firstobj = "' .. nra.firstobj .. '"'
+                msg = msg .. ", firstobj = '" .. nra.firstobj .. "'"
             elseif nra.lib then
-                msg = msg .. ', lib = "' .. nra.lib .. '"'
+                msg = msg .. ", lib = '" .. nra.lib .. "'"
             end
             if nra.firstobj and nra.listdf then msg = msg .. ", ldf = TRUE" end
             msg = msg .. ")"

@@ -531,9 +531,12 @@ nvim_complete_args <- function(
         argsl <- strsplit(args, "\005")[[1]]
         argsl <- sub("\004.*", "", argsl)
         args <- paste0(
-            '{"label":"',
-            paste(argsl, collapse = '","cls":"a","env":".GlobalEnv"},{"label":"'),
-            '","cls":"a","env":".GlobalEnv"},'
+            '{\x13label\x13:\x13',
+            paste(
+                argsl,
+                collapse = '\x13,\x13cls\x13:\x13a\x13,\x13env\x13:\x13.GlobalEnv\x13},{\x13label\x13:\x13'
+            ),
+            '\x13,\x13cls\x13:\x13a\x13,\x13env\x13:\x13.GlobalEnv\x13},'
         )
         msg <- paste0(
             '+C{"orig_id":',

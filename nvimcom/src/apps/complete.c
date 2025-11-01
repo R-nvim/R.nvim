@@ -377,6 +377,7 @@ void complete(const char *params) {
 
     if (fargs || fnm) {
         if (fargs) {
+            replace_char(fargs, '\x13', '"');
             // Insert arguments of .GlobalEnv function
             p = str_cat(p, fargs);
         } else if (fnm) {

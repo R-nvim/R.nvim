@@ -216,7 +216,8 @@ static void handle_initialize(const char *request_id) {
 
 static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
-    char *code = strstr(params, "\"code\":\"") + 8;
+    char *code = strstr(params, "\"code\":\"");
+    cut_json_str(&code, 8);
     Log("code:%s", code);
     char t;
     // TODO: use letters instead of number?
@@ -294,8 +295,7 @@ static void handle_exe_cmd(const char *params) {
             break;
         }
         break;
-    case '5': // format: "id|Tword[|arg]"
-        code++;
+    case '5':
         complete(params);
         break;
     case '9': // Quit now
@@ -343,11 +343,11 @@ static void lsp_loop(void) {
     Log("LSP loop started.\n");
 
     // The main buffer to read the Content-Length header
-    char header[1024];
+    char header[128];
     // The main buffer for the JSON payload. Needs to be large enough for
     // typical messages.
-    size_t clen = 1024;
-    char *content = (char *)malloc(clen);
+    size_t clen = 6143;
+    char *content = (char *)malloc(clen + 1);
 
     // Server loop: continuously read messages from stdin
     while (1) {
@@ -356,7 +356,7 @@ static void lsp_loop(void) {
 
         // 1. Read Content-Length Header
         // Read header line by line until we find Content-Length:
-        if (fgets(header, sizeof(header), stdin) == NULL)
+        if (fgets(header, 127, stdin) == NULL)
             break;
 
         Log("header:\n%s", header);
@@ -376,7 +376,7 @@ static void lsp_loop(void) {
         // 2. Consume the remaining headers until the blank line (\r\n\r\n)
         // We expect Content-Type: application/json\r\n and then \r\n
         do {
-            if (fgets(header, sizeof(header), stdin) == NULL)
+            if (fgets(header, 127, stdin) == NULL)
                 break;
             // The blank line is just "\r\n" or "\n" depending on environment,
             // but we check for the line being effectively empty.
