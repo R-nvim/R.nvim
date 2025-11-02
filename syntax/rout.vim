@@ -55,13 +55,13 @@ if s:config.OutDec == ","
 else
     " floating point number with integer and fractional parts and optional exponent
     syn match routFloat "\<\d\+\.\d*\([Ee][-+]\=\d\+\)\="
-    syn match routNegFloat "-\<\d\+\.\d*\([Ee][-+]\=\d\+\)\="
+    syn match routNegFloat "-\d\+\.\d*\([Ee][-+]\=\d\+\)\="
     " floating point number with no integer part and optional exponent
     syn match routFloat "\<\.\d\+\([Ee][-+]\=\d\+\)\="
-    syn match routNegFloat "-\<\.\d\+\([Ee][-+]\=\d\+\)\="
+    syn match routNegFloat "-\.\d\+\([Ee][-+]\=\d\+\)\="
     " floating point number with no fractional part and optional exponent
     syn match routFloat "\<\d\+[Ee][-+]\=\d\+"
-    syn match routNegFloat "-\<\d\+[Ee][-+]\=\d\+"
+    syn match routNegFloat "-\d\+[Ee][-+]\=\d\+"
     " complex number
     syn match routComplex "\<\d\+i"
     syn match routComplex "\<\d\++\d\+i"
