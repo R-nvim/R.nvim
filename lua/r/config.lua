@@ -681,8 +681,8 @@ end
 
 local set_directories = function()
     -- config.rnvim_home should be the directory where the plugin files are.
-    local rndir = debug.getinfo(1, "S").short_src
-    rndir = rndir:match("(.*)/lua/r/.*")
+    local rndir = debug.getinfo(1, "S").source
+    rndir = rndir:match("^@(.*)/lua/r/.*")
     config.rnvim_home = rndir
     vim.env.RNVIM_HOME = rndir
 
