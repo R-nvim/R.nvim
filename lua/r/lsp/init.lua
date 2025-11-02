@@ -360,27 +360,33 @@ end
 ---@param client vim.lsp.Client
 ---@param bnr integer
 local function on_attach(client, bnr)
-    vim.notify("LSP_on_attach:\n" .. tostring(client) .. "\n" .. tostring(bnr))
+    local msg = string.format("LSP_on_attach (%d, %d)", client.id, bnr)
+    vim.notify(msg)
 end
 
 --- Callback invoked after LSP "initialize"
 ---@param client vim.lsp.Client
----@param init_res lsp.InitializeResult
-local function on_init(client, init_res) vim.notify("r_ls init") end
+---@param _ lsp.InitializeResult
+local function on_init(client, _)
+    local msg = string.format("r_ls init (%d)", client.id)
+    vim.notify(msg)
+end
 
 --- Callback invoked on client exit.
 ---@param code integer Exit code of the process
 ---@param signal integer Number describing the signal used to terminate (if any)
 ---@param client integer Client handle
 local function on_exit(code, signal, client)
-    vim.notify(string.format("r_ls exit (%d, %d, %d)", code, signal, client))
+    local msg = string.format("r_ls exit (%d, %d, %d)", code, signal, client)
+    vim.notify(msg)
 end
 
 --- Callback invoked when the client operation prints to stderr
 --- @param code number Number describing the error. See vim.lsp.rpc.client_errors
 --- @param err string Error message
 local function on_error(code, err)
-    vim.notify("LSP_on_error:" .. vim.inspect(code) .. "\n" .. err)
+    local msg = string.format("r_ls error (%d):\n%s", code, err)
+    vim.notify(msg)
 end
 
 --- Start rnvimserver

@@ -259,8 +259,7 @@ void resolve_json(const char *req_id, char *params) {
 
     if (env && strcmp(env, ".GlobalEnv") == 0) {
         if (*cls == 'a') {
-            Log("RESOLVE A");
-
+            return;
         } else if (*cls == 'f' || *cls == 'b' || *cls == 't' || *cls == 'n') {
             char buffer[512];
             sprintf(
@@ -304,17 +303,12 @@ void resolve_json(const char *req_id, char *params) {
         }
 
         // Split "library:function"
-        char *lib = env;
-        char *func = lib;
-        while (*func) {
-            if (*func == ':') {
-                *func = 0;
-                func++;
-                break;
-            }
+        char *func = strstr(env, ":");
+        if (func) {
+            *func = 0;
             func++;
         }
-        resolve_arg_item(req_id, knd, cls, lbl, lib, func);
+        resolve_arg_item(req_id, knd, cls, lbl, env, func);
     } else if (*cls == 'L') {
         resolve_lib_name(req_id, lbl, cls);
     } else if (strstr(lbl, "$") != NULL &&
