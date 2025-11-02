@@ -312,14 +312,6 @@ static void complete_instlibs(char *p, const char *base) {
             p = str_cat(p, "{\"label\":\"");
             p = str_cat(p, il->name);
             p = str_cat(p, "\",\"cls\":\"L\",\"kind\":9},");
-
-            // FIXME: get title and descr during resolve event
-            // format(il->title, buffer, ' ', '\x14');
-            // p = str_cat(p, buffer);
-            // p = str_cat(p, "**\x14\x14");
-            // format(il->descr, buffer, ' ', '\x14');
-            // p = str_cat(p, buffer);
-            // p = str_cat(p, "\x14\"},");
         }
         il = il->next;
     }

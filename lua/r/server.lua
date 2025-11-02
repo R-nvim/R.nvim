@@ -407,6 +407,7 @@ end
 ---@param objs string List of packages whose completion files need to be
 ---built.
 M.build_objls = function(objs)
+    if vim.g.R_Nvim_status < 3 then vim.g.R_Nvim_status = 3 end
     local olist = vim.split(objs, " ", { trimempty = true })
     local Rcode = {
         "library('nvimcom', character.only = TRUE, warn.conflicts = FALSE,",

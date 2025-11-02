@@ -124,11 +124,11 @@ end
 M.check = function()
     vim.health.start("Checking applications and plugins:")
 
-    if vim.fn.has("nvim-0.10.4") == 1 then
+    if vim.fn.has("nvim-0.11.4") == 1 then
         vim.health.ok("Neovim version: " .. tostring(vim.version()))
     else
         vim.health.error(
-            "Minimum Neovim version is `0.10.4`, found: " .. tostring(vim.version())
+            "Minimum Neovim version is `0.11.4`, found: " .. tostring(vim.version())
         )
     end
 

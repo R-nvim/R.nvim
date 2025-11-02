@@ -187,7 +187,6 @@ static void handle_initialize(const char *request_id) {
 
     update_inst_libs();
     update_pkg_list(NULL);
-    build_objls();
 
     const char *fmt =
         "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"capabilities\":{"
@@ -403,7 +402,7 @@ static void lsp_loop(void) {
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {
-                send_cmd_to_nvim("vim.g.R_Nvim_status = 3");
+                build_objls();
             } else if (strcmp(method, "exit") == 0 ||
                        strcmp(method, "shutdown") == 0) {
                 handle_exit(method);

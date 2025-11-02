@@ -431,7 +431,9 @@ function M.send_msg(params)
     local buf = require("r.edit").get_rscript_buf()
     -- lua_ls will warn that "exeRnvimCmd" is not a valid method
     local res = vim.lsp.buf_notify(buf, "exeRnvimCmd", params)
-    if not res then warn("Failed to send message to r_ls: " .. vim.inspect(params)) end
+    if lsp_debug and not res then
+        warn("Failed to send message to r_ls: " .. vim.inspect(params))
+    end
 end
 
 return M
