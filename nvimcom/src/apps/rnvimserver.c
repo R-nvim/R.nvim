@@ -206,7 +206,6 @@ static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
     char *code = strstr(params, "\"code\":\"") + 8;
     char t;
-    // TODO: use letters instead of number?
     switch (*code) {
     case 'C':
         code++;
@@ -274,18 +273,10 @@ static void handle_exe_cmd(const char *params) {
             if (auto_obbr)
                 compl2ob();
             break;
-        case '5':
-            code++;
-            set_doc_width(code);
-            break;
         }
         break;
     case '5':
         complete(params);
-        break;
-    case '9': // Quit now
-        stop_server();
-        exit(0);
         break;
     default:
         fprintf(stderr, "Unknown command received: %s\n", code);

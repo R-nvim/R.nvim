@@ -134,7 +134,6 @@ M.vim_leave = function()
             i = i - 1
         end
     end
-    require("r.job").stop_rns()
 
     for _, fn in pairs(del_list) do
         vim.fn.delete(fn)

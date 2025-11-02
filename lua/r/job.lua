@@ -109,7 +109,6 @@ M.on_exit = function(job_id, data, _)
     if key == "R" or key == "RStudio" then
         require("r.run").clear_R_info()
     end
-    if key == "Server" then vim.g.R_Nvim_status = 1 end
 end
 
 local default_handlers = {
@@ -184,16 +183,6 @@ M.stdin = function(job_name, cmd) vim.fn.chansend(jobs[job_name], cmd) end
 M.is_running = function(job_name)
     if jobs[job_name] and jobs[job_name] ~= 0 then return true end
     return false
-end
-
-M.stop_rns = function()
-    for k, v in pairs(jobs) do
-        if M.is_running(k) and k == "Server" then
-            -- Avoid warning of exit status 141
-            vim.fn.chansend(v, "9\n")
-            vim.wait(20)
-        end
-    end
 end
 
 -- Only called by R when finishing a session in a external terminal emulator.

@@ -121,7 +121,7 @@ end
 
 -- Check and set some variables and, finally, start the rnvimserver
 local start_rnvimserver = function()
-    if job.is_running("Server") then return end
+    if vim.g.R_Nvim_status > 1 then return end
 
     local rns_path
 

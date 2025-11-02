@@ -377,6 +377,8 @@ end
 ---@param signal integer Number describing the signal used to terminate (if any)
 ---@param client integer Client handle
 local function on_exit(code, signal, client)
+    vim.g.R_Nvim_status = 1
+    if code == 0 then return end
     local msg = string.format("r_ls exit (%d, %d, %d)", code, signal, client)
     vim.notify(msg)
 end
