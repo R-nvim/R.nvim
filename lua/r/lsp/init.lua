@@ -5,7 +5,7 @@ local client_id
 
 local qcell_opts = false
 local compl_region = true
-local lsp_debug = true
+local lsp_debug = false
 
 local options = require("r.config").get_config().r_ls or {}
 

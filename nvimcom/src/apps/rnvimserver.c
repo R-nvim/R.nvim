@@ -86,25 +86,12 @@ void send_ls_response(const char *json_payload) {
         Log("SEND_LS_RESPONSE:\n%s\n", json_payload);
     }
 #endif
-    // 1. Send Content-Length header
     fprintf(stdout, "Content-Length: %zu\r\n\r\n", strlen(json_payload));
-
-    // 2. Send Content-Type header (optional, but good practice)
-    // fprintf(stdout, "Content-Type: application/json\r\n");
-
-    // 3. Send the mandatory two newline characters to end the headers
-    // fprintf(stdout, "\r\n");
-
-    // 4. Send the JSON payload
     fprintf(stdout, "%s", json_payload);
-
-    // Flush the standard output buffer to ensure the message is sent
-    // immediately
     fflush(stdout);
 }
 
 void send_cmd_to_nvim(const char *cmd) {
-    Log("LSP: CMD before:\n%s\n", cmd);
     size_t len = strlen(cmd);
     char *esccmd = (char *)malloc(sizeof(char) * len * 2 + 1);
     if (!esccmd)
@@ -134,7 +121,6 @@ void send_cmd_to_nvim(const char *cmd) {
 
 void send_item_doc(const char *doc, const char *req_id, const char *label,
                    const char *kind, const char *cls) {
-
     Log("send_item_doc: %s, %s, %s, %s,\n%s", req_id, label, kind, cls, doc);
     const char *fmt =
         "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
@@ -217,12 +203,10 @@ static void handle_initialize(const char *request_id) {
 static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
     char *code = strstr(params, "\"code\":\"") + 8;
-    Log("code:%s", code);
     char t;
     // TODO: use letters instead of number?
     switch (*code) {
     case 'C':
-        Log("Case C: %s", code);
         code++;
         if (*code == 'H') {
             complete_rhelp(params);
@@ -312,7 +296,7 @@ static void handle_exe_cmd(const char *params) {
  * @brief Handles 'exit' and 'shutdown' notifications.
  */
 static void handle_exit(const char *method) {
-    Log("LSP: Received \"%s\" notification. Shutting down.\n", method);
+    Log("Received \"%s\" notification. Shutting down.\n", method);
     exit(0);
 }
 
@@ -327,9 +311,7 @@ static void handle_completion(const char *id, const char *params) {
     char *line = strstr(position, "\"line\":");
     char *col = strstr(position, "\"character\":");
     cut_json_int(&line, 7);
-    Log("col_before:%s", col);
     cut_json_int(&col, 12);
-    Log("col_after :%s", col);
     char compl_command[128];
     snprintf(compl_command, 127, "require('r.lsp').complete(%s, %s, %s)", id,
              line, col);
@@ -350,7 +332,7 @@ static void lsp_loop(void) {
 
     // Server loop: continuously read messages from stdin
     while (1) {
-        long content_length = 0;
+        size_t content_length = 0;
         // char *header_end = NULL;
 
         // 1. Read Content-Length Header
@@ -358,18 +340,17 @@ static void lsp_loop(void) {
         if (fgets(header, 127, stdin) == NULL)
             break;
 
-        Log("header:\n%s", header);
         if (sscanf(header, "Content-Length: %ld", &content_length) != 1) {
             // Error handling for missing/malformed header.
             // For a simple server, we might just continue or break.
-            Log("LSP: Malformed header: %s", header);
+            fprintf(stderr, "Malformed header: %s", header);
+            fflush(stderr);
             continue;
         }
         if (content_length >= clen) {
             free(content);
             clen = content_length + 1024;
-            content = (char *)malloc(clen);
-            Log("LENGTH after : %zu", clen);
+            content = (char *)malloc(clen + 1);
         }
 
         // 2. Consume the remaining headers until the blank line (\r\n\r\n)
@@ -385,13 +366,13 @@ static void lsp_loop(void) {
 
         // 3. Read the JSON payload
         if (content_length > 0) {
-            // Read exactly content_length bytes into the content buffer
             size_t bytes_read = fread(content, 1, content_length, stdin);
-            content[bytes_read] = '\0'; // Null-terminate the JSON string
-
-            // For debugging: print the raw request to stderr (Neovim log)
-            Log("LSP: Received request (%zu bytes):\n%s\n", bytes_read,
-                content);
+            content[bytes_read] = '\0';
+            if (bytes_read != content_length) {
+                fprintf(stderr, "wrong content length: %zu x %zu",
+                        content_length, bytes_read);
+                fflush(stderr);
+            }
 
             // JSON parsing
 
@@ -409,8 +390,6 @@ static void lsp_loop(void) {
             cut_json_str(&method, 10);
             cut_json_int(&id, 5);
 
-            Log("METHOD: %s, REQ_ID: %s", method, id);
-
             // Route the request based on the method
             if (strcmp(method, "textDocument/completion") == 0) {
                 handle_completion(id, params);
@@ -426,7 +405,8 @@ static void lsp_loop(void) {
                        strcmp(method, "shutdown") == 0) {
                 handle_exit(method);
             } else {
-                Log("LSP: Unhandled method: %s\n", method);
+                fprintf(stderr, "Unhandled method: %s\n", method);
+                fflush(stderr);
             }
         }
     }
