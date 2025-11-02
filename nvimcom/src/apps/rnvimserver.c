@@ -127,14 +127,17 @@ void send_item_doc(const char *doc, const char *req_id, const char *label,
         "{\"label\":\"%s\",\"kind\":%s,\"cls\":\"%s\","
         "\"documentation\":{\"kind\":\"markdown\",\"value\":\"%s\"}}}";
 
-    char *edoc = esc_json(doc);
+    char *fdoc = (char *)calloc(strlen(doc) + 1, sizeof(char));
+    format(doc, fdoc, ' ', '\x14');
+    char *edoc = esc_json(fdoc);
     size_t len = sizeof(char) * (strlen(edoc) + 256);
     char *res = (char *)malloc(len);
     snprintf(res, len - 1, fmt, req_id, label, kind, cls, edoc);
 
     send_ls_response(res);
-    free(res);
+    free(fdoc);
     free(edoc);
+    free(res);
 }
 
 void send_menu_items(char *compl_items, const char *req_id) {

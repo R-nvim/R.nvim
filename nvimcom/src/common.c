@@ -53,6 +53,8 @@ void format(const char *orig, char *dest, char delim, char nl) {
     while (i < sz && orig[i]) {
         if (orig[i] == delim)
             s = i;
+        else if (orig[i] == nl || (orig[i] == '\\' && orig[i + 1] == 'n'))
+            n = 0;
         dest[i] = orig[i];
         if (n == doc_width && s > 0) {
             dest[s] = nl;
