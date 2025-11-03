@@ -29,16 +29,14 @@ void set_max_depth(int m) { max_depth = m; }
  *         respectively, to be less than, to match, or be greater than b.
  */
 static int ascii_ic_cmp(const char *a, const char *b) {
-    int d;
-    unsigned x, y;
     while (*a && *b) {
-        x = (unsigned char)*a;
-        y = (unsigned char)*b;
+        unsigned x = (unsigned char)*a;
+        unsigned y = (unsigned char)*b;
         if (x <= 'Z')
             x += 32;
         if (y <= 'Z')
             y += 32;
-        d = x - y;
+        int d = x - y;
         if (d != 0)
             return d;
         a++;
@@ -337,7 +335,7 @@ static char *count_sep(char *b1, int *size) {
     if (*size == 1)
         return b1;
 
-    char *s0 = b1;
+    const char *s0 = b1;
     char *s1 = b1;
     int n = 0;
     while (*s1) {
@@ -613,7 +611,7 @@ void update_pkg_list(char *libnms) {
  *
  * @param g A string containing the new global environment data.
  */
-void update_glblenv_buffer(char *g) {
+void update_glblenv_buffer(const char *g) {
     Log("update_glblenv_buffer()");
     int glbnv_size = strlen(g);
 
@@ -699,7 +697,7 @@ void toggle_list_status(char *s) {
     if (p) {
 
         // Count list levels
-        char *t = s;
+        const char *t = s;
         int n = 0;
         while (*t) {
             if (*t == '$' || *t == '@')
@@ -821,28 +819,28 @@ static void fill_inst_libs(void) {
     if (!b)
         return;
     char *s = b;
-    char *n, *t, *d;
     while (*s) {
+        const char *n, *t, *d;
         n = s;
         t = NULL;
         d = NULL;
         while (*s && *s != '\006')
             s++;
-        if (*s && *s == '\006') {
+        if (*s == '\006') {
             *s = 0;
             s++;
             if (*s) {
                 t = s;
                 while (*s && *s != '\006')
                     s++;
-                if (*s && *s == '\006') {
+                if (*s == '\006') {
                     *s = 0;
                     s++;
                     if (*s) {
                         d = s;
                         while (*s && *s != '\n')
                             s++;
-                        if (*s && *s == '\n') {
+                        if (*s == '\n') {
                             *s = 0;
                             s++;
                         } else

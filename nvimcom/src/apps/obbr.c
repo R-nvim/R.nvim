@@ -85,12 +85,10 @@ static void copy_str_to_ob(const char *o, char *d, int sz) {
     d[i] = 0;
 }
 
-static const char *write_ob_line(const char *p, const char *bs, char *prfx,
-                                 int closeddf, FILE *fl) {
+static const char *write_ob_line(const char *p, const char *bs,
+                                 const char *prfx, int closeddf, FILE *fl) {
     char base1[128];
-    char base2[128];
     char prefix[128];
-    char newprfx[96];
     char nm[160];
     char descr[160];
     const char *f[7];
@@ -98,18 +96,17 @@ static const char *write_ob_line(const char *p, const char *bs, char *prfx,
     const char *bsnm; // Name of object including its parent list, data.frame or
                       // S4 object
     int df;           // Is data.frame? If yes, start open unless closeddf = 1
-    int i;
-    int ne;
+    int n;
 
     nLibObjs--;
 
     bsnm = p;
     p += strlen(bs);
 
-    i = 0;
-    while (i < 7) {
-        f[i] = p;
-        i++;
+    n = 0;
+    while (n < 7) {
+        f[n] = p;
+        n++;
         while (*p != 0)
             p++;
         p++;
@@ -146,6 +143,9 @@ static const char *write_ob_line(const char *p, const char *bs, char *prfx,
 
     if (f[1][0] == 'l' || f[1][0] == 'd' || f[1][0] == '4' || f[1][0] == '7' ||
         f[1][0] == 'e') {
+        char base2[128];
+        char newprfx[96];
+        int ne;
         s = f[6];
         s++;
         s++;

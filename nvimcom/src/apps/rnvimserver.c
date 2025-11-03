@@ -333,7 +333,7 @@ static void lsp_loop(void) {
         if (fgets(header, 127, stdin) == NULL)
             break;
 
-        if (sscanf(header, "Content-Length: %ld", &content_length) != 1) {
+        if (sscanf(header, "Content-Length: %zu", &content_length) != 1) {
             // Error handling for missing/malformed header.
             // For a simple server, we might just continue or break.
             fprintf(stderr, "Malformed header: %s", header);
@@ -394,6 +394,8 @@ static void lsp_loop(void) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {
                 build_objls();
+            } else if (strcmp(method, "$/cancelRequest") == 0) {
+                Log("method not implemented: $/cancelRequest");
             } else if (strcmp(method, "exit") == 0 ||
                        strcmp(method, "shutdown") == 0) {
                 handle_exit(method);

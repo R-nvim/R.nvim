@@ -614,7 +614,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
 
     if (xgroup > 1) {
         char newenv[576];
-        SEXP elmt = R_NilValue;
+        SEXP elmt;
         const char *ename;
 
         if (xgroup == 4 || xgroup == 7) {
@@ -868,7 +868,7 @@ static void nvimcom_checklibs(void) {
     char buf[128];
     ParseStatus status;
     int er = 0;
-    LibInfo *lib;
+    const LibInfo *lib;
 
     nlibs = newnlibs;
 
