@@ -1,5 +1,4 @@
 local edit = require("r.edit")
-local job = require("r.job")
 local config = require("r.config").get_config()
 local warn = require("r.log").warn
 local uv = vim.uv

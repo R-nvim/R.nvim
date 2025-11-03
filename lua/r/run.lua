@@ -1,6 +1,5 @@
 local M = {}
 local config = require("r.config").get_config()
-local job = require("r.job")
 local edit = require("r.edit")
 local warn = require("r.log").warn
 local utils = require("r.utils")
