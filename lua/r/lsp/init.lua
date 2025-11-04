@@ -267,7 +267,7 @@ function M.complete(req_id, lnum, cnum)
 
     -- check if the cursor is within comment or string
     local snm = ""
-    local c = vim.treesitter.get_captures_at_pos(0, lnum - 1, cnum - 2)
+    local c = vim.treesitter.get_captures_at_pos(0, lnum, cnum - 1)
     if #c > 0 then
         for _, v in pairs(c) do
             if v.capture == "string" then
@@ -286,7 +286,7 @@ function M.complete(req_id, lnum, cnum)
     local nra
     nra = need_R_args(cline:sub(1, cnum), lnum)
     -- TODO: check if need_R_args is working well in all cases
-    -- vim.notify(vim.inspect(nra))
+    -- vim.notify("nra:\n" .. vim.inspect(nra))
 
     if nra.fnm then
         -- We are passing arguments for a function.
