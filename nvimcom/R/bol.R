@@ -99,41 +99,7 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass = NULL) {
 
     res <- NULL
     for (field in names(frm)) {
-        type <- typeof(frm[[field]])
-        if (type == "symbol") {
-            res <- append(res, paste0(field, "\x05"))
-        } else if (type == "character") {
-            res <- append(
-                res,
-                paste0(field, "\x04\"", nvim.fix.string(frm[[field]], TRUE), "\"\x05")
-            )
-        } else if (type == "logical" || type == "double" || type == "integer") {
-            res <- append(
-                res,
-                paste0(field, "\x04", as.character(frm[[field]]), "\x05")
-            )
-        } else if (type == "NULL") {
-            res <- append(res, paste0(field, "\x04NULL\x05"))
-        } else if (type == "language") {
-            res <- append(
-                res,
-                paste0(field, "\x04", nvim.fix.string(deparse(frm[[field]])), "\x05")
-            )
-        } else if (type == "list") {
-            res <- append(res, paste0(field, "\x04list()\x05"))
-        } else {
-            res <- append(res, paste0(field, "\x05"))
-            warning(
-                "nvim.args: ",
-                funcname,
-                " [",
-                field,
-                "]",
-                " (typeof = ",
-                type,
-                ")"
-            )
-        }
+        res <- append(res, paste0(field, "\x05"))
     }
 
     res <- paste0(res, collapse = "")

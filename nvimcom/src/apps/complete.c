@@ -248,25 +248,8 @@ char *complete_args(char *p, char *funcnm) {
                             }
                             a[i] = 0;
                             p = str_cat(p, a);
-                            p = str_cat(p, " = ");
-                            if (*s == '\x04') {
-                                /* FIXME: remove this "def" (default value) from
-                                 * omnils file */
-                                // p = str_cat(p, "\", \"def\":\"");
-                                // i = 0;
-                                s++;
-                                while (*s != '\x05' && i < 63) {
-                                    // a[i] = *s;
-                                    i++;
-                                    s++;
-                                }
-                                // a[i] = 0;
-                                // char *esc = esc_json(a);
-                                // p = str_cat(p, esc);
-                                // free(esc);
-                            }
                             p = str_cat(
-                                p, "\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
+                                p, " =\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
                             p = str_cat(p, pd->name);
                             p = str_cat(p, ":");
                             p = str_cat(p, funcnm);

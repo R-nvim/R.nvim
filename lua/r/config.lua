@@ -806,7 +806,7 @@ local check_readme = function()
     -- Create or update the README (objls_ files will be regenerated if older than
     -- the README).
     local need_readme = false
-    local first_line = "Last change in this file: 2025-10-20"
+    local first_line = "Last change in this file: 2025-11-04"
     if
         vim.fn.filereadable(config.compldir .. "/README") == 0
         or vim.fn.readfile(config.compldir .. "/README")[1] ~= first_line
@@ -844,9 +844,8 @@ local check_readme = function()
             "",
             "  1. Name.",
             "",
-            "  2. Single character representing the type of object (look at the function",
-            "     nvimcom_glbnv_line at nvimcom/src/nvimcom.c to know the meaning of the",
-            "     characters).",
+            "  2. Single character representing the type of object (look at kind_tbl",
+            "     at nvimcom/src/apps/complete.c to know the meaning of the characters).",
             "",
             "  3. Class.",
             "",
