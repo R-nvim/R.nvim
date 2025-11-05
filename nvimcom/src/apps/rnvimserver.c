@@ -8,6 +8,8 @@
 #include "logging.h"
 #include "complete.h"
 #include "resolve.h"
+#include "hover.h"
+#include "signature.h"
 #include "tcp.h"
 #include "obbr.h"
 #include "lsp.h"
@@ -389,7 +391,11 @@ static void lsp_loop(void) {
             } else if (strcmp(method, "exeRnvimCmd") == 0) {
                 handle_exe_cmd(params);
             } else if (strcmp(method, "completionItem/resolve") == 0) {
-                resolve_json(id, params);
+                handle_resolve(id, params);
+            } else if (strcmp(method, "textDocument/hover") == 0) {
+                handle_hover(id, params);
+            } else if (strcmp(method, "textDocument/signature") == 0) {
+                handle_signature(id, params);
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {
