@@ -7,7 +7,6 @@ local qcell_opts = false
 local compl_region = true
 local lsp_debug = false
 
---- FIXME user options delete other options in config.lua
 local options = require("r.config").get_config().r_ls or {}
 
 local M = {}

@@ -987,7 +987,13 @@ local global_setup = function()
 
     -- Override default config values with user options for the second time.
     for k, v in pairs(user_opts) do
-        config[k] = v
+        if type(v) == "table" then
+            for k2, v2 in pairs(v) do
+                config[k][k2] = v2
+            end
+        else
+            config[k] = v
+        end
     end
 
     require("r.commands").create_user_commands()
