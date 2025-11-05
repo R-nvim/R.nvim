@@ -25,7 +25,7 @@ void set_max_depth(int m) { max_depth = m; }
  * Compares two ASCII strings in a case-insensitive manner.
  * @param a First string.
  * @param b Second string.
- * @return An integer less than, equal to, or greater than zero if a is found,
+ * @return An integer less than, equal to, or greater than zero
  *         respectively, to be less than, to match, or be greater than b.
  */
 static int ascii_ic_cmp(const char *a, const char *b) {
@@ -65,11 +65,6 @@ void change_all(int stt) { change_all_stt(listTree, stt); }
 
 /**
  * @brief Copy a string, skipping consecutive spaces.
- *
- * This function takes an input string and produces an output string where
- * consecutive spaces are reduced to a single space. The output string is
- * null-terminated. The function does not modify the input string.
- *
  * @param input The input string with potential consecutive spaces.
  * @param output The output buffer where the trimmed string will be stored.
  *               This buffer should be large enough to hold the result.
@@ -112,13 +107,6 @@ static int read_field_data(char *s, int i) {
 
 /**
  * @brief Parses the DESCRIPTION file of an R package to extract metadata.
- *
- * This function reads the DESCRIPTION file of an R package and extracts key
- * metadata, including the Title and Description fields. It is used to provide
- * more detailed information about R packages in the Neovim environment,
- * particularly for features like auto-completion and package management within
- * the R.nvim plugin. The parsed information is used to update the data
- * structures that represent installed R libraries.
  *
  * @param descr Pointer to a string containing the contents of a DESCRIPTION
  * file.
@@ -314,14 +302,6 @@ static char *get_pkg_descr(const char *pkgnm, int again) {
 
 /**
  * @brief Count the number of separator characters in a given buffer.
- *
- * This function scans a buffer and counts the number of occurrences of
- * the separator character '\006'. It is primarily used to parse and validate
- * data structure representations received from R. The function also checks if
- * the size of the buffer is 1, indicating an empty package with no exported
- * objects. In case of an unexpected number of separators, it logs an error,
- * frees the buffer, and returns NULL.
- *
  * @param b1 Pointer to the buffer to be scanned.
  * @param size Pointer to an integer where the size of the buffer will be
  * stored.
@@ -364,19 +344,9 @@ static char *count_sep(char *b1, int *size) {
 /**
  * @brief Validates and prepares the buffer containing completion data.
  *
- * This function processes a buffer that is expected to contain data for auto
- * completion, ensuring that there are exactly 7 '\006' separators between
- * newline characters. It modifies the buffer in place, replacing certain
- * control characters with their corresponding representations and ensuring the
- * data is correctly formatted for subsequent processing. The function is part
- * of the handling for auto completion data in the R.nvim plugin, facilitating
- * the communication and data exchange between Neovim and R.
- *
  * @param buffer Pointer to the buffer containing auto completion data.
  * @param size Pointer to an integer representing the size of the buffer.
- * @return Returns a pointer to the processed buffer if the validation is
- * successful. Returns NULL if the buffer does not meet the expected format or
- * validation fails.
+ * @return Returns a pointer to the processed buffer.
  */
 static char *check_omils_buffer(char *b, int *size) {
     // Ensure that there are exactly 7 \006 between new line characters
@@ -396,20 +366,10 @@ static char *check_omils_buffer(char *b, int *size) {
 
 /**
  * @brief Reads the contents of an auto completion list file into a buffer.
- *
- * This function opens and reads the specified auto completion file (typically
- * named 'objls_'). It allocates memory for the buffer and loads the file
- * contents into it. The buffer is used to store completion items (like function
- * names and variables) available in R packages for use in auto completion in
- * Neovim. If the file is empty, it indicates that no completion items are
- * available or the file is yet to be populated.
- *
  * @param fn The name of the file to be read.
  * @param size A pointer to an integer where the size of the read data will be
  * stored.
- * @return Returns a pointer to a buffer containing the file contents if
- * successful. Returns NULL if the file cannot be opened, is empty, or in case
- * of a read error.
+ * @return Returns a pointer to a buffer containing the file contents.
  */
 static char *read_objls_file(const char *fn, int *size) {
     char *b = read_file(fn, 1);
@@ -601,14 +561,6 @@ void update_pkg_list(char *libnms) {
 
 /**
  * @brief Updates the buffer containing the global environment data from R.
- *
- * This function is responsible for updating the global environment buffer
- * with new data received from R. It ensures the buffer is appropriately sized
- * and formatted for further processing. The global environment buffer contains
- * data about the R global environment, such as variables and functions, which
- * are used for features like auto-completion in Neovim. The function also
- * triggers a refresh of related UI components if necessary.
- *
  * @param g A string containing the new global environment data.
  */
 void update_glblenv_buffer(const char *g) {
@@ -688,10 +640,6 @@ int get_list_status(const char *s, int stt) {
     return stt;
 }
 
-/**
- * Description:
- * @param s:
- */
 void toggle_list_status(char *s) {
     ListStatus *p = search(listTree, s);
     if (p) {

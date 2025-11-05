@@ -35,8 +35,6 @@ void replace_char(char *s, char find, char replace) {
     }
 }
 
-// TODO: remove excess of text from all functions documentation.
-
 /**
  * @brief Reads the entire contents of a specified file into a buffer.
  * @param fn The name of the file to be read.
@@ -88,8 +86,6 @@ char *esc_json(const char *input) {
     }
 
     size_t ilen = strlen(input);
-    // Allocate enough memory for the escaped string (worst case: all chars
-    // escaped) Plus 1 for null terminator
     char *b = (char *)malloc(ilen * 6 + 1);
     if (b == NULL) {
         return NULL;

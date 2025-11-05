@@ -9,26 +9,6 @@ local lsp_debug = false
 
 local options = require("r.config").get_config().r_ls or {}
 
--- TODO: delete this table before merging the pull request
--- Correspondence between nvimcom "cls" and LSP "kind".
---    old    new    LSP name         R type
---    ["("]  ["F"]  Function         function
---    ["$"]  ["d"]  Struct           data.frame
---    ["%"]  ["b"]  Method           logical
---    ["~"]  ["t"]  Text             character
---    ["{"]  ["n"]  Value            numeric
---    ["!"]  ["f"]  Field            factor
---    [";"]  ["C"]  Constructor      control
---    ["["]  ["l"]  Struct           list
---    ["<"]  ["4"]  Class            S4
---    [">"]  ["7"]  Class            S7
---    [":"]  ["e"]  Interface        environment
---    ["&"]  ["p"]  Event            promise
---    ["l"]  ["L"]  Module           library
---    ["a"]  ["a"]  Variable         function argument
---    ["c"]  ["c"]  Field            data.frame column
---    ["*"]  ["o"]  TypeParameter    other
-
 local M = {}
 
 local get_piped_obj

@@ -111,10 +111,6 @@ static void RegisterPort(int bindportn) // Function to register port number to R
 /**
  * @brief Initializes the socket for the server.
  *
- * This function creates a socket for the server and performs necessary
- * initializations. On Windows, it also initializes Winsock. The function
- * exits the program if socket creation fails.
- *
  * @note For Windows, WSAStartup is called to start the Winsock API.
  */
 static void initialize_socket(void) {
@@ -152,12 +148,6 @@ static void initialize_socket(void) {
 #define PORT_END 10199
 /**
  * @brief Binds the server socket to an available port.
- *
- * This function initializes the server address structure and attempts to bind
- * the server socket to an available port starting from 10101 up to 10199.
- * It registers the port number for R to connect. The function exits the
- * program if it fails to bind the socket to any of the ports in the specified
- * range.
  */
 static void bind_to_port(void) {
     Log("bind_to_port()");
@@ -189,11 +179,6 @@ static void bind_to_port(void) {
 
 /**
  * @brief Sets the server to listen for incoming connections.
- *
- * This function sets the server to listen on the socket for incoming
- * connections. It configures the socket to allow up to 5 pending connection
- * requests in the queue. The function exits the program if it fails to set
- * the socket to listen state.
  */
 static void listening_for_connections(void) {
     Log("listening_for_connections()");
@@ -208,10 +193,6 @@ static void listening_for_connections(void) {
 /**
  * @brief Accepts an incoming connection on the listening socket.
  *
- * This function waits for and accepts the first incoming connection request
- * on the listening socket. It stores the connection file descriptor in
- * 'connfd' and sets the 'r_conn' flag to indicate a successful connection.
- * The function exits the program if it fails to accept a connection.
  */
 static void accept_connection(void) {
     Log("accept_connection()");
@@ -234,11 +215,6 @@ static void accept_connection(void) {
 
 /**
  * @brief Initializes listening for incoming connections.
- *
- * This function is responsible for the entire process of setting up the
- * server to listen for and accept incoming connections. It calls a series of
- * functions to initialize the socket, bind it to a port, set it to listen
- * for connections, and then accept an incoming connection.
  *
  * @note A previous version of this function was adapted from
  * https://www.geeksforgeeks.org/socket-programming-in-cc-handling-multiple-clients-on-server-without-multi-threading/

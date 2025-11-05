@@ -227,7 +227,6 @@ static void resolve(const char *rid, const char *knd, const char *cls,
 
 void resolve_json(const char *req_id, char *params) {
     Log("resolve_json: %s\n%s", req_id, params);
-    // {"env":"base","label":"read.dcf","cls":"F","kind":3}
 
     char *doc = strstr(params, "\"documentation\":{");
     char *env = strstr(params, "\"env\":\"");
