@@ -7,6 +7,7 @@ local qcell_opts = false
 local compl_region = true
 local lsp_debug = false
 
+--- FIXME user options delete other options in config.lua
 local options = require("r.config").get_config().r_ls or {}
 
 local M = {}
@@ -414,6 +415,17 @@ function M.send_msg(params)
     if lsp_debug and not res then
         warn("Failed to send message to r_ls: " .. vim.inspect(params))
     end
+end
+
+M.call_nra_fobj = function()
+    local cpos = vim.api.nvim_win_get_cursor(0)
+    local cnum = cpos[2]
+    local lnum = cpos[1] - 1
+    if cnum < 1 then return end
+    local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
+    local nra = need_R_args(cline:sub(1, cnum), lnum)
+    local fobj = require("r.cursor").get_first_obj()
+    vim.notify("NRA: " .. vim.inspect(nra) .. "\nFOBJ: " .. vim.inspect(fobj))
 end
 
 return M

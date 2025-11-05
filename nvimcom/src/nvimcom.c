@@ -1305,7 +1305,6 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
     if (getenv("RNVIM_PORT"))
         strncpy(rns_port, getenv("RNVIM_PORT"), 15);
 
-    // FIXME
     set_doc_width(getenv("R_LS_DOC_WIDTH"));
 
     if (verbose > 0)
