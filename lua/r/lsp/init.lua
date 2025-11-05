@@ -36,6 +36,9 @@ end
 ---@param line string
 ---@param lnum integer
 local get_first_obj = function(line, lnum)
+    -- The function with the same name in r.cursor has a different purpose.
+    -- r.cursor.get_first_obj: the cursor is expected to be over the function
+    -- r.lsp.get_first_obj: the cursor is expected to be between the parentheses.
     local no
     local piece
     local funname
@@ -70,8 +73,9 @@ local get_first_obj = function(line, lnum)
         end
         if funname then break end
         lnum = lnum - 1
-        line = vim.fn.getline(lnum)
-    until type(line) == "string" and string.find(line, "^%S") or lnum == 0
+        if lnum == 0 then break end
+        line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
+    until line:find("^%S")
     return pkg, funname, firstobj, line, lnum, idx
 end
 
@@ -417,15 +421,13 @@ function M.send_msg(params)
     end
 end
 
-M.call_nra_fobj = function()
+M.call_nra = function()
     local cpos = vim.api.nvim_win_get_cursor(0)
     local cnum = cpos[2]
     local lnum = cpos[1] - 1
-    if cnum < 1 then return end
     local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
     local nra = need_R_args(cline:sub(1, cnum), lnum)
-    local fobj = require("r.cursor").get_first_obj()
-    vim.notify("NRA: " .. vim.inspect(nra) .. "\nFOBJ: " .. vim.inspect(fobj))
+    vim.notify("NRA: " .. vim.inspect(nra))
 end
 
 return M
