@@ -6,33 +6,30 @@
 #include "../common.h"
 #include "utilities.h"
 
-#define N_RHELP_KEYS 119
+#define N_RHELP_KEYS 137
+// clang-format off
 static const char *rhelp_keywords[N_RHELP_KEYS] = {
-    "Alpha",        "Beta",       "Chi",         "Delta",        "Epsilon",
-    "Eta",          "Gamma",      "Iota",        "Kappa",        "Lambda",
-    "Mu",           "Nu",         "Omega",       "Omicron",      "Phi",
-    "Pi",           "Psi",        "R",           "Rdversion",    "Rho",
-    "S4method",     "Sexpr",      "Sigma",       "Tau",          "Theta",
-    "Upsilon",      "Xi",         "Zeta",        "acronym",      "alias",
-    "alpha",        "arguments",  "author",      "beta",         "bold",
-    "chi",          "cite",       "code",        "command",      "concept",
-    "cr",           "dQuote",     "delta",       "deqn",         "describe",
-    "description",  "details",    "dfn",         "docType",      "dontrun",
-    "dontshow",     "donttest",   "dots",        "email",        "emph",
-    "encoding",     "enumerate",  "env",         "epsilon",      "eqn",
-    "eta",          "examples",   "file",        "format",       "gamma",
-    "ge",           "href",       "iota",        "item",         "itemize",
-    "kappa",        "kbd",        "keyword",     "lambda",       "ldots",
-    "le",           "link",       "linkS4class", "method",       "mu",
-    "name",         "newcommand", "note",        "nu",           "omega",
-    "omicron",      "option",     "phi",         "pi",           "pkg",
-    "preformatted", "psi",        "references",  "renewcommand", "rho",
-    "sQuote",       "samp",       "section",     "seealso",      "sigma",
-    "source",       "special",    "strong",      "subsection",   "synopsis",
-    "tab",          "tabular",    "tau",         "testonly",     "theta",
-    "title",        "upsilon",    "url",         "usage",        "value",
-    "var",          "verb",       "xi",          "zeta",
+    "Alpha", "Beta", "CRANpkg", "Chi", "Delta", "Epsilon", "Eta", "Gamma",
+    "Iota", "Kappa", "Lambda", "Mu", "Nu", "Omega", "Omicron", "Phi", "Pi",
+    "Psi", "R", "RdOpts", "Rdversion", "Rho", "S3method", "S4method", "Sexpr",
+    "Sigma", "Tau", "Theta", "Upsilon", "Xi", "Zeta", "abbr", "acronym",
+    "alias", "alpha", "arguments", "author", "beta", "bold", "chi", "cite",
+    "code", "command", "concept", "cr", "dQuote", "delta", "deqn", "describe",
+    "description", "details", "dfn", "docType", "doi", "dontdiff", "dontrun",
+    "dontshow", "donttest", "dots", "email", "emph", "enc", "encoding",
+    "enumerate", "env", "epsilon", "eqn", "eta", "examples", "figure", "file",
+    "format", "gamma", "ge", "href", "if", "ifelse", "iota", "item", "itemize",
+    "kappa", "kbd", "keyword", "lambda", "ldots", "le", "link", "linkS4class",
+    "method", "mu", "name", "newcommand", "note", "nu", "omega", "omicron",
+    "option", "out", "packageAuthor", "packageDESCRIPTION",
+    "packageDescription", "packageIndices", "packageMaintainer",
+    "packageTitle", "phi", "pi", "pkg", "preformatted", "psi", "references",
+    "renewcommand", "rho", "sQuote", "samp", "section", "seealso", "sigma",
+    "source", "special", "sspace", "strong", "subsection", "synopsis", "tab",
+    "tabular", "tau", "testonly", "theta", "title", "upsilon", "url", "usage",
+    "value", "var", "verb", "xi", "zeta",
 };
+// clang-format on
 
 void complete_rhelp(const char *params) {
     char *id = strstr(params, "\"orig_id\":");
