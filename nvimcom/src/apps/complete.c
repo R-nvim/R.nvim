@@ -206,12 +206,6 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
 }
 
 /*
- * TODO: set the sortText field. From an AI:
- * sortText: This string is the primary method for a server to influence sort
- * order. It allows the server to prioritize certain items without changing
- * their displayed label. For example, a server might set sortText to _a_ for
- * highly relevant completions to ensure they appear at the top of the list.
- *
  * @desc:
  * @param p:
  * @param funcnm:

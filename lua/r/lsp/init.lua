@@ -399,11 +399,6 @@ function M.start(rns_path, rns_env)
             ["client/exeRnvimCmd"] = exe_cmd,
         },
     })
-    -- TODO: enable/disable the language server on CursorMoved event
-    -- vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
-    --     buffer = vim.api.nvim_get_current_buf(),
-    --     callback = on_cursor_move,
-    -- })
     if client_id then vim.lsp.completion.enable(true, client_id, 0) end
 end
 
