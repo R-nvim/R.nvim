@@ -1,5 +1,7 @@
 local M = {}
 
+local last_line = 0
+
 --- Setup YAML LSP for Quarto files
 M.setup = function()
     if not vim.lsp.config then return end
@@ -47,14 +49,13 @@ M.setup = function()
         })
     end
 
-    local function is_in_quarto_yaml()
+    local function is_in_quarto_yaml(line_num)
         local filename = vim.fn.expand("%:t")
 
         -- Check if it's a _quarto.yml file
         if filename == "_quarto.yml" or filename == "_quarto.yaml" then return true end
 
         -- Check if it's frontmatter in a .qmd file
-        local line_num = vim.api.nvim_win_get_cursor(0)[1]
         local lines = vim.api.nvim_buf_get_lines(
             0,
             0,
@@ -88,9 +89,10 @@ M.setup = function()
     vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
         buffer = 0,
         callback = function()
-            -- TODO: integrate with r_ls and only run if cursor line has changed
-            -- TODO: check if it works in blocks of R/Python code
-            local in_yaml = is_in_quarto_yaml()
+            local line_num = vim.api.nvim_win_get_cursor(0)[1]
+            if line_num == last_line then return end
+            last_line = line_num
+            local in_yaml = is_in_quarto_yaml(line_num)
 
             local clients = vim.lsp.get_clients({ name = "yamlls", bufnr = 0 })
             local actually_attached = #clients > 0
