@@ -122,7 +122,7 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
         p = str_cat(p, s + skip);
         p = str_cat(p, "\",\"sortText\":\"_");
         p = str_cat(p, s + skip);
-        p = str_cat(p, "\",\"cls\":\"c\",\"env\":\"");
+        p = str_cat(p, "\",\"cls\":\"c\",\"kind\":5,\"env\":\"");
         p = str_cat(p, dtfrm);
         p = str_cat(p, "\"},");
 

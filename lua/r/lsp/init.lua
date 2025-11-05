@@ -91,7 +91,7 @@ local need_R_args = function(line, lnum)
     local nlnum = nil
     local cnum = nil
     local lib = nil
-    lib, funname, firstobj, nline, nlnum, cnum = get_first_obj(line, lnum)
+    lib, funname, firstobj, nline, nlnum, cnum = get_first_obj(line, lnum + 1)
 
     -- Check if this is a function for which we expect to complete data frame column names
     if funname then
