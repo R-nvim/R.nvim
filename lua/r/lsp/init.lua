@@ -290,13 +290,11 @@ function M.complete(req_id, lnum, cnum)
 
     if nra.fnm then
         -- We are passing arguments for a function.
-        -- An empty word will be treated as NULL at nvimcom/src/apps/complete.c
-        local arg = wrd and wrd or " "
 
         -- Special completion for library and require
         if
             (nra.fnm == "library" or nra.fnm == "require")
-            and (not nra.firstobj or nra.firstobj == arg)
+            and (not nra.firstobj or nra.firstobj == wrd)
         then
             M.send_msg({ code = "5", orig_id = req_id, base = wrd, fnm = "#" })
             return
@@ -324,7 +322,7 @@ function M.complete(req_id, lnum, cnum)
                 "nvimcom:::nvim_complete_args('%s', '%s', '%s'",
                 req_id,
                 nra.fnm,
-                arg
+                wrd and wrd or " "
             )
             if nra.firstobj then
                 msg = msg .. ", firstobj = '" .. nra.firstobj .. "'"

@@ -312,6 +312,8 @@ void complete(const char *params) {
     cut_json_str(&fnm, 7);
     cut_json_str(&df, 6);
     cut_json_str(&fargs, 9);
+    if (base && *base == ' ')
+        base = NULL;
 
     Log("complete(%s, %s, %s, %s, %s)", id, base, fnm, df, fargs);
     char *p;
