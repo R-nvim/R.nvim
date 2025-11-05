@@ -120,6 +120,8 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
 
         p = str_cat(p, "{\"label\":\"");
         p = str_cat(p, s + skip);
+        p = str_cat(p, "\",\"sortText\":\"_");
+        p = str_cat(p, s + skip);
         p = str_cat(p, "\",\"cls\":\"c\",\"env\":\"");
         p = str_cat(p, dtfrm);
         p = str_cat(p, "\"},");
@@ -173,6 +175,12 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
                                 nsz - compl_buffer_size + 32768);
 
             p = str_cat(p, "{\"label\":\"");
+            if (pkg) {
+                p = str_cat(p, pkg);
+                p = str_cat(p, "::");
+            }
+            p = str_cat(p, f[0]);
+            p = str_cat(p, "\",\"sortText\":\"");
             if (pkg) {
                 p = str_cat(p, pkg);
                 p = str_cat(p, "::");
@@ -248,8 +256,10 @@ char *complete_args(char *p, char *funcnm) {
                             }
                             a[i] = 0;
                             p = str_cat(p, a);
+                            p = str_cat(p, " =\",\"sortText\":\"_");
+                            p = str_cat(p, a);
                             p = str_cat(
-                                p, " =\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
+                                p, "\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
                             p = str_cat(p, pd->name);
                             p = str_cat(p, ":");
                             p = str_cat(p, funcnm);

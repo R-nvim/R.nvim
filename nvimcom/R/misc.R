@@ -530,14 +530,17 @@ nvim_complete_args <- function(
         args <- gsub("\005$", "", args)
         argsl <- strsplit(args, "\005")[[1]]
         argsl <- sub("\004.*", "", argsl)
-        args <- paste0(
-            '{\x13label\x13:\x13',
-            paste(
-                argsl,
-                collapse = '\x13,\x13cls\x13:\x13a\x13,\x13env\x13:\x13.GlobalEnv\x13},{\x13label\x13:\x13'
-            ),
-            '\x13,\x13cls\x13:\x13a\x13,\x13env\x13:\x13.GlobalEnv\x13},'
-        )
+        args <- ""
+        for (a in argsl) {
+            args <- paste0(
+                args,
+                '{\x13label\x13:\x13',
+                a,
+                '\x13,\x13sortText\x13:\x13_',
+                a,
+                '\x13,\x13cls\x13:\x13a\x13,\x13env\x13:\x13.GlobalEnv\x13},'
+            )
+        }
         msg <- paste0(
             '+C{"orig_id":',
             req_id,
