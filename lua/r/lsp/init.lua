@@ -270,8 +270,6 @@ function M.complete(req_id, lnum, cnum)
     -- Should we complete function arguments?
     local nra
     nra = need_R_args(cline:sub(1, cnum), lnum)
-    -- TODO: check if need_R_args is working well in all cases
-    -- vim.notify("nra:\n" .. vim.inspect(nra))
 
     if nra.fnm then
         -- We are passing arguments for a function.
@@ -421,6 +419,11 @@ function M.send_msg(params)
     end
 end
 
+-- TODO: check if need_R_args is working well in all cases
+-- This is a temporary function and should be deleted when need_R_args is well
+-- tested (before merging the "lsp" branch). To run this function, put at the
+-- end of your init.lua:
+-- vim.keymap.set("n", "<F5>", '<Cmd>lua require("r.lsp").call_nra()<CR>')
 M.call_nra = function()
     local cpos = vim.api.nvim_win_get_cursor(0)
     local cnum = cpos[2]

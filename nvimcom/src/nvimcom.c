@@ -338,6 +338,7 @@ static void nvimcom_squo(const char *buf, char *buf2, int bsize) {
         i++;
         j++;
     }
+    strcpy(buf2, buf);
 }
 
 /**
@@ -775,14 +776,42 @@ static void nvimcom_globalenv_list(void) {
     }
 }
 
+static char *unscape_str(const char *a) {
+    size_t l = strlen(a);
+    char *b = (char *)calloc(2 * l + 32, sizeof(char));
+    size_t j = 0;
+    size_t i = 0;
+    while (i < l) {
+        if (a[i] == '\\' && a[i + 1] == 'u' && a[i + 2] == '0' &&
+            a[i + 3] == '0' && a[i + 4] == '1') {
+            if (a[i + 5] == '2') {
+                b[j] = '\'';
+                j++;
+                i += 6;
+            } else if (a[i + 5] == '3') {
+                b[j] = '\'';
+                j++;
+                i += 6;
+            }
+        } else {
+            b[j] = a[i];
+            i++;
+            j++;
+        }
+    }
+    return b;
+}
+
 /**
  * @brief Evaluate an R expression.
  *
  * @param buf The expression to be evaluated.
  */
 static void nvimcom_eval_expr(const char *buf) {
+    char *b = unscape_str(buf);
+
     if (verbose > 3)
-        Rprintf("nvimcom_eval_expr: '%s'\n", buf);
+        Rprintf("nvimcom_eval_expr: '%s'\n", b);
 
     char rep[128];
 
@@ -791,31 +820,34 @@ static void nvimcom_eval_expr(const char *buf) {
     int er = 0;
 
     PROTECT(cmdSexp = allocVector(STRSXP, 1));
-    SET_STRING_ELT(cmdSexp, 0, mkChar(buf));
+    SET_STRING_ELT(cmdSexp, 0, mkChar(b));
     PROTECT(cmdexpr = R_ParseVector(cmdSexp, -1, &status, R_NilValue));
 
-    char buf2[80];
-    nvimcom_squo(buf, buf2, 80);
     if (status == PARSE_OK) {
         /* Only the first command will be executed if the expression includes
          * a semicolon. */
         PROTECT(ans = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
         if (er && verbose > 1) {
+            char buf2[80];
+            nvimcom_squo(b, buf2, 80);
             strcpy(rep, "require('r.log').warn('Error running: ");
-            strncat(rep, buf2, 80);
+            strncat(rep, buf2, 79);
             strcat(rep, "')");
             send_to_nvim(rep);
         }
         UNPROTECT(1);
     } else {
         if (verbose > 1) {
+            char buf2[80];
+            nvimcom_squo(b, buf2, 80);
             strcpy(rep, "require('r.log').warn('Invalid command: ");
-            strncat(rep, buf2, 80);
+            strncat(rep, buf2, 79);
             strcat(rep, "')");
             send_to_nvim(rep);
         }
     }
     UNPROTECT(2);
+    free(b);
 }
 
 /**

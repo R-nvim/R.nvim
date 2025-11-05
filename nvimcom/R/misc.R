@@ -253,7 +253,7 @@ nvim_insert <- function(cmd, howto = "tabnew") {
         )
     } else {
         o <- gsub("\\\\", "\\\\\\\\", o)
-        o <- gsub("'", "\\\\'", o)
+        o <- gsub("'", "\x13", o)
         o <- paste0(o, collapse = "\x14")
         .C(
             nvimcom_msg_to_nvim,

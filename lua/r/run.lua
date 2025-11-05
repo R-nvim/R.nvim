@@ -430,6 +430,8 @@ end
 ---@param type string
 M.insert = function(cmd, type)
     if vim.g.R_Nvim_status < 7 then return end
+    cmd = cmd:gsub('"', "\019")
+    cmd = cmd:gsub("'", "\018")
     M.send_to_nvimcom("E", "nvimcom:::nvim_insert(" .. cmd .. ", '" .. type .. "')")
 end
 
