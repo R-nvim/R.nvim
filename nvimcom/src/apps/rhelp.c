@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 
 #include "rhelp.h"
@@ -6,9 +7,8 @@
 #include "../common.h"
 #include "utilities.h"
 
-#define N_RHELP_KEYS 137
 // clang-format off
-static const char *rhelp_keywords[N_RHELP_KEYS] = {
+static const char *rhelp_keywords[] = {
     "Alpha", "Beta", "CRANpkg", "Chi", "Delta", "Epsilon", "Eta", "Gamma",
     "Iota", "Kappa", "Lambda", "Mu", "Nu", "Omega", "Omicron", "Phi", "Pi",
     "Psi", "R", "RdOpts", "Rdversion", "Rho", "S3method", "S4method", "Sexpr",
@@ -27,20 +27,42 @@ static const char *rhelp_keywords[N_RHELP_KEYS] = {
     "renewcommand", "rho", "sQuote", "samp", "section", "seealso", "sigma",
     "source", "special", "sspace", "strong", "subsection", "synopsis", "tab",
     "tabular", "tau", "testonly", "theta", "title", "upsilon", "url", "usage",
-    "value", "var", "verb", "xi", "zeta",
+    "value", "var", "verb", "xi", "zeta", NULL
 };
 // clang-format on
 
+static char *rhelp_menu;
+static size_t nchars = 0;
+
 void complete_rhelp(const char *params) {
     char *id = strstr(params, "\"orig_id\":");
+    char *base = strstr(params, "\"base\":\"");
     cut_json_int(&id, 10);
-    Log("complete_rhelp: %s", id);
-    char rhelp_menu[4096] = {0};
+    cut_json_str(&base, 8);
+
+    Log("complete_rhelp: %s, '%s'", id, base);
+
+    const char **s;
+
+    if (!rhelp_menu) {
+        s = rhelp_keywords;
+        while (*s != NULL) {
+            nchars += strlen(*s) + 32;
+            s++;
+        }
+        rhelp_menu = (char *)calloc(nchars, sizeof(char));
+    }
+
+    memset(rhelp_menu, 0, nchars * sizeof(char));
     char *p = rhelp_menu;
-    for (int i = 0; i < N_RHELP_KEYS; i++) {
-        p = str_cat(p, "{\"label\":\"\\\\");
-        p = str_cat(p, rhelp_keywords[i]);
-        p = str_cat(p, "\",\"kind\":14},");
+    s = rhelp_keywords;
+    while (*s != NULL) {
+        if (!base || fuzzy_find(*s, base)) {
+            p = str_cat(p, "{\"label\":\"\\\\");
+            p = str_cat(p, *s);
+            p = str_cat(p, "\",\"kind\":14},");
+        }
+        s++;
     }
     send_menu_items(rhelp_menu, id);
 }

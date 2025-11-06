@@ -1040,10 +1040,14 @@ M.real_setup = function()
 
     require("r.rproj").apply_settings(config)
 
+    local no_ts = { "rhelp" }
     if config.register_treesitter then
         vim.treesitter.language.register("markdown", { "quarto", "rmd" })
+    else
+        table.insert(no_ts, "quarto")
+        table.insert(no_ts, "rmd")
     end
-    if vim.bo.filetype ~= "rhelp" then vim.treesitter.start() end
+    if not vim.tbl_contains(no_ts, vim.bo.filetype) then vim.treesitter.start() end
 end
 
 --- Return the table with the final configure variables: the default values

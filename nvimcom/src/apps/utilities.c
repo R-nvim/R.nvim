@@ -194,3 +194,32 @@ char *seek_word(char *objls, const char *wrd) {
     }
     return NULL;
 }
+
+/**
+ * Checks if the string `b` can be found through string `a`.
+ * @param a The string to be checked.
+ * @param b The substring to look for at the start of `a`.
+ * @return 1 if `b` can be found through `a`, 0 otherwise.
+ */
+int fuzzy_find(const char *a, const char *b) {
+    int i = 0;
+    int j = 0;
+    while (a[i] && b[j]) {
+        if (a[i] == b[j]) {
+            if (b[j] == '$' || b[j] == '@') {
+                for (int k = 0; k <= j; k++)
+                    if (a[k] != b[k])
+                        return 0;
+            }
+            i++;
+            j++;
+        } else {
+            while (a[i] && a[i] != b[j])
+                i++;
+        }
+    }
+    if (b[j] == '\0')
+        return i;
+    else
+        return 0;
+}

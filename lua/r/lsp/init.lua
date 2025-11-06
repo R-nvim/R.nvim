@@ -7,7 +7,8 @@ local qcell_opts = false
 local compl_region = true
 local lsp_debug = false
 
-local options = require("r.config").get_config().r_ls or {}
+local config = require("r.config").get_config()
+local options = config.r_ls or {}
 
 local M = {}
 
@@ -146,6 +147,59 @@ local reset_r_compl = function()
     warned_no_reset = true
 end
 
+local get_quarto_lang = function(lines, lnum)
+    if config.register_treesitter then
+        return require("r.utils").get_lang()
+    else
+        for i = lnum, 1, -1 do
+            if string.find(lines[i], "^```{%s*r") then
+                return "r"
+            elseif string.find(lines[i], "^%s*```") then
+                break
+            end
+        end
+    end
+    return "other"
+end
+
+local get_rnoweb_lang = function(lnum, lines)
+    for i = lnum, 1, -1 do
+        if string.find(lines[i], "^%s*<<.*>>=") then
+            return "r"
+        elseif string.find(lines[i], "^@") then
+            return "other"
+        end
+    end
+    return "other"
+end
+
+local get_rhelp_lang = function(lnum, lines)
+    for i = lnum, 1, -1 do
+        if string.find(lines[i], [[\%S+{]]) then
+            if
+                string.find(lines[i], [[\examples{]])
+                or string.find(lines[i], [[\usage{]])
+            then
+                return "r"
+            end
+            break
+        end
+    end
+    return "other"
+end
+
+local get_lang = function(lnum)
+    local lines = vim.api.nvim_buf_get_lines(0, 0, lnum, true)
+    if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
+        return get_quarto_lang(lines, lnum)
+    elseif vim.bo.filetype == "rnoweb" then
+        return get_rnoweb_lang(lnum, lines)
+    elseif vim.bo.filetype == "rhelp" then
+        return get_rhelp_lang(lnum, lines)
+    end
+    return "other"
+end
+
 --- Get the word before the cursor, considering that Unicode
 --- characters use more bytes than occupy display cells
 ---@param line string Current line
@@ -171,7 +225,6 @@ end
 ---@param cnum integer
 function M.complete(req_id, lnum, cnum)
     if not compl_region then return end
-    -- In cmp-r: cline = request.context.cursor_before_line
     local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
 
     local wrd = get_word(cline, cnum)
@@ -189,10 +242,8 @@ function M.complete(req_id, lnum, cnum)
     -- Check if the cursor is in R code
     local lang = "r"
     if vim.bo.filetype ~= "r" then
-        lang = "other"
-        local lines = vim.api.nvim_buf_get_lines(0, 0, lnum, true)
+        lang = get_lang(lnum)
         if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
-            lang = require("r.utils").get_lang()
             if lang == "markdown_inline" then
                 local wrd2 = get_word(cline, cnum, "(@[tf]%S*)")
                 if wrd2 and wrd2:find("^@") then
@@ -201,30 +252,17 @@ function M.complete(req_id, lnum, cnum)
                 end
                 return
             end
-        elseif vim.bo.filetype == "rnoweb" then
-            for i = lnum, 1, -1 do
-                if string.find(lines[i], "^%s*<<.*>>=") then
-                    lang = "r"
-                    break
-                elseif string.find(lines[i], "^@") then
-                    return
-                end
-            end
+        elseif vim.bo.filetype == "rnoweb" and lang ~= "r" then
+            return
         elseif vim.bo.filetype == "rhelp" then
-            for i = lnum, 1, -1 do
-                if string.find(lines[i], [[\%S+{]]) then
-                    if
-                        string.find(lines[i], [[\examples{]])
-                        or string.find(lines[i], [[\usage{]])
-                    then
-                        lang = "r"
-                    end
-                    break
-                end
-            end
             if lang ~= "r" then
-                if cline:sub(cnum, cnum) == "\\" then
-                    M.send_msg({ code = "CH", orig_id = req_id })
+                local c_pos = wrd and cnum - #wrd or cnum
+                if cline:sub(c_pos, c_pos) == "\\" then
+                    if wrd then
+                        M.send_msg({ code = "CH", orig_id = req_id, base = wrd })
+                    else
+                        M.send_msg({ code = "CH", orig_id = req_id })
+                    end
                 end
                 return
             end
@@ -360,6 +398,14 @@ end
 ---Identify what object should its details displayed on hover
 ---@param req_id string
 M.signature = function(req_id)
+    if vim.bo.filetype ~= "r" then
+        local cpos = vim.api.nvim_win_get_cursor(0)
+        if not cpos then return end
+        local lnum = cpos[1] - 1
+        local lang = get_lang(lnum)
+        if lang ~= "r" then return end
+    end
+
     local fnm = get_function_name()
     if fnm then
         -- triggered by `(`
