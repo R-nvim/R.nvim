@@ -212,7 +212,7 @@ static void resolve(const char *rid, const char *knd, const char *cls,
             p = str_cat(p, buffer);
             free(buffer);
             if (f[1][0] == 'F') {
-                char *b = format_usage(f[0], f[4]);
+                char *b = format_usage(f[0], f[4], 1);
                 str_cat(p, b);
                 free(b);
             }

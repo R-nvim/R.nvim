@@ -357,6 +357,24 @@ M.hover = function(req_id)
     end
 end
 
+---Identify what object should its details displayed on hover
+---@param req_id string
+M.signature = function(req_id)
+    local fnm = get_function_name()
+    if fnm then
+        -- triggered by `(`
+        M.send_msg({ code = "S", orig_id = req_id, word = fnm })
+    else
+        -- triggered manually
+        local word = require("r.cursor").get_keyword()
+        if word and word ~= ")" then
+            M.send_msg({ code = "S", orig_id = req_id, word = word })
+        else
+            vim.notify("WORD:" .. vim.inspect(word) .. "\nFNM:" .. vim.inspect(fnm))
+        end
+    end
+end
+
 --- Execute lua command sent by rnvimserver
 local function exe_cmd(_, result, _)
     vim.schedule(function()
@@ -449,6 +467,7 @@ end
 -- vim.keymap.set("n", "<F5>", '<Cmd>lua require("r.lsp").call_nra()<CR>')
 M.call_nra = function()
     local cpos = vim.api.nvim_win_get_cursor(0)
+    if not cpos then return end
     local cnum = cpos[2]
     local lnum = cpos[1] - 1
     local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]

@@ -192,12 +192,13 @@ static void handle_initialize(const char *request_id) {
 
     const char *fmt =
         "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"capabilities\":{"
-        "\"textDocumentSync\": 0,"
-        "\"hoverProvider\": 1,"
-        "\"completionProvider\": {"
-        "\"resolveProvider\": 1,"
-        "\"triggerCharacters\": [\".\",\" \",\":\",\"(\",\"@\",\"$\",\"\\\\\"],"
-        "\"allCommitCharacters\": [\" \", \"\n\", \";\", \",\"]}}}}";
+        "\"textDocumentSync\":0,"
+        "\"hoverProvider\":1,"
+        "\"signatureHelpProvider\":{\"triggerCharacters\":[\"(\",\",\"]},"
+        "\"completionProvider\":{"
+        "\"resolveProvider\":1,"
+        "\"triggerCharacters\":[\".\",\" \",\":\",\"(\",\"@\",\"$\",\"\\\\\"],"
+        "\"allCommitCharacters\":[\" \",\"\n\",\";\",\",\"]}}}}";
 
     char res[1024];
     sprintf(res, fmt, request_id);
@@ -221,6 +222,9 @@ static void handle_exe_cmd(const char *params) {
         break;
     case 'H':
         hover(params);
+        break;
+    case 'S':
+        signature(params);
         break;
     case '1': // Start TCP server and wait nvimcom connection
         start_server();
@@ -322,6 +326,12 @@ static void handle_hover(const char *id) {
     send_cmd_to_nvim(h_cmd);
 }
 
+static void handle_signature(const char *id) {
+    char h_cmd[128];
+    snprintf(h_cmd, 127, "require('r.lsp').signature(%s)", id);
+    send_cmd_to_nvim(h_cmd);
+}
+
 // --- Main Server Loop ---
 
 static void lsp_loop(void) {
@@ -403,8 +413,8 @@ static void lsp_loop(void) {
                 handle_resolve(id, params);
             } else if (strcmp(method, "textDocument/hover") == 0) {
                 handle_hover(id);
-            } else if (strcmp(method, "textDocument/signature") == 0) {
-                handle_signature(id, params);
+            } else if (strcmp(method, "textDocument/signatureHelp") == 0) {
+                handle_signature(id);
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {

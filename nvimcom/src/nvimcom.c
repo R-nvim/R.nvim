@@ -170,7 +170,7 @@ SEXP fmt_txt(SEXP txt) {
 SEXP fmt_usage(SEXP fnm, SEXP args) {
     const char *f = CHAR(STRING_ELT(fnm, 0));
     const char *a = CHAR(STRING_ELT(args, 0));
-    char *b = format_usage(f, a);
+    char *b = format_usage(f, a, 1);
     SEXP ans = R_NilValue;
     PROTECT(ans = NEW_CHARACTER(1));
     SET_STRING_ELT(ans, 0, mkChar(b));

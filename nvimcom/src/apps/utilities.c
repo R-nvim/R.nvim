@@ -181,3 +181,16 @@ void cut_json_bkt(char **str, unsigned len) {
     }
     p[j] = '\0';
 }
+
+char *seek_word(char *objls, const char *wrd) {
+    char *s = objls;
+    while (*s != 0) {
+        if (strcmp(s, wrd) == 0) {
+            return s;
+        }
+        while (*s != '\n')
+            s++;
+        s++;
+    }
+    return NULL;
+}

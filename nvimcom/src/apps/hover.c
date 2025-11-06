@@ -10,7 +10,6 @@
 #include "../common.h"
 
 static void get_info(const char *s, char *p) {
-
     int i;
     unsigned long nsz;
     const char *f[7];
@@ -23,8 +22,6 @@ static void get_info(const char *s, char *p) {
         s++;
     }
     while (*s != '\n' && *s != 0)
-        s++;
-    if (*s == '\n')
         s++;
 
     // Avoid buffer overflow if the information is bigger than
@@ -50,23 +47,10 @@ static void get_info(const char *s, char *p) {
     p = str_cat(p, buffer);
     free(buffer);
     if (f[1][0] == 'F') {
-        char *b = format_usage(f[0], f[4]);
+        char *b = format_usage(f[0], f[4], 1);
         str_cat(p, b);
         free(b);
     }
-}
-
-static char *seek_word(char *objls, const char *wrd) {
-    char *s = objls;
-    while (*s != 0) {
-        if (strcmp(s, wrd) == 0) {
-            return s;
-        }
-        while (*s != '\n')
-            s++;
-        s++;
-    }
-    return NULL;
 }
 
 static void send_result(const char *req_id, const char *doc) {

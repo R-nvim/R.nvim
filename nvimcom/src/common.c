@@ -74,7 +74,7 @@ void format(const char *orig, char *dest, char delim, char nl) {
  * @param args The arguments as a string.
  * @return The formatted text (which must be freed after used).
  */
-char *format_usage(const char *fnm, const char *args) {
+char *format_usage(const char *fnm, const char *args, int md_block) {
     size_t sz = strlen(fnm) + 64 + (3 * strlen(args));
     char *b = calloc(sz, sizeof(char));
     char *f = calloc(sz, sizeof(char));
@@ -101,8 +101,14 @@ char *format_usage(const char *fnm, const char *args) {
         j++;
     }
     str_cat(b, ")");
-    format(b, f, '\x02', '\x03');
-    strcpy(b, "\x14\x14---\x14```r\x14");
+    if (md_block)
+        format(b, f, '\x02', '\x03');
+    else
+        strcpy(f, b);
+    if (md_block)
+        strcpy(b, "\x14\x14---\x14```r\x14");
+    else
+        *b = '\0';
     i = 0;
     j = strlen(b);
     while (f[i]) {
@@ -120,7 +126,8 @@ char *format_usage(const char *fnm, const char *args) {
         i++;
         j++;
     }
-    str_cat(b, "\x14```\x14");
+    if (md_block)
+        str_cat(b, "\x14```\x14");
     free(f);
     return b;
 }
