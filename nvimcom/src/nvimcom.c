@@ -312,36 +312,6 @@ static void send_to_nvim(char *msg) {
 void nvimcom_msg_to_nvim(char **cmd) { send_to_nvim(*cmd); }
 
 /**
- * @brief Escape single quotes.
- *
- * We use single quotes to define strings to be sent to Neovim. Consequently,
- * single quotes within such strings must be escaped to avoid Lua errors
- * when evaluating the string.
- *
- * @param buf Original string.
- * @param buf2 Destination buffer of the new string with escaped quotes.
- * @param bsize Size limit of destination buffer.
- */
-static void nvimcom_squo(const char *buf, char *buf2, int bsize) {
-    int i = 0, j = 0;
-    while (j < bsize) {
-        if (buf[i] == '\'') {
-            buf2[j] = '\\';
-            j++;
-            buf2[j] = '\'';
-        } else if (buf[i] == 0) {
-            buf2[j] = 0;
-            break;
-        } else {
-            buf2[j] = buf[i];
-        }
-        i++;
-        j++;
-    }
-    strcpy(buf2, buf);
-}
-
-/**
  * @brief Quote strings with backticks.
  *
  * The names of R objects that are invalid to be inserted directly in the
@@ -789,7 +759,7 @@ static char *unscape_str(const char *a) {
                 j++;
                 i += 6;
             } else if (a[i + 5] == '3') {
-                b[j] = '\'';
+                b[j] = '"';
                 j++;
                 i += 6;
             }
@@ -813,8 +783,6 @@ static void nvimcom_eval_expr(const char *buf) {
     if (verbose > 3)
         Rprintf("nvimcom_eval_expr: '%s'\n", b);
 
-    char rep[128];
-
     SEXP cmdSexp, cmdexpr, ans;
     ParseStatus status;
     int er = 0;
@@ -828,22 +796,12 @@ static void nvimcom_eval_expr(const char *buf) {
          * a semicolon. */
         PROTECT(ans = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
         if (er && verbose > 1) {
-            char buf2[80];
-            nvimcom_squo(b, buf2, 80);
-            strcpy(rep, "require('r.log').warn('Error running: ");
-            strncat(rep, buf2, 79);
-            strcat(rep, "')");
-            send_to_nvim(rep);
+            REprintf("Error running: %s\n", b);
         }
         UNPROTECT(1);
     } else {
         if (verbose > 1) {
-            char buf2[80];
-            nvimcom_squo(b, buf2, 80);
-            strcpy(rep, "require('r.log').warn('Invalid command: ");
-            strncat(rep, buf2, 79);
-            strcat(rep, "')");
-            send_to_nvim(rep);
+            REprintf("Invalid command: %s\n", b);
         }
     }
     UNPROTECT(2);
@@ -1054,14 +1012,10 @@ static void SrcrefInfo(void) {
         if (isString(filename) && length(filename)) {
             size_t slen = strlen(CHAR(STRING_ELT(filename, 0)));
             char *buf = calloc(sizeof(char), (2 * slen + 56));
-            char *buf2 = calloc(sizeof(char), (2 * slen + 56));
-            snprintf(buf, 2 * slen + 1, "%s", CHAR(STRING_ELT(filename, 0)));
-            nvimcom_squo(buf, buf2, 2 * slen + 32);
-            snprintf(buf, 2 * slen + 55, "require('r.debug').jump('%s', %d)",
-                     buf2, asInteger(R_Srcref));
+            snprintf(buf, 2 * slen + 1, "require('r.debug').jump('%s', %d)",
+                     CHAR(STRING_ELT(filename, 0)), asInteger(R_Srcref));
             send_to_nvim(buf);
             free(buf);
-            free(buf2);
         }
     }
 }
