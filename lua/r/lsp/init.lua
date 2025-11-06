@@ -392,6 +392,8 @@ M.hover = function(req_id)
         end
     elseif vim.tbl_contains(c, "variable") then
         M.send_msg({ code = "H", orig_id = req_id, word = word })
+    else
+        M.send_msg({ code = "H", orig_id = req_id })
     end
 end
 
@@ -416,6 +418,7 @@ M.signature = function(req_id)
         if word and word ~= ")" then
             M.send_msg({ code = "S", orig_id = req_id, word = word })
         else
+            M.send_msg({ code = "S", orig_id = req_id })
             vim.notify("WORD:" .. vim.inspect(word) .. "\nFNM:" .. vim.inspect(fnm))
         end
     end

@@ -84,7 +84,10 @@ void hover(const char *params) {
     cut_json_str(&fobj, 8);
     cut_json_str(&fnm, 7);
 
-    Log("hover: %s, '%s', '%s', '%s'", id, word, fobj, fnm);
+    if (!word) {
+        send_null(id);
+        return;
+    }
 
     char *p;
     memset(compl_buffer, 0, compl_buffer_size);
@@ -111,4 +114,5 @@ void hover(const char *params) {
     } else {
         // Anything else. Start searching the .GlobalEnv
     }
+    send_null(id);
 }

@@ -66,7 +66,10 @@ void signature(const char *params) {
     cut_json_int(&id, 10);
     cut_json_str(&word, 8);
 
-    Log("signature: %s, '%s'", id, word);
+    if (!word) {
+        send_null(id);
+        return;
+    }
 
     char *p;
     memset(compl_buffer, 0, compl_buffer_size);
@@ -81,10 +84,10 @@ void signature(const char *params) {
             if (s) {
                 get_info(s, p);
                 send_result(id, compl_buffer);
-                Log("HOVER RESULT:\n%s\n", compl_buffer);
                 return;
             }
         }
         pd = pd->next;
     }
+    send_null(id);
 }
