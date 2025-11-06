@@ -70,6 +70,18 @@ static void resolve_arg_item(const char *rid, const char *knd, const char *cls,
                              const char *itm, char *pkg, char *fnm) {
 
     Log("resolve_arg_item: %s, %s, %s, %s, %s", pkg, fnm, itm, rid, knd);
+    // Delete " = "
+    char lbl[64];
+    strncpy(lbl, itm, 63);
+    char *a = lbl;
+    while (*a) {
+        if (*a == ' ') {
+            *a = '\0';
+            break;
+        }
+        a++;
+    }
+
     get_alias(&pkg, &fnm);
     if (!pkg)
         return;
@@ -90,8 +102,8 @@ static void resolve_arg_item(const char *rid, const char *knd, const char *cls,
                                     // Example: lm()
                                     if (*s == 0 || *s == ' ') {
                                         s++;
-                                        if (str_here(s, itm)) {
-                                            s += strlen(itm);
+                                        if (str_here(s, lbl)) {
+                                            s += strlen(lbl);
                                             if (*s == '\005' || *s == ',') {
                                                 while (*s && *s != '\005')
                                                     s++;
@@ -285,16 +297,6 @@ void handle_resolve(const char *req_id, char *params) {
             req_id, knd, cls, lbl, env, lbl, env);
         nvimcom_eval(buffer);
     } else if (*cls == 'a') {
-        // Delete " = "
-        char *p = lbl;
-        while (*p) {
-            if (*p == ' ') {
-                *p = '\0';
-                break;
-            }
-            p++;
-        }
-
         // Split "library:function"
         char *func = strstr(env, ":");
         if (func) {
