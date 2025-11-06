@@ -47,18 +47,23 @@ static int fuzzy_find(const char *a, const char *b) {
     int i = 0;
     int j = 0;
     while (a[i] && b[j]) {
-        while (a[i] && a[i] != b[j])
+        if (a[i] == b[j]) {
+            if (b[j] == '$' || b[j] == '@') {
+                for (int k = 0; k <= j; k++)
+                    if (a[k] != b[k])
+                        return 0;
+            }
             i++;
-        if (b[j] == '$' || b[j] == '@') {
-            for (int k = 0; k <= j; k++)
-                if (a[k] != b[k])
-                    return 0;
+            j++;
+        } else {
+            while (a[i] && a[i] != b[j])
+                i++;
         }
-        if (a[i])
-            i++;
-        j++;
     }
-    return b[j] == '\0';
+    if (b[j] == '\0')
+        return i;
+    else
+        return 0;
 }
 
 static int count_twice(const char *b1, const char *b2, const char ch) {
@@ -141,9 +146,11 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
     int i;
     unsigned long nsz;
     const char *f[7];
+    char order[4];
 
     while (*s != 0) {
-        if (fuzzy_find(s, base)) {
+        int z = fuzzy_find(s, base);
+        if (z) {
             i = 0;
             while (i < 7) {
                 f[i] = s;
@@ -181,6 +188,8 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
             }
             p = str_cat(p, f[0]);
             p = str_cat(p, "\",\"sortText\":\"");
+            snprintf(order, 3, "%02d", z);
+            p = str_cat(p, order);
             if (pkg) {
                 p = str_cat(p, pkg);
                 p = str_cat(p, "::");
@@ -252,7 +261,7 @@ char *complete_args(char *p, char *funcnm) {
                             }
                             a[i] = 0;
                             p = str_cat(p, a);
-                            p = str_cat(p, " =\",\"sortText\":\"");
+                            p = str_cat(p, " =\",\"sortText\":\"_");
                             o++;
                             snprintf(order, 3, "%02d", o);
                             p = str_cat(p, order);

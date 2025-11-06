@@ -83,7 +83,8 @@ void send_ls_response(const char *json_payload) {
         char end[16] = {0};
         memcpy(begin, json_payload, 359);
         memcpy(end, json_payload + strlen(json_payload) - 15, 15);
-        Log("SEND_LS_RESPONSE:\n%s [...] %s\n", begin, end);
+        Log("SEND_LS_RESPONSE (%zu bytes):\n%s [...] %s\n",
+            strlen(json_payload), begin, end);
     } else {
         Log("SEND_LS_RESPONSE:\n%s\n", json_payload);
     }
