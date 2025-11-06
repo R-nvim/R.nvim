@@ -223,6 +223,7 @@ char *complete_args(char *p, char *funcnm) {
 
     PkgData *pd = pkgList;
     char a[64];
+    char order[4];
     int i;
     while (pd) {
         if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0))) {
@@ -240,6 +241,7 @@ char *complete_args(char *p, char *funcnm) {
                                 i--;
                         }
                         s++;
+                        int o = 0;
                         while (*s) {
                             i = 0;
                             p = str_cat(p, "{\"label\":\"");
@@ -250,14 +252,24 @@ char *complete_args(char *p, char *funcnm) {
                             }
                             a[i] = 0;
                             p = str_cat(p, a);
-                            p = str_cat(p, " =\",\"sortText\":\"_");
-                            p = str_cat(p, a);
+                            p = str_cat(p, " =\",\"sortText\":\"");
+                            o++;
+                            snprintf(order, 3, "%02d", o);
+                            p = str_cat(p, order);
                             p = str_cat(
                                 p, "\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
                             p = str_cat(p, pd->name);
                             p = str_cat(p, ":");
                             p = str_cat(p, funcnm);
                             p = str_cat(p, "\"},");
+                            if (*s == '\x04') {
+                                // skip default value
+                                s++;
+                                while (*s != '\x05' && i < 63) {
+                                    i++;
+                                    s++;
+                                }
+                            }
                             s++;
                         }
                         break;
