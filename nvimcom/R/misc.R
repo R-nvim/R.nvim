@@ -344,14 +344,14 @@ get_summary <- function(obj, prnt) {
         width <- 58
     }
     options(width = width)
-    txt <- paste0(class(obj)[1], " [", prnt, "]")
+    txt <- paste0(class(obj)[1], " (`", prnt, "`)")
     objlbl <- attr(obj, "label", exact = TRUE)
     if (!is.null(objlbl) && is.character(objlbl)) {
         objlbl <- format_text(objlbl)
         objlbl <- nvim.fix.string(objlbl)
         txt <- append(txt, c("", objlbl))
     }
-    txt <- append(txt, "\x14\x14---\x14```rout")
+    txt <- append(txt, c("", "---", "```rout"))
     if (is.factor(obj) || is.numeric(obj) || is.logical(obj)) {
         sobj <- try(summary(obj), silent = TRUE)
         txt <- append(txt, capture.output(print(sobj)))

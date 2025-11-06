@@ -75,7 +75,6 @@ void send_hover_doc(const char *hid, const char *hdoc) {
     send_result(hid, hdoc);
 }
 
-// FIXME: finish implementation
 void hover(const char *params) {
     Log("hover: %s", params);
 
