@@ -320,8 +320,8 @@ void complete(const char *params) {
         base = NULL;
 
     Log("complete(%s, %s, %s, %s, %s)", id, base, fnm, df, fargs);
-    char *p;
 
+    char *p;
     memset(compl_buffer, 0, compl_buffer_size);
     p = compl_buffer;
 

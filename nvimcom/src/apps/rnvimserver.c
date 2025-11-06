@@ -219,6 +219,9 @@ static void handle_exe_cmd(const char *params) {
             complete_chunk_opts(*code, params);
         }
         break;
+    case 'H':
+        hover(params);
+        break;
     case '1': // Start TCP server and wait nvimcom connection
         start_server();
         break;
@@ -313,6 +316,12 @@ static void handle_completion(const char *id, const char *params) {
     send_cmd_to_nvim(compl_command);
 }
 
+static void handle_hover(const char *id) {
+    char h_cmd[128];
+    snprintf(h_cmd, 127, "require('r.lsp').hover(%s)", id);
+    send_cmd_to_nvim(h_cmd);
+}
+
 // --- Main Server Loop ---
 
 static void lsp_loop(void) {
@@ -393,7 +402,7 @@ static void lsp_loop(void) {
             } else if (strcmp(method, "completionItem/resolve") == 0) {
                 handle_resolve(id, params);
             } else if (strcmp(method, "textDocument/hover") == 0) {
-                handle_hover(id, params);
+                handle_hover(id);
             } else if (strcmp(method, "textDocument/signature") == 0) {
                 handle_signature(id, params);
             } else if (strcmp(method, "initialize") == 0) {

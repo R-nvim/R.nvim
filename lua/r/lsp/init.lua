@@ -328,6 +328,35 @@ function M.complete(req_id, lnum, cnum)
     M.send_msg({ code = "5", orig_id = req_id, base = wrd })
 end
 
+local get_function_name = function()
+    local cpos = vim.api.nvim_win_get_cursor(0)
+    if not cpos then return nil end
+    local cnum = cpos[2]
+    local lnum = cpos[1] - 1
+    local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
+    local nra = need_R_args(cline:sub(1, cnum), lnum)
+    return nra.fnm
+end
+
+---Identify what object should its details displayed on hover
+---@param req_id string
+M.hover = function(req_id)
+    local word = require("r.cursor").get_keyword()
+    local c = vim.treesitter.get_captures_at_cursor()
+
+    if vim.tbl_contains(c, "function.call") then
+        local first_obj = require("r.cursor").get_first_obj()
+        M.send_msg({ code = "H", orig_id = req_id, word = word, fobj = first_obj })
+    elseif vim.tbl_contains(c, "variable.parameter") then
+        local fnm = get_function_name()
+        if fnm then
+            M.send_msg({ code = "H", orig_id = req_id, word = word, fnm = fnm })
+        end
+    elseif vim.tbl_contains(c, "variable") then
+        M.send_msg({ code = "H", orig_id = req_id, word = word })
+    end
+end
+
 --- Execute lua command sent by rnvimserver
 local function exe_cmd(_, result, _)
     vim.schedule(function()

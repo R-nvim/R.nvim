@@ -445,53 +445,6 @@ M.insert_commented = function()
     M.insert("print(" .. cleanl .. ")", "comment")
 end
 
----Get the word either under or after the cursor.
----Works for word(| where | is the cursor position.
----@return string
-M.get_keyword = function()
-    local line = vim.api.nvim_get_current_line()
-    local llen = #line
-    if llen == 0 then return "" end
-
-    local i = vim.api.nvim_win_get_cursor(0)[2] + 1
-
-    -- Skip opening braces
-    local char
-    while i > 1 do
-        char = line:sub(i, i)
-        if char == "[" or char == "(" or char == "{" then
-            i = i - 1
-        else
-            break
-        end
-    end
-
-    -- Go to the beginning of the word
-    while
-        i > 1
-        and (
-            line:sub(i - 1, i - 1):match("[%w@:$:_%.]")
-            or (line:byte(i - 1) > 0x80 and line:byte(i - 1) < 0xf5)
-        )
-    do
-        i = i - 1
-    end
-    -- Go to the end of the word
-    local j = i
-    local b
-    while j <= llen do
-        b = line:byte(j + 1)
-        if
-            b and ((b > 0x80 and b < 0xf5) or line:sub(j + 1, j + 1):match("[%w@$:_%.]"))
-        then
-            j = j + 1
-        else
-            break
-        end
-    end
-    return line:sub(i, j)
-end
-
 ---Call R functions for the word under cursor
 ---@param rcmd string Function to call or action to execute
 ---@param mode string Vim's mode ("n" or "v")
@@ -518,7 +471,7 @@ M.action = function(rcmd, mode, args)
             )
         end
     else
-        rkeyword = M.get_keyword()
+        rkeyword = require("r.cursor").get_keyword()
     end
 
     if not rkeyword or #rkeyword == 0 then return end
@@ -550,6 +503,8 @@ M.action = function(rcmd, mode, args)
         M.print_object(rkeyword)
         return
     end
+
+    if rcmd == "lsp_hover" then return rkeyword end
 
     local rfun = rcmd
 
@@ -635,14 +590,7 @@ end
 ---Send the print() command to R with rkeyword as parameter
 ---@param rkeyword string
 M.print_object = function(rkeyword)
-    local firstobj
-
-    if vim.api.nvim_get_current_buf() == require("r.browser").get_buf_nr() then
-        firstobj = ""
-    else
-        firstobj = cursor.get_first_obj()
-    end
-
+    local firstobj = cursor.get_first_obj()
     if firstobj == "" then
         send.cmd("print(" .. rkeyword .. ")")
     else

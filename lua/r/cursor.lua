@@ -84,6 +84,9 @@ M.get_first_obj = function()
     -- FIXME: try to use tree-sitter instead of patterns to find the first object
     -- of a function.
 
+    if vim.api.nvim_get_current_buf() == require("r.browser").get_buf_nr() then
+        return ""
+    end
     local firstobj = ""
     local line = vim.api.nvim_get_current_line():gsub("#.*", "")
     local begin = vim.api.nvim_win_get_cursor(0)[2] + 1
@@ -195,6 +198,53 @@ M.get_first_obj = function()
     if firstobj:find('"') then firstobj = firstobj:gsub('"', '\\"') end
 
     return firstobj
+end
+
+---Get the word either under or after the cursor.
+---Works for word(| where | is the cursor position.
+---@return string
+M.get_keyword = function()
+    local line = vim.api.nvim_get_current_line()
+    local llen = #line
+    if llen == 0 then return "" end
+
+    local i = vim.api.nvim_win_get_cursor(0)[2] + 1
+
+    -- Skip opening braces
+    local char
+    while i > 1 do
+        char = line:sub(i, i)
+        if char == "[" or char == "(" or char == "{" then
+            i = i - 1
+        else
+            break
+        end
+    end
+
+    -- Go to the beginning of the word
+    while
+        i > 1
+        and (
+            line:sub(i - 1, i - 1):match("[%w@:$:_%.]")
+            or (line:byte(i - 1) > 0x80 and line:byte(i - 1) < 0xf5)
+        )
+    do
+        i = i - 1
+    end
+    -- Go to the end of the word
+    local j = i
+    local b
+    while j <= llen do
+        b = line:byte(j + 1)
+        if
+            b and ((b > 0x80 and b < 0xf5) or line:sub(j + 1, j + 1):match("[%w@$:_%.]"))
+        then
+            j = j + 1
+        else
+            break
+        end
+    end
+    return line:sub(i, j)
 end
 
 return M
