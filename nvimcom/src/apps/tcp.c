@@ -23,6 +23,7 @@
 #include "logging.h"
 #include "utilities.h"
 #include "complete.h"
+#include "hover.h"
 #include "obbr.h"
 #include "tcp.h"
 #include "lsp.h"
@@ -79,9 +80,13 @@ static void ParseMsg(char *b) {
             const char *knd = strtok(NULL, "|");
             const char *cls = strtok(NULL, "|");
             const char *doc = strtok(NULL, "|");
-            Log("Before send_item_doc: %s, %s, %s, %s, %s", doc, rid, lbl, knd,
-                cls);
             send_item_doc(doc, rid, lbl, knd, cls);
+            break;
+        case 'H':
+            b++;
+            const char *hid = strtok(b, "|");
+            const char *hdoc = strtok(NULL, "|");
+            send_hover_doc(hid, hdoc);
             break;
         case 'D': // set max_depth of lists in the completion data
             b++;
@@ -338,6 +343,12 @@ void send_to_nvimcom(char *msg) {
         fprintf(stderr, "nvimcom is not connected");
         fflush(stderr);
     }
+}
+
+void nvimcom_eval(const char *cmd) {
+    char buf[1024];
+    snprintf(buf, 1023, "E%s%s", getenv("RNVIM_ID"), cmd);
+    send_to_nvimcom(buf);
 }
 
 // Start server and listen for connections

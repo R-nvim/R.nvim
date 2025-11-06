@@ -329,11 +329,7 @@ nvim.min.info <- function(req_id, obj, lbl, prnt, kind, cls) {
     return(invisible(NULL))
 }
 
-#' Output the summary as extra information on an object during auto-completion.
-#' @param req_id ID of language server's request.
-#' @param obj Object selected in the completion menu.
-#' @param prnt Parent environment
-nvim.get.summary <- function(req_id, kind, cls, lbl, obj, prnt) {
+get_summary <- function(obj, prnt) {
     isnull <- try(is.null(obj), silent = TRUE)
     if (class(isnull)[1] != "logical") {
         return(invisible(NULL))
@@ -368,8 +364,22 @@ nvim.get.summary <- function(req_id, kind, cls, lbl, obj, prnt) {
 
     txt <- gsub("'", "\x13", txt)
     txt <- paste0(txt, collapse = "\x14")
+    txt
+}
 
+#' Output the summary as extra information on an object during auto-completion.
+#' @param req_id ID of language server's request.
+#' @param obj Object selected in the completion menu.
+#' @param prnt Parent environment
+nvim.get.summary <- function(req_id, kind, cls, lbl, obj, prnt) {
+    txt <- get_summary(obj, prnt)
     .C(nvimcom_msg_to_nvim, paste0("+R", req_id, "|", lbl, "|", kind, "|", cls, "|", txt))
+    return(invisible(NULL))
+}
+
+nvim.get.hover.summary <- function(req_id, obj, lbl) {
+    txt <- get_summary(obj, ".GlobalEnv")
+    .C(nvimcom_msg_to_nvim, paste0("+H", req_id, "|", txt))
     return(invisible(NULL))
 }
 

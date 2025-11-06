@@ -7,6 +7,7 @@
 #include "logging.h"
 #include "lsp.h"
 #include "utilities.h"
+#include "tcp.h"
 #include "../common.h"
 
 static void get_info(const char *s, char *p) {
@@ -70,6 +71,10 @@ static void send_result(const char *req_id, const char *doc) {
     free(res);
 }
 
+void send_hover_doc(const char *hid, const char *hdoc) {
+    send_result(hid, hdoc);
+}
+
 // FIXME: finish implementation
 void hover(const char *params) {
     Log("hover: %s", params);
@@ -96,14 +101,12 @@ void hover(const char *params) {
     if (fobj) {
         // The word is a function
         PkgData *pd = pkgList;
-        const char *s = NULL;
         while (pd) {
             if (pd->objls) {
-                s = seek_word(pd->objls, word);
+                const char *s = seek_word(pd->objls, word);
                 if (s) {
                     get_info(s, p);
                     send_result(id, compl_buffer);
-                    Log("HOVER RESULT:\n%s\n", compl_buffer);
                     return;
                 }
             }
@@ -111,8 +114,19 @@ void hover(const char *params) {
         }
     } else if (fnm) {
         // The word is a function argument
-    } else {
-        // Anything else. Start searching the .GlobalEnv
     }
+
+    // Anything else. Search the .GlobalEnv
+    if (glbnv_buffer) {
+        const char *s = seek_word(glbnv_buffer, word);
+        if (s) {
+            char buffer[512];
+            sprintf(buffer, "nvimcom:::nvim.get.hover.summary('%s', %s, '%s')",
+                    id, word, word);
+            nvimcom_eval(buffer);
+            return;
+        }
+    }
+
     send_null(id);
 }

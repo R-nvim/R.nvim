@@ -10,12 +10,6 @@
 #include "utilities.h"
 #include "../common.h"
 
-static void nvimcom_eval(const char *cmd) {
-    char buf[1024];
-    snprintf(buf, 1023, "E%s%s", getenv("RNVIM_ID"), cmd);
-    send_to_nvimcom(buf);
-}
-
 static void get_alias(char **pkg, char **fun) {
     char s[64];
     snprintf(s, 63, "%s\n", *fun);
