@@ -213,7 +213,7 @@ static void resolve(const char *rid, const char *knd, const char *cls,
             free(buffer);
             if (f[1][0] == 'F') {
                 char *b = format_usage(f[0], f[4]);
-                p = str_cat(p, b);
+                str_cat(p, b);
                 free(b);
             }
             send_item_doc(compl_buffer, rid, wrd, knd, cls);
