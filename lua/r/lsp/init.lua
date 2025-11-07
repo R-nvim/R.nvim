@@ -342,7 +342,7 @@ function M.complete(req_id, lnum, cnum)
                 "nvimcom:::nvim_complete_args('%s', '%s', '%s'",
                 req_id,
                 nra.fnm,
-                wrd and wrd or " "
+                wrd and wrd or ""
             )
             if nra.firstobj then
                 msg = msg .. ", firstobj = '" .. nra.firstobj .. "'"
