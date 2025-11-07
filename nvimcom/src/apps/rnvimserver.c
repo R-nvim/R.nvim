@@ -213,8 +213,10 @@ static void handle_initialize(const char *request_id) {
         "\"signatureHelpProvider\":{\"triggerCharacters\":[\"(\",\",\"]},"
         "\"completionProvider\":{"
         "\"resolveProvider\":1,"
-        "\"triggerCharacters\":[\".\",\" \",\":\",\"(\",\"@\",\"$\",\"\\\\\"],"
-        "\"allCommitCharacters\":[\" \",\"\n\",\";\",\",\"]}}}}";
+        "\"triggerCharacters\":[\".\",\" "
+        "\",\":\",\"(\",\"@\",\"$\",\"\\\\\"]}}}}";
+    // "\"triggerCharacters\":[\".\",\" \",\":\",\"(\",\"@\",\"$\",\"\\\\\"],"
+    // "\"allCommitCharacters\":[\" \",\"\n\",\",\"]}}}}";
 
     char res[1024];
     sprintf(res, fmt, request_id);
