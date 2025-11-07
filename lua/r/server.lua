@@ -165,6 +165,10 @@ local start_rnvimserver = function()
     rns_env.RNVIM_RPATH = config.R_cmd
     rns_env.RNVIM_LOCAL_TMPDIR = config.localtmpdir
     rns_env.RNVIM_MAX_DEPTH = tostring(config.compl_data.max_depth)
+    local disable = config.r_ls.completion and "" or "completion"
+    disable = disable .. (config.r_ls.signature and "" or "signature")
+    disable = disable .. (config.r_ls.hover and "" or "hover")
+    rns_env.R_LS_DISABLE = disable
 
     -- We have to set R's home directory on Windows because rnvimserver will
     -- run R to build the list for auto completion.

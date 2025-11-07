@@ -206,20 +206,27 @@ static void handle_initialize(const char *request_id) {
     update_inst_libs();
     update_pkg_list(NULL);
 
-    const char *fmt =
-        "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"capabilities\":{"
-        "\"textDocumentSync\":0,"
-        "\"hoverProvider\":1,"
-        "\"signatureHelpProvider\":{\"triggerCharacters\":[\"(\",\",\"]},"
-        "\"completionProvider\":{"
-        "\"resolveProvider\":1,"
-        "\"triggerCharacters\":[\".\",\" "
-        "\",\":\",\"(\",\"@\",\"$\",\"\\\\\"]}}}}";
-    // "\"triggerCharacters\":[\".\",\" \",\":\",\"(\",\"@\",\"$\",\"\\\\\"],"
+    char res[1024] = {0};
+    char *p = res;
+    p = str_cat(p, "{\"jsonrpc\":\"2.0\",\"id\":");
+    p = str_cat(p, request_id);
+    p = str_cat(p, ",\"result\":{\"capabilities\":{\"textDocumentSync\":0");
+
+    char *disable = getenv("R_LS_DISABLE");
+    if (!disable || strstr(disable, "hover") == NULL)
+        p = str_cat(p, ",\"hoverProvider\":1");
+    if (!disable || strstr(disable, "signature") == NULL)
+        p = str_cat(p, ",\"signatureHelpProvider\":{\"triggerCharacters\":[\"("
+                       "\",\",\"]}");
+    if (!disable || strstr(disable, "completion") == NULL)
+        p = str_cat(p, ",\"completionProvider\":{\"resolveProvider\":1,"
+                       "\"triggerCharacters\":[\".\",\" "
+                       "\",\":\",\"(\",\"@\",\"$\",\"\\\\\"]}");
+
+    str_cat(p, "}}}");
+
     // "\"allCommitCharacters\":[\" \",\"\n\",\",\"]}}}}";
 
-    char res[1024];
-    sprintf(res, fmt, request_id);
     send_ls_response(res);
 }
 
