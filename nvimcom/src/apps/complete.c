@@ -232,7 +232,7 @@ char *complete_args(char *p, char *funcnm) {
                             }
                             a[i] = 0;
                             p = str_cat(p, a);
-                            p = str_cat(p, " =\",\"sortText\":\"_");
+                            p = str_cat(p, " = \",\"sortText\":\"_");
                             o++;
                             snprintf(order, 3, "%02d", o);
                             p = str_cat(p, order);
