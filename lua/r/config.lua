@@ -3,10 +3,28 @@ local uv = vim.uv
 local hooks = require("r.hooks")
 
 ---@class RLSConfigOpts
+---Enable the completion provider
+---@field completion? boolean
+---
+---Enable the hover provider
+---@field hover? boolean
+---
+---Enable the signature help provider
+---@field signature? boolean
+---
+---Text width of documentation window displayed when
+---an item is selected
 ---@field doc_width? integer
----@field trigger_characters? string[]
+---
+---List of functions that are expected to receive a data.frame is the first
+---argument
 ---@field fun_data_1? string[]
+---
+---List of functions that are expected to be within the arguments list of a
+---function that receives a data.frame as its first argument
 ---@field fun_data_2? table
+---
+---Path to `yaml-intelligence-resources.json`
 ---@field quarto_intel? string
 
 ---@class RConfigUserOpts
@@ -416,6 +434,9 @@ local config = {
         max_time = 100,
     },
     r_ls                = {
+        completion = true, -- enable the completion provider
+        hover = true,      -- enable the hover provider
+        signature = true,  -- enable the signature help provider
         doc_width = 58,
         fun_data_1 = { "select", "rename", "mutate", "filter" },
         fun_data_2 = { ggplot = { "aes" }, with = { "*" } },

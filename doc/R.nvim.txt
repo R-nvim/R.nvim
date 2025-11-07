@@ -910,7 +910,7 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |R_path|              Directory where R is
 |R_app|, |R_cmd|        Names of R applications
 |R_args|              Arguments to pass to R
-|start_libs|          Objects for auto completion
+|R-language-server|   Options R.nvim's built-in language server
 |Rout_more_colors|    More syntax highlighting in R output
 |routnotab|           Show output of R CMD BATCH in new window
 |config_tmux|         Don't use a specially built Tmux config file
@@ -1482,28 +1482,66 @@ The default value for |R_args| is an empty Lua table:
 <
 
 ------------------------------------------------------------------------------
-6.10. Auto-completion                                             *start_libs*
+6.10. Language server                                      *R-language-server*
 
 There are two ways of getting automatic completion of R objects names while
-you type: using R.nvim's built-in completion system (as a source for
-`nvim-cmp`) and using a language server. See:
-
-   https://github.com/jalvesaq/cmp-r
-   https://github.com/REditorSupport/languageserver
+you type, signature help and hover support: using R.nvim's built-in language
+server or using the R package `languageserver`. See:
+https://github.com/REditorSupport/languageserver
 
 The advantage of R.nvim's built-in system is the ability to complete objects
 of the R's workspace (`.GlobalEnv`), including column names of data.frames.
 
-Note: If you are using the `languageserver` package, you should disable its
-auto completion feature in your `~/.Rprofile` to get completions from
-`cmp-r`:
+Note: If you are using the `languageserver` package, you should disable in
+your `~/.Rprofile` the features that overlap with R.nvim's ones:
 >r
    options(languageserver.server_capabilities =
-           list(completionProvider = FALSE,
-                completionItemResolve = FALSE))
+               list(hoverProvider = FALSE,
+	            signatureHelpProvider = FALSE,
+	            completionProvider = FALSE,
+                    completionItemResolve = FALSE))
 <
-If you prefer to get completions from the language server, `cmp-r` should
-not be installed.
+Alternatively, you can disable or change R.nvim's built-in language server
+features in your R.nvim config. Below are the default values:
+>lua
+ r_ls = {
+    completion = true, -- enable the completion provider
+    hover = true,      -- enable the hover provider
+    signature = true,  -- enable the signature help provider
+    doc_width = 58,
+    fun_data_1 = { "select", "rename", "mutate", "filter" },
+    fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
+    quarto_intel = nil,
+
+ }
+<
+Meaning of optons:
+
+  - `completion`: Enable the completion provider
+
+  - `hover`: Enable the hover provider
+
+  - `signature`: Enable the signature help provider
+
+  - `doc_width`: The expected maximum width of the floating documentation
+    window. Valid values are between `30` and `160`.
+
+  - `fun_data_1`: List of functions that receive a `data.frame` as its first
+    argument and for which the `data.frame`s columns names should be
+    completed. This option is overridden by `g:R_fun_data_1`. Default:
+    `{'select', 'rename', 'mutate', 'filter'}`.
+
+  - `fun_data_2`: Dictionary with parent functions as keys. The value of each
+    key is a list of functions that are expected to be nested in the parent
+    function which receives a data.frame as its first arguments. Column names
+    of the `data.frame` are completed as arguments of the nested function.
+    This option is overridden by `g:R_fun_data_1`.
+    Default: `{ggplot = {'aes'}, with = {'*'}}`.
+
+  - `quarto_intel`: Path to `yaml-intelligence-resources.json` which is part
+    of `quarto` application and has all necessary information for completion
+    of valid YAML options in an Quarto document. Default: `nil` (`cmp-r` will
+    try to find the file).
 
 The list of objects for auto completion is built dynamically as the libraries
 are loaded by R. If R is running, only the names of objects in .GlobalEnv and
