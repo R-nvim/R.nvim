@@ -40,6 +40,11 @@ static void get_info(const char *s, char *p) {
 }
 
 static void send_result(const char *req_id, const char *doc) {
+    if (strlen(doc) == 0) {
+        send_null(req_id);
+        return;
+    }
+
     const char *fmt =
         "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"activeSignature\":0,"
         "\"signatures\":[{\"label\":\"%s\"}]}}";
