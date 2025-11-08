@@ -6,6 +6,7 @@
 #include "global_vars.h"
 #include "logging.h"
 #include "lsp.h"
+#include "tcp.h"
 #include "utilities.h"
 #include "../common.h"
 
@@ -62,6 +63,12 @@ static void send_result(const char *req_id, const char *doc) {
     free(res);
 }
 
+void glbnv_signature(const char *req_id, const char *word, const char *args) {
+    char *b = format_usage(word, args, 0);
+    send_result(req_id, b);
+    free(b);
+}
+
 void signature(const char *params) {
     Log("signature: %s", params);
 
@@ -79,10 +86,23 @@ void signature(const char *params) {
     char *p;
     memset(compl_buffer, 0, compl_buffer_size);
     p = compl_buffer;
+    const char *s = NULL;
 
     // The word is a function
+    // Seek the function in .GlobalEnv
+    if (glbnv_buffer) {
+        s = seek_word(glbnv_buffer, word);
+        if (s) {
+            char cmd[128];
+            snprintf(cmd, 127, "nvimcom:::GlobalEnv_signature('%s', '%s')", id,
+                     word);
+            nvimcom_eval(cmd);
+            return;
+        }
+    }
+
+    // Seek the function in loaded libraries
     PkgData *pd = pkgList;
-    const char *s = NULL;
     while (pd) {
         if (pd->objls) {
             s = seek_word(pd->objls, word);

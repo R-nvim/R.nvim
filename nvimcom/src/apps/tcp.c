@@ -24,6 +24,7 @@
 #include "utilities.h"
 #include "complete.h"
 #include "hover.h"
+#include "signature.h"
 #include "obbr.h"
 #include "tcp.h"
 #include "lsp.h"
@@ -81,6 +82,13 @@ static void ParseMsg(char *b) {
             const char *cls = strtok(NULL, "|");
             const char *doc = strtok(NULL, "|");
             send_item_doc(doc, rid, lbl, knd, cls);
+            break;
+        case 'S':
+            b++;
+            const char *sid = strtok(b, "|");
+            const char *wrd = strtok(NULL, "|");
+            const char *sdoc = strtok(NULL, "|");
+            glbnv_signature(sid, wrd, sdoc);
             break;
         case 'H':
             b++;

@@ -273,6 +273,15 @@ format_usage <- function(fnm, args) {
     txt
 }
 
+GlobalEnv_signature <- function(req_id, funcname) {
+    args <- nvim.args(funcname)
+    .C(
+        nvimcom_msg_to_nvim,
+        paste0("+S", req_id, "|", funcname, "|", args)
+    )
+}
+
+
 #' Output the arguments of a function as extra information to be shown during
 #' auto-completion.
 #' Called by rnvimserver when the user selects a function created in the
