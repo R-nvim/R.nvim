@@ -599,40 +599,7 @@ definitions.
 
 
 ------------------------------------------------------------------------------
-4.6. Syntax highlight of .Rout files
-
-You can set both foreground and background colors of R output in your
-`init.lua`. The example below is for an interface of Neovim with
-'termguicolors' (see |true-color|):
->lua
-   if vim.o.termguicolors then
-     vim.g.rout_color_input    = "guifg=#9e9e9e"
-     vim.g.rout_color_normal   = "guifg=#ff5f00"
-     vim.g.rout_color_number   = "guifg=#ffaf00"
-     vim.g.rout_color_integer  = "guifg=#feaf00"
-     vim.g.rout_color_float    = "guifg=#fdaf00"
-     vim.g.rout_color_complex  = "guifg=#fcaf00"
-     vim.g.rout_color_negnum   = "guifg=#d7afff"
-     vim.g.rout_color_negfloat = "guifg=#d6afff"
-     vim.g.rout_color_date     = "guifg=#00d7af"
-     vim.g.rout_color_true     = "guifg=#5dd685"
-     vim.g.rout_color_false    = "guifg=#ff5d5e"
-     vim.g.rout_color_inf      = "guifg=#10aed7"
-     vim.g.rout_color_constant = "guifg=#5fafcf"
-     vim.g.rout_color_string   = "guifg=#5fd7af"
-     vim.g.rout_color_error    = "guifg=#ffffff guibg=#c40000"
-     vim.g.rout_color_warn     = "guifg=#d00000"
-     vim.g.rout_color_index    = "guifg=#d0d080"
-   end
-<
-If you prefer that R output is highlighted using your current `colorscheme`,
-put in your `init.lua`:
->lua
-   vim.g.rout_follow_colorscheme = true
-<
-
-------------------------------------------------------------------------------
-4.7. Debugging R functions (Unix only)                     *debug-R-functions*
+4.6. Debugging R functions (Unix only)                     *debug-R-functions*
 
 `R.nvim` has limited debugging facilities available on Unix systems (not
 available on Windows). To debug a function with R.nvim you have to do the
@@ -709,7 +676,7 @@ defined by your colorscheme.
 
 
 ------------------------------------------------------------------------------
-4.8 roxygen2 support                                         *R.nvim-roxygen2*
+4.7 roxygen2 support                                         *R.nvim-roxygen2*
 
 R.nvim supports the insertion of roxygen2 skeletons in R scripts. To insert a
 new roxygen2 block, you can use the `:ROxygenize` command while the cursor is
@@ -911,7 +878,7 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |R_app|, |R_cmd|        Names of R applications
 |R_args|              Arguments to pass to R
 |R-language-server|   Options R.nvim's built-in language server
-|Rout_more_colors|    More syntax highlighting in R output
+|Rout_options|        More syntax highlighting in R output
 |routnotab|           Show output of R CMD BATCH in new window
 |config_tmux|         Don't use a specially built Tmux config file
 |rconsole_height|     Number of lines of R Console
@@ -1555,17 +1522,74 @@ is not running yet. Below is the default value of `start_libs`:
    start_libs = "base,stats,graphics,grDevices,utils,methods"
 <
 ------------------------------------------------------------------------------
-6.11. Rout highlighting                                     *Rout_more_colors*
+6.11. Rout highlighting                                         *Rout_options*
 
-By default, the R commands in .Rout files are highlighted with the color of
-comments, and only the output of commands has some of its elements highlighted
-(numbers, strings, index of vectors, warnings and errors).
+By default, the R commands in .Rout files are highlighted in a gray color, and
+only the output of commands has some of its elements highlighted (numbers,
+strings, index of vectors, warnings and errors).
 
 If you prefer that R commands in the R output are highlighted as they are in R
 scripts, put the following in your config:
+							    *Rout_more_colors*
 >lua
    Rout_more_colors = true
 <
+						     *Rout_follow_colorscheme*
+The colors of R output do not match the colors of your colorscheme by default
+The rationale is that the highlighting of code should help the user to grasp
+the code structure while highlighting of output should help the user to focus
+on the most important part of the results: the numbers. However, if you prefer
+the highlighting of Rout files (and R output in the built-in Neovim terminal)
+to follow your colorscheme, put in R.nvim config:
+>lua
+ Rout_follow_colorscheme = true
+<
+You can also set both foreground and background colors of R output in your
+`init.lua`. Because the syntax highlighting uses a traditional Vim syntax
+script, its configuration is through Vim global variables, as in the example
+below:
+>lua
+   if vim.o.termguicolors then
+     vim.g.rout_color_input    = "guifg=#9e9e9e"
+     vim.g.rout_color_normal   = "guifg=#ff5f00"
+     vim.g.rout_color_number   = "guifg=#ffaf00"
+     vim.g.rout_color_integer  = "guifg=#feaf00"
+     vim.g.rout_color_float    = "guifg=#fdaf00"
+     vim.g.rout_color_complex  = "guifg=#fcaf00"
+     vim.g.rout_color_negnum   = "guifg=#d7afff"
+     vim.g.rout_color_negfloat = "guifg=#d6afff"
+     vim.g.rout_color_date     = "guifg=#00d7af"
+     vim.g.rout_color_true     = "guifg=#5dd685"
+     vim.g.rout_color_false    = "guifg=#ff5d5e"
+     vim.g.rout_color_inf      = "guifg=#10aed7"
+     vim.g.rout_color_constant = "guifg=#5fafcf"
+     vim.g.rout_color_string   = "guifg=#5fd7af"
+     vim.g.rout_color_error    = "guifg=#ffffff guibg=#c40000"
+     vim.g.rout_color_warn     = "guifg=#d00000"
+     vim.g.rout_color_index    = "guifg=#d0d080"
+   end
+<
+A subset of `Rout` highlighting groups is used to highlight the hover window
+from R.nvim built-in language server when hovering over a `data.frame` or
+`numeric` object. In this case, the language server will display the output of
+either `summary()` or `str()` and you can change the foreground colors by
+setting the value of `r_ls.rout_fg_colors` elements, as in the example:
+>lua
+   r_ls = {
+       rout_fg_colors = {
+           Normal = "#ff5f00",
+           Number = "#ffaf00",
+           Negnum = "#d7afff",
+           Constant = "#5fafcf",
+           False = "#ffd5e",
+           True = "#5dd685",
+           Inf = "#10aed7",
+       }
+   }
+<
+If `Rout_follow_colorscheme` is `true` the colors of you colorscheme will be
+used in the hover floating window too.
+
 When syntax highlighting .Rout files, R.nvim considers "> " as the prompt
 string and "+ " as the continuation string. If you have defined different
 prompt and continuation strings in your `~/.Rprofile`, R.nvim will try to get

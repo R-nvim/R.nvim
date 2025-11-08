@@ -154,7 +154,8 @@ if s:config.Rout_more_colors == v:false
     hi def link routInput	Comment
 endif
 
-if exists("g:rout_follow_colorscheme") && g:rout_follow_colorscheme
+if (exists("g:rout_follow_colorscheme") && g:rout_follow_colorscheme)
+            \ || s:config.Rout_follow_colorscheme == v:true
     " Default when following :colorscheme
     hi def link routNormal	Normal
     hi def link routNumber	Number

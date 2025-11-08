@@ -61,6 +61,10 @@ local hooks = require("r.hooks")
 ---Do `:help Rout_more_colors` for more information.
 ---@field Rout_more_colors? boolean
 ---
+---Whether highlighting to R output should follow the current colorscheme. Defaults to `false`.
+---Do `:help Rout_follow_colorscheme` for more information.
+---@field Rout_follow_colorscheme? boolean
+---
 ---The R prompt string; defaults to `""`.
 ---Do `:help R_prompt_str` for more information.
 ---@field R_prompt_str? string
@@ -408,35 +412,35 @@ local hooks = require("r.hooks")
 ---@field term_title? string -- Pid of window application.
 ---@field term_pid? integer -- Part of the window title.
 
--- stylua: ignore start
 ---@type RConfig
 local config = {
-    OutDec              = ".",
-    RStudio_cmd         = "",
-    R_app               = "R",
-    R_args              = { },
-    R_cmd               = "R",
-    R_path              = "",
-    Rout_more_colors    = false,
-    R_prompt_str        = "",
-    R_continue_str      = "",
-    pipe_version        = "native",
-    auto_scroll         = true,
-    auto_start          = "no",
-    auto_quit           = false,
-    bracketed_paste     = false,
-    buffer_opts         = "winfixwidth winfixheight nobuflisted",
-    clear_console       = true,
-    clear_line          = false,
-    close_term          = true,
-    convert_range_int   = false,
-    compldir            = "",
-    compl_data          = {
+    OutDec = ".",
+    RStudio_cmd = "",
+    R_app = "R",
+    R_args = {},
+    R_cmd = "R",
+    R_path = "",
+    Rout_more_colors = false,
+    Rout_follow_colorscheme = false,
+    R_prompt_str = "",
+    R_continue_str = "",
+    pipe_version = "native",
+    auto_scroll = true,
+    auto_start = "no",
+    auto_quit = false,
+    bracketed_paste = false,
+    buffer_opts = "winfixwidth winfixheight nobuflisted",
+    clear_console = true,
+    clear_line = false,
+    close_term = true,
+    convert_range_int = false,
+    compldir = "",
+    compl_data = {
         max_depth = 3,
         max_size = 1000000,
         max_time = 100,
     },
-    r_ls                = {
+    r_ls = {
         completion = true,
         hover = true,
         signature = true,
@@ -446,98 +450,96 @@ local config = {
         quarto_intel = nil,
         rout_fg_colors = {},
     },
-    config_tmux         = true,
-    debug               = true,
-    debug_center        = false,
-    debug_jump          = true,
-    disable_cmds        = { "" },
-    editing_mode        = "",
-    esc_term            = true,
-    external_term       = "",
-    has_X_tools         = false,
-    hl_term             = true,
-    hook                = {
+    config_tmux = true,
+    debug = true,
+    debug_center = false,
+    debug_jump = true,
+    disable_cmds = { "" },
+    editing_mode = "",
+    esc_term = true,
+    external_term = "",
+    has_X_tools = false,
+    hl_term = true,
+    hook = {
         on_filetype = function() end,
         after_config = function() end,
         after_R_start = function() end,
         after_ob_open = function() end,
-                          },
-    insert_mode_cmds    = false,
-    latexcmd            = { "default" },
-    latex_build_dir     = "",
-    sweaveargs          = "",
-    listmethods         = false,
+    },
+    insert_mode_cmds = false,
+    latexcmd = { "default" },
+    latex_build_dir = "",
+    sweaveargs = "",
+    listmethods = false,
     local_R_library_dir = "",
-    max_paste_lines     = 20,
-    min_editor_width    = 80,
-    setwd               = "no",
-    nvimpager           = "split_h",
-    objbr_allnames      = false,
-    objbr_auto_start    = false,
-    objbr_h             = 10,
-    objbr_opendf        = true,
-    objbr_openlist      = false,
-    objbr_place         = "script,right",
-    objbr_w             = 40,
-    objbr_mappings      = {
-                              s = "summary",
-                              p = "plot",
-                          },
-    objbr_placeholder   = "{object}",
-    open_example        = true,
-    open_html           = "open and focus",
-    open_pdf            = "open and focus",
-    paragraph_begin     = true,
-    parenblock          = true,
-    path_split_fun      = "file.path",
-    pdfviewer           = "",
+    max_paste_lines = 20,
+    min_editor_width = 80,
+    setwd = "no",
+    nvimpager = "split_h",
+    objbr_allnames = false,
+    objbr_auto_start = false,
+    objbr_h = 10,
+    objbr_opendf = true,
+    objbr_openlist = false,
+    objbr_place = "script,right",
+    objbr_w = 40,
+    objbr_mappings = {
+        s = "summary",
+        p = "plot",
+    },
+    objbr_placeholder = "{object}",
+    open_example = true,
+    open_html = "open and focus",
+    open_pdf = "open and focus",
+    paragraph_begin = true,
+    parenblock = true,
+    path_split_fun = "file.path",
+    pdfviewer = "",
     quarto_preview_args = "",
-    quarto_render_args  = "",
+    quarto_render_args = "",
     quarto_chunk_hl = {
         highlight = true,
         yaml_hl = vim.fn.has("nvim-0.11") == 1 and true or false,
         virtual_title = true,
         bg = "",
-        events = ""
+        events = "",
     },
-    rconsole_height     = 15,
-    rconsole_width      = 80,
+    rconsole_height = 15,
+    rconsole_width = 80,
     register_treesitter = true,
-    remote_compldir     = "",
-    rm_knit_cache       = false,
-    rmarkdown_args      = "",
-    rmd_environment     = ".GlobalEnv",
-    rmhidden            = false,
-    rnvim_home          = "",
-    routnotab           = false,
-    rproj_prioritise    = {
-                               "pipe_version"
-                          },
-    set_home_env        = true,
-    setwidth            = 2,
-    silent_term         = false,
-    skim_app_path       = "",
-    source_args         = "",
-    specialplot         = false,
-    start_libs          = "base,stats,graphics,grDevices,utils,methods",
-    synctex             = true,
-    texerr              = true,
-    tmpdir              = "",
-    user_login          = "",
-    user_maps_only      = false,
-    view_df = {
-        open_app = "",  -- How to open the CSV in Neovim or an external application.
-        how = "tabnew", -- How to display the data within Neovim if not using an external application.
-        csv_sep = "",   -- Field separator to be used when saving the CSV.
-        n_lines = -1,   -- Number of lines to save in the CSV (0 for all lines).
-        save_fun = "",  -- Save the data.frame in a CSV file
-        open_fun = "",  -- Use an R function to open the data.frame directly (no conversion to CSV needed)
+    remote_compldir = "",
+    rm_knit_cache = false,
+    rmarkdown_args = "",
+    rmd_environment = ".GlobalEnv",
+    rmhidden = false,
+    rnvim_home = "",
+    routnotab = false,
+    rproj_prioritise = {
+        "pipe_version",
     },
-    wait                = 60,
-    set_params          = "yes",
+    set_home_env = true,
+    setwidth = 2,
+    silent_term = false,
+    skim_app_path = "",
+    source_args = "",
+    specialplot = false,
+    start_libs = "base,stats,graphics,grDevices,utils,methods",
+    synctex = true,
+    texerr = true,
+    tmpdir = "",
+    user_login = "",
+    user_maps_only = false,
+    view_df = {
+        open_app = "", -- How to open the CSV in Neovim or an external application.
+        how = "tabnew", -- How to display the data within Neovim if not using an external application.
+        csv_sep = "", -- Field separator to be used when saving the CSV.
+        n_lines = -1, -- Number of lines to save in the CSV (0 for all lines).
+        save_fun = "", -- Save the data.frame in a CSV file
+        open_fun = "", -- Use an R function to open the data.frame directly (no conversion to CSV needed)
+    },
+    wait = 60,
+    set_params = "yes",
 }
-
--- stylua: ignore end
 
 local user_opts = {}
 local did_real_setup = false
@@ -1030,16 +1032,26 @@ local global_setup = function()
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
 
-    local c = config.r_ls.rout_fg_colors
-    if c then
-        local set_hl = vim.api.nvim_set_hl
-        set_hl(0, "@rout_normal", { fg = c.Normal and c.Normal or "#00d700" })
-        set_hl(0, "@rout_number", { fg = c.Number and c.Number or "#ffaf00" })
-        set_hl(0, "@rout_negnum", { fg = c.Negnum and c.Negnum or "#ff875f" })
-        set_hl(0, "@rout_constant", { fg = c.Constant and c.Constant or "#00af5f" })
-        set_hl(0, "@rout_false", { fg = c.False and c.False or "#ff5f5f" })
-        set_hl(0, "@rout_true", { fg = c.True and c.True or "#5fd787" })
-        set_hl(0, "@rout_inf", { fg = c.Inf and c.Inf or "#00afff" })
+    local set_hl = vim.api.nvim_set_hl
+    if config.Rout_follow_colorscheme then
+        set_hl(0, "@rout_normal", { link = "Normal" })
+        set_hl(0, "@rout_number", { link = "@number.float.r" })
+        set_hl(0, "@rout_negnum", { link = "@number.float.r" })
+        set_hl(0, "@rout_constant", { link = "@constant.builtin.r" })
+        set_hl(0, "@rout_false", { link = "@boolean.r" })
+        set_hl(0, "@rout_true", { link = "@boolean.r" })
+        set_hl(0, "@rout_inf", { link = "@constant.builtin.r" })
+    else
+        local c = config.r_ls.rout_fg_colors
+        if c then
+            set_hl(0, "@rout_normal", { fg = c.Normal and c.Normal or "#00d700" })
+            set_hl(0, "@rout_number", { fg = c.Number and c.Number or "#ffaf00" })
+            set_hl(0, "@rout_negnum", { fg = c.Negnum and c.Negnum or "#ff875f" })
+            set_hl(0, "@rout_constant", { fg = c.Constant and c.Constant or "#00af5f" })
+            set_hl(0, "@rout_false", { fg = c.False and c.False or "#ff5f5f" })
+            set_hl(0, "@rout_true", { fg = c.True and c.True or "#5fd787" })
+            set_hl(0, "@rout_inf", { fg = c.Inf and c.Inf or "#00afff" })
+        end
     end
 end
 
