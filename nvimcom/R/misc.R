@@ -541,12 +541,14 @@ nvim_complete_args <- function(
         argsl <- strsplit(args, "\005")[[1]]
         argsl <- sub("\004.*", "", argsl)
         args <- ""
+        o <- 0
         for (a in argsl) {
             args <- paste0(
                 args,
                 '{\x13label\x13:\x13',
                 a,
                 '\x13,\x13sortText\x13:\x13_',
+                sprintf("%02d\n", o),
                 a,
                 '\x13,\x13cls\x13:\x13a\x13,\x13env\x13:\x13.GlobalEnv\x13},'
             )
