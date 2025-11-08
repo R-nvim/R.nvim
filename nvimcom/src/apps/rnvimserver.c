@@ -242,6 +242,7 @@ static void handle_initialize(const char *request_id) {
 static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
     char *code = strstr(params, "\"code\":\"") + 8;
+    char *p;
     char t;
     switch (*code) {
     case 'C':
@@ -283,11 +284,11 @@ static void handle_exe_cmd(const char *params) {
             lib2ob();
             break;
         case '3': // Open/Close list
+            p = strstr(params, "\"key\":\"");
+            cut_json_str(&p, 7);
+            toggle_list_status(p);
             code++;
-            t = *code;
-            code++;
-            toggle_list_status(code);
-            if (t == 'G')
+            if (*code == 'G')
                 compl2ob();
             else
                 lib2ob();

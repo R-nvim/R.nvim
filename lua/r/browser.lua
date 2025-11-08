@@ -453,7 +453,7 @@ function M.on_double_click()
         then
             -- Expand or collapse the object
             key = key:gsub("`", "")
-            require("r.lsp").send_msg({ code = "33G" .. key })
+            require("r.lsp").send_msg({ code = "33G", key = key })
         else
             -- Run str() on the object
             require("r.send").cmd("str(" .. key .. ")")
@@ -473,7 +473,7 @@ function M.on_double_click()
                 or curline:find(":#.*\t")
             then
                 -- Expand or collapse the object in libraries view
-                require("r.lsp").send_msg({ code = "33L" .. key })
+                require("r.lsp").send_msg({ code = "33L", key = key })
             else
                 require("r.send").cmd("str(" .. key .. ")")
             end

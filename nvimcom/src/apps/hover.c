@@ -10,7 +10,7 @@
 #include "tcp.h"
 #include "../common.h"
 
-static void get_info(const char *s, char *p) {
+static int get_info(const char *s, char *p) {
     int i;
     unsigned long nsz;
     const char *f[7];
@@ -51,7 +51,9 @@ static void get_info(const char *s, char *p) {
         char *b = format_usage(f[0], f[4], 1);
         str_cat(p, b);
         free(b);
+        return 1;
     }
+    return 0;
 }
 
 static void send_result(const char *req_id, const char *doc) {
@@ -80,6 +82,8 @@ void hover(const char *params) {
 
     char *id = strstr(params, "\"orig_id\":");
     char *word = strstr(params, "\"word\":\"");
+
+    // TODO: either use these two parameters or delete them
     char *fobj = strstr(params, "\"fobj\":\"");
     char *fnm = strstr(params, "\"fnm\":\"");
 
@@ -97,22 +101,26 @@ void hover(const char *params) {
     memset(compl_buffer, 0, compl_buffer_size);
     p = compl_buffer;
 
-    if (fobj) {
-        // The word is a function
-        PkgData *pd = pkgList;
-        while (pd) {
-            if (pd->objls) {
-                const char *s = seek_word(pd->objls, word);
-                if (s) {
-                    get_info(s, p);
+    // The word is a function
+    PkgData *pd = pkgList;
+    while (pd) {
+        if (pd->objls) {
+            const char *s = seek_word(pd->objls, word);
+            if (s) {
+                int is_function = get_info(s, p);
+                if (is_function) {
                     send_result(id, compl_buffer);
-                    return;
+                } else {
+                    char buffer[512];
+                    sprintf(buffer,
+                            "nvimcom:::nvim.get.hover.summary('%s', %s, '%s')",
+                            id, word, word);
+                    nvimcom_eval(buffer);
                 }
+                return;
             }
-            pd = pd->next;
         }
-    } else if (fnm) {
-        // The word is a function argument
+        pd = pd->next;
     }
 
     // Anything else. Search the .GlobalEnv
