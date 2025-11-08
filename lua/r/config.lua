@@ -26,6 +26,9 @@ local hooks = require("r.hooks")
 ---
 ---Path to `yaml-intelligence-resources.json`
 ---@field quarto_intel? string
+---
+---Highlight color of R output in hover and resolve windows
+---@field rout_fg_colors? table
 
 ---@class RConfigUserOpts
 ---
@@ -434,13 +437,14 @@ local config = {
         max_time = 100,
     },
     r_ls                = {
-        completion = true, -- enable the completion provider
-        hover = true,      -- enable the hover provider
-        signature = true,  -- enable the signature help provider
+        completion = true,
+        hover = true,
+        signature = true,
         doc_width = 58,
         fun_data_1 = { "select", "rename", "mutate", "filter" },
         fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
         quarto_intel = nil,
+        rout_fg_colors = {},
     },
     config_tmux         = true,
     debug               = true,
@@ -453,10 +457,10 @@ local config = {
     has_X_tools         = false,
     hl_term             = true,
     hook                = {
-                              on_filetype = function() end,
-                              after_config = function() end,
-                              after_R_start = function() end,
-                              after_ob_open = function() end,
+        on_filetype = function() end,
+        after_config = function() end,
+        after_R_start = function() end,
+        after_ob_open = function() end,
                           },
     insert_mode_cmds    = false,
     latexcmd            = { "default" },
@@ -1025,6 +1029,18 @@ local global_setup = function()
 
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
+
+    local c = config.r_ls.rout_fg_colors
+    if c then
+        local set_hl = vim.api.nvim_set_hl
+        set_hl(0, "@rout_normal", { fg = c.Normal and c.Normal or "#00d700" })
+        set_hl(0, "@rout_number", { fg = c.Number and c.Number or "#ffaf00" })
+        set_hl(0, "@rout_negnum", { fg = c.Negnum and c.Negnum or "#ff875f" })
+        set_hl(0, "@rout_constant", { fg = c.Constant and c.Constant or "#00af5f" })
+        set_hl(0, "@rout_false", { fg = c.False and c.False or "#ff5f5f" })
+        set_hl(0, "@rout_true", { fg = c.True and c.True or "#5fd787" })
+        set_hl(0, "@rout_inf", { fg = c.Inf and c.Inf or "#00afff" })
+    end
 end
 
 local M = {}
