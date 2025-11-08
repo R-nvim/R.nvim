@@ -1069,6 +1069,8 @@ M.real_setup = function()
         table.insert(no_ts, "rmd")
     end
     if not vim.tbl_contains(no_ts, vim.bo.filetype) then vim.treesitter.start() end
+
+    require("r.lsp").attach_to_buffer(vim.api.nvim_get_current_buf())
 end
 
 --- Return the table with the final configure variables: the default values

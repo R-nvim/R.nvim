@@ -10,6 +10,8 @@ local lsp_debug = false
 local config = require("r.config").get_config()
 local options = config.r_ls or {}
 
+local attach_list = {}
+
 local M = {}
 
 local get_piped_obj
@@ -467,6 +469,25 @@ local function on_error(code, err)
     vim.notify(msg)
 end
 
+local attach_to_all = function()
+    for _, v in pairs(attach_list) do
+        if v.attach then
+            if not vim.lsp.buf_is_attached(v.bufnr, client_id) then
+                vim.lsp.buf_attach_client(v.bufnr, client_id)
+                vim.notify("Already attached: " .. tostring(v.bufnr))
+            else
+                vim.notify("Not attached: " .. tostring(v.bufnr))
+            end
+            v.attach = false
+        end
+    end
+end
+
+M.attach_to_buffer = function(bufnr)
+    attach_list[tostring(bufnr)] = { bufnr = bufnr, attach = true }
+    if client_id then attach_to_all() end
+end
+
 --- Start rnvimserver
 ---@param rns_path string Full rnvimserver path
 ---@param rns_env table Environment variables
@@ -495,7 +516,7 @@ function M.start(rns_path, rns_env)
             ["client/exeRnvimCmd"] = exe_cmd,
         },
     })
-    if client_id then vim.lsp.completion.enable(true, client_id, 0) end
+    attach_to_all()
 end
 
 ---Send a custom notification to rnvimserver
