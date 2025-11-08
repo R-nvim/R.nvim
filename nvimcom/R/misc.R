@@ -360,7 +360,7 @@ get_summary <- function(obj, prnt) {
         objlbl <- nvim.fix.string(objlbl)
         txt <- append(txt, c("", objlbl))
     }
-    txt <- append(txt, c("", "---", "```rout"))
+    txt <- append(txt, c("* * *", "```rout"))
     if (is.factor(obj) || is.numeric(obj) || is.logical(obj)) {
         sobj <- try(summary(obj), silent = TRUE)
         txt <- append(txt, capture.output(print(sobj)))
