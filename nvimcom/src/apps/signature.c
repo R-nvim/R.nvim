@@ -10,7 +10,7 @@
 #include "utilities.h"
 #include "../common.h"
 
-static void get_info(const char *s, char *p) {
+static int get_info(const char *s, char *p) {
     int i;
     unsigned long nsz;
     const char *f[7];
@@ -37,6 +37,9 @@ static void get_info(const char *s, char *p) {
         char *b = format_usage(f[0], f[4], 0);
         str_cat(p, b);
         free(b);
+        return 1;
+    } else {
+        return 0;
     }
 }
 
@@ -64,6 +67,11 @@ static void send_result(const char *req_id, const char *doc) {
 }
 
 void glbnv_signature(const char *req_id, const char *word, const char *args) {
+    if (!args || strlen(args) == 0) {
+        send_null(req_id);
+        return;
+    }
+
     char *b = format_usage(word, args, 0);
     send_result(req_id, b);
     free(b);
@@ -107,8 +115,9 @@ void signature(const char *params) {
         if (pd->objls) {
             s = seek_word(pd->objls, word);
             if (s) {
-                get_info(s, p);
-                send_result(id, compl_buffer);
+                int is_function = get_info(s, p);
+                if (is_function)
+                    send_result(id, compl_buffer);
                 return;
             }
         }

@@ -431,7 +431,6 @@ M.signature = function(req_id)
             M.send_msg({ code = "S", orig_id = req_id, word = word })
         else
             M.send_msg({ code = "S", orig_id = req_id })
-            vim.notify("WORD:" .. vim.inspect(word) .. "\nFNM:" .. vim.inspect(fnm))
         end
     end
 end
