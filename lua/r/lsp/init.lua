@@ -474,9 +474,6 @@ local attach_to_all = function()
         if v.attach then
             if not vim.lsp.buf_is_attached(v.bufnr, client_id) then
                 vim.lsp.buf_attach_client(v.bufnr, client_id)
-                vim.notify("Already attached: " .. tostring(v.bufnr))
-            else
-                vim.notify("Not attached: " .. tostring(v.bufnr))
             end
             v.attach = false
         end
