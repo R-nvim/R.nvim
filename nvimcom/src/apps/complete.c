@@ -203,7 +203,7 @@ char *complete_args(char *p, char *funcnm) {
 
     PkgData *pd = pkgList;
     char a[64];
-    char order[4];
+    char order[16];
     int i;
     while (pd) {
         if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0))) {
@@ -377,6 +377,7 @@ void complete_fig_tbl(const char *params) {
     char *items = strstr(params, "\"items\":[{") + 9;
 
     cut_json_int(&id, 10);
+
     char *end_items = strstr(items, "}],");
     if (end_items) {
         end_items++;

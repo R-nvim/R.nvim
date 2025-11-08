@@ -232,7 +232,7 @@ static void resolve(const char *rid, const char *knd, const char *cls,
 }
 
 void handle_resolve(const char *req_id, char *params) {
-    Log("resolve_json: %s\n%s", req_id, params);
+    Log("handle_resolve: %s\n%s", req_id, params);
 
     char *doc = strstr(params, "\"documentation\":{");
     char *env = strstr(params, "\"env\":\"");
@@ -260,7 +260,7 @@ void handle_resolve(const char *req_id, char *params) {
     cut_json_str(&lbl, 9);
     cut_json_int(&knd, 7);
 
-    Log("resolve_json: '%s', '%s', '%c', '%s'", env, lbl, *cls, knd);
+    Log("handle_resolve: '%s', '%s', '%c', '%s'", env, lbl, *cls, knd);
 
     if (env && strcmp(env, ".GlobalEnv") == 0) {
         if (*cls == 'a') {

@@ -142,13 +142,6 @@ local need_R_args = function(line, lnum)
     return resp
 end
 
-local warned_no_reset = false
-local reset_r_compl = function()
-    if warned_no_reset then return end
-    vim.notify("NOT IMPLEMENTED: reset_r_compl")
-    warned_no_reset = true
-end
-
 local get_quarto_lang = function(lines, lnum)
     if config.register_treesitter then
         return require("r.utils").get_lang()
@@ -248,13 +241,18 @@ function M.complete(req_id, lnum, cnum)
         if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
             if lang == "markdown_inline" then
                 local wrd2 = get_word(cline, cnum, "(@[tf]%S*)")
-                if wrd2 and wrd2:find("^@") then
+                if wrd2 and wrd2:find("^@[tf]%S*") then
                     local lbls = require("r.lsp.figtbl").get_labels(wrd2)
-                    M.send_msg({ code = "C@", orig_id = req_id, items = lbls })
+                    if #lbls > 0 then
+                        M.send_msg({ code = "C@", orig_id = req_id, items = lbls })
+                        return
+                    end
                 end
+                M.send_msg({ code = "CN", orig_id = req_id })
                 return
             end
         elseif vim.bo.filetype == "rnoweb" and lang ~= "r" then
+            M.send_msg({ code = "CN", orig_id = req_id })
             return
         elseif vim.bo.filetype == "rhelp" then
             if lang ~= "r" then
@@ -265,6 +263,8 @@ function M.complete(req_id, lnum, cnum)
                     else
                         M.send_msg({ code = "CH", orig_id = req_id })
                     end
+                else
+                    M.send_msg({ code = "CN", orig_id = req_id })
                 end
                 return
             end
@@ -297,13 +297,17 @@ function M.complete(req_id, lnum, cnum)
             if v.capture == "string" then
                 snm = "rString"
             elseif v.capture == "comment" then
+                M.send_msg({ code = "CN", orig_id = req_id })
                 return
             end
         end
     elseif vim.bo.filetype == "rhelp" then
         -- We still need to call synIDattr because there is no treesitter parser for rhelp
         snm = vim.fn.synIDattr(vim.fn.synID(lnum, cnum - 1, 1), "name")
-        if snm == "rComment" then return nil end
+        if snm == "rComment" then
+            M.send_msg({ code = "CN", orig_id = req_id })
+            return
+        end
     end
 
     -- Should we complete function arguments?
@@ -322,7 +326,10 @@ function M.complete(req_id, lnum, cnum)
             return
         end
 
-        if snm == "rString" then return end
+        if snm == "rString" then
+            M.send_msg({ code = "CN", orig_id = req_id })
+            return
+        end
 
         if vim.g.R_Nvim_status < 7 then
             -- Get the arguments of the first function whose name matches nra.fnm
@@ -358,10 +365,13 @@ function M.complete(req_id, lnum, cnum)
         end
     end
 
-    if snm == "rString" then return nil end
+    if snm == "rString" then
+        M.send_msg({ code = "CN", orig_id = req_id })
+        return
+    end
 
     if not wrd then
-        reset_r_compl()
+        M.send_msg({ code = "CN", orig_id = req_id })
         return
     end
 
@@ -496,13 +506,13 @@ function M.start(rns_path, rns_env)
 
     client_id = vim.lsp.start({
         name = "r_ls",
-        cmd = { rns_path },
-        -- cmd = {
-        --     "valgrind",
-        --     "--leak-check=full",
-        --     "--log-file=/tmp/rnvimserver_valgrind_log",
-        --     rns_path,
-        -- },
+        -- cmd = { rns_path },
+        cmd = {
+            "valgrind",
+            "--leak-check=full",
+            "--log-file=/tmp/rnvimserver_valgrind_log",
+            rns_path,
+        },
         cmd_env = rns_env,
         on_init = lsp_debug and on_init or nil,
         on_attach = lsp_debug and on_attach or nil,

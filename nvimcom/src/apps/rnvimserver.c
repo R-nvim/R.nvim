@@ -159,9 +159,8 @@ void send_menu_items(char *compl_items, const char *req_id) {
         send_null(req_id);
         return;
     }
-    const char *fmt =
-        "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"isIncomplete\":0,\"is_"
-        "incomplete_forward\":0,\"is_incomplete_backward\":1,\"items\":[%s]}}";
+    const char *fmt = "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{"
+                      "\"isIncomplete\":false,\"items\":[%s]}}";
 
     size_t len = strlen(compl_items);
 
@@ -210,18 +209,28 @@ static void handle_initialize(const char *request_id) {
     char *p = res;
     p = str_cat(p, "{\"jsonrpc\":\"2.0\",\"id\":");
     p = str_cat(p, request_id);
-    p = str_cat(p, ",\"result\":{\"capabilities\":{\"textDocumentSync\":0");
+    p = str_cat(p, ",\"result\":{\"capabilities\":{");
 
     char *disable = getenv("R_LS_DISABLE");
-    if (!disable || strstr(disable, "hover") == NULL)
-        p = str_cat(p, ",\"hoverProvider\":1");
-    if (!disable || strstr(disable, "signature") == NULL)
-        p = str_cat(p, ",\"signatureHelpProvider\":{\"triggerCharacters\":[\"("
+    int has_cpblt = 0;
+    if (!disable || strstr(disable, "hover") == NULL) {
+        p = str_cat(p, "\"hoverProvider\":true");
+        has_cpblt = 1;
+    }
+    if (!disable || strstr(disable, "signature") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"signatureHelpProvider\":{\"triggerCharacters\":[\"("
                        "\",\",\"]}");
-    if (!disable || strstr(disable, "completion") == NULL)
-        p = str_cat(p, ",\"completionProvider\":{\"resolveProvider\":1,"
+        has_cpblt = 1;
+    }
+    if (!disable || strstr(disable, "completion") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"completionProvider\":{\"resolveProvider\":true,"
                        "\"triggerCharacters\":[\".\",\" "
                        "\",\":\",\"(\",\"@\",\"$\",\"\\\\\"]}");
+    }
 
     str_cat(p, "}}}");
 
@@ -241,6 +250,10 @@ static void handle_exe_cmd(const char *params) {
             complete_rhelp(params);
         } else if (*code == '@') {
             complete_fig_tbl(params);
+        } else if (*code == 'N') {
+            char *id = strstr(params, "\"orig_id\":");
+            cut_json_int(&id, 10);
+            send_null(id);
         } else {
             complete_chunk_opts(*code, params);
         }
