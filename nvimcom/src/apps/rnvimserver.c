@@ -22,15 +22,12 @@
  * Global variables (declared in global_vars.h)
  */
 
-InstLibs *instlibs;                  // Pointer to first installed library
-PkgData *pkgList;                    // Pointer to first package data
-char *cmp_buf;                       // Completion buffer
-char *glbnv_buffer;                  // Global environment buffer
-char cmp_dir[256];                   // Directory for completion files
-char tmpdir[256];                    // Temporary directory
-int auto_obbr;                       // Auto object browser flag
-unsigned long cmp_buf_size = 163840; // Completion buffer size
-char localtmpdir[256];               // Local temporary directory
+InstLibs *instlibs;    // Pointer to first installed library
+PkgData *pkgList;      // Pointer to first package data
+char *glbnv_buffer;    // Global environment buffer
+char tmpdir[256];      // Temporary directory
+int auto_obbr;         // Auto object browser flag
+char localtmpdir[256]; // Local temporary directory
 
 void print_listTree(ListStatus *root, FILE *f) {
     if (root != NULL) {
@@ -165,7 +162,6 @@ static void handle_initialize(const char *request_id) {
     signal(SIGTERM, handle_sigterm);
 
     // initialize global variables;
-    strncpy(cmp_dir, getenv("RNVIM_COMPLDIR"), 255);
     strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 255);
     set_doc_width(getenv("R_LS_DOC_WIDTH"));
     if (getenv("RNVIM_LOCAL_TMPDIR")) {
@@ -174,8 +170,8 @@ static void handle_initialize(const char *request_id) {
         strncpy(localtmpdir, getenv("RNVIM_TMPDIR"), 255);
     }
     set_max_depth(atoi(getenv("RNVIM_MAX_DEPTH")));
-    cmp_buf = calloc(cmp_buf_size, sizeof(char));
 
+    init_cmp();
     init_obbr_vars();
     init_ds_vars();
 

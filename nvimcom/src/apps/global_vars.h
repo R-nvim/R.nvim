@@ -4,14 +4,11 @@
 #include <stddef.h>
 #include "data_structures.h"
 
-extern InstLibs *instlibs;         // Pointer to first installed library
-extern PkgData *pkgList;           // Pointer to first package data
-extern char *cmp_buf;              // Completion buffer
-extern char *glbnv_buffer;         // Global environment buffer
-extern char cmp_dir[256];          // Directory for completion files
-extern char localtmpdir[256];      // Local temporary directory
-extern char tmpdir[256];           // Temporary directory
-extern int auto_obbr;              // Auto object browser flag
-extern unsigned long cmp_buf_size; // Completion buffer size
+extern InstLibs *instlibs;    // Pointer to first installed library
+extern PkgData *pkgList;      // Pointer to first package data
+extern char *glbnv_buffer;    // Global environment buffer
+extern char localtmpdir[256]; // Local temporary directory
+extern char tmpdir[256];      // Temporary directory
+extern int auto_obbr;         // Auto object browser flag
 
 #endif

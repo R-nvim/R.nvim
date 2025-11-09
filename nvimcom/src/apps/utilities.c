@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "utilities.h"
+#include "logging.h"
 
 /**
  * Grows a buffer to a new size.
@@ -11,7 +12,8 @@
  * @param inc Amount to increase.
  * @return Pointer to the resized buffer.
  */
-char *grow_buffer(char **b, unsigned long *sz, unsigned long inc) {
+char *grow_buffer(char **b, size_t *sz, size_t inc) {
+    Log("\x1b[31mgrow_buffer\x1b[0m: %" PRI_SIZET ", %" PRI_SIZET, *sz, inc);
     *sz += inc;
     char *tmp = calloc(*sz, sizeof(char));
     strcpy(tmp, *b);

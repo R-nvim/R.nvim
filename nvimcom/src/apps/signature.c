@@ -11,7 +11,7 @@
 #include "../common.h"
 
 static char *sig_buf;
-static size_t sig_buf_size;
+static size_t sig_buf_sz = 1024;
 
 static int get_info(const char *s, char *p) {
     int i;
@@ -30,8 +30,8 @@ static int get_info(const char *s, char *p) {
 
     // Avoid buffer overflow if the information is bigger than sig_buf.
     nsz = strlen(f[0]) + strlen(f[4]) + 512 + (p - sig_buf);
-    if (sig_buf_size < nsz)
-        p = grow_buffer(&sig_buf, &sig_buf_size, nsz - sig_buf_size + 1024);
+    if (sig_buf_sz < nsz)
+        p = grow_buffer(&sig_buf, &sig_buf_sz, nsz - sig_buf_sz + 1024);
 
     if (f[1][0] == 'F') {
         char *b = format_usage(f[0], f[4], 0);
@@ -92,10 +92,9 @@ void signature(const char *params) {
     }
 
     if (!sig_buf) {
-        sig_buf_size = 1024;
-        sig_buf = (char *)malloc(sig_buf_size);
+        sig_buf = (char *)malloc(sig_buf_sz);
     }
-    memset(sig_buf, 0, sig_buf_size);
+    memset(sig_buf, 0, sig_buf_sz);
     char *p = sig_buf;
     const char *s = NULL;
 

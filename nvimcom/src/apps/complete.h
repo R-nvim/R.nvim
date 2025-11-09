@@ -3,5 +3,6 @@
 
 void complete(const char *params);
 void complete_fig_tbl(const char *params);
+void init_cmp(void);
 
 #endif

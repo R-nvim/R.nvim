@@ -18,6 +18,7 @@ static LibPath *libpaths;      // Pointer to first library path
 static size_t glbnv_buffer_sz; // Global environment buffer size
 static ListStatus *listTree;   // Root node of the list status tree
 static int max_depth = 2;      // Max list depth in nvimcom
+static char *cmp_dir;          // Directory for completion files
 
 void set_max_depth(int m) { max_depth = m; }
 
@@ -675,8 +676,9 @@ void build_objls(void) {
     }
     building_objls = 1;
 
-    memset(cmp_buf, 0, cmp_buf_size);
-    char *p = cmp_buf;
+    size_t buf_sz = 4096;
+    char *buf = (char *)calloc(buf_sz, sizeof(char));
+    char *p = buf;
 
     PkgData *pkg = pkgList;
 
@@ -685,10 +687,9 @@ void build_objls(void) {
     int k = 0;
     while (pkg) {
         if (pkg->to_build == 0) {
-            nsz = strlen(pkg->name) + 1024 + (p - cmp_buf);
-            if (cmp_buf_size < nsz)
-                p = grow_buffer(&cmp_buf, &cmp_buf_size,
-                                nsz - cmp_buf_size + 32768);
+            nsz = strlen(pkg->name) + 1024 + (p - buf);
+            if (buf_sz < nsz)
+                p = grow_buffer(&buf, &buf_sz, nsz - buf_sz + 1024);
             p = str_cat(p, pkg->name);
             p = str_cat(p, " ");
             pkg->to_build = 1;
@@ -699,10 +700,12 @@ void build_objls(void) {
 
     if (k > 0) {
         // Build all the objls_ files.
-        char *cmd = (char *)malloc((124 + strlen(cmp_buf)) * sizeof(char));
-        sprintf(cmd, "require('r.server').build_objls('%s')", cmp_buf);
+        char *cmd = (char *)malloc((124 + strlen(buf)) * sizeof(char));
+        sprintf(cmd, "require('r.server').build_objls('%s')", buf);
         send_cmd_to_nvim(cmd);
         free(cmd);
+
+        free(buf);
     }
 }
 
@@ -821,6 +824,9 @@ static void fill_inst_libs(void) {
 
 void init_ds_vars(void) {
     char fname[512];
+    cmp_dir =
+        (char *)malloc(sizeof(char) * strlen(getenv("RNVIM_COMPLDIR")) + 1);
+    strcpy(cmp_dir, getenv("RNVIM_COMPLDIR"));
     snprintf(fname, 511, "%s/libPaths", tmpdir);
     char *b = read_file(fname, 1);
 #ifdef WIN32

@@ -10,6 +10,9 @@
 #include "utilities.h"
 #include "../common.h"
 
+static char *res_buf;
+static size_t res_buf_sz = 4096;
+
 static struct {
     char id[16];
     char *item;
@@ -194,8 +197,8 @@ static void resolve(const char *rid, const char *wrd, const char *pkg) {
         s = pd->objls;
     }
 
-    memset(cmp_buf, 0, cmp_buf_size);
-    char *p = cmp_buf;
+    memset(res_buf, 0, res_buf_sz);
+    char *p = res_buf;
 
     while (*s != 0) {
         if (strcmp(s, wrd) == 0) {
@@ -213,19 +216,19 @@ static void resolve(const char *rid, const char *wrd, const char *pkg) {
                 s++;
 
             if (f[1][0] == 'F' && str_here(f[4], ">not_checked<")) {
-                snprintf(cmp_buf, 1024,
+                snprintf(res_buf, 1024,
                          "nvimcom:::resolve_fun_args('%s', '%s')", rid, wrd);
-                nvimcom_eval(cmp_buf);
+                nvimcom_eval(res_buf);
                 return;
             }
 
             // Avoid buffer overflow if the information is bigger than
-            // cmp_buf.
+            // res_buf.
             nsz = strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 +
-                  (p - cmp_buf);
-            if (cmp_buf_size < nsz)
-                p = grow_buffer(&cmp_buf, &cmp_buf_size,
-                                nsz - cmp_buf_size + 32768);
+                  (p - res_buf);
+            if (res_buf_sz < nsz)
+                p = grow_buffer(&res_buf, &res_buf_sz,
+                                nsz - res_buf_sz + 32768);
 
             size_t sz = strlen(f[5]) + strlen(f[6]) + 16;
             char *buffer = malloc(sz);
@@ -246,7 +249,7 @@ static void resolve(const char *rid, const char *wrd, const char *pkg) {
                 str_cat(p, b);
                 free(b);
             }
-            send_item_doc(rid, cmp_buf);
+            send_item_doc(rid, res_buf);
             return;
         }
         while (*s != '\n')
@@ -294,6 +297,11 @@ void handle_resolve(const char *req_id, char *params) {
     cut_json_str(&env, 7);
     cut_json_str(&lbl, 9);
     cut_json_str(&cls, 7);
+
+    if (!res_buf) {
+        res_buf = (char *)malloc(res_buf_sz);
+    }
+    memset(res_buf, 0, res_buf_sz);
 
     if (env && strcmp(env, ".GlobalEnv") == 0) {
         if (*cls == 'a') {

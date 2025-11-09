@@ -29,6 +29,9 @@ static const char *kind_tbl[16][2] = {
     {"o", "25"}, //  other             TypeParameter
 };
 
+static char *cmp_buf;              // Completion buffer
+static size_t cmp_buf_sz = 163840; // Completion buffer size
+
 static const char *get_kind(const char *cls) {
     for (size_t i = 0; i < 16; i++)
         if (*kind_tbl[i][0] == *cls)
@@ -90,9 +93,8 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
         // Avoid buffer overflow if the information is bigger than
         // cmp_buf.
         size_t nsz = strlen(s) + 1024 + (p - cmp_buf);
-        if (cmp_buf_size < nsz)
-            p = grow_buffer(&cmp_buf, &cmp_buf_size,
-                            nsz - cmp_buf_size + 32768);
+        if (cmp_buf_sz < nsz)
+            p = grow_buffer(&cmp_buf, &cmp_buf_sz, nsz - cmp_buf_sz + 32768);
 
         p = str_cat(p, "{\"label\":\"");
         p = str_cat(p, s + skip);
@@ -148,9 +150,9 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
             // Avoid buffer overflow if the information is bigger than
             // cmp_buf.
             nsz = 1024 + (p - cmp_buf);
-            if (cmp_buf_size < nsz)
-                p = grow_buffer(&cmp_buf, &cmp_buf_size,
-                                nsz - cmp_buf_size + 32768);
+            if (cmp_buf_sz < nsz)
+                p = grow_buffer(&cmp_buf, &cmp_buf_sz,
+                                nsz - cmp_buf_sz + 32768);
 
             p = str_cat(p, "{\"label\":\"");
             if (pkg) {
@@ -283,9 +285,8 @@ static void complete_instlibs(char *p, const char *base) {
     il = instlibs;
     while (il) {
         size_t len = strlen(il->descr) + (p - cmp_buf) + 1024;
-        if (cmp_buf_size < len)
-            p = grow_buffer(&cmp_buf, &cmp_buf_size,
-                            len - cmp_buf_size + 32768);
+        if (cmp_buf_sz < len)
+            p = grow_buffer(&cmp_buf, &cmp_buf_sz, len - cmp_buf_sz + 32768);
 
         if (!base || (str_here(il->name, base) && il->si)) {
             p = str_cat(p, "{\"label\":\"");
@@ -314,7 +315,7 @@ void complete(const char *params) {
     Log("complete(%s, %s, %s, %s, %s)", id, base, fnm, df, fargs);
 
     char *p;
-    memset(cmp_buf, 0, cmp_buf_size);
+    memset(cmp_buf, 0, cmp_buf_sz);
     p = cmp_buf;
 
     // Get menu completion for installed libraries
@@ -389,3 +390,5 @@ void complete_fig_tbl(const char *params) {
     *end_items = '\0';
     send_menu_items(items, id);
 }
+
+void init_cmp(void) { cmp_buf = calloc(cmp_buf_sz, sizeof(char)); }

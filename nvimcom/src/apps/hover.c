@@ -10,6 +10,9 @@
 #include "tcp.h"
 #include "../common.h"
 
+static char *hov_buf;
+static size_t hov_buf_sz = 4096;
+
 static int get_info(const char *s, char *p) {
     int i;
     size_t nsz;
@@ -27,9 +30,9 @@ static int get_info(const char *s, char *p) {
 
     // Avoid buffer overflow if the information is bigger than
     // cmp_buf.
-    nsz = strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 + (p - cmp_buf);
-    if (cmp_buf_size < nsz)
-        p = grow_buffer(&cmp_buf, &cmp_buf_size, nsz - cmp_buf_size + 32768);
+    nsz = strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 + (p - hov_buf);
+    if (hov_buf_sz < nsz)
+        p = grow_buffer(&hov_buf, &hov_buf_sz, nsz - hov_buf_sz + 32768);
 
     size_t sz = strlen(f[5]) + strlen(f[6]) + 16;
     char *buffer = malloc(sz);
@@ -100,9 +103,13 @@ void hover(const char *params) {
         return;
     }
 
+    if (!hov_buf) {
+        hov_buf = (char *)malloc(hov_buf_sz);
+    }
+    memset(hov_buf, 0, hov_buf_sz);
+
     char *p;
-    memset(cmp_buf, 0, cmp_buf_size);
-    p = cmp_buf;
+    p = hov_buf;
 
     // The word is a function
     PkgData *pd = pkgList;
@@ -112,7 +119,7 @@ void hover(const char *params) {
             if (s) {
                 int is_function = get_info(s, p);
                 if (is_function) {
-                    send_result(id, cmp_buf);
+                    send_result(id, hov_buf);
                 } else {
                     char buffer[512];
                     sprintf(buffer, "nvimcom:::hover_summary('%s', %s)", id,
