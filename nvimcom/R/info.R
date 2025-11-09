@@ -83,7 +83,7 @@ get_summary <- function(obj, prnt) {
     }
 
     owd <- getOption("width")
-    width <- as.integer(Sys.getenv("CMPR_DOC_WIDTH"))
+    width <- as.integer(Sys.getenv("R_LS_DOC_WIDTH"))
     if (is.na(width)) {
         width <- 58
     }
@@ -95,15 +95,24 @@ get_summary <- function(obj, prnt) {
         objlbl <- fix_string(objlbl)
         txt <- append(txt, c("", objlbl))
     }
-    txt <- append(txt, c("* * *", "```rout"))
-    if (is.factor(obj) || is.numeric(obj) || is.logical(obj)) {
-        sobj <- try(summary(obj), silent = TRUE)
-        txt <- append(txt, capture.output(print(sobj)))
+
+    sm <- gsub("*", "", as.character(methods(summary)))
+    has_summary <- sum(paste0("summary.", class(obj)) %in% sm) > 0
+    out <- NULL
+    if (is.numeric(obj) || is.logical(obj) || has_summary) {
+        out <- try(capture.output(print(summary(obj))), silent = TRUE)
     } else {
-        sobj <- try(capture.output(utils::str(obj)), silent = TRUE)
-        txt <- append(txt, sobj)
+        out <- try(capture.output(utils::str(obj)), silent = TRUE)
     }
-    txt <- append(txt, c("```", ""))
+    if (length(out) > 30) {
+        out <- out[1:30]
+        out <- append(out, "- - - truncated - - -")
+    }
+    if (!is.null(out)) {
+        txt <- append(txt, c("* * *", "```rout"))
+        txt <- append(txt, out)
+        txt <- append(txt, "```")
+    }
     options(width = owd)
 
     txt <- gsub("'", "\x13", txt)

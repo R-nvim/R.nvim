@@ -77,22 +77,28 @@ static void ParseMsg(char *b) {
             break;
         case 'R':
             b++;
-            const char *rid = strtok(b, "|");
-            const char *doc = strtok(NULL, "|");
-            send_item_doc(rid, doc);
+            const char *rid = b;
+            b = strstr(b, "|");
+            *b = '\0';
+            send_item_doc(rid, ++b);
             break;
         case 'S':
             b++;
-            const char *sid = strtok(b, "|");
-            const char *wrd = strtok(NULL, "|");
-            const char *sdoc = strtok(NULL, "|");
-            glbnv_signature(sid, wrd, sdoc);
+            const char *sid = b;
+            b = strstr(b, "|");
+            *b = 0;
+            b++;
+            const char *wrd = b;
+            b = strstr(b, "|");
+            *b = 0;
+            glbnv_signature(sid, wrd, ++b);
             break;
         case 'H':
             b++;
-            const char *hid = strtok(b, "|");
-            const char *hdoc = strtok(NULL, "|");
-            send_hover_doc(hid, hdoc);
+            const char *hid = b;
+            b = strstr(b, "|");
+            *b = '\0';
+            send_hover_doc(hid, ++b);
             break;
         case 'D': // set max_depth of lists in the completion data
             b++;
