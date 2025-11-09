@@ -10,6 +10,9 @@
 #include "utilities.h"
 #include "../common.h"
 
+static char *sig_buf;
+static size_t sig_buf_size;
+
 static int get_info(const char *s, char *p) {
     int i;
     unsigned long nsz;
@@ -25,11 +28,10 @@ static int get_info(const char *s, char *p) {
     while (*s != '\n' && *s != 0)
         s++;
 
-    // Avoid buffer overflow if the information is bigger than
-    // cmp_buf.
-    nsz = strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 + (p - cmp_buf);
-    if (cmp_buf_size < nsz)
-        p = grow_buffer(&cmp_buf, &cmp_buf_size, nsz - cmp_buf_size + 32768);
+    // Avoid buffer overflow if the information is bigger than sig_buf.
+    nsz = strlen(f[0]) + strlen(f[4]) + 512 + (p - sig_buf);
+    if (sig_buf_size < nsz)
+        p = grow_buffer(&sig_buf, &sig_buf_size, nsz - sig_buf_size + 1024);
 
     if (f[1][0] == 'F') {
         char *b = format_usage(f[0], f[4], 0);
@@ -89,9 +91,12 @@ void signature(const char *params) {
         return;
     }
 
-    char *p;
-    memset(cmp_buf, 0, cmp_buf_size);
-    p = cmp_buf;
+    if (!sig_buf) {
+        sig_buf_size = 1024;
+        sig_buf = (char *)malloc(sig_buf_size);
+    }
+    memset(sig_buf, 0, sig_buf_size);
+    char *p = sig_buf;
     const char *s = NULL;
 
     // The word is a function
@@ -114,7 +119,7 @@ void signature(const char *params) {
             if (s) {
                 int is_function = get_info(s, p);
                 if (is_function)
-                    send_result(id, cmp_buf);
+                    send_result(id, sig_buf);
                 return;
             }
         }
