@@ -48,10 +48,11 @@ static char *finalbuffer;            // Final buffer for message processing
 // Parse the message from R
 static void ParseMsg(char *b) {
 #ifdef Debug_NRS
-    if (strlen(b) > 500)
-        Log("ParseMsg(): strlen(b) = %" PRI_SIZET "", strlen(b));
+    Log("\x1b[32mTCP in\x1b[0m:");
+    if (strlen(b) > 2000)
+        Log("  strlen = %" PRI_SIZET "", strlen(b));
     else
-        Log("ParseMsg():\n%s", b);
+        Log("%s", b);
 #endif
 
     if (*b == '+') {
@@ -346,7 +347,7 @@ static void *receive_msg(void *v)
 
 // Function to send messages to R (nvimcom package)
 void send_to_nvimcom(char *msg) {
-    Log("TCP out: %s", msg);
+    Log("\x1b[35mTCP out\x1b[0m: %s", msg);
     if (connfd) {
         size_t len = strlen(msg);
         if (send(connfd, msg, len, 0) != (ssize_t)len) {

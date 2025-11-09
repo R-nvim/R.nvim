@@ -78,15 +78,15 @@ static void send_rns_info(void) {
  */
 void send_ls_response(const char *json_payload) {
 #ifdef Debug_NRS
+    Log("\x1b[33mSEND_LS_RESPONSE\x1b[0m (%zu bytes):", strlen(json_payload));
     if (strlen(json_payload) > 380) {
         char begin[360] = {0};
         char end[16] = {0};
         memcpy(begin, json_payload, 359);
         memcpy(end, json_payload + strlen(json_payload) - 15, 15);
-        Log("SEND_LS_RESPONSE (%zu bytes):\n%s [...] %s\n",
-            strlen(json_payload), begin, end);
+        Log("%s [...] %s\n", begin, end);
     } else {
-        Log("SEND_LS_RESPONSE:\n%s\n", json_payload);
+        Log("%s\n", json_payload);
     }
 #endif
     fprintf(stdout, "Content-Length: %zu\r\n\r\n", strlen(json_payload));
@@ -402,6 +402,7 @@ static void lsp_loop(void) {
             }
 
             // JSON parsing
+            Log("\x1b[36mJSON received\x1b[0m:\n%s\n", content);
 
             // Find the start position of all fields that we may need
             char *method = strstr(content, "\"method\":\"");
