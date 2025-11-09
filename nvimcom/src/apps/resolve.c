@@ -271,7 +271,7 @@ void handle_resolve(const char *req_id, char *params) {
         return;
     }
 
-    const char *cls = strstr(params, "\"cls\":\"");
+    char *cls = strstr(params, "\"cls\":\"");
     if (!cls) {
         send_null(req_id);
         return;
@@ -293,6 +293,7 @@ void handle_resolve(const char *req_id, char *params) {
 
     cut_json_str(&env, 7);
     cut_json_str(&lbl, 9);
+    cut_json_str(&cls, 7);
 
     if (env && strcmp(env, ".GlobalEnv") == 0) {
         if (*cls == 'a') {
