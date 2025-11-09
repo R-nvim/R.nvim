@@ -1,8 +1,8 @@
 # Function called by R if options(pager = nvim.hmsg).
 # R.nvim sets this option during nvimcom loading.
 nvim.hmsg <- function(files, header, title, delete.file) {
-    doc <- nvim.fix.string(paste(readLines(files[1]), collapse = "\x14"))
-    ttl <- nvim.fix.string(title)
+    doc <- fix_string(paste(readLines(files[1]), collapse = "\x14"))
+    ttl <- fix_string(title)
     .C(
         nvimcom_msg_to_nvim,
         paste0("require('r.doc').show('", ttl, "', '", doc, "')")

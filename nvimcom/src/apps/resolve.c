@@ -10,6 +10,36 @@
 #include "utilities.h"
 #include "../common.h"
 
+static struct {
+    char id[16];
+    char *item;
+} last_item;
+
+void send_item_doc(const char *req_id, const char *doc) {
+    if (!doc || strlen(doc) == 0 || strcmp(last_item.id, req_id) != 0) {
+        send_null(req_id);
+        return;
+    }
+
+    const char *fmt =
+        "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{%s,\"documentation\":{"
+        "\"kind\":\"markdown\",\"value\":\"%s\"}}}";
+
+    char *fdoc = (char *)calloc(strlen(doc) + 1, sizeof(char));
+    format(doc, fdoc, ' ', '\x14');
+    char *edoc = esc_json(fdoc);
+    size_t len = sizeof(char) * (strlen(edoc) + 256);
+    char *res = (char *)malloc(len);
+
+    snprintf(res, len - 1, fmt, req_id, last_item.item, edoc);
+
+    send_ls_response(res);
+
+    free(fdoc);
+    free(edoc);
+    free(res);
+}
+
 static void get_alias(char **pkg, char **fun) {
     char s[64];
     snprintf(s, 63, "%s\n", *fun);
@@ -43,8 +73,7 @@ static void get_alias(char **pkg, char **fun) {
     *pkg = NULL;
 }
 
-static void resolve_lib_name(const char *req_id, const char *lbl,
-                             const char *cls) {
+static void resolve_lib_name(const char *req_id, const char *lbl) {
     Log("resolve_lib_name: %s, %s", req_id, lbl);
 
     if (!instlibs)
@@ -58,7 +87,7 @@ static void resolve_lib_name(const char *req_id, const char *lbl,
             char *b = (char *)malloc(
                 sizeof(char) * (strlen(il->title) + strlen(il->descr) + 32));
             sprintf(b, "**%s**\x14\x14%s\x14", il->title, il->descr);
-            send_item_doc(b, req_id, lbl, "9", cls);
+            send_item_doc(req_id, b);
             free(b);
             break;
         }
@@ -66,10 +95,10 @@ static void resolve_lib_name(const char *req_id, const char *lbl,
     }
 }
 
-static void resolve_arg_item(const char *rid, const char *knd, const char *cls,
-                             const char *itm, char *pkg, char *fnm) {
+static void resolve_arg_item(const char *rid, const char *itm, char *pkg,
+                             char *fnm) {
 
-    Log("resolve_arg_item: %s, %s, %s, %s, %s", pkg, fnm, itm, rid, knd);
+    Log("resolve_arg_item: %s, %s, %s, %s", pkg, fnm, itm, rid);
     // Delete " = "
     char lbl[64];
     strncpy(lbl, itm, 63);
@@ -111,8 +140,7 @@ static void resolve_arg_item(const char *rid, const char *knd, const char *cls,
                                                 char *b = calloc(strlen(s) + 2,
                                                                  sizeof(char));
                                                 format(s, b, ' ', '\x14');
-                                                send_item_doc(b, rid, itm, knd,
-                                                              cls);
+                                                send_item_doc(rid, b);
                                                 free(b);
                                                 return;
                                             }
@@ -142,10 +170,8 @@ static void resolve_arg_item(const char *rid, const char *knd, const char *cls,
  * description to be displayed in the float window
  * @param args: List of arguments
  * */
-static void resolve(const char *rid, const char *knd, const char *cls,
-                    const char *wrd, const char *pkg) {
-
-    Log("resolve: %s, %s, %s, %s", wrd, pkg, rid, knd);
+static void resolve(const char *rid, const char *wrd, const char *pkg) {
+    Log("resolve: %s, %s, %s", wrd, pkg, rid);
     int i;
     unsigned long nsz;
     const char *f[7];
@@ -168,8 +194,8 @@ static void resolve(const char *rid, const char *knd, const char *cls,
         s = pd->objls;
     }
 
-    memset(compl_buffer, 0, compl_buffer_size);
-    char *p = compl_buffer;
+    memset(cmp_buf, 0, cmp_buf_size);
+    char *p = cmp_buf;
 
     while (*s != 0) {
         if (strcmp(s, wrd) == 0) {
@@ -187,21 +213,19 @@ static void resolve(const char *rid, const char *knd, const char *cls,
                 s++;
 
             if (f[1][0] == 'F' && str_here(f[4], ">not_checked<")) {
-                snprintf(
-                    compl_buffer, 1024,
-                    "nvimcom:::nvim.GlobalEnv.fun.args('%s', '%s', '%s', '%s')",
-                    rid, wrd, knd, cls);
-                nvimcom_eval(compl_buffer);
+                snprintf(cmp_buf, 1024,
+                         "nvimcom:::resolve_fun_args('%s', '%s')", rid, wrd);
+                nvimcom_eval(cmp_buf);
                 return;
             }
 
             // Avoid buffer overflow if the information is bigger than
-            // compl_buffer.
+            // cmp_buf.
             nsz = strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 +
-                  (p - compl_buffer);
-            if (compl_buffer_size < nsz)
-                p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                                nsz - compl_buffer_size + 32768);
+                  (p - cmp_buf);
+            if (cmp_buf_size < nsz)
+                p = grow_buffer(&cmp_buf, &cmp_buf_size,
+                                nsz - cmp_buf_size + 32768);
 
             size_t sz = strlen(f[5]) + strlen(f[6]) + 16;
             char *buffer = malloc(sz);
@@ -222,7 +246,7 @@ static void resolve(const char *rid, const char *knd, const char *cls,
                 str_cat(p, b);
                 free(b);
             }
-            send_item_doc(compl_buffer, rid, wrd, knd, cls);
+            send_item_doc(rid, cmp_buf);
             return;
         }
         while (*s != '\n')
@@ -234,12 +258,7 @@ static void resolve(const char *rid, const char *knd, const char *cls,
 void handle_resolve(const char *req_id, char *params) {
     Log("handle_resolve: %s\n%s", req_id, params);
 
-    char *doc = strstr(params, "\"documentation\":{");
-    char *env = strstr(params, "\"env\":\"");
-    char *lbl = strstr(params, "\"label\":\"");
-    char *cls = strstr(params, "\"cls\":\"");
-    char *knd = strstr(params, "\"kind\":");
-
+    const char *doc = strstr(params, "\"documentation\":{");
     if (doc) {
         cut_json_bkt(&params, 9);
         Log("%s", params);
@@ -252,38 +271,47 @@ void handle_resolve(const char *req_id, char *params) {
         return;
     }
 
-    if (!cls)
+    const char *cls = strstr(params, "\"cls\":\"");
+    if (!cls) {
+        send_null(req_id);
         return;
+    }
+
+    char *item = strstr(params, "\"params\":{");
+    char *env = strstr(params, "\"env\":\"");
+    char *lbl = strstr(params, "\"label\":\"");
+
+    // FIXME: bug if there is '}' in any of the params elements
+    cut_json_bkt(&item, 9);
+    if (last_item.item)
+        free(last_item.item);
+    strncpy(last_item.id, req_id, 15);
+    last_item.item = (char *)malloc(1 + strlen(item) * sizeof(char));
+    item++;                        // skip the opening bracket
+    item[strlen(item) - 1] = '\0'; // delete the closing bracket
+    strcpy(last_item.item, item);
 
     cut_json_str(&env, 7);
-    cut_json_str(&cls, 7);
     cut_json_str(&lbl, 9);
-    cut_json_int(&knd, 7);
-
-    Log("handle_resolve: '%s', '%s', '%c', '%s'", env, lbl, *cls, knd);
 
     if (env && strcmp(env, ".GlobalEnv") == 0) {
         if (*cls == 'a') {
             return;
         } else if (*cls == 'f' || *cls == 'b' || *cls == 't' || *cls == 'n') {
             char buffer[512];
-            sprintf(
-                buffer,
-                "nvimcom:::nvim.get.summary('%s', '%s', '%s', '%s', %s, '%s')",
-                req_id, knd, cls, lbl, lbl, env);
+            sprintf(buffer, "nvimcom:::resolve_summary('%s', %s, '%s')", req_id,
+                    lbl, env);
             nvimcom_eval(buffer);
 
         } else if (*cls == 'F') {
             char buffer[512];
-            sprintf(buffer,
-                    "nvimcom:::nvim.GlobalEnv.fun.args('%s', '%s', '%s', '%s')",
-                    req_id, lbl, knd, cls);
+            sprintf(buffer, "nvimcom:::resolve_fun_args('%s', '%s')", req_id,
+                    lbl);
             nvimcom_eval(buffer);
         } else {
             char buffer[512];
-            sprintf(buffer,
-                    "nvimcom:::nvim.min.info('%s', %s, '%s', '%s', '%s', '%s')",
-                    req_id, lbl, lbl, env, knd, cls);
+            sprintf(buffer, "nvimcom:::resolve_min_info('%s', %s, '%s')",
+                    req_id, lbl, env);
             nvimcom_eval(buffer);
         }
         return;
@@ -291,10 +319,8 @@ void handle_resolve(const char *req_id, char *params) {
 
     if (*cls == 'c') {
         char buffer[512];
-        sprintf(
-            buffer,
-            "nvimcom:::nvim.get.summary('%s', '%s', '%s', '%s', %s$%s, '%s')",
-            req_id, knd, cls, lbl, env, lbl, env);
+        sprintf(buffer, "nvimcom:::resolve_summary('%s', %s$%s, '%s')", req_id,
+                env, lbl, env);
         nvimcom_eval(buffer);
     } else if (*cls == 'a') {
         // Split "library:function"
@@ -303,17 +329,16 @@ void handle_resolve(const char *req_id, char *params) {
             *func = 0;
             func++;
         }
-        resolve_arg_item(req_id, knd, cls, lbl, env, func);
+        resolve_arg_item(req_id, lbl, env, func);
     } else if (*cls == 'L') {
-        resolve_lib_name(req_id, lbl, cls);
+        resolve_lib_name(req_id, lbl);
     } else if (strstr(lbl, "$") != NULL &&
                (*cls == 'f' || *cls == 'b' || *cls == 't' || *cls == 'n')) {
         char buffer[512];
-        sprintf(buffer,
-                "nvimcom:::nvim.get.summary('%s', '%s', '%s', '%s', %s, '%s')",
-                req_id, knd, cls, lbl, lbl, env);
+        sprintf(buffer, "nvimcom:::resolve_summary('%s', %s, '%s')", req_id,
+                lbl, env);
         nvimcom_eval(buffer);
     } else {
-        resolve(req_id, knd, cls, lbl, env);
+        resolve(req_id, lbl, env);
     }
 }

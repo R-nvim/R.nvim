@@ -23,6 +23,7 @@
 #include "logging.h"
 #include "utilities.h"
 #include "complete.h"
+#include "resolve.h"
 #include "hover.h"
 #include "signature.h"
 #include "obbr.h"
@@ -77,11 +78,8 @@ static void ParseMsg(char *b) {
         case 'R':
             b++;
             const char *rid = strtok(b, "|");
-            const char *lbl = strtok(NULL, "|");
-            const char *knd = strtok(NULL, "|");
-            const char *cls = strtok(NULL, "|");
             const char *doc = strtok(NULL, "|");
-            send_item_doc(doc, rid, lbl, knd, cls);
+            send_item_doc(rid, doc);
             break;
         case 'S':
             b++;
@@ -100,6 +98,9 @@ static void ParseMsg(char *b) {
             b++;
             set_max_depth(atoi(b));
             break;
+        case 'N':
+            b++;
+            send_null(b);
         }
         return;
     }

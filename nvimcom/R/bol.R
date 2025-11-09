@@ -1,6 +1,6 @@
 # For building omnls files
 #' @param x
-nvim.fix.string <- function(x, edq = FALSE) {
+fix_string <- function(x, edq = FALSE) {
     x <- gsub("\\\\", "\x12", x)
     x <- gsub("'", "\x13", x)
     x <- gsub("\n", "\\\\n", x)
@@ -105,7 +105,7 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass = NULL) {
         } else if (type == "character") {
             res <- append(
                 res,
-                paste0(field, "\x04\"", nvim.fix.string(frm[[field]], TRUE), "\"\x05")
+                paste0(field, "\x04\"", fix_string(frm[[field]], TRUE), "\"\x05")
             )
         } else if (type == "logical" || type == "double" || type == "integer") {
             res <- append(
@@ -117,7 +117,7 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass = NULL) {
         } else if (type == "language") {
             res <- append(
                 res,
-                paste0(field, "\x04", nvim.fix.string(deparse(frm[[field]])), "\x05")
+                paste0(field, "\x04", fix_string(deparse(frm[[field]])), "\x05")
             )
         } else if (type == "list") {
             res <- append(res, paste0(field, "\x04list()\x05"))
@@ -278,7 +278,7 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
         }
     }
 
-    n <- nvim.fix.string(x)
+    n <- fix_string(x)
 
     if (curlevel == maxlevel || maxlevel == 0) {
         if (x.group == "F") {
@@ -378,7 +378,7 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
                             !is.null(xattr) &&
                             length(xattr) == 1
                     ) {
-                        info <- paste0("\006\006", nvim.fix.string(.Call(rd2md, xattr)))
+                        info <- paste0("\006\006", fix_string(.Call(rd2md, xattr)))
                     }
                 }
                 cat(
@@ -458,8 +458,8 @@ GetFunDescription <- function(pkg) {
         x <- paste0(x, collapse = "")
         ttl <- .Call(get_section, x, "title")
         dsc <- .Call(get_section, x, "description")
-        ttl <- nvim.fix.string(ttl)
-        dsc <- nvim.fix.string(dsc)
+        ttl <- fix_string(ttl)
+        dsc <- fix_string(dsc)
         x <- paste0("\006", ttl, "\006", dsc)
         x
     }
@@ -503,7 +503,7 @@ get_arg_doc_list <- function(fun, pkg) {
             )
         }
     )
-    line <- nvim.fix.string(paste0(fun, "\x06", paste0(args, collapse = "")))
+    line <- fix_string(paste0(fun, "\x06", paste0(args, collapse = "")))
     cat(line, sep = "", "\n")
 }
 

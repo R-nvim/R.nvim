@@ -22,15 +22,15 @@
  * Global variables (declared in global_vars.h)
  */
 
-InstLibs *instlibs;                       // Pointer to first installed library
-PkgData *pkgList;                         // Pointer to first package data
-char *compl_buffer;                       // Completion buffer
-char *glbnv_buffer;                       // Global environment buffer
-char compldir[256];                       // Directory for completion files
-char tmpdir[256];                         // Temporary directory
-int auto_obbr;                            // Auto object browser flag
-unsigned long compl_buffer_size = 163840; // Completion buffer size
-char localtmpdir[256];                    // Local temporary directory
+InstLibs *instlibs;                  // Pointer to first installed library
+PkgData *pkgList;                    // Pointer to first package data
+char *cmp_buf;                       // Completion buffer
+char *glbnv_buffer;                  // Global environment buffer
+char cmp_dir[256];                   // Directory for completion files
+char tmpdir[256];                    // Temporary directory
+int auto_obbr;                       // Auto object browser flag
+unsigned long cmp_buf_size = 163840; // Completion buffer size
+char localtmpdir[256];               // Local temporary directory
 
 void print_listTree(ListStatus *root, FILE *f) {
     if (root != NULL) {
@@ -129,31 +129,6 @@ void send_cmd_to_nvim(const char *cmd) {
     free(esccmd);
 }
 
-void send_item_doc(const char *doc, const char *req_id, const char *label,
-                   const char *kind, const char *cls) {
-    if (strlen(doc) == 0) {
-        send_null(req_id);
-        return;
-    }
-
-    const char *fmt =
-        "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
-        "{\"label\":\"%s\",\"kind\":%s,\"cls\":\"%s\","
-        "\"documentation\":{\"kind\":\"markdown\",\"value\":\"%s\"}}}";
-
-    char *fdoc = (char *)calloc(strlen(doc) + 1, sizeof(char));
-    format(doc, fdoc, ' ', '\x14');
-    char *edoc = esc_json(fdoc);
-    size_t len = sizeof(char) * (strlen(edoc) + 256);
-    char *res = (char *)malloc(len);
-    snprintf(res, len - 1, fmt, req_id, label, kind, cls, edoc);
-
-    send_ls_response(res);
-    free(fdoc);
-    free(edoc);
-    free(res);
-}
-
 void send_menu_items(char *compl_items, const char *req_id) {
     if (strlen(compl_items) == 0) {
         send_null(req_id);
@@ -188,7 +163,7 @@ static void handle_initialize(const char *request_id) {
     signal(SIGTERM, handle_sigterm);
 
     // initialize global variables;
-    strncpy(compldir, getenv("RNVIM_COMPLDIR"), 255);
+    strncpy(cmp_dir, getenv("RNVIM_COMPLDIR"), 255);
     strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 255);
     set_doc_width(getenv("R_LS_DOC_WIDTH"));
     if (getenv("RNVIM_LOCAL_TMPDIR")) {
@@ -197,7 +172,7 @@ static void handle_initialize(const char *request_id) {
         strncpy(localtmpdir, getenv("RNVIM_TMPDIR"), 255);
     }
     set_max_depth(atoi(getenv("RNVIM_MAX_DEPTH")));
-    compl_buffer = calloc(compl_buffer_size, sizeof(char));
+    cmp_buf = calloc(cmp_buf_size, sizeof(char));
 
     init_obbr_vars();
     init_ds_vars();

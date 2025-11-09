@@ -235,7 +235,7 @@ void update_inst_libs(void) {
     // New libraries found. Overwrite ~/.cache/R.nvim/inst_libs
     if (n) {
         char fnm[1032];
-        snprintf(fnm, 1031, "%s/inst_libs", compldir);
+        snprintf(fnm, 1031, "%s/inst_libs", cmp_dir);
         FILE *f = fopen(fnm, "w");
         if (f == NULL) {
             fprintf(stderr, "Could not write to '%s'\n", fnm);
@@ -381,7 +381,7 @@ static char *read_objls_file(const char *fn, int *size) {
 
 static char *read_alias_file(const char *nm) {
     char fnm[512];
-    snprintf(fnm, 511, "%s/alias_%s", compldir, nm);
+    snprintf(fnm, 511, "%s/alias_%s", cmp_dir, nm);
     char *b = read_file(fnm, 1);
     if (!b)
         return NULL;
@@ -396,7 +396,7 @@ static char *read_alias_file(const char *nm) {
 
 static char *read_args_file(const char *nm) {
     char fnm[512];
-    snprintf(fnm, 511, "%s/args_%s", compldir, nm);
+    snprintf(fnm, 511, "%s/args_%s", cmp_dir, nm);
     char *b = read_file(fnm, 1);
     if (!b)
         return NULL;
@@ -437,7 +437,7 @@ static PkgData *new_pkg_data(const char *nm, const char *vrsn) {
     pd->descr = get_pkg_descr(pd->name, 1);
     pd->loaded = 1;
 
-    snprintf(buf, 1023, "%s/objls_%s_%s", compldir, nm, vrsn);
+    snprintf(buf, 1023, "%s/objls_%s_%s", cmp_dir, nm, vrsn);
     pd->fname = malloc((strlen(buf) + 1) * sizeof(char));
     strcpy(pd->fname, buf);
 
@@ -675,8 +675,8 @@ void build_objls(void) {
     }
     building_objls = 1;
 
-    memset(compl_buffer, 0, compl_buffer_size);
-    char *p = compl_buffer;
+    memset(cmp_buf, 0, cmp_buf_size);
+    char *p = cmp_buf;
 
     PkgData *pkg = pkgList;
 
@@ -685,10 +685,10 @@ void build_objls(void) {
     int k = 0;
     while (pkg) {
         if (pkg->to_build == 0) {
-            nsz = strlen(pkg->name) + 1024 + (p - compl_buffer);
-            if (compl_buffer_size < nsz)
-                p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                                nsz - compl_buffer_size + 32768);
+            nsz = strlen(pkg->name) + 1024 + (p - cmp_buf);
+            if (cmp_buf_size < nsz)
+                p = grow_buffer(&cmp_buf, &cmp_buf_size,
+                                nsz - cmp_buf_size + 32768);
             p = str_cat(p, pkg->name);
             p = str_cat(p, " ");
             pkg->to_build = 1;
@@ -699,8 +699,8 @@ void build_objls(void) {
 
     if (k > 0) {
         // Build all the objls_ files.
-        char *cmd = (char *)malloc((124 + strlen(compl_buffer)) * sizeof(char));
-        sprintf(cmd, "require('r.server').build_objls('%s')", compl_buffer);
+        char *cmd = (char *)malloc((124 + strlen(cmp_buf)) * sizeof(char));
+        sprintf(cmd, "require('r.server').build_objls('%s')", cmp_buf);
         send_cmd_to_nvim(cmd);
         free(cmd);
     }
@@ -762,7 +762,7 @@ static void fill_inst_libs(void) {
     Log("fill_inst_libs");
     InstLibs *il = NULL;
     char fname[1032];
-    snprintf(fname, 1031, "%s/inst_libs", compldir);
+    snprintf(fname, 1031, "%s/inst_libs", cmp_dir);
     char *b = read_file(fname, 0);
     if (!b)
         return;

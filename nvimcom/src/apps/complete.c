@@ -88,11 +88,11 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
 
     while (*s && str_here(s, dfbase)) {
         // Avoid buffer overflow if the information is bigger than
-        // compl_buffer.
-        unsigned long nsz = strlen(s) + 1024 + (p - compl_buffer);
-        if (compl_buffer_size < nsz)
-            p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                            nsz - compl_buffer_size + 32768);
+        // cmp_buf.
+        unsigned long nsz = strlen(s) + 1024 + (p - cmp_buf);
+        if (cmp_buf_size < nsz)
+            p = grow_buffer(&cmp_buf, &cmp_buf_size,
+                            nsz - cmp_buf_size + 32768);
 
         p = str_cat(p, "{\"label\":\"");
         p = str_cat(p, s + skip);
@@ -146,11 +146,11 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
                 continue;
 
             // Avoid buffer overflow if the information is bigger than
-            // compl_buffer.
-            nsz = 1024 + (p - compl_buffer);
-            if (compl_buffer_size < nsz)
-                p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                                nsz - compl_buffer_size + 32768);
+            // cmp_buf.
+            nsz = 1024 + (p - cmp_buf);
+            if (cmp_buf_size < nsz)
+                p = grow_buffer(&cmp_buf, &cmp_buf_size,
+                                nsz - cmp_buf_size + 32768);
 
             p = str_cat(p, "{\"label\":\"");
             if (pkg) {
@@ -234,7 +234,7 @@ char *complete_args(char *p, char *funcnm) {
                             p = str_cat(p, a);
                             p = str_cat(p, " = \",\"sortText\":\"_");
                             o++;
-                            snprintf(order, 3, "%02d", o);
+                            snprintf(order, 15, "%02d", o);
                             p = str_cat(p, order);
                             p = str_cat(
                                 p, "\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
@@ -282,10 +282,10 @@ static void complete_instlibs(char *p, const char *base) {
 
     il = instlibs;
     while (il) {
-        unsigned long len = strlen(il->descr) + (p - compl_buffer) + 1024;
-        if (compl_buffer_size < len)
-            p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                            len - compl_buffer_size + 32768);
+        unsigned long len = strlen(il->descr) + (p - cmp_buf) + 1024;
+        if (cmp_buf_size < len)
+            p = grow_buffer(&cmp_buf, &cmp_buf_size,
+                            len - cmp_buf_size + 32768);
 
         if (!base || (str_here(il->name, base) && il->si)) {
             p = str_cat(p, "{\"label\":\"");
@@ -314,13 +314,13 @@ void complete(const char *params) {
     Log("complete(%s, %s, %s, %s, %s)", id, base, fnm, df, fargs);
 
     char *p;
-    memset(compl_buffer, 0, compl_buffer_size);
-    p = compl_buffer;
+    memset(cmp_buf, 0, cmp_buf_size);
+    p = cmp_buf;
 
     // Get menu completion for installed libraries
     if (fnm && *fnm == '#') {
         complete_instlibs(p, base);
-        send_menu_items(compl_buffer, id);
+        send_menu_items(cmp_buf, id);
         return;
     }
 
@@ -341,12 +341,12 @@ void complete(const char *params) {
 
         // base will be empty if completing only function arguments
         if (!base) {
-            send_menu_items(compl_buffer, id);
+            send_menu_items(cmp_buf, id);
             return;
         }
     }
 
-    // Finish filling the compl_buffer
+    // Finish filling the cmp_buf
     if (glbnv_buffer && base)
         p = parse_objls(glbnv_buffer, base, NULL, ".GlobalEnv", p);
 
@@ -367,7 +367,7 @@ void complete(const char *params) {
             pd = pd->next;
         }
     }
-    send_menu_items(compl_buffer, id);
+    send_menu_items(cmp_buf, id);
 }
 
 void complete_fig_tbl(const char *params) {

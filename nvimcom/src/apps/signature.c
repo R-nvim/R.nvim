@@ -26,12 +26,10 @@ static int get_info(const char *s, char *p) {
         s++;
 
     // Avoid buffer overflow if the information is bigger than
-    // compl_buffer.
-    nsz =
-        strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 + (p - compl_buffer);
-    if (compl_buffer_size < nsz)
-        p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                        nsz - compl_buffer_size + 32768);
+    // cmp_buf.
+    nsz = strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 + (p - cmp_buf);
+    if (cmp_buf_size < nsz)
+        p = grow_buffer(&cmp_buf, &cmp_buf_size, nsz - cmp_buf_size + 32768);
 
     if (f[1][0] == 'F') {
         char *b = format_usage(f[0], f[4], 0);
@@ -44,7 +42,7 @@ static int get_info(const char *s, char *p) {
 }
 
 static void send_result(const char *req_id, const char *doc) {
-    if (strlen(doc) == 0) {
+    if (!doc || strlen(doc) == 0) {
         send_null(req_id);
         return;
     }
@@ -92,8 +90,8 @@ void signature(const char *params) {
     }
 
     char *p;
-    memset(compl_buffer, 0, compl_buffer_size);
-    p = compl_buffer;
+    memset(cmp_buf, 0, cmp_buf_size);
+    p = cmp_buf;
     const char *s = NULL;
 
     // The word is a function
@@ -102,8 +100,7 @@ void signature(const char *params) {
         s = seek_word(glbnv_buffer, word);
         if (s) {
             char cmd[128];
-            snprintf(cmd, 127, "nvimcom:::GlobalEnv_signature('%s', '%s')", id,
-                     word);
+            snprintf(cmd, 127, "nvimcom:::signature('%s', '%s')", id, word);
             nvimcom_eval(cmd);
             return;
         }
@@ -117,7 +114,7 @@ void signature(const char *params) {
             if (s) {
                 int is_function = get_info(s, p);
                 if (is_function)
-                    send_result(id, compl_buffer);
+                    send_result(id, cmp_buf);
                 return;
             }
         }

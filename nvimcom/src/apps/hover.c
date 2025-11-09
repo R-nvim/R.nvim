@@ -26,12 +26,10 @@ static int get_info(const char *s, char *p) {
         s++;
 
     // Avoid buffer overflow if the information is bigger than
-    // compl_buffer.
-    nsz =
-        strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 + (p - compl_buffer);
-    if (compl_buffer_size < nsz)
-        p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                        nsz - compl_buffer_size + 32768);
+    // cmp_buf.
+    nsz = strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 + (p - cmp_buf);
+    if (cmp_buf_size < nsz)
+        p = grow_buffer(&cmp_buf, &cmp_buf_size, nsz - cmp_buf_size + 32768);
 
     size_t sz = strlen(f[5]) + strlen(f[6]) + 16;
     char *buffer = malloc(sz);
@@ -57,6 +55,11 @@ static int get_info(const char *s, char *p) {
 }
 
 static void send_result(const char *req_id, const char *doc) {
+    if (!doc || strlen(doc) == 0) {
+        send_null(req_id);
+        return;
+    }
+
     const char *fmt =
         "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"contents\":\"%s\"}}";
 
@@ -98,8 +101,8 @@ void hover(const char *params) {
     }
 
     char *p;
-    memset(compl_buffer, 0, compl_buffer_size);
-    p = compl_buffer;
+    memset(cmp_buf, 0, cmp_buf_size);
+    p = cmp_buf;
 
     // The word is a function
     PkgData *pd = pkgList;
@@ -109,12 +112,11 @@ void hover(const char *params) {
             if (s) {
                 int is_function = get_info(s, p);
                 if (is_function) {
-                    send_result(id, compl_buffer);
+                    send_result(id, cmp_buf);
                 } else {
                     char buffer[512];
-                    sprintf(buffer,
-                            "nvimcom:::nvim.get.hover.summary('%s', %s, '%s')",
-                            id, word, word);
+                    sprintf(buffer, "nvimcom:::hover_summary('%s', %s)", id,
+                            word);
                     nvimcom_eval(buffer);
                 }
                 return;
@@ -128,8 +130,7 @@ void hover(const char *params) {
         const char *s = seek_word(glbnv_buffer, word);
         if (s) {
             char buffer[512];
-            sprintf(buffer, "nvimcom:::nvim.get.hover.summary('%s', %s, '%s')",
-                    id, word, word);
+            sprintf(buffer, "nvimcom:::hover_summary('%s', %s)", id, word);
             nvimcom_eval(buffer);
             return;
         }
