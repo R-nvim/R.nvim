@@ -6,7 +6,7 @@
 
 ```sh
 mkdir -p parser
-cd resources/tree_sitter_rout
+cd resources/tree-sitter-rout
 tree-sitter generate grammar.js
 make
 cp libtree-sitter-rout.so ../../parser/rout.so
