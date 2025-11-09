@@ -36,14 +36,14 @@ static HANDLE Tid; // Identifier of thread running TCP connection loop.
 static pthread_t Tid; // Thread ID
 #endif
 
-struct sockaddr_in servaddr;         // Server address structure
-static int sockfd;                   // socket file descriptor
-static int connfd;                   // Connection file descriptor
-static unsigned long fb_size = 1024; // Final buffer size
-static int r_conn;                   // R connection status flag
-static char *VimSecret;              // Secret for communication with Vim
-static int VimSecretLen;             // Length of Vim secret
-static char *finalbuffer;            // Final buffer for message processing
+struct sockaddr_in servaddr;  // Server address structure
+static int sockfd;            // socket file descriptor
+static int connfd;            // Connection file descriptor
+static size_t fb_size = 1024; // Final buffer size
+static int r_conn;            // R connection status flag
+static char *VimSecret;       // Secret for communication with Vim
+static int VimSecretLen;      // Length of Vim secret
+static char *finalbuffer;     // Final buffer for message processing
 
 // Parse the message from R
 static void ParseMsg(char *b) {
@@ -253,7 +253,7 @@ static void get_whole_msg(char *b) {
     Log("get_whole_msg()");
     char *p;
     char tmp[1];
-    int msg_size;
+    size_t msg_size;
 
     if (strstr(b, VimSecret) != b) {
         fprintf(stderr, "Strange string received {%s}: \"%s\"\n", VimSecret, b);
@@ -292,7 +292,8 @@ static void get_whole_msg(char *b) {
 
     // FIXME: Delete this check when the code proved to be reliable
     if (strlen(finalbuffer) != msg_size) {
-        fprintf(stderr, "Divergent TCP message size: %" PRI_SIZET " x %d\n",
+        fprintf(stderr,
+                "Divergent TCP message size: %" PRI_SIZET " x %" PRI_SIZET "\n",
                 strlen(p), msg_size);
         fflush(stderr);
     }

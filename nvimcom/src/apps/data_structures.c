@@ -667,7 +667,7 @@ void toggle_list_status(char *s) {
 // Send to R.nvim the command to read the list of libraries loaded in R
 void build_objls(void) {
     Log("build_objls()");
-    unsigned long nsz;
+    size_t nsz;
 
     if (building_objls) {
         more_to_build = 1;

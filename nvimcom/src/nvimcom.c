@@ -7,6 +7,19 @@
 #include <R_ext/eventloop.h>
 #endif
 
+#include <stddef.h>
+#ifdef WIN32
+#include <inttypes.h>
+#define bzero(b, len) (memset((b), '\0', (len)), (void)0)
+#ifdef _WIN64
+#define PRI_SIZET PRIu64
+#else
+#define PRI_SIZET PRIu32
+#endif
+#else
+#define PRI_SIZET "zu"
+#endif
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -260,7 +273,8 @@ static void send_to_nvim(char *msg) {
         if (sent == -1)
             REprintf("Error sending message header to R.nvim: -1\n");
         else
-            REprintf("Error sending message header to R.nvim: %zu x %zu\n",
+            REprintf("Error sending message header to R.nvim: %" PRI_SIZET
+                     " x %" PRI_SIZET "\n",
                      tcp_header_len, sent);
 #ifdef WIN32
         closesocket(sfd);
@@ -283,8 +297,9 @@ static void send_to_nvim(char *msg) {
         if (sent >= 0) {
             pCur += sent;
         } else if (sent == -1) {
-            REprintf("Error sending message to R.nvim: %zu x %zu\n", len,
-                     pCur - msg);
+            REprintf("Error sending message to R.nvim: %" PRI_SIZET
+                     " x %" PRI_SIZET "\n",
+                     len, pCur - msg);
             return;
         }
         loop++;
@@ -292,7 +307,8 @@ static void send_to_nvim(char *msg) {
             // The goal here is to avoid infinite loop.
             // TODO: Maybe delete this check because php code does not have
             // something similar
-            REprintf("Too many attempts to send message to R.nvim: %zu x %zu\n",
+            REprintf("Too many attempts to send message to R.nvim: %" PRI_SIZET
+                     " x %" PRI_SIZET "\n",
                      len, sent);
             return;
         }
@@ -301,7 +317,8 @@ static void send_to_nvim(char *msg) {
     // End the message with \x11
     sent = send(sfd, "\x11", 1, 0);
     if (sent != 1)
-        REprintf("Error sending final byte to R.nvim: 1 x %zu\n", sent);
+        REprintf("Error sending final byte to R.nvim: 1 x %" PRI_SIZET "\n",
+                 sent);
 }
 
 /**
@@ -717,7 +734,9 @@ static void nvimcom_globalenv_list(void) {
     size_t len2 = strlen(glbnvbuf2);
     int changed = len1 != len2;
     if (verbose > 4)
-        REprintf("globalenv_list(0) len1 = %zu, len2 = %zu\n", len1, len2);
+        REprintf("globalenv_list(0) len1 = %" PRI_SIZET ", len2 = %" PRI_SIZET
+                 "\n",
+                 len1, len2);
     if (!changed) {
         for (int i = 0; i < len1; i++) {
             if (glbnvbuf1[i] != glbnvbuf2[i]) {
@@ -740,7 +759,7 @@ static void nvimcom_globalenv_list(void) {
             REprintf(
                 "nvimcom:\n"
                 "    Time to build list of objects: %g ms (max_time = %g ms)\n"
-                "    List size: %zu bytes (max_size = %d bytes)\n"
+                "    List size: %" PRI_SIZET " bytes (max_size = %d bytes)\n"
                 "    New max_depth: %d\n",
                 tmdiff, timelimit, strlen(glbnvbuf1), sizelimit, maxdepth);
     }

@@ -173,7 +173,7 @@ static void resolve_arg_item(const char *rid, const char *itm, char *pkg,
 static void resolve(const char *rid, const char *wrd, const char *pkg) {
     Log("resolve: %s, %s, %s", wrd, pkg, rid);
     int i;
-    unsigned long nsz;
+    size_t nsz;
     const char *f[7];
     char *s;
 

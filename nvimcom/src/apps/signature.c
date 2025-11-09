@@ -15,7 +15,7 @@ static size_t sig_buf_size;
 
 static int get_info(const char *s, char *p) {
     int i;
-    unsigned long nsz;
+    size_t nsz;
     const char *f[7];
     i = 0;
     while (i < 7) {

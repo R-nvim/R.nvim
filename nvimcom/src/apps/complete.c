@@ -89,7 +89,7 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
     while (*s && str_here(s, dfbase)) {
         // Avoid buffer overflow if the information is bigger than
         // cmp_buf.
-        unsigned long nsz = strlen(s) + 1024 + (p - cmp_buf);
+        size_t nsz = strlen(s) + 1024 + (p - cmp_buf);
         if (cmp_buf_size < nsz)
             p = grow_buffer(&cmp_buf, &cmp_buf_size,
                             nsz - cmp_buf_size + 32768);
@@ -115,7 +115,7 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
 static char *parse_objls(const char *s, const char *base, const char *pkg,
                          const char *lib, char *p) {
     int i;
-    unsigned long nsz;
+    size_t nsz;
     const char *f[7];
     char order[4];
 
@@ -282,7 +282,7 @@ static void complete_instlibs(char *p, const char *base) {
 
     il = instlibs;
     while (il) {
-        unsigned long len = strlen(il->descr) + (p - cmp_buf) + 1024;
+        size_t len = strlen(il->descr) + (p - cmp_buf) + 1024;
         if (cmp_buf_size < len)
             p = grow_buffer(&cmp_buf, &cmp_buf_size,
                             len - cmp_buf_size + 32768);

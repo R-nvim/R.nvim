@@ -78,7 +78,8 @@ static void send_rns_info(void) {
  */
 void send_ls_response(const char *json_payload) {
 #ifdef Debug_NRS
-    Log("\x1b[33mSEND_LS_RESPONSE\x1b[0m (%zu bytes):", strlen(json_payload));
+    Log("\x1b[33mSEND_LS_RESPONSE\x1b[0m (%" PRI_SIZET " bytes):",
+        strlen(json_payload));
     if (strlen(json_payload) > 380) {
         char begin[360] = {0};
         char end[16] = {0};
@@ -89,7 +90,8 @@ void send_ls_response(const char *json_payload) {
         Log("%s\n", json_payload);
     }
 #endif
-    fprintf(stdout, "Content-Length: %zu\r\n\r\n", strlen(json_payload));
+    fprintf(stdout, "Content-Length: %" PRI_SIZET "\r\n\r\n",
+            strlen(json_payload));
     fprintf(stdout, "%s", json_payload);
     fflush(stdout);
 }
@@ -367,7 +369,8 @@ static void lsp_loop(void) {
         if (fgets(header, 127, stdin) == NULL)
             break;
 
-        if (sscanf(header, "Content-Length: %zu", &content_length) != 1) {
+        if (sscanf(header, "Content-Length: %" PRI_SIZET, &content_length) !=
+            1) {
             // Error handling for missing/malformed header.
             // For a simple server, we might just continue or break.
             fprintf(stderr, "Malformed header: %s", header);
@@ -396,7 +399,8 @@ static void lsp_loop(void) {
             size_t bytes_read = fread(content, 1, content_length, stdin);
             content[bytes_read] = '\0';
             if (bytes_read != content_length) {
-                fprintf(stderr, "wrong content length: %zu x %zu",
+                fprintf(stderr,
+                        "wrong content length: %" PRI_SIZET " x %" PRI_SIZET,
                         content_length, bytes_read);
                 fflush(stderr);
             }
