@@ -243,7 +243,6 @@ static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
     char *code = strstr(params, "\"code\":\"") + 8;
     char *p;
-    char t;
     switch (*code) {
     case 'C':
         code++;
