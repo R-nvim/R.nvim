@@ -188,10 +188,10 @@ local function find_parent(child, curline, curpos)
         if idx == nil then return "" end
         if idx < curpos then
             parent = line:sub(idx + 1)
-            if line:find("%[#") or line:find("%$#") then
+            if line:find("l#") or line:find("d#") then
                 suffix = "$"
                 break
-            elseif line:find("<#") or line:find(">#") then
+            elseif line:find("4#") or line:find("7#") then
                 suffix = "@"
                 break
             else
@@ -441,14 +441,14 @@ function M.on_double_click()
     local curline = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
     local key = M.get_name(lnum, curline)
     if state.curview == "GlobalEnv" then
-        if curline:find("&#.*\t") then
+        if curline:find("p#.*\t") then
             -- Object is a list or data.frame
             send_to_nvimcom("L", key)
         elseif
-            curline:find("%[#.*\t")
-            or curline:find("%$#.*\t")
-            or curline:find("<#.*\t")
-            or curline:find(">#.*\t")
+            curline:find("l#.*\t")
+            or curline:find("d$#.*\t")
+            or curline:find("4#.*\t")
+            or curline:find("7#.*\t")
             or curline:find(":#.*\t")
         then
             -- Expand or collapse the object
@@ -459,17 +459,17 @@ function M.on_double_click()
             require("r.send").cmd("str(" .. key .. ")")
         end
     else
-        if curline:find("%(#.*\t") or curline:find(";#.*\t") then
+        if curline:find("F#.*\t") or curline:find("C#.*\t") then
             -- Function or special object; show documentation
             key = key:gsub("`", "")
             require("r.doc").ask_R_doc(key, M.get_pkg_name(), false)
         else
             if
                 string.find(key, ":%$")
-                or curline:find("%[#.*\t")
-                or curline:find("%$#.*\t")
-                or curline:find("<#.*\t")
-                or curline:find(">#.*\t")
+                or curline:find("l#.*\t")
+                or curline:find("d#.*\t")
+                or curline:find("4#.*\t")
+                or curline:find("7#.*\t")
                 or curline:find(":#.*\t")
             then
                 -- Expand or collapse the object in libraries view
@@ -493,7 +493,7 @@ function M.on_right_click()
     if line:find("^   ##") then return end
 
     local isfunction = false
-    if line:find("%(#") then isfunction = true end
+    if line:find("F#") then isfunction = true end
 
     if state.hasbrowsermenu then vim.fn.aunmenu("]RBrowser") end
 
