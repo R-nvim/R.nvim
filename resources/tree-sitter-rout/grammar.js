@@ -23,6 +23,7 @@ module.exports = grammar({
         routNormal: $ => token(/[^\s\d\-]\S*/),
 
         routNumber: $ => token(prec(3, seq(
+            optional(':'),
             /\d+/,
             optional(seq(
                 '.',
@@ -36,6 +37,7 @@ module.exports = grammar({
         ))),
 
         routNegNum: $ => token(prec(3, seq(
+            optional(':'),
             /-\d+/,
             optional(seq(
                 '.',
