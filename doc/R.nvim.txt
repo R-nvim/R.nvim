@@ -1475,7 +1475,7 @@ features in your R.nvim config. Below are the default values:
     completion = true, -- enable the completion provider
     hover = true,      -- enable the hover provider
     signature = true,  -- enable the signature help provider
-    doc_width = 58,
+    doc_width = 0,
     fun_data_1 = { "select", "rename", "mutate", "filter" },
     fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
     quarto_intel = nil,
@@ -1491,7 +1491,8 @@ Meaning of optons:
   - `signature`: Enable the signature help provider
 
   - `doc_width`: The expected maximum width of the floating documentation
-    window. Valid values are between `30` and `160`.
+    window. The default value will be between 30 and 80 columns, depending
+    on the screen width.
 
   - `fun_data_1`: List of functions that receive a `data.frame` as its first
     argument and for which the `data.frame`s columns names should be

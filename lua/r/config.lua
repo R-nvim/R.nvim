@@ -444,7 +444,7 @@ local config = {
         completion = true,
         hover = true,
         signature = true,
-        doc_width = 58,
+        doc_width = 0,
         fun_data_1 = { "select", "rename", "mutate", "filter" },
         fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
         quarto_intel = nil,
@@ -902,7 +902,14 @@ end
 local do_common_global = function()
     config.uname = uv.os_uname().sysname
     config.is_windows = config.uname:find("Windows", 1, true) ~= nil
-    vim.env.R_LS_DOC_WIDTH = tostring(config.r_ls.doc_width)
+    if config.r_ls.doc_width == 0 then
+        local dw = vim.o.columns / 2 - 4
+        if dw < 30 then dw = 30 end
+        if dw > 80 then dw = 80 end
+        vim.env.R_LS_DOC_WIDTH = tostring(dw)
+    else
+        vim.env.R_LS_DOC_WIDTH = tostring(config.r_ls.doc_width)
+    end
 
     -- Environment variable to nvimcom and rnvimserver
 
