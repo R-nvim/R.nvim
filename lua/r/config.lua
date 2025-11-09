@@ -988,7 +988,9 @@ end
 local global_setup = function()
     local gtime = uv.hrtime()
 
-    if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
+    if not vim.g.R_Nvim_status or vim.g.R_Nvim_status == 0 then
+        vim.g.R_Nvim_status = 1
+    end
 
     apply_user_opts()
 
