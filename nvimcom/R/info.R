@@ -110,7 +110,7 @@ get_summary <- function(obj, prnt) {
         out <- append(out, "- - - truncated - - -")
     }
     if (!is.null(out)) {
-        txt <- append(txt, c("* * *", "```rout"))
+        txt <- append(txt, c("", "---", "```rout"))
         txt <- append(txt, out)
         txt <- append(txt, "```")
     }

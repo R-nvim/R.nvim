@@ -106,7 +106,7 @@ char *format_usage(const char *fnm, const char *args, int md_block) {
     else
         strcpy(f, b);
     if (md_block)
-        strcpy(b, "\x14\x14* * *\x14\x14```r\x14");
+        strcpy(b, "\x14\x14---\x14\x14```r\x14");
     else
         *b = '\0';
     i = 0;
