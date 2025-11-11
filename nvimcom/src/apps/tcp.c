@@ -56,6 +56,8 @@ static void ParseMsg(char *b) {
 #endif
 
     if (*b == '+') {
+        char code;
+        char *id;
         b++;
         switch (*b) {
         case 'G':
@@ -77,29 +79,34 @@ static void ParseMsg(char *b) {
             complete(b);
             break;
         case 'R':
+        case 'H':
+        case 's':
+        case 'h':
+            code = *b;
             b++;
-            const char *rid = b;
+            id = b;
             b = strstr(b, "|");
             *b = '\0';
-            send_item_doc(rid, ++b);
+            if (code == 'R') {
+                send_item_doc(id, ++b);
+            } else if (code == 'H') {
+                send_hover_doc(id, ++b);
+            } else if (code == 's') {
+                sig_seek(id, ++b);
+            } else if (code == 'h') {
+                hov_seek(id, ++b);
+            }
             break;
         case 'S':
             b++;
-            const char *sid = b;
+            id = b;
             b = strstr(b, "|");
             *b = 0;
             b++;
             const char *wrd = b;
             b = strstr(b, "|");
             *b = 0;
-            glbnv_signature(sid, wrd, ++b);
-            break;
-        case 'H':
-            b++;
-            const char *hid = b;
-            b = strstr(b, "|");
-            *b = '\0';
-            send_hover_doc(hid, ++b);
+            glbnv_signature(id, wrd, ++b);
             break;
         case 'D': // set max_depth of lists in the completion data
             b++;

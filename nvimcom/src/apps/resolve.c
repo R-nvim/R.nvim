@@ -36,7 +36,7 @@ void send_item_doc(const char *req_id, const char *doc) {
 
     snprintf(res, len - 1, fmt, req_id, last_item.item, edoc);
 
-    send_ls_response(res);
+    send_ls_response(req_id, res);
 
     free(fdoc);
     free(edoc);
@@ -237,12 +237,15 @@ static void resolve(const char *rid, const char *wrd, const char *pkg) {
             p = str_cat(p, f[3]);
             p = str_cat(p, "::");
             p = str_cat(p, f[0]);
-            p = str_cat(p, "`\x14\x14**");
-            format(f[5], buffer, ' ', '\x14');
-            p = str_cat(p, buffer);
-            p = str_cat(p, "**\x14\x14");
-            format(f[6], buffer, ' ', '\x14');
-            p = str_cat(p, buffer);
+            p = str_cat(p, "`\x14");
+            if (f[5][0]) {
+                p = str_cat(p, "\x14**");
+                format(f[5], buffer, ' ', '\x14');
+                p = str_cat(p, buffer);
+                p = str_cat(p, "**\x14\x14");
+                format(f[6], buffer, ' ', '\x14');
+                p = str_cat(p, buffer);
+            }
             free(buffer);
             if (f[1][0] == 'F') {
                 char *b = format_usage(f[0], f[4], 1);
@@ -269,7 +272,7 @@ void handle_resolve(const char *req_id, char *params) {
         size_t len = sizeof(char) * (strlen(params) + 64);
         char *res = (char *)malloc(len);
         snprintf(res, len - 1, fmt, req_id, params);
-        send_ls_response(res);
+        send_ls_response(req_id, res);
         free(res);
         return;
     }
@@ -313,10 +316,11 @@ void handle_resolve(const char *req_id, char *params) {
             nvimcom_eval(buffer);
 
         } else if (*cls == 'F') {
-            char buffer[512];
-            sprintf(buffer, "nvimcom:::resolve_fun_args('%s', '%s')", req_id,
-                    lbl);
-            nvimcom_eval(buffer);
+            resolve(req_id, lbl, env);
+            // char buffer[512];
+            // sprintf(buffer, "nvimcom:::resolve_fun_args('%s', '%s')", req_id,
+            //         lbl);
+            // nvimcom_eval(buffer);
         } else {
             char buffer[512];
             sprintf(buffer, "nvimcom:::resolve_min_info('%s', %s, '%s')",

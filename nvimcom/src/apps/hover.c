@@ -13,7 +13,20 @@
 static char *hov_buf;
 static size_t hov_buf_sz = 4096;
 
-static int get_info(const char *s, char *p) {
+// FIXME: repeated in complete.c
+static int is_function(const char *obj) {
+    while (*obj)
+        obj++;
+    obj++;
+    if (*obj == 'F') {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+static int get_info(const char *s) {
+    Log("get_info: %s", s);
     int i;
     size_t nsz;
     const char *f[7];
@@ -30,6 +43,7 @@ static int get_info(const char *s, char *p) {
 
     // Avoid buffer overflow if the information is bigger than
     // cmp_buf.
+    char *p = hov_buf;
     nsz = strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 + (p - hov_buf);
     if (hov_buf_sz < nsz)
         p = grow_buffer(&hov_buf, &hov_buf_sz, nsz - hov_buf_sz + 32768);
@@ -73,7 +87,7 @@ static void send_result(const char *req_id, const char *doc) {
     char *res = (char *)malloc(len);
     snprintf(res, len - 1, fmt, req_id, edoc);
 
-    send_ls_response(res);
+    send_ls_response(req_id, res);
     free(fdoc);
     free(edoc);
     free(res);
@@ -83,47 +97,83 @@ void send_hover_doc(const char *hid, const char *hdoc) {
     send_result(hid, hdoc);
 }
 
+// Seek object in loaded libraries
+static void seek_in_libs(const char *id, const char *word) {
+    PkgData *pd = pkgList;
+    while (pd) {
+        if (pd->objls) {
+            const char *s = seek_word(pd->objls, word);
+            if (s) {
+                if (is_function(s)) {
+                    get_info(s);
+                    send_result(id, hov_buf);
+                    return;
+                }
+            }
+        }
+        pd = pd->next;
+    }
+    send_null(id);
+}
+
+void hov_seek(const char *id, const char *word) { seek_in_libs(id, word); }
+
 void hover(const char *params) {
     Log("hover: %s", params);
 
     char *id = strstr(params, "\"orig_id\":");
     char *word = strstr(params, "\"word\":\"");
-
-    // TODO: either use these two parameters or delete them
     char *fobj = strstr(params, "\"fobj\":\"");
-    char *fnm = strstr(params, "\"fnm\":\"");
 
     cut_json_int(&id, 10);
     cut_json_str(&word, 8);
     cut_json_str(&fobj, 8);
-    cut_json_str(&fnm, 7);
-
-    if (!word) {
-        send_null(id);
-        return;
-    }
 
     if (!hov_buf) {
         hov_buf = (char *)malloc(hov_buf_sz);
     }
     memset(hov_buf, 0, hov_buf_sz);
 
-    char *p;
-    p = hov_buf;
+    // First search the .GlobalEnv
+    if (glbnv_buffer) {
+        const char *s = seek_word(glbnv_buffer, word);
+        if (s) {
+            if (is_function(s)) {
+                get_info(s);
+                send_result(id, hov_buf);
+            } else {
+                char buffer[128];
+                snprintf(buffer, 127, "nvimcom:::hover_summary('%s', %s)", id,
+                         word);
+                nvimcom_eval(buffer);
+            }
+            return;
+        }
+    }
 
-    // The word is a function
     PkgData *pd = pkgList;
     while (pd) {
         if (pd->objls) {
             const char *s = seek_word(pd->objls, word);
             if (s) {
-                int is_function = get_info(s, p);
-                if (is_function) {
-                    send_result(id, hov_buf);
-                } else {
-                    char buffer[512];
-                    sprintf(buffer, "nvimcom:::hover_summary('%s', %s)", id,
-                            word);
+                if (is_function(s)) {
+                    if (glbnv_buffer && fobj) {
+                        // If the function display information on the relevant
+                        // method
+                        char cmd[128];
+                        snprintf(
+                            cmd, 127,
+                            "nvimcom:::sighover_method('%s', '%s', '%s', 'h')",
+                            id, word, fobj);
+                        nvimcom_eval(cmd);
+                    } else {
+                        get_info(s);
+                        send_result(id, hov_buf);
+                    }
+                } else if (glbnv_buffer) {
+                    char buffer[128];
+                    snprintf(buffer, 127, "nvimcom:::hover_summary('%s', %s)",
+                             id, word);
                     nvimcom_eval(buffer);
                 }
                 return;
@@ -132,16 +182,6 @@ void hover(const char *params) {
         pd = pd->next;
     }
 
-    // Anything else. Search the .GlobalEnv
-    if (glbnv_buffer) {
-        const char *s = seek_word(glbnv_buffer, word);
-        if (s) {
-            char buffer[512];
-            sprintf(buffer, "nvimcom:::hover_summary('%s', %s)", id, word);
-            nvimcom_eval(buffer);
-            return;
-        }
-    }
-
     send_null(id);
+    return;
 }

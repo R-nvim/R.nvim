@@ -13,7 +13,7 @@
 static char *sig_buf;
 static size_t sig_buf_sz = 1024;
 
-static int get_info(const char *s, char *p) {
+static int get_info(const char *s) {
     int i;
     size_t nsz;
     const char *f[7];
@@ -28,10 +28,13 @@ static int get_info(const char *s, char *p) {
     while (*s != '\n' && *s != 0)
         s++;
 
-    // Avoid buffer overflow if the information is bigger than sig_buf.
-    nsz = strlen(f[0]) + strlen(f[4]) + 512 + (p - sig_buf);
+    memset(sig_buf, 0, sig_buf_sz);
+    char *p = sig_buf;
+
+    // Avoid buffer overflow if the information is too lengthy.
+    nsz = strlen(f[0]) + strlen(f[4]) + 512;
     if (sig_buf_sz < nsz)
-        p = grow_buffer(&sig_buf, &sig_buf_sz, nsz - sig_buf_sz + 1024);
+        p = grow_buffer(&sig_buf, &sig_buf_sz, nsz - sig_buf_sz);
 
     if (f[1][0] == 'F') {
         char *b = format_usage(f[0], f[4], 0);
@@ -60,7 +63,7 @@ static void send_result(const char *req_id, const char *doc) {
     char *res = (char *)malloc(len);
     snprintf(res, len - 1, fmt, req_id, edoc);
 
-    send_ls_response(res);
+    send_ls_response(req_id, res);
     free(fdoc);
     free(edoc);
     free(res);
@@ -77,46 +80,14 @@ void glbnv_signature(const char *req_id, const char *word, const char *args) {
     free(b);
 }
 
-void signature(const char *params) {
-    Log("signature: %s", params);
-
-    char *id = strstr(params, "\"orig_id\":");
-    char *word = strstr(params, "\"word\":\"");
-
-    cut_json_int(&id, 10);
-    cut_json_str(&word, 8);
-
-    if (!word) {
-        send_null(id);
-        return;
-    }
-
-    if (!sig_buf) {
-        sig_buf = (char *)malloc(sig_buf_sz);
-    }
-    memset(sig_buf, 0, sig_buf_sz);
-    char *p = sig_buf;
-    const char *s = NULL;
-
-    // The word is a function
-    // Seek the function in .GlobalEnv
-    if (glbnv_buffer) {
-        s = seek_word(glbnv_buffer, word);
-        if (s) {
-            char cmd[128];
-            snprintf(cmd, 127, "nvimcom:::signature('%s', '%s')", id, word);
-            nvimcom_eval(cmd);
-            return;
-        }
-    }
-
-    // Seek the function in loaded libraries
+// Seek the function in loaded libraries
+static void seek_in_libs(const char *id, const char *word) {
     PkgData *pd = pkgList;
     while (pd) {
         if (pd->objls) {
-            s = seek_word(pd->objls, word);
+            const char *s = seek_word(pd->objls, word);
             if (s) {
-                int is_function = get_info(s, p);
+                int is_function = get_info(s);
                 if (is_function)
                     send_result(id, sig_buf);
                 return;
@@ -125,4 +96,44 @@ void signature(const char *params) {
         pd = pd->next;
     }
     send_null(id);
+}
+
+void sig_seek(const char *id, const char *word) { seek_in_libs(id, word); }
+
+void signature(const char *params) {
+    Log("signature: %s", params);
+
+    char *id = strstr(params, "\"orig_id\":");
+    char *word = strstr(params, "\"word\":\"");
+    char *fobj = strstr(params, "\"fobj\":\"");
+
+    cut_json_int(&id, 10);
+    cut_json_str(&word, 8);
+    cut_json_str(&fobj, 8);
+
+    if (!sig_buf) {
+        sig_buf = (char *)malloc(sig_buf_sz);
+    }
+
+    if (glbnv_buffer) {
+        const char *s = seek_word(glbnv_buffer, word);
+        if (s) {
+            int is_function = get_info(s);
+            if (is_function)
+                send_result(id, sig_buf);
+            return;
+        }
+        if (fobj) {
+            // If the function is a generic one, show the signature of the
+            // relevant method
+            char cmd[128];
+            snprintf(cmd, 127,
+                     "nvimcom:::sighover_method('%s', '%s', '%s', 's')", id,
+                     word, fobj);
+            nvimcom_eval(cmd);
+            return;
+        }
+    }
+
+    seek_in_libs(id, word);
 }

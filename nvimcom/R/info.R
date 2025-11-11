@@ -3,17 +3,18 @@ format_text <- function(txt) {
     txt
 }
 
-#' Return to rnvimserver the signature of a .GlobalEnv function
-signature <- function(req_id, funcname) {
-    args <- nvim.args(funcname)
-    if (args == "") {
-        .C(nvimcom_msg_to_nvim, paste0("+N", req_id))
-    } else {
-        .C(
-            nvimcom_msg_to_nvim,
-            paste0("+S", req_id, "|", funcname, "|", args)
-        )
+#' Return the method name of a S3 function
+sighover_method <- function(req_id, funcname, firstobj, sh) {
+    if (exists(funcname) && !is.null(fobj <- get0(firstobj, envir = .GlobalEnv))) {
+        sm <- gsub("*", "", as.character(methods(funcname)))
+        mthd <- paste0(funcname, ".", class(fobj))
+        if (sum(mthd %in% sm) > 0) {
+            mthd <- mthd[mthd %in% sm]
+            .C(nvimcom_msg_to_nvim, paste0("+", sh, req_id, "|", mthd[1]))
+            return(invisible(NULL))
+        }
     }
+    .C(nvimcom_msg_to_nvim, paste0("+", sh, req_id, "|", funcname))
 }
 
 
@@ -134,4 +135,24 @@ hover_summary <- function(req_id, obj) {
     txt <- get_summary(obj, ".GlobalEnv")
     .C(nvimcom_msg_to_nvim, paste0("+H", req_id, "|", txt))
     return(invisible(NULL))
+}
+
+# FIXME: lib not used
+get_method <- function(req_id, fnm, fstobj, wrd = NULL, lib = NULL, df = NULL) {
+    fname <- fnm
+    if (exists(fnm) && !is.null(fobj <- get0(fstobj, envir = .GlobalEnv))) {
+        sm <- gsub("*", "", as.character(methods(fnm)))
+        mthd <- paste0(fnm, ".", class(fobj))
+        if (sum(mthd %in% sm) > 0) {
+            fname <- mthd[mthd %in% sm]
+        }
+    }
+    msg <- sprintf('+C{"orig_id":%s,"fnm":"%s"', req_id, fname)
+    if (!is.null(wrd)) {
+        msg <- paste0(msg, ',"base":"', wrd, '"')
+    }
+    if (!is.null(df)) {
+        msg <- paste0(msg, ',"df":"', df, '"')
+    }
+    .C(nvimcom_msg_to_nvim, paste0(msg, "}"))
 }

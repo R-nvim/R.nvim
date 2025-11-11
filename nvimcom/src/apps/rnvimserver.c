@@ -29,6 +29,48 @@ char tmpdir[256];      // Temporary directory
 int auto_obbr;         // Auto object browser flag
 char localtmpdir[256]; // Local temporary directory
 
+typedef struct active_request_ {
+    char id[16];
+    struct active_request_ *next;
+} ActiveRequest;
+
+static ActiveRequest *actv_req;
+
+static void add_active_request(const char *id) {
+    ActiveRequest *ar = calloc(1, sizeof(ActiveRequest));
+    strncpy(ar->id, id, 15);
+    ar->next = actv_req;
+    actv_req = ar;
+}
+
+static void rm_active_request(const char *id) {
+    ActiveRequest *ar = actv_req;
+    if (strcmp(ar->id, id) == 0) {
+        actv_req = ar->next;
+        free(ar);
+        return;
+    }
+    ActiveRequest *prev;
+    while (ar && strcmp(ar->id, id) != 0) {
+        prev = ar;
+        ar = ar->next;
+    }
+    if (ar == NULL)
+        return;
+    prev->next = ar->next;
+    free(ar);
+}
+
+static int is_request_active(const char *id) {
+    ActiveRequest *ar = actv_req;
+    while (ar) {
+        if (strcmp(ar->id, id) == 0)
+            return 1;
+        ar = ar->next;
+    }
+    return 0;
+}
+
 void print_listTree(ListStatus *root, FILE *f) {
     if (root != NULL) {
         fprintf(f, "%d :: %s\n", root->status, root->key);
@@ -73,7 +115,7 @@ static void send_rns_info(void) {
  * * @param content_length The length of the JSON payload in bytes.
  * @param json_payload The JSON string to send.
  */
-void send_ls_response(const char *json_payload) {
+void send_ls_response(const char *req_id, const char *json_payload) {
 #ifdef Debug_NRS
     Log("\x1b[33mSEND_LS_RESPONSE\x1b[0m (%" PRI_SIZET " bytes):",
         strlen(json_payload));
@@ -87,6 +129,15 @@ void send_ls_response(const char *json_payload) {
         Log("%s\n", json_payload);
     }
 #endif
+    if (req_id) {
+        int is_active = is_request_active(req_id);
+        if (is_active) {
+            rm_active_request(req_id);
+        } else {
+            return;
+        }
+    }
+
     fprintf(stdout, "Content-Length: %" PRI_SIZET "\r\n\r\n",
             strlen(json_payload));
     fprintf(stdout, "%s", json_payload);
@@ -97,7 +148,7 @@ void send_null(const char *req_id) {
     char res[128];
     snprintf(res, 127, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":null}",
              req_id);
-    send_ls_response(res);
+    send_ls_response(req_id, res);
 }
 
 void send_cmd_to_nvim(const char *cmd) {
@@ -122,7 +173,7 @@ void send_cmd_to_nvim(const char *cmd) {
                 "{ \"jsonrpc\": \"2.0\", \"method\": \"client/exeRnvimCmd\", "
                 "\"params\": {\"command\": \"%s\"}}",
                 esccmd);
-        send_ls_response(exeCmd);
+        send_ls_response(NULL, exeCmd);
         free(exeCmd);
     }
     free(esccmd);
@@ -144,7 +195,7 @@ void send_menu_items(char *compl_items, const char *req_id) {
     }
     char *res = (char *)malloc(sizeof(char) * len + 128);
     sprintf(res, fmt, req_id, compl_items);
-    send_ls_response(res);
+    send_ls_response(req_id, res);
     free(res);
 }
 
@@ -209,7 +260,7 @@ static void handle_initialize(const char *request_id) {
 
     // "\"allCommitCharacters\":[\" \",\"\n\",\",\"]}}}}";
 
-    send_ls_response(res);
+    send_ls_response(request_id, res);
 }
 
 static void handle_exe_cmd(const char *params) {
@@ -223,10 +274,6 @@ static void handle_exe_cmd(const char *params) {
             complete_rhelp(params);
         } else if (*code == '@') {
             complete_fig_tbl(params);
-        } else if (*code == 'N') {
-            char *id = strstr(params, "\"orig_id\":");
-            cut_json_int(&id, 10);
-            send_null(id);
         } else {
             complete_chunk_opts(*code, params);
         }
@@ -236,6 +283,9 @@ static void handle_exe_cmd(const char *params) {
         break;
     case 'S':
         signature(params);
+        break;
+    case 'N':
+        send_null(++code);
         break;
     case '1': // Start TCP server and wait nvimcom connection
         start_server();
@@ -416,7 +466,11 @@ static void lsp_loop(void) {
             }
 
             cut_json_str(&method, 10);
-            cut_json_int(&id, 5);
+
+            if (id) {
+                cut_json_int(&id, 5);
+                add_active_request(id);
+            }
 
             // Route the request based on the method
             if (strcmp(method, "textDocument/completion") == 0) {
@@ -434,7 +488,8 @@ static void lsp_loop(void) {
             } else if (strcmp(method, "initialized") == 0) {
                 build_objls();
             } else if (strcmp(method, "$/cancelRequest") == 0) {
-                Log("method not implemented: $/cancelRequest");
+                Log("\x1b[31;1mCANCEL %s", id);
+                rm_active_request(id);
             } else if (strcmp(method, "exit") == 0 ||
                        strcmp(method, "shutdown") == 0) {
                 handle_exit(method);

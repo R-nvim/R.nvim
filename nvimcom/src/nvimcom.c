@@ -478,7 +478,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
     } else if (Rf_isFactor(*x)) {
         p = str_cat(p, "\006f\006");
     } else if (Rf_isValidString(*x)) {
-        p = str_cat(p, "\006T\006");
+        p = str_cat(p, "\006t\006");
     } else if (Rf_isFunction(*x)) {
         p = str_cat(p, "\006F\006");
         xgroup = 1;
@@ -512,13 +512,26 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
     p = str_cat(p, "\006.GlobalEnv\006");
 
     if (xgroup == 1) {
-        /* It would be necessary to port args2buff() from src/main/deparse.c to
-           here but it's too big. So, it's better to call nvimcom:::nvim.args()
-           during auto completion. FORMALS() may return an object that will
-           later crash R:
-           https://github.com/jalvesaq/Vim-R/issues/543#issuecomment-748981771
-         */
-        p = str_cat(p, ">not_checked<");
+        SEXP cmdSexp, cmdexpr, ans;
+        ParseStatus status;
+        int er = 0;
+        char b[64];
+        snprintf(b, 63, "nvimcom:::nvim.args('%s')", xname);
+        PROTECT(cmdSexp = allocVector(STRSXP, 1));
+        SET_STRING_ELT(cmdSexp, 0, mkChar(b));
+        PROTECT(cmdexpr = R_ParseVector(cmdSexp, -1, &status, R_NilValue));
+        if (status == PARSE_OK) {
+            PROTECT(ans = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
+            if (er) {
+                p = str_cat(p, ">ERROR<");
+            } else {
+                p = str_cat(p, CHAR(STRING_ELT(ans, 0)));
+            }
+            UNPROTECT(1);
+        } else {
+            p = str_cat(p, ">INVALID<");
+        }
+        UNPROTECT(2);
     }
 
     // Add label

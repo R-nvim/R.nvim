@@ -248,11 +248,11 @@ function M.complete(req_id, lnum, cnum)
                         return
                     end
                 end
-                M.send_msg({ code = "CN", orig_id = req_id })
+                M.send_msg({ code = "N" .. req_id })
                 return
             end
         elseif vim.bo.filetype == "rnoweb" and lang ~= "r" then
-            M.send_msg({ code = "CN", orig_id = req_id })
+            M.send_msg({ code = "N" .. req_id })
             return
         elseif vim.bo.filetype == "rhelp" then
             if lang ~= "r" then
@@ -264,7 +264,7 @@ function M.complete(req_id, lnum, cnum)
                         M.send_msg({ code = "CH", orig_id = req_id })
                     end
                 else
-                    M.send_msg({ code = "CN", orig_id = req_id })
+                    M.send_msg({ code = "N" .. req_id })
                 end
                 return
             end
@@ -297,7 +297,7 @@ function M.complete(req_id, lnum, cnum)
             if v.capture == "string" then
                 snm = "rString"
             elseif v.capture == "comment" then
-                M.send_msg({ code = "CN", orig_id = req_id })
+                M.send_msg({ code = "N" .. req_id })
                 return
             end
         end
@@ -305,7 +305,7 @@ function M.complete(req_id, lnum, cnum)
         -- We still need to call synIDattr because there is no treesitter parser for rhelp
         snm = vim.fn.synIDattr(vim.fn.synID(lnum, cnum - 1, 1), "name")
         if snm == "rComment" then
-            M.send_msg({ code = "CN", orig_id = req_id })
+            M.send_msg({ code = "N" .. req_id })
             return
         end
     end
@@ -327,11 +327,11 @@ function M.complete(req_id, lnum, cnum)
         end
 
         if snm == "rString" then
-            M.send_msg({ code = "CN", orig_id = req_id })
+            M.send_msg({ code = "N" .. req_id })
             return
         end
 
-        if vim.g.R_Nvim_status < 7 then
+        if vim.g.R_Nvim_status < 7 or nra.firstobj == nil then
             -- Get the arguments of the first function whose name matches nra.fnm
             if nra.lib then
                 M.send_msg({
@@ -345,20 +345,17 @@ function M.complete(req_id, lnum, cnum)
             end
             return
         else
-            -- Request arguments according to class of first object
+            -- Request method according to class of first object
             local msg
             msg = string.format(
-                "nvimcom:::nvim_complete_args('%s', '%s', '%s'",
+                "nvimcom:::get_method('%s', '%s', '%s'",
                 req_id,
                 nra.fnm,
-                wrd and wrd or ""
+                nra.firstobj
             )
-            if nra.firstobj then
-                msg = msg .. ", firstobj = '" .. nra.firstobj .. "'"
-            elseif nra.lib then
-                msg = msg .. ", lib = '" .. nra.lib .. "'"
-            end
-            if nra.firstobj and nra.listdf then msg = msg .. ", ldf = TRUE" end
+            if wrd then msg = msg .. ", '" .. wrd .. "'" end
+            if nra.lib then msg = msg .. ", lib = '" .. nra.lib .. "'" end
+            if nra.listdf then msg = msg .. ", df = TRUE" end
             msg = msg .. ")"
             send_to_nvimcom("E", msg)
             return
@@ -366,12 +363,12 @@ function M.complete(req_id, lnum, cnum)
     end
 
     if snm == "rString" then
-        M.send_msg({ code = "CN", orig_id = req_id })
+        M.send_msg({ code = "N" .. req_id })
         return
     end
 
     if not wrd then
-        M.send_msg({ code = "CN", orig_id = req_id })
+        M.send_msg({ code = "N" .. req_id })
         return
     end
 
@@ -385,10 +382,10 @@ local get_function_name = function()
     local lnum = cpos[1] - 1
     local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
     local nra = need_R_args(cline:sub(1, cnum), lnum)
-    return nra.fnm
+    return nra
 end
 
----Identify what object should its details displayed on hover
+---Identify what object should have its details displayed on hover
 ---@param req_id string
 M.hover = function(req_id)
     local word = require("r.cursor").get_keyword()
@@ -396,20 +393,18 @@ M.hover = function(req_id)
 
     if vim.tbl_contains(c, "function.call") then
         local first_obj = require("r.cursor").get_first_obj()
-        M.send_msg({ code = "H", orig_id = req_id, word = word, fobj = first_obj })
-    elseif vim.tbl_contains(c, "variable.parameter") then
-        local fnm = get_function_name()
-        if fnm then
-            M.send_msg({ code = "H", orig_id = req_id, word = word, fnm = fnm })
+        if first_obj ~= "" then
+            M.send_msg({ code = "H", orig_id = req_id, word = word, fobj = first_obj })
+        else
+            M.send_msg({ code = "H", orig_id = req_id, word = word })
         end
-    elseif vim.tbl_contains(c, "variable") then
+    elseif vim.tbl_contains(c, "variable") and vim.g.R_Nvim_status == 7 then
         M.send_msg({ code = "H", orig_id = req_id, word = word })
-    else
-        M.send_msg({ code = "H", orig_id = req_id })
     end
+    M.send_msg({ code = "N" .. req_id })
 end
 
----Identify what object should its details displayed on hover
+---Identify what function should have its signature displayed on a float window
 ---@param req_id string
 M.signature = function(req_id)
     if vim.bo.filetype ~= "r" then
@@ -420,17 +415,17 @@ M.signature = function(req_id)
         if lang ~= "r" then return end
     end
 
-    local fnm = get_function_name()
-    if fnm then
+    local nra = get_function_name()
+    if nra and nra.fnm then
         -- triggered by `(`
-        M.send_msg({ code = "S", orig_id = req_id, word = fnm })
+        M.send_msg({ code = "S", orig_id = req_id, word = nra.fnm, fobj = nra.firstobj })
     else
         -- triggered manually
         local word = require("r.cursor").get_keyword()
         if word and word ~= ")" then
             M.send_msg({ code = "S", orig_id = req_id, word = word })
         else
-            M.send_msg({ code = "S", orig_id = req_id })
+            M.send_msg({ code = "N" .. req_id })
         end
     end
 end

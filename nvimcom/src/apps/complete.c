@@ -65,6 +65,17 @@ static char *find_obj(char *objls, const char *dfbase) {
     return NULL;
 }
 
+static int is_function(const char *obj) {
+    while (*obj)
+        obj++;
+    obj++;
+    if (*obj == 'F') {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
     size_t skip = strlen(dtfrm) + 1; // The data.frame name + "$"
     char dfbase[64];
@@ -187,12 +198,57 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
     return p;
 }
 
-/*
- * @desc:
- * @param p:
- * @param funcnm:
- * */
-char *complete_args(char *p, char *funcnm) {
+static char *complete_args(char *p, const char *s, const char *funcnm,
+                           const char *libnm) {
+    char a[64];
+    char order[16];
+    while (*s)
+        s++;
+    s++;
+    if (*s == 'F') { // Check if it's a function
+        int i;
+        i = 3;
+        while (i) {
+            s++;
+            if (*s == 0)
+                i--;
+        }
+        s++;
+        int o = 0;
+        while (*s) {
+            i = 0;
+            p = str_cat(p, "{\"label\":\"");
+            while (*s != '\x05' && *s != '\x04' && i < 63) {
+                a[i] = *s;
+                i++;
+                s++;
+            }
+            a[i] = 0;
+            p = str_cat(p, a);
+            p = str_cat(p, " = \",\"sortText\":\"_");
+            o++;
+            snprintf(order, 15, "%02d", o);
+            p = str_cat(p, order);
+            p = str_cat(p, "\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
+            p = str_cat(p, libnm);
+            p = str_cat(p, ":");
+            p = str_cat(p, funcnm);
+            p = str_cat(p, "\"},");
+            if (*s == '\x04') {
+                // skip default value
+                s++;
+                while (*s != '\x05' && i < 63) {
+                    i++;
+                    s++;
+                }
+            }
+            s++;
+        }
+    }
+    return p;
+}
+
+static char *seek_fun_complete_args(char *p, char *funcnm) {
     // Check if function is "pkg::fun"
     char *pkg = NULL;
     if (strstr(funcnm, "::")) {
@@ -204,62 +260,13 @@ char *complete_args(char *p, char *funcnm) {
     }
 
     PkgData *pd = pkgList;
-    char a[64];
-    char order[16];
-    int i;
     while (pd) {
         if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0))) {
             const char *s = pd->objls;
             while (*s != 0) {
                 if (strcmp(s, funcnm) == 0) {
-                    while (*s)
-                        s++;
-                    s++;
-                    if (*s == 'F') { // Check if it's a function
-                        i = 3;
-                        while (i) {
-                            s++;
-                            if (*s == 0)
-                                i--;
-                        }
-                        s++;
-                        int o = 0;
-                        while (*s) {
-                            i = 0;
-                            p = str_cat(p, "{\"label\":\"");
-                            while (*s != '\x05' && *s != '\x04' && i < 63) {
-                                a[i] = *s;
-                                i++;
-                                s++;
-                            }
-                            a[i] = 0;
-                            p = str_cat(p, a);
-                            p = str_cat(p, " = \",\"sortText\":\"_");
-                            o++;
-                            snprintf(order, 15, "%02d", o);
-                            p = str_cat(p, order);
-                            p = str_cat(
-                                p, "\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
-                            p = str_cat(p, pd->name);
-                            p = str_cat(p, ":");
-                            p = str_cat(p, funcnm);
-                            p = str_cat(p, "\"},");
-                            if (*s == '\x04') {
-                                // skip default value
-                                s++;
-                                while (*s != '\x05' && i < 63) {
-                                    i++;
-                                    s++;
-                                }
-                            }
-                            s++;
-                        }
-                        break;
-                    } else {
-                        while (*s != '\n')
-                            s++;
-                        s++;
-                    }
+                    p = complete_args(p, s, funcnm, pd->name);
+                    return p;
                 } else {
                     while (*s != '\n')
                         s++;
@@ -332,7 +339,16 @@ void complete(const char *params) {
             p = str_cat(p, fargs);
         } else if (fnm) {
             // Completion of arguments of a library's function
-            p = complete_args(p, fnm);
+            const char *s = NULL;
+            if (glbnv_buffer) {
+                s = seek_word(glbnv_buffer, fnm);
+                if (s && is_function(s)) {
+                    p = complete_args(p, s, fnm, ".GlobalEnv");
+                }
+            }
+
+            if (!s)
+                p = seek_fun_complete_args(p, fnm);
 
             // Add columns of a data.frame
             if (df) {
