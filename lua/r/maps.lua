@@ -416,11 +416,7 @@ M.show_map_desc = function()
         end
         if hl == "Title" then -- on "Title" write to buffer
             vim.api.nvim_buf_set_lines(buf, row, row, false, { line })
-            if vim.fn.has("nvim-0.11") == 1 then
-                vim.hl.range(buf, ns, hl, { row, 0 }, { row, #line }, {})
-            else
-                vim.api.nvim_buf_add_highlight(buf, -1, hl, row, 0, #line)
-            end
+            vim.hl.range(buf, ns, hl, { row, 0 }, { row, #line }, {})
             line = ""
         elseif hl == "Identifier" then
             cs = { 0 }
@@ -432,15 +428,9 @@ M.show_map_desc = function()
             table.insert(hls, hl)
         else -- hl is nil so it is the description so it's eol so write to buffer with appropriate highlights
             vim.api.nvim_buf_set_lines(buf, row, row, false, { line })
-            if vim.fn.has("nvim-0.11") == 1 then
-                vim.hl.range(buf, ns, hls[1], { row, cs[1] }, { row, ce[1] }, {})
-                vim.hl.range(buf, ns, hls[2], { row, cs[2] }, { row, ce[2] }, {})
-                vim.hl.range(buf, ns, hls[3], { row, cs[3] }, { row, ce[3] }, {})
-            else
-                vim.api.nvim_buf_add_highlight(buf, -1, hls[1], row, cs[1], ce[1])
-                vim.api.nvim_buf_add_highlight(buf, -1, hls[2], row, cs[2], ce[2])
-                vim.api.nvim_buf_add_highlight(buf, -1, hls[3], row, cs[3], ce[3])
-            end
+            vim.hl.range(buf, ns, hls[1], { row, cs[1] }, { row, ce[1] }, {})
+            vim.hl.range(buf, ns, hls[2], { row, cs[2] }, { row, ce[2] }, {})
+            vim.hl.range(buf, ns, hls[3], { row, cs[3] }, { row, ce[3] }, {})
             hls = {}
             line = ""
         end

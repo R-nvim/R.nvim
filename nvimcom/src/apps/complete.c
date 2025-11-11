@@ -65,17 +65,6 @@ static char *find_obj(char *objls, const char *dfbase) {
     return NULL;
 }
 
-static int is_function(const char *obj) {
-    while (*obj)
-        obj++;
-    obj++;
-    if (*obj == 'F') {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
 static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
     size_t skip = strlen(dtfrm) + 1; // The data.frame name + "$"
     char dfbase[64];

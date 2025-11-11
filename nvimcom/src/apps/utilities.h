@@ -23,5 +23,6 @@ void cut_json_str(char **str, unsigned len);
 void cut_json_bkt(char **str, unsigned len);
 char *seek_word(char *objls, const char *wrd);
 int fuzzy_find(const char *a, const char *b);
+int is_function(const char *obj);
 
 #endif

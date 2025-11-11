@@ -142,6 +142,10 @@ local need_R_args = function(line, lnum)
     return resp
 end
 
+--- Get language at current cursor position in a Quarto document
+---@param lines string[]
+---@param lnum integer
+---@return string
 local get_quarto_lang = function(lines, lnum)
     if config.register_treesitter then
         return require("r.utils").get_lang()
@@ -157,6 +161,10 @@ local get_quarto_lang = function(lines, lnum)
     return "other"
 end
 
+--- Get language at current cursor position in an Rnoweb document
+---@param lines string[]
+---@param lnum integer
+---@return string
 local get_rnoweb_lang = function(lnum, lines)
     for i = lnum, 1, -1 do
         if string.find(lines[i], "^%s*<<.*>>=") then
@@ -168,6 +176,10 @@ local get_rnoweb_lang = function(lnum, lines)
     return "other"
 end
 
+--- Get language at current cursor position in an Rhelp document
+---@param lines string[]
+---@param lnum integer
+---@return string
 local get_rhelp_lang = function(lnum, lines)
     for i = lnum, 1, -1 do
         if string.find(lines[i], [[\%S+{]]) then
@@ -183,6 +195,9 @@ local get_rhelp_lang = function(lnum, lines)
     return "other"
 end
 
+--- Get language at current cursor position
+---@param lnum integer
+---@return string
 local get_lang = function(lnum)
     local lines = vim.api.nvim_buf_get_lines(0, 0, lnum, true)
     if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
@@ -375,6 +390,8 @@ function M.complete(req_id, lnum, cnum)
     M.send_msg({ code = "5", orig_id = req_id, base = wrd })
 end
 
+--- Get function name according to cursor position
+---@return table | nil
 local get_function_name = function()
     local cpos = vim.api.nvim_win_get_cursor(0)
     if not cpos then return nil end
@@ -484,6 +501,8 @@ local attach_to_all = function()
     end
 end
 
+--- Attach the language server to the specified buffer
+---@param bufnr integer
 M.attach_to_buffer = function(bufnr)
     attach_list[tostring(bufnr)] = { bufnr = bufnr, attach = true }
     if client_id then attach_to_all() end
@@ -493,11 +512,7 @@ end
 ---@param rns_path string Full rnvimserver path
 ---@param rns_env table Environment variables
 function M.start(rns_path, rns_env)
-    -- TODO: remove this when nvim 0.12 is released
-    if not vim.lsp.config then return end
-
     vim.lsp.config("r_ls", {})
-
     client_id = vim.lsp.start({
         name = "r_ls",
         cmd = { rns_path },

@@ -13,18 +13,6 @@
 static char *hov_buf;
 static size_t hov_buf_sz = 4096;
 
-// FIXME: repeated in complete.c
-static int is_function(const char *obj) {
-    while (*obj)
-        obj++;
-    obj++;
-    if (*obj == 'F') {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
 static int get_info(const char *s) {
     Log("get_info: %s", s);
     int i;

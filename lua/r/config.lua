@@ -499,7 +499,7 @@ local config = {
     quarto_render_args = "",
     quarto_chunk_hl = {
         highlight = true,
-        yaml_hl = vim.fn.has("nvim-0.11") == 1 and true or false,
+        yaml_hl = true,
         virtual_title = true,
         bg = "",
         events = "",
@@ -1134,7 +1134,7 @@ M.check_health = function()
         end)
     end
 
-    if vim.fn.has("nvim-0.10.4") ~= 1 then swarn("R.nvim requires Neovim >= 0.10.4") end
+    if vim.fn.has("nvim-0.11.4") ~= 1 then swarn("R.nvim requires Neovim >= 0.11.4") end
 
     -- Check if treesitter is available
     local function has_parser(parser_name, parsers)

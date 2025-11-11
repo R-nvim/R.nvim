@@ -225,3 +225,14 @@ int fuzzy_find(const char *a, const char *b) {
     else
         return 0;
 }
+
+int is_function(const char *obj) {
+    while (*obj)
+        obj++;
+    obj++;
+    if (*obj == 'F') {
+        return 1;
+    } else {
+        return 0;
+    }
+}
