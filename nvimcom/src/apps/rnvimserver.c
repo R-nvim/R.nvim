@@ -45,19 +45,19 @@ static void add_active_request(const char *id) {
 
 static void rm_active_request(const char *id) {
     ActiveRequest *ar = actv_req;
-    if (!ar)
+    if (ar == NULL)
         return;
     if (strcmp(ar->id, id) == 0) {
         actv_req = ar->next;
         free(ar);
         return;
     }
-    ActiveRequest *prev;
+    ActiveRequest *prev = NULL;
     while (ar && strcmp(ar->id, id) != 0) {
         prev = ar;
         ar = ar->next;
     }
-    if (ar == NULL)
+    if (ar == NULL || prev == NULL)
         return;
     prev->next = ar->next;
     free(ar);
