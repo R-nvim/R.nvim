@@ -45,6 +45,8 @@ static void add_active_request(const char *id) {
 
 static void rm_active_request(const char *id) {
     ActiveRequest *ar = actv_req;
+    if (!ar)
+        return;
     if (strcmp(ar->id, id) == 0) {
         actv_req = ar->next;
         free(ar);
