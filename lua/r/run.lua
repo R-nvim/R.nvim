@@ -334,7 +334,7 @@ M.clear_R_info = function()
     if config.external_term == "" then require("r.term.builtin").close_term() end
     if vim.g.R_Nvim_status > 3 then
         vim.g.R_Nvim_status = 3
-        require("r.lsp").send_msg({ code = "43" })
+        require("r.lsp").send_msg({ code = "9" })
     end
     send.set_send_cmd_fun()
     require("r.rmd").clean_params()

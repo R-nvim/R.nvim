@@ -28,6 +28,7 @@ char *glbnv_buffer;    // Global environment buffer
 char tmpdir[256];      // Temporary directory
 int auto_obbr;         // Auto object browser flag
 char localtmpdir[256]; // Local temporary directory
+int r_running;         // Indicates whether R is running
 
 typedef struct active_request_ {
     char id[16];
@@ -349,6 +350,12 @@ static void handle_exe_cmd(const char *params) {
         break;
     case '5':
         complete(params);
+        break;
+    case '9': // R no longer running
+        update_glblenv_buffer("");
+        if (auto_obbr)
+            compl2ob();
+        r_running = 0;
         break;
     default:
         fprintf(stderr, "Unknown command received: %s\n", code);

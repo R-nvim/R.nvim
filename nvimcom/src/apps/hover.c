@@ -145,7 +145,7 @@ void hover(const char *params) {
             const char *s = seek_word(pd->objls, word);
             if (s) {
                 if (is_function(s)) {
-                    if (glbnv_buffer && fobj) {
+                    if (r_running && fobj) {
                         // If the function display information on the relevant
                         // method
                         char cmd[128];
@@ -158,7 +158,7 @@ void hover(const char *params) {
                         get_info(s);
                         send_result(id, hov_buf);
                     }
-                } else if (glbnv_buffer) {
+                } else if (r_running) {
                     char buffer[128];
                     snprintf(buffer, 127, "nvimcom:::hover_summary('%s', %s)",
                              id, word);

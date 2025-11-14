@@ -10,5 +10,6 @@ extern char *glbnv_buffer;    // Global environment buffer
 extern char localtmpdir[256]; // Local temporary directory
 extern char tmpdir[256];      // Temporary directory
 extern int auto_obbr;         // Auto object browser flag
+extern int r_running;         // Indicates whether R is running
 
 #endif

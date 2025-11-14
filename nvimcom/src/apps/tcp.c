@@ -128,8 +128,8 @@ static void ParseMsg(char *b) {
     }
 }
 
-static void RegisterPort(int bindportn) // Function to register port number to R
-{
+// Function to register port number to R
+static void RegisterPort(int bindportn) {
     // Register the port:
     char pcmd[128];
     sprintf(pcmd, "require('r.run').set_rns_port('%d')", bindportn);
@@ -305,6 +305,7 @@ static void get_whole_msg(char *b) {
         fflush(stderr);
     }
 
+    r_running = 1;
     ParseMsg(finalbuffer);
 }
 

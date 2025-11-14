@@ -92,7 +92,7 @@ NvimcomEnv$tcb <- FALSE
 .onUnload <- function(libpath) {
     NvimcomEnv$tcb <- FALSE
     try(.C(nvimcom_Stop), silent = TRUE)
-    Sys.sleep(0.2)
+    Sys.sleep(0.01)
     try(library.dynam.unload("nvimcom", libpath), silent = TRUE)
 }
 
