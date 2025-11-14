@@ -68,7 +68,7 @@ static char *find_obj(char *objls, const char *dfbase) {
 static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
     size_t skip = strlen(dtfrm) + 1; // The data.frame name + "$"
     char dfbase[64];
-    snprintf(dfbase, 63, "%s$%s", dtfrm, base);
+    snprintf(dfbase, 63, "%s$%s", dtfrm, base ? base : "");
     const char *s = NULL;
 
     if (glbnv_buffer)

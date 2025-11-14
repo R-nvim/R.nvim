@@ -370,7 +370,13 @@ function M.complete(req_id, lnum, cnum)
             )
             if wrd then msg = msg .. ", '" .. wrd .. "'" end
             if nra.lib then msg = msg .. ", lib = '" .. nra.lib .. "'" end
-            if nra.listdf then msg = msg .. ", df = TRUE" end
+            if nra.listdf then
+                if nra.listdf == 1 then
+                    msg = msg .. ", df = '" .. nra.firstobj .. "'"
+                elseif nra.listdf == 2 then
+                    msg = msg .. ", df = '" .. nra.firstobj2 .. "'"
+                end
+            end
             msg = msg .. ")"
             send_to_nvimcom("E", msg)
             return
