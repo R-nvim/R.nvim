@@ -3,10 +3,19 @@ format_text <- function(txt) {
     txt
 }
 
+get_methods <- function(funcname) {
+    ow <- getOption("warn")
+    options(warn = -1)
+    tmp <- capture.output(methods(funcname))
+    options(warn = ow)
+    sm <- gsub("*", "", as.character(tmp))
+    sm
+}
+
 #' Return the method name of a S3 function
 sighover_method <- function(req_id, funcname, firstobj, sh) {
     if (exists(funcname) && !is.null(fobj <- get0(firstobj, envir = .GlobalEnv))) {
-        sm <- gsub("*", "", as.character(methods(funcname)))
+        sm <- get_methods(funcname)
         mthd <- paste0(funcname, ".", class(fobj))
         if (sum(mthd %in% sm) > 0) {
             mthd <- mthd[mthd %in% sm]
@@ -97,7 +106,7 @@ get_summary <- function(obj, prnt) {
         txt <- append(txt, c("", objlbl))
     }
 
-    sm <- gsub("*", "", as.character(methods(summary)))
+    sm <- get_methods(summary)
     has_summary <- sum(paste0("summary.", class(obj)) %in% sm) > 0
     out <- NULL
     if (is.numeric(obj) || is.logical(obj) || has_summary) {
@@ -141,7 +150,7 @@ hover_summary <- function(req_id, obj) {
 get_method <- function(req_id, fnm, fstobj, wrd = NULL, lib = NULL, df = NULL) {
     fname <- fnm
     if (exists(fnm) && !is.null(fobj <- get0(fstobj, envir = .GlobalEnv))) {
-        sm <- gsub("*", "", as.character(methods(fnm)))
+        sm <- get_methods(fnm)
         mthd <- paste0(fnm, ".", class(fobj))
         if (sum(mthd %in% sm) > 0) {
             fname <- mthd[mthd %in% sm]
