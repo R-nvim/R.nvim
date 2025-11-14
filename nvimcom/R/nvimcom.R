@@ -29,7 +29,6 @@ NvimcomEnv$tcb <- FALSE
         options(nvimcom.allnames = FALSE)
         options(nvimcom.texerrs = TRUE)
         options(nvimcom.setwidth = TRUE)
-        options(nvimcom.autoglbenv = 0)
         options(nvimcom.debug_r = TRUE)
         options(nvimcom.nvimpager = TRUE)
         options(nvimcom.max_depth = 12)
@@ -66,7 +65,6 @@ NvimcomEnv$tcb <- FALSE
             as.integer(getOption("nvimcom.verbose")),
             as.integer(getOption("nvimcom.allnames")),
             as.integer(getOption("nvimcom.setwidth")),
-            as.integer(getOption("nvimcom.autoglbenv")),
             as.integer(getOption("nvimcom.max_depth")),
             as.integer(getOption("nvimcom.max_size")),
             as.integer(getOption("nvimcom.max_time")),

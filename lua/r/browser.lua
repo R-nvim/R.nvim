@@ -311,7 +311,6 @@ function M.start(_)
 
     -- Request data from R to populate the Object Browser
     require("r.lsp").send_msg({ code = "31" })
-    send_to_nvimcom("A", "RObjBrowser")
 
     start_OB()
     state.is_running = false
@@ -544,7 +543,6 @@ end
 function M.on_BufUnload()
     state.buf = nil
     state.win = nil
-    send_to_nvimcom("N", "OnOBBufUnload")
 end
 
 --- Return Object Browser buffer number

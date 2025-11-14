@@ -98,10 +98,6 @@ static int maxdepth = 12; // How many levels to parse in lists and S4 objects
 // the listing is too slow.
 static int curdepth = 0; // Current level of the list or S4 object being parsed
                          // for auto-completion.
-static int autoglbenv = 0; // Should the list of objects in .GlobalEnv be
-// automatically updated after each top level command is executed? It will
-// always be 2 if cmp-r is installed; otherwise, it will be 1 if the Object
-// Browser is open.
 
 static char tmpdir[512]; // The environment variable RNVIM_TMPDIR.
 static int setwidth = 0; // Set the option width after each command is executed
@@ -944,8 +940,7 @@ void nvimcom_task(void) {
 #endif
     if (rns_port[0] != 0) {
         nvimcom_checklibs();
-        if (autoglbenv)
-            nvimcom_globalenv_list();
+        nvimcom_globalenv_list();
     }
     if (setwidth && getenv("COLUMNS")) {
         int columns = atoi(getenv("COLUMNS"));
@@ -1130,21 +1125,6 @@ static void nvimcom_parse_received_msg(char *buf) {
         r_is_busy = 1;
         break;
 #endif
-    case 'A': // Object Browser started
-        if (autoglbenv == 0)
-            autoglbenv = 1;
-#ifdef WIN32
-        if (!r_is_busy)
-            nvimcom_globalenv_list();
-#else
-        flag_glbenv = 1;
-        nvimcom_fire();
-#endif
-        break;
-    case 'N': // Object Browser closed
-        if (autoglbenv == 1)
-            autoglbenv = 0;
-        break;
     case 'G':
 #ifdef WIN32
         if (!r_is_busy)
@@ -1290,12 +1270,11 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
  *
  * @param rinfo Information on R to be passed to nvim.
  */
-SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
-                   SEXP tml, SEXP dbg, SEXP nvv, SEXP rinfo) {
+SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP szl, SEXP tml,
+                   SEXP dbg, SEXP nvv, SEXP rinfo) {
     verbose = *INTEGER(vrb);
     allnames = *INTEGER(anm);
     setwidth = *INTEGER(swd);
-    autoglbenv = *INTEGER(age);
     maxdepth = *INTEGER(imd);
     sizelimit = *INTEGER(szl);
     timelimit = (double)*INTEGER(tml);

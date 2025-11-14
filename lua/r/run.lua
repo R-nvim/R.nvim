@@ -86,9 +86,6 @@ start_R2 = function()
         table.insert(start_options, "options(nvimcom.texerrs = FALSE)")
     end
 
-    -- Required by our language server (r_ls)
-    table.insert(start_options, "options(nvimcom.autoglbenv = 2)")
-
     if config.setwidth == 2 then
         table.insert(start_options, "options(nvimcom.setwidth = TRUE)")
     else

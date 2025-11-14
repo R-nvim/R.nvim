@@ -41,7 +41,8 @@ Git pull requests are welcome.
       - Send commands with the object under cursor as argument: help, args,
         plot, print, str, summary, example, names.
       - Send to R the Sweave, knit and LaTeX commands.
-  * Auto completion (with `cmp-r`):
+  * Built-in language server with hover, signature and completion
+    capabilities. The completion works for:
       - R objects (.GlobalEnv and loaded packages).
       - function arguments.
       - knitr chunk options.
@@ -93,9 +94,6 @@ Main dependencies:
       You have to enable highlighting by tree-sitter and install parsers for
       `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`, `latex`, and `csv`.
 
-   cmp-r (for auto-completion):
-      https://github.com/R-nvim/cmp-r
-
    R >= 4.0.0:
       http://www.r-project.org/
 
@@ -123,6 +121,10 @@ Main dependencies:
       - `quarto`: to generate final documents from Quarto.
       - `rmarkdown`: to generate final documents from Rmd.
       - `styler`: to format R code.
+
+   The command line application `tree-sitter`, required to compile the
+   tree-sitter parser for "rout" file type which will properly highlight R
+   output shown in the hover and resolve windows from the language server.
 
 Additional dependencies for editing Rnoweb documents:
 
@@ -460,10 +462,7 @@ In any case, the PDF viewer must be started by the R.nvim plugin. See
 
 
 ------------------------------------------------------------------------------
-4.3. Auto-completion
-
-If `cmp-r` (a source for `nvim-cmp`) is installed, Neovim can
-automatically complete the names of R objects as you type them.
+4.3. Language server's completion
 
 R.nvim does not complete the names of all functions of all installed packages
 (see |start_libs|); only of loaded libraries.
@@ -572,11 +571,10 @@ background):
 <
 Notes:
 
-  - If either the Object Browser is open or cmp-r is installed, the
-    list of .GlobalEnv objects will be automatically updated by R after each
-    successful command evaluation. This may slowdown R if its workspace has
-    too many objects, data.frames with too many columns or lists with too many
-    elements.
+  - The list of .GlobalEnv objects will be automatically updated by R after
+    each successful command evaluation. This may slowdown R if its workspace
+    has too many objects, data.frames with too many columns or lists with too
+    many elements.
 
   - Names of objects are stupidly truncated if they occupy more than 62 bytes.
     This means that Unicode sequences might be split and become invalid.
@@ -721,10 +719,11 @@ on your system.
 5.3. Object Browser and auto-completion limitations
 
 New lines in list names and column names in data frames and matrices are
-replaced with blank spaces in the data used by `cmp-r` and the Object Browser.
+replaced with blank spaces in the data used by the language server which
+affects completion and the Object Browser.
 
 Objects from environments accessed with the `browser()` function are not
-listed in the Object Browser or during auto-completion with `cmp-r`.
+listed in the Object Browser or during completion.
 
 
 ------------------------------------------------------------------------------
@@ -1508,7 +1507,7 @@ Meaning of optons:
 
   - `quarto_intel`: Path to `yaml-intelligence-resources.json` which is part
     of `quarto` application and has all necessary information for completion
-    of valid YAML options in an Quarto document. Default: `nil` (`cmp-r` will
+    of valid YAML options in an Quarto document. Default: `nil` (R.nvim will
     try to find the file).
 
 The list of objects for auto completion is built dynamically as the libraries
