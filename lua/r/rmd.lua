@@ -258,10 +258,26 @@ local setup_yaml_hl = function()
     )
 end
 
+--- Install the "rout" parser, required to properly highlight R output in
+--- hover and resolve windows from the language server
+local check_rout_parser = function()
+    local libext = config.is_windows and "dll" or "so"
+    local rout_to = config.rnvim_home .. "/parser/rout." .. libext
+    if vim.uv.fs_access(rout_to, "r") then return end
+
+    vim.uv.chdir(config.rnvim_home .. "/resources/tree-sitter-rout")
+    vim.system({ "tree-sitter", "generate", "grammar.js" })
+    vim.system({ "make" })
+    local rout_from = "libtree-sitter-rout." .. libext
+    if vim.uv.fs_access(rout_from, "r") then vim.uv.fs_copyfile(rout_from, rout_to) end
+end
+
 --- Setup function for initializing module functionality.
 -- This includes setting up buffer-specific key mappings, variables, and scheduling additional setup tasks.
 M.setup = function()
     local rmdtime = uv.hrtime() -- Track setup time
+
+    check_rout_parser()
 
     -- Key bindings
     require("r.maps").create(vim.o.filetype)
@@ -273,6 +289,7 @@ M.setup = function()
     -- Record setup time for debugging
     rmdtime = (uv.hrtime() - rmdtime) / 1000000000
     require("r.edit").add_to_debug_info("rmd setup", rmdtime, "Time")
+
     vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
 
     if config.quarto_chunk_hl.highlight == nil then

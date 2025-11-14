@@ -1,5 +1,5 @@
 if
-    vim.fn.exists("g:R_filetypes") == 1
+    vim.g.R_filetypes
     and type(vim.g.R_filetypes) == "table"
     and vim.tbl_contains(vim.g.R_filetypes, "markdown")
 then

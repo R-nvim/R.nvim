@@ -138,6 +138,12 @@ M.check = function()
         vim.health.error("C compiler (`gcc` or `clang`) not found.")
     end
 
+    if vim.fn.executable("tree-sitter") == 1 then
+        vim.health.ok("Tree-sitter command line application (`tree-sitter`) found.")
+    else
+        vim.health.ok("Tree-sitter command line application (`tree-sitter`) not found.")
+    end
+
     if vim.fn.exists("*RWarningMsg") ~= 0 then
         vim.health.error("Please, uninstall Vim-R before using R.nvim.")
     elseif vim.fn.exists("*WaitVimComStart") ~= 0 then
