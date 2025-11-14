@@ -258,17 +258,29 @@ local setup_yaml_hl = function()
     )
 end
 
+local mtime = function(fname)
+    local fd = vim.uv.fs_open(fname, "r", tonumber("644", 8))
+    local mt
+    if fd then
+        mt = vim.uv.fs_fstat(fd).mtime.sec
+        vim.uv.fs_close(fd)
+    end
+    return mt
+end
+
 --- Install the "rout" parser, required to properly highlight R output in
 --- hover and resolve windows from the language server
 local check_rout_parser = function()
     local libext = config.is_windows and "dll" or "so"
     local rout_to = config.rnvim_home .. "/parser/rout." .. libext
-    if vim.uv.fs_access(rout_to, "r") then return end
+    local mt1 = mtime(config.rnvim_home .. "/resources/tree-sitter-rout/grammar.js")
+    local mt2 = mtime(rout_to)
+    if mt1 and mt2 and mt2 > mt1 then return end
 
+    local rout_from = "libtree-sitter-rout." .. libext
     vim.uv.chdir(config.rnvim_home .. "/resources/tree-sitter-rout")
     vim.system({ "tree-sitter", "generate", "grammar.js" })
     vim.system({ "make" })
-    local rout_from = "libtree-sitter-rout." .. libext
     if vim.uv.fs_access(rout_from, "r") then vim.uv.fs_copyfile(rout_from, rout_to) end
 end
 
