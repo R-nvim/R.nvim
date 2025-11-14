@@ -465,8 +465,9 @@ end
 
 --- Execute lua command sent by rnvimserver
 local function exe_cmd(_, result, _)
+    local res = result.command
     vim.schedule(function()
-        local f = loadstring(result.command)
+        local f = loadstring(res)
         if f then f() end
     end)
 end

@@ -276,6 +276,7 @@ local check_rout_parser = function()
     local mt1 = mtime(config.rnvim_home .. "/resources/tree-sitter-rout/grammar.js")
     local mt2 = mtime(rout_to)
     if mt1 and mt2 and mt2 > mt1 then return end
+    if vim.fn.executable("tree-sitter") == 0 then return end
 
     local rout_from = "libtree-sitter-rout." .. libext
     vim.uv.chdir(config.rnvim_home .. "/resources/tree-sitter-rout")
