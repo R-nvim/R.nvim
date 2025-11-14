@@ -11,19 +11,24 @@ module.exports = grammar({
         source_file: $ => repeat(
             choice(
                 $.routNormal,
-                // $.routConst,
                 $.routNumber,
                 $.routNegNum,
+                $.routPunct,
+                $.routWPunct,
+                $.routNotNum,
                 $.routTrue,
                 $.routFalse,
-                $.routInf
+                $.routInf,
             )
         ),
 
-        routNormal: $ => token(/[^\s\d\-]\S*/),
+        routNormal: $ => token(prec(1, /\S+[^:$%#]/)),
 
-        routNumber: $ => token(prec(3, seq(
-            optional(':'),
+        routPunct: $ => token(prec(7, /[:\$%#]/)),
+        routWPunct: $ => token(prec(7, /\w+[\.,!?=:\$%#]/)),
+        routNotNum: $ => token(prec(9, /\d+[a-zA-Z]\w*/)),
+
+        routNumber: $ => token(prec(8, seq(
             /\d+/,
             optional(seq(
                 '.',
@@ -36,8 +41,7 @@ module.exports = grammar({
             ))
         ))),
 
-        routNegNum: $ => token(prec(3, seq(
-            optional(':'),
+        routNegNum: $ => token(prec(8, seq(
             /-\d+/,
             optional(seq(
                 '.',
@@ -59,9 +63,10 @@ module.exports = grammar({
         // nan_const: $ => prec(5, token("NaN")),
         // na_const: $ => prec(5, token("NA")),
 
-        routTrue: $ => prec(5, token("TRUE")),
-        routFalse: $ => prec(6, token("FALSE")),
-        routInf: $ => token(prec(6, seq(optional('-'), 'Inf')))
+
+        routTrue: $ => token(prec(9, "TRUE")),
+        routFalse: $ => token(prec(9, "FALSE")),
+        routInf: $ => token(prec(9, seq(optional('-'), 'Inf')))
 
     }
 });
