@@ -308,7 +308,8 @@ void complete(const char *params) {
     if (base && *base == ' ')
         base = NULL;
 
-    Log("complete(%s, %s, %s, %s, %s)", id, base, fnm, df, fargs);
+    Log("complete(id=%s, base=%s, fnm=%s, df=%s, fargs=%s)", id, base, fnm, df,
+        fargs);
 
     char *p;
     memset(cmp_buf, 0, cmp_buf_sz);
@@ -326,7 +327,7 @@ void complete(const char *params) {
             replace_char(fargs, '\x13', '"');
             // Insert arguments of .GlobalEnv function
             p = str_cat(p, fargs);
-        } else if (fnm) {
+        } else {
             // Completion of arguments of a library's function
             const char *s = NULL;
             if (glbnv_buffer) {

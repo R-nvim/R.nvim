@@ -346,7 +346,7 @@ function M.complete(req_id, lnum, cnum)
             return
         end
 
-        if vim.g.R_Nvim_status < 7 or nra.firstobj == nil then
+        if nra.firstobj == nil then
             -- Get the arguments of the first function whose name matches nra.fnm
             if nra.lib then
                 M.send_msg({
@@ -360,25 +360,35 @@ function M.complete(req_id, lnum, cnum)
             end
             return
         else
-            -- Request method according to class of first object
-            local msg
-            msg = string.format(
-                "nvimcom:::get_method('%s', '%s', '%s'",
-                req_id,
-                nra.fnm,
-                nra.firstobj
-            )
-            if wrd then msg = msg .. ", '" .. wrd .. "'" end
-            if nra.lib then msg = msg .. ", lib = '" .. nra.lib .. "'" end
-            if nra.listdf then
-                if nra.listdf == 1 then
-                    msg = msg .. ", df = '" .. nra.firstobj .. "'"
-                elseif nra.listdf == 2 then
-                    msg = msg .. ", df = '" .. nra.firstobj2 .. "'"
+            if vim.g.R_Nvim_status == 7 then
+                -- Request method according to class of first object
+                local msg
+                msg = string.format(
+                    "nvimcom:::get_method('%s', '%s', '%s'",
+                    req_id,
+                    nra.fnm,
+                    nra.firstobj
+                )
+                if wrd then msg = msg .. ", '" .. wrd .. "'" end
+                if nra.lib then msg = msg .. ", lib = '" .. nra.lib .. "'" end
+                if nra.listdf then
+                    if nra.listdf == 1 then
+                        msg = msg .. ", df = '" .. nra.firstobj .. "'"
+                    elseif nra.listdf == 2 then
+                        msg = msg .. ", df = '" .. nra.firstobj2 .. "'"
+                    end
                 end
+                msg = msg .. ")"
+                send_to_nvimcom("E", msg)
+            elseif nra.listdf then
+                M.send_msg({
+                    code = "5",
+                    orig_id = req_id,
+                    base = wrd,
+                    fnm = nra.fnm,
+                    df = nra.listdf == 1 and nra.firstobj or nra.firstobj2,
+                })
             end
-            msg = msg .. ")"
-            send_to_nvimcom("E", msg)
             return
         end
     end

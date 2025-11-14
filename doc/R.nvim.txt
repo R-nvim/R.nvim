@@ -1519,7 +1519,7 @@ names completed. However, you can set the value of `start_libs` if you want
 that objects of specific packages are available for auto completion even if R
 is not running yet. Below is the default value of `start_libs`:
 >lua
-   start_libs = "base,stats,graphics,grDevices,utils,methods"
+   start_libs = "base,stats,graphics,grDevices,utils,datasets,methods"
 <
 ------------------------------------------------------------------------------
 6.11. Rout highlighting                                         *Rout_options*
