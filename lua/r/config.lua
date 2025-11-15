@@ -1005,23 +1005,25 @@ end
 --- Install the "rout" parser, required to properly highlight R output in
 --- hover and resolve windows from the language server
 local check_rout_parser = function()
-    local libext = config.is_windows and "dll" or "so"
-    local rout_to = config.rnvim_home .. "/parser/rout." .. libext
+    local routp = config.rnvim_home .. "/parser/rout.so"
     local mt1 = mtime(config.rnvim_home .. "/resources/tree-sitter-rout/grammar.js")
-    local mt2 = mtime(rout_to)
+    local mt2 = mtime(routp)
     if mt1 and mt2 and mt2 > mt1 then return end
     if vim.fn.executable("tree-sitter") == 0 then return end
 
     vim.uv.fs_mkdir(config.rnvim_home .. "/parser", tonumber("755", 8))
     local cwdir = vim.uv.cwd()
     vim.uv.chdir(config.rnvim_home .. "/resources/tree-sitter-rout")
-    local obj = vim.system({ "tree-sitter", "generate" }, { text = true }):wait(3000)
+    -- from nvim-treesitter
+    local obj = vim.system(
+        { "tree-sitter", "generate", "--abi", tostring(vim.treesitter.language_version) },
+        { env = { TREE_SITTER_JS_RUNTIME = "native" } }
+    ):wait(3000)
     if obj.code ~= 0 then
         swarn("Error generating tree-sitter parser for `rout`: " .. obj.stderr)
         return
     end
-    obj = vim.system({ "tree-sitter", "build", "--output", rout_to }, { text = true })
-        :wait(3000)
+    obj = vim.system({ "tree-sitter", "build", "-o", routp }, { text = true }):wait(3000)
     if obj.code ~= 0 then
         swarn("Error building tree-sitter parser for `rout`: " .. obj.stderr)
         return
