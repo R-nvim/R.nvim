@@ -52,6 +52,7 @@ local get_first_obj = function(line, lnum)
     local cp
     cp = string.byte(")")
     local idx
+    local ncol1 = 0
     repeat
         idx = #line
         while idx > 0 do
@@ -77,7 +78,8 @@ local get_first_obj = function(line, lnum)
         lnum = lnum - 1
         if lnum == 0 then break end
         line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
-    until line:find("^%S")
+        if line:find("^%S") then ncol1 = ncol1 + 1 end
+    until ncol1 == 2
     return pkg, funname, firstobj, line, lnum, idx
 end
 
