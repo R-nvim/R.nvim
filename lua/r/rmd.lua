@@ -279,10 +279,12 @@ local check_rout_parser = function()
     if vim.fn.executable("tree-sitter") == 0 then return end
 
     local rout_from = "libtree-sitter-rout." .. libext
+    local cwdir = vim.uv.cwd()
     vim.uv.chdir(config.rnvim_home .. "/resources/tree-sitter-rout")
     vim.system({ "tree-sitter", "generate", "grammar.js" })
     vim.system({ "make" })
     if vim.uv.fs_access(rout_from, "r") then vim.uv.fs_copyfile(rout_from, rout_to) end
+    if cwdir then vim.uv.chdir(cwdir) end
 end
 
 --- Setup function for initializing module functionality.
