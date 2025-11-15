@@ -115,10 +115,8 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass = NULL) {
         } else if (type == "NULL") {
             res <- append(res, paste0(field, "\x04NULL\x05"))
         } else if (type == "language") {
-            res <- append(
-                res,
-                paste0(field, "\x04", fix_string(deparse(frm[[field]])), "\x05")
-            )
+            txt <- gsub("  *", " ", paste0(deparse(frm[[field]]), collapse = ""))
+            res <- append(res, paste0(field, "\x04", fix_string(txt), "\x05"))
         } else if (type == "list") {
             res <- append(res, paste0(field, "\x04list()\x05"))
         } else {

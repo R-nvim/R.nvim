@@ -189,7 +189,7 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
 
 static char *complete_args(char *p, const char *s, const char *funcnm,
                            const char *libnm) {
-    char a[64];
+    const char *a;
     char order[16];
     while (*s)
         s++;
@@ -205,15 +205,19 @@ static char *complete_args(char *p, const char *s, const char *funcnm,
         s++;
         int o = 0;
         while (*s) {
-            i = 0;
             p = str_cat(p, "{\"label\":\"");
-            while (*s != '\x05' && *s != '\x04' && i < 63) {
-                a[i] = *s;
+            a = s;
+            while (*a != '\x05' && *a != '\x04')
+                a++;
+            char *b = calloc(a - s + 2, sizeof(char));
+            i = 0;
+            while (*s != '\x05' && *s != '\x04') {
+                b[i] = *s;
                 i++;
                 s++;
             }
-            a[i] = 0;
-            p = str_cat(p, a);
+            p = str_cat(p, b);
+            free(b);
             p = str_cat(p, " = \",\"sortText\":\"_");
             o++;
             snprintf(order, 15, "%02d", o);
@@ -226,7 +230,7 @@ static char *complete_args(char *p, const char *s, const char *funcnm,
             if (*s == '\x04') {
                 // skip default value
                 s++;
-                while (*s != '\x05' && i < 63) {
+                while (*s != '\x05') {
                     i++;
                     s++;
                 }
