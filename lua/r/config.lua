@@ -1013,19 +1013,25 @@ local check_rout_parser = function()
     if vim.fn.executable("tree-sitter") == 0 then return end
 
     vim.uv.fs_mkdir(config.rnvim_home .. "/parser", tonumber("755", 8))
-    local rout_from = "libtree-sitter-rout." .. libext
     local cwdir = vim.uv.cwd()
     vim.uv.chdir(config.rnvim_home .. "/resources/tree-sitter-rout")
-    vim.system({ "tree-sitter", "generate", "grammar.js" })
-    vim.system({ "make" })
-    if vim.uv.fs_access(rout_from, "r") then vim.uv.fs_copyfile(rout_from, rout_to) end
+    local obj = vim.system({ "tree-sitter", "generate" }, { text = true }):wait(3000)
+    if obj.code ~= 0 then
+        swarn("Error generating tree-sitter parser for `rout`: " .. obj.stderr)
+        return
+    end
+    obj = vim.system({ "tree-sitter", "build", "--output", rout_to }, { text = true })
+        :wait(3000)
+    if obj.code ~= 0 then
+        swarn("Error generating tree-sitter parser for `rout`: " .. obj.stderr)
+        return
+    end
     if cwdir then vim.uv.chdir(cwdir) end
 end
 
 local global_setup = function()
     local gtime = uv.hrtime()
 
-    check_rout_parser()
     if not vim.g.R_Nvim_status or vim.g.R_Nvim_status == 0 then
         vim.g.R_Nvim_status = 1
     end
@@ -1072,6 +1078,7 @@ local global_setup = function()
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
 
+    check_rout_parser()
     local set_hl = vim.api.nvim_set_hl
     if config.Rout_follow_colorscheme then
         set_hl(0, "@rout_normal", { link = "Normal" })
