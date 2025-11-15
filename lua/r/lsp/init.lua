@@ -534,13 +534,13 @@ function M.start(rns_path, rns_env)
     vim.lsp.config("r_ls", {})
     client_id = vim.lsp.start({
         name = "r_ls",
-        -- cmd = { rns_path },
-        cmd = {
-            "valgrind",
-            "--leak-check=full",
-            "--log-file=/tmp/rnvimserver_valgrind_log",
-            rns_path,
-        },
+        cmd = { rns_path },
+        -- cmd = {
+        --     "valgrind",
+        --     "--leak-check=full",
+        --     "--log-file=/tmp/rnvimserver_valgrind_log",
+        --     rns_path,
+        -- },
         cmd_env = rns_env,
         on_init = lsp_debug and on_init or nil,
         on_attach = lsp_debug and on_attach or nil,
