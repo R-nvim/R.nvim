@@ -1023,7 +1023,7 @@ local check_rout_parser = function()
     obj = vim.system({ "tree-sitter", "build", "--output", rout_to }, { text = true })
         :wait(3000)
     if obj.code ~= 0 then
-        swarn("Error generating tree-sitter parser for `rout`: " .. obj.stderr)
+        swarn("Error building tree-sitter parser for `rout`: " .. obj.stderr)
         return
     end
     if cwdir then vim.uv.chdir(cwdir) end
