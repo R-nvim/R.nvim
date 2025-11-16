@@ -1015,10 +1015,7 @@ local check_rout_parser = function()
     local cwdir = vim.uv.cwd()
     vim.uv.chdir(config.rnvim_home .. "/resources/tree-sitter-rout")
     -- from nvim-treesitter
-    local obj = vim.system(
-        { "tree-sitter", "generate", "--abi", tostring(vim.treesitter.language_version) },
-        { text = true }
-    ):wait(3000)
+    local obj = vim.system({ "tree-sitter", "generate" }, { text = true }):wait(3000)
     if obj.code ~= 0 then
         swarn("Error generating tree-sitter parser for `rout`: " .. obj.stderr)
         return
