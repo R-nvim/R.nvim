@@ -1017,7 +1017,7 @@ local check_rout_parser = function()
     -- from nvim-treesitter
     local obj = vim.system(
         { "tree-sitter", "generate", "--abi", tostring(vim.treesitter.language_version) },
-        { env = { TREE_SITTER_JS_RUNTIME = "native" } }
+        { text = true }
     ):wait(3000)
     if obj.code ~= 0 then
         swarn("Error generating tree-sitter parser for `rout`: " .. obj.stderr)
