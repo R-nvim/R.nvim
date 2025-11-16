@@ -1,6 +1,7 @@
 #ifndef GLOBAL_VARS_H
 #define GLOBAL_VARS_H
 
+#include <inttypes.h> // %z in printf for strlen()
 #include <stddef.h>
 #include "data_structures.h"
 

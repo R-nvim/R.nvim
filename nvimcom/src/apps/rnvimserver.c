@@ -18,8 +18,10 @@
 #include "chunk.h"
 #include "../common.h"
 
-#ifdef _WIN32
-_setmode(_fileno(stdout), _O_BINARY);
+#ifdef WIN32
+// Include for _setmode and _O_BINARY
+#include <fcntl.h>
+#include <io.h>
 #endif
 
 /*
@@ -124,8 +126,7 @@ static void send_rns_info(void) {
  */
 void send_ls_response(const char *req_id, const char *json_payload) {
 #ifdef Debug_NRS
-    Log("\x1b[33mSEND_LS_RESPONSE\x1b[0m (%" PRI_SIZET " bytes):",
-        strlen(json_payload));
+    Log("\x1b[33mSEND_LS_RESPONSE\x1b[0m (%zu bytes):", strlen(json_payload));
     if (strlen(json_payload) > 380) {
         char begin[360] = {0};
         char end[16] = {0};
@@ -427,8 +428,7 @@ static void lsp_loop(void) {
         if (fgets(header, 127, stdin) == NULL)
             break;
 
-        if (sscanf(header, "Content-Length: %" PRI_SIZET, &content_length) !=
-            1) {
+        if (sscanf(header, "Content-Length: %zu", &content_length) != 1) {
             // Error handling for missing/malformed header.
             // For a simple server, we might just continue or break.
             fprintf(stderr, "Malformed header: %s", header);
@@ -457,8 +457,7 @@ static void lsp_loop(void) {
             size_t bytes_read = fread(content, 1, content_length, stdin);
             content[bytes_read] = '\0';
             if (bytes_read != content_length) {
-                fprintf(stderr,
-                        "wrong content length: %" PRI_SIZET " x %" PRI_SIZET,
+                fprintf(stderr, "wrong content length: %zu x %zu",
                         content_length, bytes_read);
                 fflush(stderr);
             }
@@ -514,6 +513,9 @@ static void lsp_loop(void) {
 }
 
 int main(int argc, char **argv) {
+#ifdef _WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
     lsp_loop();
     return 0;
 }

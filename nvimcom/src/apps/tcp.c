@@ -48,11 +48,10 @@ static char *finalbuffer;     // Final buffer for message processing
 // Parse the message from R
 static void ParseMsg(char *b) {
 #ifdef Debug_NRS
-    Log("\x1b[32mTCP in\x1b[0m:");
     if (strlen(b) > 2000)
-        Log("  strlen = %" PRI_SIZET "", strlen(b));
+        Log("\x1b[32mTCP_in\x1b[0m, strlen = %zu", strlen(b));
     else
-        Log("%s", b);
+        Log("\x1b[32mTCP in\x1b[0m: %s", b);
 #endif
 
     if (*b == '+') {
@@ -299,9 +298,8 @@ static void get_whole_msg(char *b) {
 
     // FIXME: Delete this check when the code proved to be reliable
     if (strlen(finalbuffer) != msg_size) {
-        fprintf(stderr,
-                "Divergent TCP message size: %" PRI_SIZET " x %" PRI_SIZET "\n",
-                strlen(p), msg_size);
+        fprintf(stderr, "Divergent TCP message size: %zu x %zu\n", strlen(p),
+                msg_size);
         fflush(stderr);
     }
 
@@ -338,10 +336,8 @@ static void *receive_msg(void *v)
             sockfd = -1;
             if (rlen != -1 && rlen != 0) {
                 fprintf(stderr, "TCP socket -1: restarting...\n");
-                fprintf(stderr,
-                        "Wrong TCP data length: %" PRI_SIZET " x %" PRI_SIZET
-                        "\n",
-                        blen, rlen);
+                fprintf(stderr, "Wrong TCP data length: %zu x %zu\n", blen,
+                        rlen);
                 fflush(stderr);
             }
             break;
