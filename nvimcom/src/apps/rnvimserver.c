@@ -18,6 +18,10 @@
 #include "chunk.h"
 #include "../common.h"
 
+#ifdef _WIN32
+_setmode(_fileno(stdout), _O_BINARY);
+#endif
+
 /*
  * Global variables (declared in global_vars.h)
  */
@@ -141,8 +145,7 @@ void send_ls_response(const char *req_id, const char *json_payload) {
         }
     }
 
-    fprintf(stdout, "Content-Length: %" PRI_SIZET "\r\n\r\n",
-            strlen(json_payload));
+    fprintf(stdout, "Content-Length: %zu\r\n\r\n", strlen(json_payload));
     fprintf(stdout, "%s", json_payload);
     fflush(stdout);
 }
