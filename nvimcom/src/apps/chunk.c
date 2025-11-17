@@ -19,7 +19,9 @@ static ChunkItem *croot;
 static char *cbuffer;
 
 static void get_chunk_items(const char *fname, ChunkItem **root) {
-    char *b1 = read_file(fname, 0);
+    char *b1 = read_file(fname, 1);
+    if (!b1)
+        return;
     char *p = b1;
     while (*p) {
         if (*p == '\n')
