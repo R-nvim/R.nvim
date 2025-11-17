@@ -287,7 +287,6 @@ void handle_resolve(const char *req_id, char *params) {
     char *env = strstr(params, "\"env\":\"");
     char *lbl = strstr(params, "\"label\":\"");
 
-    // FIXME: bug if there is '}' in any of the params elements
     cut_json_bkt(&item, 9);
     if (last_item.item)
         free(last_item.item);

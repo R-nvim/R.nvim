@@ -146,7 +146,6 @@ hover_summary <- function(req_id, obj) {
     return(invisible(NULL))
 }
 
-# FIXME: lib not used
 get_method <- function(req_id, fnm, fstobj, wrd = NULL, lib = NULL, df = NULL) {
     fname <- fnm
     if (exists(fnm) && !is.null(fobj <- get0(fstobj, envir = .GlobalEnv))) {

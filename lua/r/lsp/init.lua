@@ -574,19 +574,4 @@ function M.send_msg(params)
     end
 end
 
--- TODO: check if need_R_args is working well in all cases
--- This is a temporary function and should be deleted when need_R_args is well
--- tested (before merging the "lsp" branch). To run this function, put at the
--- end of your init.lua:
--- vim.keymap.set("n", "<F5>", '<Cmd>lua require("r.lsp").call_nra()<CR>')
-M.call_nra = function()
-    local cpos = vim.api.nvim_win_get_cursor(0)
-    if not cpos then return end
-    local cnum = cpos[2]
-    local lnum = cpos[1] - 1
-    local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
-    local nra = need_R_args(cline:sub(1, cnum), lnum)
-    vim.notify("NRA: " .. vim.inspect(nra))
-end
-
 return M
