@@ -488,7 +488,7 @@ end
 ---@param bnr integer
 local function on_attach(client, bnr)
     local msg = string.format("LSP_on_attach (%d, %d)", client.id, bnr)
-    vim.notify(msg)
+    vim.schedule(function() vim.notify(msg) end)
 end
 
 --- Callback invoked after LSP "initialize"
@@ -496,7 +496,7 @@ end
 ---@param _ lsp.InitializeResult
 local function on_init(client, _)
     local msg = string.format("r_ls init (%d)", client.id)
-    vim.notify(msg)
+    vim.schedule(function() vim.notify(msg) end)
 end
 
 --- Callback invoked on client exit.
@@ -507,7 +507,7 @@ local function on_exit(code, signal, client)
     vim.g.R_Nvim_status = 1
     if code == 0 then return end
     local msg = string.format("r_ls exit (%d, %d, %d)", code, signal, client)
-    vim.notify(msg)
+    vim.schedule(function() vim.notify(msg) end)
 end
 
 --- Callback invoked when the client operation prints to stderr
@@ -515,7 +515,7 @@ end
 --- @param err string Error message
 local function on_error(code, err)
     local msg = string.format("r_ls error (%d):\n%s", code, err)
-    vim.notify(msg)
+    vim.schedule(function() vim.notify(msg) end)
 end
 
 local attach_to_all = function()
