@@ -85,15 +85,20 @@ void complete_chunk_opts(char t, const char *params) {
                      getenv("RNVIM_HOME"));
             get_chunk_items(fname, &croot);
         }
-        fill_compl_buffer(base, croot);
+        if (croot)
+            fill_compl_buffer(base, croot);
     } else {
         if (!broot) {
             snprintf(fname, 127, "%s/quarto_block_items",
                      getenv("RNVIM_COMPLDIR"));
             get_chunk_items(fname, &broot);
         }
-        fill_compl_buffer(base, broot);
+        if (broot)
+            fill_compl_buffer(base, broot);
     }
 
-    send_menu_items(cbuffer, id);
+    if (cbuffer)
+        send_menu_items(cbuffer, id);
+    else
+        send_empty(id);
 }
