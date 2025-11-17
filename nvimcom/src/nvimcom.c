@@ -11,6 +11,9 @@
 #include <stddef.h>
 #ifdef WIN32
 #define bzero(b, len) (memset((b), '\0', (len)), (void)0)
+// Include for _setmode and _O_BINARY
+#include <fcntl.h>
+#include <io.h>
 #endif
 
 #include <ctype.h>
@@ -1266,6 +1269,12 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP szl, SEXP tml,
     sizelimit = *INTEGER(szl);
     timelimit = (double)*INTEGER(tml);
     debug_r = *INTEGER(dbg);
+
+#ifdef WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+    _setmode(_fileno(stderr), _O_BINARY);
+    _setmode(_fileno(stdin), _O_BINARY);
+#endif
 
     if (getenv("RNVIM_TMPDIR")) {
         strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 500);
