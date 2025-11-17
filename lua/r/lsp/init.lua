@@ -4,8 +4,6 @@ local warn = require("r.log").warn
 local client_id
 
 local qcell_opts = false
-local compl_region = true
-local lsp_debug = false
 
 local config = require("r.config").get_config()
 local options = config.r_ls or {}
@@ -236,10 +234,6 @@ end
 ---@param lnum integer
 ---@param cnum integer
 function M.complete(req_id, lnum, cnum)
-    if not compl_region then
-        M.send_msg({ code = "E" .. req_id })
-        return
-    end
     local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
 
     local wrd = get_word(cline, cnum)
@@ -483,22 +477,6 @@ local function exe_cmd(_, result, _)
     end)
 end
 
---- Callback invoked when client attaches to a buffer.
----@param client vim.lsp.Client
----@param bnr integer
-local function on_attach(client, bnr)
-    local msg = string.format("LSP_on_attach (%d, %d)", client.id, bnr)
-    vim.schedule(function() vim.notify(msg) end)
-end
-
---- Callback invoked after LSP "initialize"
----@param client vim.lsp.Client
----@param _ lsp.InitializeResult
-local function on_init(client, _)
-    local msg = string.format("r_ls init (%d)", client.id)
-    vim.schedule(function() vim.notify(msg) end)
-end
-
 --- Callback invoked on client exit.
 ---@param code integer Exit code of the process
 ---@param signal integer Number describing the signal used to terminate (if any)
@@ -551,11 +529,8 @@ function M.start(rns_path, rns_env)
         --     rns_path,
         -- },
         cmd_env = rns_env,
-        on_init = lsp_debug and on_init or nil,
-        on_attach = lsp_debug and on_attach or nil,
         on_exit = on_exit,
         on_error = on_error,
-        trace = lsp_debug and "verbose" or nil,
         handlers = {
             ["client/exeRnvimCmd"] = exe_cmd,
         },
@@ -569,9 +544,7 @@ function M.send_msg(params)
     local buf = require("r.edit").get_rscript_buf()
     -- lua_ls will warn that "exeRnvimCmd" is not a valid method
     local res = vim.lsp.buf_notify(buf, "exeRnvimCmd", params)
-    if lsp_debug and not res then
-        warn("Failed to send message to r_ls: " .. vim.inspect(params))
-    end
+    if not res then warn("Failed to send message to r_ls: " .. vim.inspect(params)) end
 end
 
 return M

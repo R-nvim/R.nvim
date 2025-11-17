@@ -1,12 +1,17 @@
+#include <stdarg.h> // For va_list
+                    //
+#ifdef Debug_NRS
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h> // For va_list
 #include <string.h>
 #include <time.h>
+#endif
 
 #include "logging.h"
 
+#ifdef Debug_NRS
 static char *fnm;
+#endif
 
 /**
  * @brief Logs a formatted message to a specified log file.
