@@ -236,7 +236,10 @@ end
 ---@param lnum integer
 ---@param cnum integer
 function M.complete(req_id, lnum, cnum)
-    if not compl_region then return end
+    if not compl_region then
+        M.send_msg({ code = "E" .. req_id })
+        return
+    end
     local cline = vim.api.nvim_buf_get_lines(0, lnum, lnum + 1, true)[1]
 
     local wrd = get_word(cline, cnum)
@@ -290,7 +293,10 @@ function M.complete(req_id, lnum, cnum)
 
     -- Is the current cursor position within the YAML header of an R or Python block of code?
     if (lang == "r" or lang == "python") and cline:find("^#| ") then
-        if cline:find("^#| .*:") and not cline:find("^#| .*: !expr ") then return nil end
+        if cline:find("^#| .*:") and not cline:find("^#| .*: !expr ") then
+            M.send_msg({ code = "E" .. req_id })
+            return
+        end
         if not cline:find("^#| .*: !expr ") then
             if not qcell_opts then
                 qcell_opts = require("r.lsp.quarto").get_cell_opts(options.quarto_intel)
@@ -304,7 +310,10 @@ function M.complete(req_id, lnum, cnum)
         end
     end
 
-    if lang ~= "r" then return end
+    if lang ~= "r" then
+        M.send_msg({ code = "E" .. req_id })
+        return
+    end
 
     -- check if the cursor is within comment or string
     local snm = ""
