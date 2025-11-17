@@ -447,6 +447,13 @@ GetFunDescription <- function(pkg) {
     if (!file.exists(paste0(pth, pkg, ".rdx"))) {
         return(NULL)
     }
+
+    # Example of how to call fetchRdDB for a single function:
+    # pkg <- "utils"
+    # pth <- paste0("/path/to/installed/library/", pkg, "/help/", pkg)
+    # fnm <- "RweaveLatex"
+    # tools:::fetchRdDB(pth, fnm)
+
     pkgRdDB <- tools:::fetchRdDB(paste0(pth, pkg))
     NvimcomEnv$pkgRdDB[[pkg]] <- pkgRdDB
 
