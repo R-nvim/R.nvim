@@ -711,7 +711,6 @@ local set_directories = function()
     local rndir = debug.getinfo(1, "S").source
     rndir = rndir:match("^@(.*)/lua/r/.*")
     config.rnvim_home = rndir
-    vim.env.RNVIM_HOME = rndir
 
     -- config.uservimfiles must be a writable directory. It will be config.rnvim_home
     -- unless it's not writable. Then it wil be ~/.vim or ~/vimfiles.
@@ -757,6 +756,7 @@ local set_directories = function()
         config.rnvim_home = utils.normalize_windows_path(config.rnvim_home)
         config.uservimfiles = utils.normalize_windows_path(config.uservimfiles)
     end
+    vim.env.RNVIM_HOME = rndir
 
     if config.compldir ~= "" then
         config.compldir = vim.fn.expand(config.compldir)
