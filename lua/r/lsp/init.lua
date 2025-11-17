@@ -265,11 +265,11 @@ function M.complete(req_id, lnum, cnum)
                         return
                     end
                 end
-                M.send_msg({ code = "N" .. req_id })
+                M.send_msg({ code = "E" .. req_id })
                 return
             end
         elseif vim.bo.filetype == "rnoweb" and lang ~= "r" then
-            M.send_msg({ code = "N" .. req_id })
+            M.send_msg({ code = "E" .. req_id })
             return
         elseif vim.bo.filetype == "rhelp" then
             if lang ~= "r" then
@@ -281,7 +281,7 @@ function M.complete(req_id, lnum, cnum)
                         M.send_msg({ code = "CH", orig_id = req_id })
                     end
                 else
-                    M.send_msg({ code = "N" .. req_id })
+                    M.send_msg({ code = "E" .. req_id })
                 end
                 return
             end
@@ -314,7 +314,7 @@ function M.complete(req_id, lnum, cnum)
             if v.capture == "string" then
                 snm = "rString"
             elseif v.capture == "comment" then
-                M.send_msg({ code = "N" .. req_id })
+                M.send_msg({ code = "E" .. req_id })
                 return
             end
         end
@@ -322,7 +322,7 @@ function M.complete(req_id, lnum, cnum)
         -- We still need to call synIDattr because there is no treesitter parser for rhelp
         snm = vim.fn.synIDattr(vim.fn.synID(lnum, cnum - 1, 1), "name")
         if snm == "rComment" then
-            M.send_msg({ code = "N" .. req_id })
+            M.send_msg({ code = "E" .. req_id })
             return
         end
     end
@@ -344,7 +344,7 @@ function M.complete(req_id, lnum, cnum)
         end
 
         if snm == "rString" then
-            M.send_msg({ code = "N" .. req_id })
+            M.send_msg({ code = "E" .. req_id })
             return
         end
 
@@ -396,12 +396,12 @@ function M.complete(req_id, lnum, cnum)
     end
 
     if snm == "rString" then
-        M.send_msg({ code = "N" .. req_id })
+        M.send_msg({ code = "E" .. req_id })
         return
     end
 
     if not wrd then
-        M.send_msg({ code = "N" .. req_id })
+        M.send_msg({ code = "E" .. req_id })
         return
     end
 

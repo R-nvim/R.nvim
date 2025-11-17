@@ -158,6 +158,15 @@ void send_null(const char *req_id) {
     send_ls_response(req_id, res);
 }
 
+void send_empty(const char *req_id) {
+    char res[128];
+    snprintf(res, 127,
+             "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
+             "{\"isIncomplete\":false,\"items\":[]}}",
+             req_id);
+    send_ls_response(req_id, res);
+}
+
 void send_cmd_to_nvim(const char *cmd) {
     size_t len = strlen(cmd);
     char *esccmd = (char *)malloc(sizeof(char) * len * 2 + 1);
@@ -188,7 +197,7 @@ void send_cmd_to_nvim(const char *cmd) {
 
 void send_menu_items(char *compl_items, const char *req_id) {
     if (strlen(compl_items) == 0) {
-        send_null(req_id);
+        send_empty(req_id);
         return;
     }
     const char *fmt = "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{"
@@ -260,7 +269,7 @@ static void handle_initialize(const char *request_id) {
             p = str_cat(p, ",");
         p = str_cat(p, "\"completionProvider\":{\"resolveProvider\":true,"
                        "\"triggerCharacters\":[\".\",\" "
-                       "\",\":\",\"(\",\"@\",\"$\",\"\\\\\"]}");
+                       "\",\":\",\"(\",\"$\",\"\\\\\"]}");
     }
 
     str_cat(p, "}}}");
@@ -291,8 +300,13 @@ static void handle_exe_cmd(const char *params) {
     case 'S':
         signature(params);
         break;
+    case 'E':
+        cut_json_str(&code, 1);
+        send_empty(code);
+        break;
     case 'N':
-        send_null(++code);
+        cut_json_str(&code, 1);
+        send_null(code);
         break;
     case '1': // Start TCP server and wait nvimcom connection
         start_server();
