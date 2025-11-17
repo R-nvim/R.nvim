@@ -2,8 +2,8 @@
 
 Authors: R.nvim team (see: https://github.com/R-nvim)
 
-Version: 0.99.1
-For Neovim >= 0.10.4
+Version: 0.99.2
+For Neovim >= 0.11.4
 
  1. Overview                                    |R.nvim-overview|
  2. Main features                               |R.nvim-features|
@@ -41,7 +41,8 @@ Git pull requests are welcome.
       - Send commands with the object under cursor as argument: help, args,
         plot, print, str, summary, example, names.
       - Send to R the Sweave, knit and LaTeX commands.
-  * Auto completion (with `cmp-r`):
+  * Built-in language server with hover, signature and completion
+    capabilities. The completion works for:
       - R objects (.GlobalEnv and loaded packages).
       - function arguments.
       - knitr chunk options.
@@ -84,7 +85,7 @@ Before installing the plugin, you should install its dependencies:
 
 Main dependencies:
 
-   Neovim >= 0.10.4:
+   Neovim >= 0.11.4:
       https://github.com/neovim/neovim/releases
       See also: https://github.com/neovim/neovim/wiki/Installing-Neovim
 
@@ -92,9 +93,6 @@ Main dependencies:
       https://github.com/nvim-treesitter/nvim-treesitter
       You have to enable highlighting by tree-sitter and install parsers for
       `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`, `latex`, and `csv`.
-
-   cmp-r (for auto-completion):
-      https://github.com/R-nvim/cmp-r
 
    R >= 4.0.0:
       http://www.r-project.org/
@@ -123,6 +121,10 @@ Main dependencies:
       - `quarto`: to generate final documents from Quarto.
       - `rmarkdown`: to generate final documents from Rmd.
       - `styler`: to format R code.
+
+   The command line application `tree-sitter`, required to compile the
+   tree-sitter parser for "rout" file type which will properly highlight R
+   output shown in the hover and resolve windows from the language server.
 
 Additional dependencies for editing Rnoweb documents:
 
@@ -460,10 +462,7 @@ In any case, the PDF viewer must be started by the R.nvim plugin. See
 
 
 ------------------------------------------------------------------------------
-4.3. Auto-completion
-
-If `cmp-r` (a source for `nvim-cmp`) is installed, Neovim can
-automatically complete the names of R objects as you type them.
+4.3. Language server's completion
 
 R.nvim does not complete the names of all functions of all installed packages
 (see |start_libs|); only of loaded libraries.
@@ -572,11 +571,10 @@ background):
 <
 Notes:
 
-  - If either the Object Browser is open or cmp-r is installed, the
-    list of .GlobalEnv objects will be automatically updated by R after each
-    successful command evaluation. This may slowdown R if its workspace has
-    too many objects, data.frames with too many columns or lists with too many
-    elements.
+  - The list of .GlobalEnv objects will be automatically updated by R after
+    each successful command evaluation. This may slowdown R if its workspace
+    has too many objects, data.frames with too many columns or lists with too
+    many elements.
 
   - Names of objects are stupidly truncated if they occupy more than 62 bytes.
     This means that Unicode sequences might be split and become invalid.
@@ -599,40 +597,7 @@ definitions.
 
 
 ------------------------------------------------------------------------------
-4.6. Syntax highlight of .Rout files
-
-You can set both foreground and background colors of R output in your
-`init.lua`. The example below is for an interface of Neovim with
-'termguicolors' (see |true-color|):
->lua
-   if vim.o.termguicolors then
-     vim.g.rout_color_input    = "guifg=#9e9e9e"
-     vim.g.rout_color_normal   = "guifg=#ff5f00"
-     vim.g.rout_color_number   = "guifg=#ffaf00"
-     vim.g.rout_color_integer  = "guifg=#feaf00"
-     vim.g.rout_color_float    = "guifg=#fdaf00"
-     vim.g.rout_color_complex  = "guifg=#fcaf00"
-     vim.g.rout_color_negnum   = "guifg=#d7afff"
-     vim.g.rout_color_negfloat = "guifg=#d6afff"
-     vim.g.rout_color_date     = "guifg=#00d7af"
-     vim.g.rout_color_true     = "guifg=#5dd685"
-     vim.g.rout_color_false    = "guifg=#ff5d5e"
-     vim.g.rout_color_inf      = "guifg=#10aed7"
-     vim.g.rout_color_constant = "guifg=#5fafcf"
-     vim.g.rout_color_string   = "guifg=#5fd7af"
-     vim.g.rout_color_error    = "guifg=#ffffff guibg=#c40000"
-     vim.g.rout_color_warn     = "guifg=#d00000"
-     vim.g.rout_color_index    = "guifg=#d0d080"
-   end
-<
-If you prefer that R output is highlighted using your current `colorscheme`,
-put in your `init.lua`:
->lua
-   vim.g.rout_follow_colorscheme = true
-<
-
-------------------------------------------------------------------------------
-4.7. Debugging R functions (Unix only)                     *debug-R-functions*
+4.6. Debugging R functions (Unix only)                     *debug-R-functions*
 
 `R.nvim` has limited debugging facilities available on Unix systems (not
 available on Windows). To debug a function with R.nvim you have to do the
@@ -709,7 +674,7 @@ defined by your colorscheme.
 
 
 ------------------------------------------------------------------------------
-4.8 roxygen2 support                                         *R.nvim-roxygen2*
+4.7 roxygen2 support                                         *R.nvim-roxygen2*
 
 R.nvim supports the insertion of roxygen2 skeletons in R scripts. To insert a
 new roxygen2 block, you can use the `:ROxygenize` command while the cursor is
@@ -754,10 +719,11 @@ on your system.
 5.3. Object Browser and auto-completion limitations
 
 New lines in list names and column names in data frames and matrices are
-replaced with blank spaces in the data used by `cmp-r` and the Object Browser.
+replaced with blank spaces in the data used by the language server which
+affects completion and the Object Browser.
 
 Objects from environments accessed with the `browser()` function are not
-listed in the Object Browser or during auto-completion with `cmp-r`.
+listed in the Object Browser or during completion.
 
 
 ------------------------------------------------------------------------------
@@ -910,8 +876,8 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |R_path|              Directory where R is
 |R_app|, |R_cmd|        Names of R applications
 |R_args|              Arguments to pass to R
-|start_libs|          Objects for auto completion
-|Rout_more_colors|    More syntax highlighting in R output
+|R-language-server|   Options R.nvim's built-in language server
+|Rout_options|        More syntax highlighting in R output
 |routnotab|           Show output of R CMD BATCH in new window
 |config_tmux|         Don't use a specially built Tmux config file
 |rconsole_height|     Number of lines of R Console
@@ -1482,28 +1448,67 @@ The default value for |R_args| is an empty Lua table:
 <
 
 ------------------------------------------------------------------------------
-6.10. Auto-completion                                             *start_libs*
+6.10. Language server                                      *R-language-server*
 
 There are two ways of getting automatic completion of R objects names while
-you type: using R.nvim's built-in completion system (as a source for
-`nvim-cmp`) and using a language server. See:
-
-   https://github.com/jalvesaq/cmp-r
-   https://github.com/REditorSupport/languageserver
+you type, signature help and hover support: using R.nvim's built-in language
+server or using the R package `languageserver`. See:
+https://github.com/REditorSupport/languageserver
 
 The advantage of R.nvim's built-in system is the ability to complete objects
 of the R's workspace (`.GlobalEnv`), including column names of data.frames.
 
-Note: If you are using the `languageserver` package, you should disable its
-auto completion feature in your `~/.Rprofile` to get completions from
-`cmp-r`:
+Note: If you are using the `languageserver` package, you should disable in
+your `~/.Rprofile` the features that overlap with R.nvim's ones:
 >r
    options(languageserver.server_capabilities =
-           list(completionProvider = FALSE,
-                completionItemResolve = FALSE))
+               list(hoverProvider = FALSE,
+	            signatureHelpProvider = FALSE,
+	            completionProvider = FALSE,
+                    completionItemResolve = FALSE))
 <
-If you prefer to get completions from the language server, `cmp-r` should
-not be installed.
+Alternatively, you can disable or change R.nvim's built-in language server
+features in your R.nvim config. Below are the default values:
+>lua
+ r_ls = {
+    completion = true, -- enable the completion provider
+    hover = true,      -- enable the hover provider
+    signature = true,  -- enable the signature help provider
+    doc_width = 0,
+    fun_data_1 = { "select", "rename", "mutate", "filter" },
+    fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
+    quarto_intel = nil,
+
+ }
+<
+Meaning of optons:
+
+  - `completion`: Enable the completion provider
+
+  - `hover`: Enable the hover provider
+
+  - `signature`: Enable the signature help provider
+
+  - `doc_width`: The expected maximum width of the floating documentation
+    window. The default value will be between 30 and 80 columns, depending
+    on the screen width.
+
+  - `fun_data_1`: List of functions that receive a `data.frame` as its first
+    argument and for which the `data.frame`s columns names should be
+    completed. This option is overridden by `g:R_fun_data_1`. Default:
+    `{'select', 'rename', 'mutate', 'filter'}`.
+
+  - `fun_data_2`: Dictionary with parent functions as keys. The value of each
+    key is a list of functions that are expected to be nested in the parent
+    function which receives a data.frame as its first arguments. Column names
+    of the `data.frame` are completed as arguments of the nested function.
+    This option is overridden by `g:R_fun_data_1`.
+    Default: `{ggplot = {'aes'}, with = {'*'}}`.
+
+  - `quarto_intel`: Path to `yaml-intelligence-resources.json` which is part
+    of `quarto` application and has all necessary information for completion
+    of valid YAML options in an Quarto document. Default: `nil` (R.nvim will
+    try to find the file).
 
 The list of objects for auto completion is built dynamically as the libraries
 are loaded by R. If R is running, only the names of objects in .GlobalEnv and
@@ -1514,20 +1519,77 @@ names completed. However, you can set the value of `start_libs` if you want
 that objects of specific packages are available for auto completion even if R
 is not running yet. Below is the default value of `start_libs`:
 >lua
-   start_libs = "base,stats,graphics,grDevices,utils,methods"
+   start_libs = "base,stats,graphics,grDevices,utils,datasets,methods"
 <
 ------------------------------------------------------------------------------
-6.11. Rout highlighting                                     *Rout_more_colors*
+6.11. Rout highlighting                                         *Rout_options*
 
-By default, the R commands in .Rout files are highlighted with the color of
-comments, and only the output of commands has some of its elements highlighted
-(numbers, strings, index of vectors, warnings and errors).
+By default, the R commands in .Rout files are highlighted in a gray color, and
+only the output of commands has some of its elements highlighted (numbers,
+strings, index of vectors, warnings and errors).
 
 If you prefer that R commands in the R output are highlighted as they are in R
 scripts, put the following in your config:
+							    *Rout_more_colors*
 >lua
    Rout_more_colors = true
 <
+						     *Rout_follow_colorscheme*
+The colors of R output do not match the colors of your colorscheme by default
+The rationale is that the highlighting of code should help the user to grasp
+the code structure while highlighting of output should help the user to focus
+on the most important part of the results: the numbers. However, if you prefer
+the highlighting of Rout files (and R output in the built-in Neovim terminal)
+to follow your colorscheme, put in R.nvim config:
+>lua
+ Rout_follow_colorscheme = true
+<
+You can also set both foreground and background colors of R output in your
+`init.lua`. Because the syntax highlighting uses a traditional Vim syntax
+script, its configuration is through Vim global variables, as in the example
+below:
+>lua
+   if vim.o.termguicolors then
+     vim.g.rout_color_input    = "guifg=#9e9e9e"
+     vim.g.rout_color_normal   = "guifg=#ff5f00"
+     vim.g.rout_color_number   = "guifg=#ffaf00"
+     vim.g.rout_color_integer  = "guifg=#feaf00"
+     vim.g.rout_color_float    = "guifg=#fdaf00"
+     vim.g.rout_color_complex  = "guifg=#fcaf00"
+     vim.g.rout_color_negnum   = "guifg=#d7afff"
+     vim.g.rout_color_negfloat = "guifg=#d6afff"
+     vim.g.rout_color_date     = "guifg=#00d7af"
+     vim.g.rout_color_true     = "guifg=#5dd685"
+     vim.g.rout_color_false    = "guifg=#ff5d5e"
+     vim.g.rout_color_inf      = "guifg=#10aed7"
+     vim.g.rout_color_constant = "guifg=#5fafcf"
+     vim.g.rout_color_string   = "guifg=#5fd7af"
+     vim.g.rout_color_error    = "guifg=#ffffff guibg=#c40000"
+     vim.g.rout_color_warn     = "guifg=#d00000"
+     vim.g.rout_color_index    = "guifg=#d0d080"
+   end
+<
+A subset of `Rout` highlighting groups is used to highlight the hover window
+from R.nvim built-in language server when hovering over a `data.frame` or
+`numeric` object. In this case, the language server will display the output of
+either `summary()` or `str()` and you can change the foreground colors by
+setting the value of `r_ls.rout_fg_colors` elements, as in the example:
+>lua
+   r_ls = {
+       rout_fg_colors = {
+           Normal = "#ff5f00",
+           Number = "#ffaf00",
+           Negnum = "#d7afff",
+           Constant = "#5fafcf",
+           False = "#ffd5e",
+           True = "#5dd685",
+           Inf = "#10aed7",
+       }
+   }
+<
+If `Rout_follow_colorscheme` is `true` the colors of you colorscheme will be
+used in the hover floating window too.
+
 When syntax highlighting .Rout files, R.nvim considers "> " as the prompt
 string and "+ " as the continuation string. If you have defined different
 prompt and continuation strings in your `~/.Rprofile`, R.nvim will try to get

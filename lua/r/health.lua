@@ -124,11 +124,11 @@ end
 M.check = function()
     vim.health.start("Checking applications and plugins:")
 
-    if vim.fn.has("nvim-0.10.4") == 1 then
+    if vim.fn.has("nvim-0.11.4") == 1 then
         vim.health.ok("Neovim version: " .. tostring(vim.version()))
     else
         vim.health.error(
-            "Minimum Neovim version is `0.10.4`, found: " .. tostring(vim.version())
+            "Minimum Neovim version is `0.11.4`, found: " .. tostring(vim.version())
         )
     end
 
@@ -138,22 +138,16 @@ M.check = function()
         vim.health.error("C compiler (`gcc` or `clang`) not found.")
     end
 
+    if vim.fn.executable("tree-sitter") == 1 then
+        vim.health.ok("Tree-sitter command line application (`tree-sitter`) found.")
+    else
+        vim.health.ok("Tree-sitter command line application (`tree-sitter`) not found.")
+    end
+
     if vim.fn.exists("*RWarningMsg") ~= 0 then
         vim.health.error("Please, uninstall Vim-R before using R.nvim.")
     elseif vim.fn.exists("*WaitVimComStart") ~= 0 then
         vim.health.error("Please, uninstall Vim-R-plugin before using R.nvim.")
-    end
-
-    if pcall(require, "cmp") then
-        if pcall(require, "cmp_r") then
-            vim.health.ok("`R-nvim/cmp-r` found.")
-        else
-            vim.health.warn("`R-nvim/cmp-r` not found. It's required for autocompletion.")
-        end
-    else
-        vim.health.warn(
-            "`hrsh7th/nvim-cmp` not found. It's required for autocompletion along with `R-nvim/cmp-r`."
-        )
     end
 
     if ts_available then

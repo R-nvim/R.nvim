@@ -36,7 +36,7 @@ static struct pattern rd[] = {
     {"code", 4, 8, "`", "`"},
     {"R", 1, 0, "*R*", "\000"},
     {"emph", 4, 1, "*", "*"},
-    {"eqn", 3, 1, "*", "*"},
+    {"eqn", 3, 3, "`", "`"},
     {"sQuote", 6, 1, "\xe2\x80\x98", "\xe2\x80\x99"},
     {"dQuote", 6, 1, "\xe2\x80\x9c", "\xe2\x80\x9d"},
     {"pkg", 3, 1, "\000", "\000"},
@@ -46,21 +46,41 @@ static struct pattern rd[] = {
     {"item ", 5, 0, "\x14  \xe2\x80\xa2 ", "\000"},
     {"itemize", 7, 1, "\x14", "\x14"},
     {"item", 4, 1, "\x14  \xe2\x80\xa2 ", "\000"},
-    {"dots", 4, 0, "...", "\000"},
+    {"dots{}", 6, 0, "`...`", "\000"},
+    {"dots", 4, 0, "`...`", "\000"},
     {"bold", 4, 1, "**", "**"},
     {"file", 4, 1, "\xe2\x80\x98", "\xe2\x80\x99"},
     {"option", 6, 1, "\000", "\000"},
     {"command", 7, 1, "`", "`"},
     {"mu", 2, 0, "\xce\xbc", "\000"},
+
+    // tydyverse life cycle
+    {"ifelse{html}{\\href{https://lifecycle.r-lib.org/articles/"
+     "stages.html#deprecated}{\\figure{lifecycle-deprecated.svg}{options: "
+     "alt='[Deprecated]'}}}{\\strong{[Deprecated]}}",
+     167, 0, "lifecycle: **Deprecated**\x14\x14", "\000"},
+
+    {"ifelse{html}{\\href{https://lifecycle.r-lib.org/articles/"
+     "stages.html#superseded}{\\figure{lifecycle-superseded.svg}{options: "
+     "alt='[Superseded]'}}}{\\strong{[Superseded]}}",
+     167, 0, "lifecycle: **Superseded**\x14\x14", "\000"},
+
+    {"ifelse{html}{\\href{https://lifecycle.r-lib.org/articles/"
+     "stages.html#experimental}{\\figure{lifecycle-experimental.svg}{options: "
+     "alt='[Experimental]'}}}{\\strong{[Experimental]}}",
+     175, 0, "lifecycle: **Experimental**\x14\x14", "\000"},
+
+    {"ifelse{latex}{\\out{{\\LaTeX}}}{LaTeX}", 36, 0, "LaTeX", "\000"},
+    {"figure", 6, 2, "\000", "\000"},
     {"ifelse", 6, 7, NULL, NULL},
     {"samp", 4, 1, "`", "`"},
     {"env", 3, 1, "\000", "\000"},
     {"describe", 8, 1, "\x14", "\x14"},
     {"Sigma", 5, 0, "\xce\xa3", "\000"},
+    {"abbr", 4, 1, "\000", "\000"},
 
     // Common in some other packages
     {"if{html}", 8, 4, NULL, NULL},
-    {"figure", 6, 2, "\000", "\000"},
     {"href", 4, 6, NULL, NULL},
     {"preformatted", 12, 1, "\x14```\x14", "```\x14"},
 
@@ -104,13 +124,15 @@ static struct pattern rd[] = {
     {"acronym", 7, 1, "\000", "\000"},
     {"var", 3, 1, "\000", "\000"},
     {"special", 7, 1, "\000", "\000"},
-    {"deqn", 4, 1, "*", "*"},
+    {"deqn", 4, 3, "`", "`"},
     {"cite", 4, 1, "\000", "\000"},
     {"url", 3, 1, "\000", "\000"},
     {"ldots", 5, 0, "\xe2\x80\xa6", "\000"},
     {"verb", 4, 1, "`", "`"},
     {"out", 3, 1, "\000", "\000"},
     {"examples", 8, 1, "\x14```r\x14", "```\x14"},
+    {"eqn", 3, 1, "`", "`"},
+    {"deqn", 4, 1, "`", "`"},
     {NULL, 0, 0, NULL, NULL}};
 
 // Insert `s` at position `p`

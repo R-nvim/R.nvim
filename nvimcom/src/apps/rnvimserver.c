@@ -2,30 +2,83 @@
 #include <stdio.h>  // Standard input/output definitions
 #include <stdlib.h> // Standard library
 #include <string.h> // String handling functions
+#include <unistd.h> // For read/write in a more robust server environment
 
 #include "data_structures.h"
 #include "logging.h"
 #include "complete.h"
+#include "resolve.h"
+#include "hover.h"
+#include "signature.h"
 #include "tcp.h"
 #include "obbr.h"
+#include "lsp.h"
+#include "utilities.h"
+#include "rhelp.h"
+#include "chunk.h"
 #include "../common.h"
+
+#ifdef WIN32
+// Include for _setmode and _O_BINARY
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 /*
  * Global variables (declared in global_vars.h)
  */
 
-InstLibs *instlibs;                       // Pointer to first installed library
-PkgData *pkgList;                         // Pointer to first package data
-char *compl_buffer;                       // Completion buffer
-char *glbnv_buffer;                       // Global environment buffer
-char compldir[256];                       // Directory for completion files
-char tmpdir[256];                         // Temporary directory
-int auto_obbr;                            // Auto object browser flag
-unsigned long compl_buffer_size = 163840; // Completion buffer size
-char localtmpdir[256];                    // Local temporary directory
+InstLibs *instlibs;    // Pointer to first installed library
+PkgData *pkgList;      // Pointer to first package data
+char *glbnv_buffer;    // Global environment buffer
+char tmpdir[256];      // Temporary directory
+int auto_obbr;         // Auto object browser flag
+char localtmpdir[256]; // Local temporary directory
+int r_running;         // Indicates whether R is running
 
-// Signal handler for SIGTERM
-static void handle_sigterm(__attribute__((unused)) int s) { exit(0); }
+typedef struct active_request_ {
+    char id[16];
+    struct active_request_ *next;
+} ActiveRequest;
+
+static ActiveRequest *actv_req;
+
+static void add_active_request(const char *id) {
+    ActiveRequest *ar = calloc(1, sizeof(ActiveRequest));
+    strncpy(ar->id, id, 15);
+    ar->next = actv_req;
+    actv_req = ar;
+}
+
+static void rm_active_request(const char *id) {
+    ActiveRequest *ar = actv_req;
+    if (ar == NULL)
+        return;
+    if (strcmp(ar->id, id) == 0) {
+        actv_req = ar->next;
+        free(ar);
+        return;
+    }
+    ActiveRequest *prev = NULL;
+    while (ar && strcmp(ar->id, id) != 0) {
+        prev = ar;
+        ar = ar->next;
+    }
+    if (ar == NULL || prev == NULL)
+        return;
+    prev->next = ar->next;
+    free(ar);
+}
+
+static int is_request_active(const char *id) {
+    ActiveRequest *ar = actv_req;
+    while (ar) {
+        if (strcmp(ar->id, id) == 0)
+            return 1;
+        ar = ar->next;
+    }
+    return 0;
+}
 
 void print_listTree(ListStatus *root, FILE *f) {
     if (root != NULL) {
@@ -63,10 +116,121 @@ static void send_rns_info(void) {
     fflush(stdout);
 }
 
-static void init_global_vars(void) {
-    strncpy(compldir, getenv("RNVIM_COMPLDIR"), 255);
-    strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 255);
+// --- LSP Communication Helper ---
 
+/**
+ * @brief Sends a JSON response with the necessary LSP headers (Content-Length
+ * and Content-Type).
+ * * @param content_length The length of the JSON payload in bytes.
+ * @param json_payload The JSON string to send.
+ */
+void send_ls_response(const char *req_id, const char *json_payload) {
+#ifdef Debug_NRS
+    Log("\x1b[33mSEND_LS_RESPONSE\x1b[0m (%zu bytes):", strlen(json_payload));
+    if (strlen(json_payload) > 380) {
+        char begin[360] = {0};
+        char end[16] = {0};
+        memcpy(begin, json_payload, 359);
+        memcpy(end, json_payload + strlen(json_payload) - 15, 15);
+        Log("%s [...] %s\n", begin, end);
+    } else {
+        Log("%s\n", json_payload);
+    }
+#endif
+    if (req_id) {
+        int is_active = is_request_active(req_id);
+        if (is_active) {
+            rm_active_request(req_id);
+        } else {
+            return;
+        }
+    }
+
+    fprintf(stdout, "Content-Length: %zu\r\n\r\n", strlen(json_payload));
+    fprintf(stdout, "%s", json_payload);
+    fflush(stdout);
+}
+
+void send_null(const char *req_id) {
+    char res[128];
+    snprintf(res, 127, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":null}",
+             req_id);
+    send_ls_response(req_id, res);
+}
+
+void send_empty(const char *req_id) {
+    char res[128];
+    snprintf(res, 127,
+             "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
+             "{\"isIncomplete\":false,\"items\":[]}}",
+             req_id);
+    send_ls_response(req_id, res);
+}
+
+void send_cmd_to_nvim(const char *cmd) {
+    size_t len = strlen(cmd);
+    char *esccmd = (char *)malloc(sizeof(char) * len * 2 + 1);
+    if (!esccmd)
+        return;
+
+    size_t j = 0;
+    for (size_t i = 0; i < len; i++) {
+        if (cmd[i] == '"') {
+            esccmd[j] = '\\';
+            j++;
+        }
+        esccmd[j] = cmd[i];
+        j++;
+    }
+    esccmd[j] = 0;
+    char *exeCmd = (char *)malloc(sizeof(char) * (124 + strlen(esccmd)));
+    if (exeCmd) {
+        sprintf(exeCmd,
+                "{ \"jsonrpc\": \"2.0\", \"method\": \"client/exeRnvimCmd\", "
+                "\"params\": {\"command\": \"%s\"}}",
+                esccmd);
+        send_ls_response(NULL, exeCmd);
+        free(exeCmd);
+    }
+    free(esccmd);
+}
+
+void send_menu_items(char *compl_items, const char *req_id) {
+    if (strlen(compl_items) == 0) {
+        send_empty(req_id);
+        return;
+    }
+    const char *fmt = "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{"
+                      "\"isIncomplete\":false,\"items\":[%s]}}";
+
+    size_t len = strlen(compl_items);
+
+    // remove last superfluous comma to avoid json error:
+    if (len > 3 && compl_items[len - 1] == ',') {
+        compl_items[len - 1] = '\0';
+    }
+    char *res = (char *)malloc(sizeof(char) * len + 128);
+    sprintf(res, fmt, req_id, compl_items);
+    send_ls_response(req_id, res);
+    free(res);
+}
+
+// Signal handler for SIGTERM
+static void handle_sigterm(__attribute__((unused)) int s) { exit(0); }
+
+// --- LSP Request Handlers ---
+
+/**
+ * @brief Handles the 'initialize' request (LSP Handshake).
+ * * @param request_id The ID from the client's request.
+ */
+static void handle_initialize(const char *request_id) {
+    // Finish immediately with SIGTERM
+    signal(SIGTERM, handle_sigterm);
+
+    // initialize global variables;
+    strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 255);
+    set_doc_width(getenv("R_LS_DOC_WIDTH"));
     if (getenv("RNVIM_LOCAL_TMPDIR")) {
         strncpy(localtmpdir, getenv("RNVIM_LOCAL_TMPDIR"), 255);
     } else {
@@ -74,185 +238,300 @@ static void init_global_vars(void) {
     }
     set_max_depth(atoi(getenv("RNVIM_MAX_DEPTH")));
 
-    compl_buffer = calloc(compl_buffer_size, sizeof(char));
-}
-
-/*
- * @desc: used before stdin_loop() in main() to initialize the server.
- */
-static void init(void) {
-#ifdef Debug_NRS
-    init_logging();
-#endif
-
-    init_global_vars();
+    init_cmp();
     init_obbr_vars();
-    init_compl_vars();
     init_ds_vars();
 
     update_inst_libs();
     update_pkg_list(NULL);
-    build_objls();
 
-    // Finish immediately with SIGTERM
-    signal(SIGTERM, handle_sigterm);
+    char res[1024] = {0};
+    char *p = res;
+    p = str_cat(p, "{\"jsonrpc\":\"2.0\",\"id\":");
+    p = str_cat(p, request_id);
+    p = str_cat(p, ",\"result\":{\"capabilities\":{");
 
-    printf("lua vim.g.R_Nvim_status = 3\n");
-    fflush(stdout);
+    char *disable = getenv("R_LS_DISABLE");
+    int has_cpblt = 0;
+    if (!disable || strstr(disable, "hover") == NULL) {
+        p = str_cat(p, "\"hoverProvider\":true");
+        has_cpblt = 1;
+    }
+    if (!disable || strstr(disable, "signature") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"signatureHelpProvider\":{\"triggerCharacters\":[\"("
+                       "\",\",\"]}");
+        has_cpblt = 1;
+    }
+    if (!disable || strstr(disable, "completion") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"completionProvider\":{\"resolveProvider\":true,"
+                       "\"triggerCharacters\":[\".\",\" "
+                       "\",\":\",\"(\",\"$\",\"\\\\\"]}");
+    }
 
-    Log("init() finished");
+    str_cat(p, "}}}");
+
+    // "\"allCommitCharacters\":[\" \",\"\n\",\",\"]}}}}";
+
+    send_ls_response(request_id, res);
 }
 
-/*
- * TODO: Candidate for message_handling.c
- *
- * @desc: Used in main() for continuous processing of stdin commands
- */
-void stdin_loop(void) {
-    char line[1024];
-    char *msg;
-    char t;
-    memset(line, 0, 1024);
-
-    while (fgets(line, 1023, stdin)) {
-
-        for (unsigned int i = 0; i < strlen(line); i++)
-            if (line[i] == '\n' || line[i] == '\r')
-                line[i] = 0;
-        Log("stdin: %s", line);
-        msg = line;
-        switch (*msg) {
-        case '1': // Start server and wait nvimcom connection
-            start_server();
+static void handle_exe_cmd(const char *params) {
+    Log("handle_exe_cmd: %s\n", params);
+    char *code = strstr(params, "\"code\":\"") + 8;
+    char *p;
+    switch (*code) {
+    case 'C':
+        code++;
+        if (*code == 'H') {
+            complete_rhelp(params);
+        } else if (*code == '@') {
+            complete_fig_tbl(params);
+        } else {
+            complete_chunk_opts(*code, params);
+        }
+        break;
+    case 'H':
+        hover(params);
+        break;
+    case 'S':
+        signature(params);
+        break;
+    case 'E':
+        cut_json_str(&code, 1);
+        send_empty(code);
+        break;
+    case 'N':
+        cut_json_str(&code, 1);
+        send_null(code);
+        break;
+    case '1': // Start TCP server and wait nvimcom connection
+        start_server();
+        break;
+    case '2': // Send message
+        cut_json_str(&code, 1);
+        send_to_nvimcom(code);
+        break;
+    case '3':
+        code++;
+        switch (*code) {
+        case '1': // Update GlobalEnv
+            auto_obbr = 1;
+            compl2ob();
             break;
-        case '2': // Send message
-            msg++;
-            send_to_nvimcom(msg);
+        case '2': // Update Libraries
+            auto_obbr = 1;
+            lib2ob();
             break;
-        case '3':
-            msg++;
-            switch (*msg) {
-            case '1': // Update GlobalEnv
-                auto_obbr = 1;
+        case '3': // Open/Close list
+            p = strstr(params, "\"key\":\"");
+            cut_json_str(&p, 7);
+            toggle_list_status(p);
+            code++;
+            if (*code == 'G')
                 compl2ob();
-                break;
-            case '2': // Update Libraries
-                auto_obbr = 1;
+            else
                 lib2ob();
-                break;
-            case '3': // Open/Close list
-                msg++;
-                t = *msg;
-                msg++;
-                toggle_list_status(msg);
-                if (t == 'G')
-                    compl2ob();
-                else
-                    lib2ob();
-                break;
-            case '4': // Close/Open all
-                msg++;
-                if (*msg == 'O')
-                    change_all(1);
-                else
-                    change_all(0);
-                msg++;
-                if (*msg == 'G')
-                    compl2ob();
-                else
-                    lib2ob();
-                break;
-            }
             break;
-        case '4': // Miscellaneous commands
-            msg++;
-            switch (*msg) {
-            case '1':
-                msg++;
-                if (*msg)
-                    set_doc_width(msg);
-                finished_building_objls();
-                break;
-            case '2':
-                send_rns_info();
-                break;
-            case '3':
-                update_glblenv_buffer("");
-                if (auto_obbr)
-                    compl2ob();
-                break;
-            case '5':
-                msg++;
-                set_doc_width(msg);
-                break;
-            }
-            break;
-        case '5':
-            msg++;
-            char *id = msg;
-            while (*msg != '\003')
-                msg++;
-            *msg = 0;
-            msg++;
-            if (*msg == '\004') {
-                msg++;
-                complete(id, msg, "\004", NULL, NULL);
-            } else if (*msg == '\005') {
-                msg++;
-                char *base = msg;
-                while (*msg != '\005')
-                    msg++;
-                *msg = 0;
-                msg++;
-                complete(id, base, msg, NULL, NULL);
-            } else {
-                complete(id, msg, NULL, NULL, NULL);
-            }
-            break;
-        case '6':
-            msg++;
-            char *wrd = msg;
-            while (*msg != '\002')
-                msg++;
-            *msg = 0;
-            msg++;
-            if (strstr(wrd, "::"))
-                wrd = strstr(wrd, "::") + 2;
-            resolve(wrd, msg);
-            break;
-        case '7':
-            msg++;
-            char *p = msg;
-            while (*msg != '\002')
-                msg++;
-            *msg = 0;
-            msg++;
-            char *f = msg;
-            while (*msg != '\002')
-                msg++;
-            *msg = 0;
-            msg++;
-            char *itm = msg;
-            get_alias(&p, &f);
-            if (p)
-                resolve_arg_item(p, f, itm);
-            break;
-        case '9': // Quit now
-            stop_server();
-            exit(0);
-            break;
-        default:
-            fprintf(stderr, "Unknown command received: [%d] %s\n", line[0],
-                    msg);
-            fflush(stderr);
+        case '4': // Close/Open all
+            code++;
+            if (*code == 'O')
+                change_all(1);
+            else
+                change_all(0);
+            code++;
+            if (*code == 'G')
+                compl2ob();
+            else
+                lib2ob();
             break;
         }
-        memset(line, 0, 1024);
+        break;
+    case '4': // Miscellaneous commands
+        code++;
+        switch (*code) {
+        case '1':
+            finished_building_objls();
+            break;
+        case '2':
+            send_rns_info();
+            break;
+        case '3':
+            update_glblenv_buffer("");
+            if (auto_obbr)
+                compl2ob();
+            break;
+        }
+        break;
+    case '5':
+        complete(params);
+        break;
+    case '9': // R no longer running
+        update_glblenv_buffer("");
+        if (auto_obbr)
+            compl2ob();
+        r_running = 0;
+        break;
+    default:
+        fprintf(stderr, "Unknown command received: %s\n", code);
+        fflush(stderr);
+        break;
+    }
+}
+
+/**
+ * @brief Handles 'exit' and 'shutdown' notifications.
+ */
+static void handle_exit(const char *method) {
+    Log("Received \"%s\" notification. Shutting down.\n", method);
+    exit(0);
+}
+
+static void handle_completion(const char *id, const char *params) {
+    char *position = strstr(params, "\"position\":{") + 11;
+    if (!position) {
+        fprintf(stderr, "Error in textDocument/completion: missing "
+                        "`position` field\n");
+        fflush(stderr);
+        return;
+    }
+    char *line = strstr(position, "\"line\":");
+    char *col = strstr(position, "\"character\":");
+    cut_json_int(&line, 7);
+    cut_json_int(&col, 12);
+    char compl_command[128];
+    snprintf(compl_command, 127, "require('r.lsp').complete(%s, %s, %s)", id,
+             line, col);
+    send_cmd_to_nvim(compl_command);
+}
+
+static void handle_hover(const char *id) {
+    char h_cmd[128];
+    snprintf(h_cmd, 127, "require('r.lsp').hover(%s)", id);
+    send_cmd_to_nvim(h_cmd);
+}
+
+static void handle_signature(const char *id) {
+    char h_cmd[128];
+    snprintf(h_cmd, 127, "require('r.lsp').signature(%s)", id);
+    send_cmd_to_nvim(h_cmd);
+}
+
+// --- Main Server Loop ---
+
+static void lsp_loop(void) {
+    Log("LSP loop started.\n");
+
+    // The main buffer to read the Content-Length header
+    char header[128];
+    // The main buffer for the JSON payload. Needs to be large enough for
+    // typical messages.
+    size_t clen = 6143;
+    char *content = (char *)malloc(clen + 1);
+
+    // Server loop: continuously read messages from stdin
+    while (1) {
+        size_t content_length = 0;
+        // char *header_end = NULL;
+
+        // 1. Read Content-Length Header
+        // Read header line by line until we find Content-Length:
+        if (fgets(header, 127, stdin) == NULL)
+            break;
+
+        if (sscanf(header, "Content-Length: %zu", &content_length) != 1) {
+            // Error handling for missing/malformed header.
+            // For a simple server, we might just continue or break.
+            fprintf(stderr, "Malformed header: %s", header);
+            fflush(stderr);
+            continue;
+        }
+        if (content_length >= clen) {
+            free(content);
+            clen = content_length + 1024;
+            content = (char *)malloc(clen + 1);
+        }
+
+        // 2. Consume the remaining headers until the blank line (\r\n\r\n)
+        // We expect Content-Type: application/json\r\n and then \r\n
+        do {
+            if (fgets(header, 127, stdin) == NULL)
+                break;
+            // The blank line is just "\r\n" or "\n" depending on environment,
+            // but we check for the line being effectively empty.
+            if (header[0] == '\r' || header[0] == '\n')
+                break;
+        } while (1);
+
+        // 3. Read the JSON payload
+        if (content_length > 0) {
+            size_t bytes_read = fread(content, 1, content_length, stdin);
+            content[bytes_read] = '\0';
+            if (bytes_read != content_length) {
+                fprintf(stderr, "wrong content length: %zu x %zu",
+                        content_length, bytes_read);
+                fflush(stderr);
+            }
+
+            // JSON parsing
+            Log("\x1b[36mJSON received\x1b[0m:\n%s\n", content);
+
+            // Find the start position of all fields that we may need
+            char *method = strstr(content, "\"method\":\"");
+            char *id = strstr(content, "\"id\":");
+            char *params = strstr(content, "\"params\":{");
+
+            if (!method) {
+                fprintf(stderr, "Error: method not defined\n");
+                fflush(stderr);
+                break;
+            }
+
+            cut_json_str(&method, 10);
+
+            if (id) {
+                cut_json_int(&id, 5);
+                add_active_request(id);
+            }
+
+            // Route the request based on the method
+            if (strcmp(method, "textDocument/completion") == 0) {
+                handle_completion(id, params);
+            } else if (strcmp(method, "exeRnvimCmd") == 0) {
+                handle_exe_cmd(params);
+            } else if (strcmp(method, "completionItem/resolve") == 0) {
+                handle_resolve(id, params);
+            } else if (strcmp(method, "textDocument/hover") == 0) {
+                handle_hover(id);
+            } else if (strcmp(method, "textDocument/signatureHelp") == 0) {
+                handle_signature(id);
+            } else if (strcmp(method, "initialize") == 0) {
+                handle_initialize(id);
+            } else if (strcmp(method, "initialized") == 0) {
+                build_objls();
+            } else if (strcmp(method, "$/cancelRequest") == 0) {
+                Log("\x1b[31;1mCANCEL %s", id);
+                rm_active_request(id);
+            } else if (strcmp(method, "exit") == 0 ||
+                       strcmp(method, "shutdown") == 0) {
+                handle_exit(method);
+            } else {
+                fprintf(stderr, "Unhandled method: %s\n", method);
+                fflush(stderr);
+            }
+        }
     }
 }
 
 int main(int argc, char **argv) {
-    init();
-    stdin_loop();
+#ifdef WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+    _setmode(_fileno(stderr), _O_BINARY);
+    _setmode(_fileno(stdin), _O_BINARY);
+#endif
+    lsp_loop();
     return 0;
 }

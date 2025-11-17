@@ -1,6 +1,5 @@
 local M = {}
 local config = require("r.config").get_config()
-local job = require("r.job")
 local edit = require("r.edit")
 local warn = require("r.log").warn
 local utils = require("r.utils")
@@ -66,7 +65,6 @@ start_R2 = function()
 
     local start_options = {
         'Sys.setenv(R_DEFAULT_PACKAGES = "' .. rdp:gsub(",nvimcom", "") .. '")',
-        'Sys.setenv(RNVIM_RSLV_CB = "' .. vim.env.RNVIM_RSLV_CB .. '")',
         "options(nvimcom.max_depth = " .. tostring(config.compl_data.max_depth) .. ")",
         "options(nvimcom.max_size = " .. tostring(config.compl_data.max_size) .. ")",
         "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")",
@@ -88,12 +86,6 @@ start_R2 = function()
         table.insert(start_options, "options(nvimcom.texerrs = FALSE)")
     end
 
-    local has_cmp_r, _ = pcall(require, "cmp_r")
-    if has_cmp_r then
-        table.insert(start_options, "options(nvimcom.autoglbenv = 2)")
-    else
-        table.insert(start_options, "options(nvimcom.autoglbenv = 0)")
-    end
     if config.setwidth == 2 then
         table.insert(start_options, "options(nvimcom.setwidth = TRUE)")
     else
@@ -224,7 +216,7 @@ M.start_R = function(whatr)
     if vim.g.R_Nvim_status == 3 then
         vim.g.R_Nvim_status = 4
         require("r.send").set_send_cmd_fun()
-        job.stdin("Server", "1\n") -- Start the TCP server
+        require("r.lsp").send_msg({ code = "1" })
         what_R = whatr
         vim.fn.timer_start(30, start_R2)
         return
@@ -302,11 +294,6 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         require("r.term.kitten").set_r_wid(r_info.kitty_wid)
     end
 
-    if not job.is_running("Server") then
-        warn("Server not running.")
-        return
-    end
-
     if config.objbr_auto_start then
         if config.is_windows then
             -- Give R some time to be ready
@@ -333,7 +320,7 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
         if config.is_windows then bn = bn:gsub("\\", "\\\\") end
         vim.schedule(function()
             uv.sleep(100)
-            M.send_to_nvimcom("E", 'nvimcom:::update_params("' .. bn .. '")')
+            M.send_to_nvimcom("E", "nvimcom:::update_params('" .. bn .. "')")
         end)
     end
     hooks.run(config, "after_R_start", true)
@@ -345,11 +332,9 @@ M.clear_R_info = function()
     vim.fn.delete(config.localtmpdir .. "/liblist_" .. vim.fn.string(vim.env.RNVIM_ID))
     R_pid = 0
     if config.external_term == "" then require("r.term.builtin").close_term() end
-    if job.is_running("Server") then
+    if vim.g.R_Nvim_status > 3 then
         vim.g.R_Nvim_status = 3
-        job.stdin("Server", "43\n")
-    else
-        vim.g.R_Nvim_status = 1
+        require("r.lsp").send_msg({ code = "9" })
     end
     send.set_send_cmd_fun()
     require("r.rmd").clean_params()
@@ -366,17 +351,11 @@ M.send_to_nvimcom = function(code, attch)
         warn("R is not running")
         return
     end
-
     if vim.g.R_Nvim_status < 7 then
         warn("R is not ready yet")
         return
     end
-
-    if not job.is_running("Server") then
-        warn("Server not running.")
-        return
-    end
-    job.stdin("Server", "2" .. code .. vim.env.RNVIM_ID .. attch .. "\n")
+    require("r.lsp").send_msg({ code = "2" .. code .. vim.env.RNVIM_ID .. attch })
 end
 
 M.quit_R = function(how)
@@ -448,7 +427,9 @@ end
 ---@param type string
 M.insert = function(cmd, type)
     if vim.g.R_Nvim_status < 7 then return end
-    M.send_to_nvimcom("E", "nvimcom:::nvim_insert(" .. cmd .. ', "' .. type .. '")')
+    cmd = cmd:gsub("'", "\018")
+    cmd = cmd:gsub('"', "\019")
+    M.send_to_nvimcom("E", "nvimcom:::nvim_insert(" .. cmd .. ", '" .. type .. "')")
 end
 
 M.insert_commented = function()
@@ -459,53 +440,6 @@ M.insert_commented = function()
     end
     cleanl = string.gsub(lin, "%s*#.*", "")
     M.insert("print(" .. cleanl .. ")", "comment")
-end
-
----Get the word either under or after the cursor.
----Works for word(| where | is the cursor position.
----@return string
-M.get_keyword = function()
-    local line = vim.api.nvim_get_current_line()
-    local llen = #line
-    if llen == 0 then return "" end
-
-    local i = vim.api.nvim_win_get_cursor(0)[2] + 1
-
-    -- Skip opening braces
-    local char
-    while i > 1 do
-        char = line:sub(i, i)
-        if char == "[" or char == "(" or char == "{" then
-            i = i - 1
-        else
-            break
-        end
-    end
-
-    -- Go to the beginning of the word
-    while
-        i > 1
-        and (
-            line:sub(i - 1, i - 1):match("[%w@:$:_%.]")
-            or (line:byte(i - 1) > 0x80 and line:byte(i - 1) < 0xf5)
-        )
-    do
-        i = i - 1
-    end
-    -- Go to the end of the word
-    local j = i
-    local b
-    while j <= llen do
-        b = line:byte(j + 1)
-        if
-            b and ((b > 0x80 and b < 0xf5) or line:sub(j + 1, j + 1):match("[%w@$:_%.]"))
-        then
-            j = j + 1
-        else
-            break
-        end
-    end
-    return line:sub(i, j)
 end
 
 ---Call R functions for the word under cursor
@@ -534,7 +468,7 @@ M.action = function(rcmd, mode, args)
             )
         end
     else
-        rkeyword = M.get_keyword()
+        rkeyword = require("r.cursor").get_keyword()
     end
 
     if not rkeyword or #rkeyword == 0 then return end
@@ -567,6 +501,8 @@ M.action = function(rcmd, mode, args)
         return
     end
 
+    if rcmd == "lsp_hover" then return rkeyword end
+
     local rfun = rcmd
 
     if rcmd == "args" then
@@ -595,7 +531,7 @@ M.action = function(rcmd, mode, args)
     end
 
     if config.open_example and rcmd == "example" then
-        M.send_to_nvimcom("E", 'nvimcom:::nvim.example("' .. rkeyword .. '")')
+        M.send_to_nvimcom("E", "nvimcom:::nvim.example('" .. rkeyword .. "')")
         return
     end
 
@@ -613,7 +549,7 @@ M.action = function(rcmd, mode, args)
             end
             cmd = cmd:gsub("'", '"')
             cmd = cmd:gsub('"', '\\"')
-            argmnts = argmnts .. ', R_df_viewer = "' .. cmd .. '"'
+            argmnts = argmnts .. ", R_df_viewer = '" .. cmd .. "'"
         end
         if config.view_df.save_fun and config.view_df.save_fun ~= "" then
             argmnts = argmnts .. ", save_fun = " .. config.view_df.save_fun
@@ -626,11 +562,11 @@ M.action = function(rcmd, mode, args)
         else
             local fenc = config.is_windows
                     and vim.o.encoding == "utf-8"
-                    and ', fenc="UTF-8"'
+                    and ", fenc='UTF-8'"
                 or ""
             M.send_to_nvimcom(
                 "E",
-                'nvimcom:::nvim_viewobj("' .. rkeyword .. '"' .. argmnts .. fenc .. ")"
+                "nvimcom:::nvim_viewobj('" .. rkeyword .. "'" .. argmnts .. fenc .. ")"
             )
         end
         return
@@ -651,14 +587,7 @@ end
 ---Send the print() command to R with rkeyword as parameter
 ---@param rkeyword string
 M.print_object = function(rkeyword)
-    local firstobj
-
-    if vim.api.nvim_get_current_buf() == require("r.browser").get_buf_nr() then
-        firstobj = ""
-    else
-        firstobj = cursor.get_first_obj()
-    end
-
+    local firstobj = cursor.get_first_obj()
     if firstobj == "" then
         send.cmd("print(" .. rkeyword .. ")")
     else

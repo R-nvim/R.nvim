@@ -55,13 +55,13 @@ if s:config.OutDec == ","
 else
     " floating point number with integer and fractional parts and optional exponent
     syn match routFloat "\<\d\+\.\d*\([Ee][-+]\=\d\+\)\="
-    syn match routNegFloat "-\<\d\+\.\d*\([Ee][-+]\=\d\+\)\="
+    syn match routNegFloat "-\d\+\.\d*\([Ee][-+]\=\d\+\)\="
     " floating point number with no integer part and optional exponent
     syn match routFloat "\<\.\d\+\([Ee][-+]\=\d\+\)\="
-    syn match routNegFloat "-\<\.\d\+\([Ee][-+]\=\d\+\)\="
+    syn match routNegFloat "-\.\d\+\([Ee][-+]\=\d\+\)\="
     " floating point number with no fractional part and optional exponent
     syn match routFloat "\<\d\+[Ee][-+]\=\d\+"
-    syn match routNegFloat "-\<\d\+[Ee][-+]\=\d\+"
+    syn match routNegFloat "-\d\+[Ee][-+]\=\d\+"
     " complex number
     syn match routComplex "\<\d\+i"
     syn match routComplex "\<\d\++\d\+i"
@@ -154,7 +154,8 @@ if s:config.Rout_more_colors == v:false
     hi def link routInput	Comment
 endif
 
-if exists("g:rout_follow_colorscheme") && g:rout_follow_colorscheme
+if (exists("g:rout_follow_colorscheme") && g:rout_follow_colorscheme)
+            \ || s:config.Rout_follow_colorscheme == v:true
     " Default when following :colorscheme
     hi def link routNormal	Normal
     hi def link routNumber	Number

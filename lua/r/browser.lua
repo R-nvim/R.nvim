@@ -2,7 +2,6 @@
 
 local config = require("r.config").get_config()
 local warn = require("r.log").warn
-local job = require("r.job")
 local hooks = require("r.hooks")
 local send_to_nvimcom = require("r.run").send_to_nvimcom
 
@@ -189,10 +188,10 @@ local function find_parent(child, curline, curpos)
         if idx == nil then return "" end
         if idx < curpos then
             parent = line:sub(idx + 1)
-            if line:find("%[#") or line:find("%$#") then
+            if line:find("l#") or line:find("d#") then
                 suffix = "$"
                 break
-            elseif line:find("<#") or line:find(">#") then
+            elseif line:find("4#") or line:find("7#") then
                 suffix = "@"
                 break
             else
@@ -311,8 +310,7 @@ function M.start(_)
     state.is_running = true
 
     -- Request data from R to populate the Object Browser
-    job.stdin("Server", "31\n")
-    send_to_nvimcom("A", "RObjBrowser")
+    require("r.lsp").send_msg({ code = "31" })
 
     start_OB()
     state.is_running = false
@@ -326,10 +324,10 @@ function M.get_curview() return state.curview end
 function M.toggle_view()
     if state.curview == "libraries" then
         state.curview = "GlobalEnv"
-        job.stdin("Server", "31\n")
+        require("r.lsp").send_msg({ code = "31" })
     else
         state.curview = "libraries"
-        job.stdin("Server", "321\n")
+        require("r.lsp").send_msg({ code = "321" })
     end
 end
 
@@ -389,7 +387,9 @@ end
 
 --- Expand or collapse lists and data frames in the Object Browser
 ---@param stt string
-function M.open_close_lists(stt) job.stdin("Server", "34" .. stt .. state.curview .. "\n") end
+function M.open_close_lists(stt)
+    require("r.lsp").send_msg({ code = "34" .. stt .. state.curview })
+end
 
 --- Update the Object Browser content
 ---@param what string
@@ -440,39 +440,39 @@ function M.on_double_click()
     local curline = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, true)[1]
     local key = M.get_name(lnum, curline)
     if state.curview == "GlobalEnv" then
-        if curline:find("&#.*\t") then
+        if curline:find("p#.*\t") then
             -- Object is a list or data.frame
             send_to_nvimcom("L", key)
         elseif
-            curline:find("%[#.*\t")
-            or curline:find("%$#.*\t")
-            or curline:find("<#.*\t")
-            or curline:find(">#.*\t")
+            curline:find("l#.*\t")
+            or curline:find("d$#.*\t")
+            or curline:find("4#.*\t")
+            or curline:find("7#.*\t")
             or curline:find(":#.*\t")
         then
             -- Expand or collapse the object
             key = key:gsub("`", "")
-            job.stdin("Server", "33G" .. key .. "\n")
+            require("r.lsp").send_msg({ code = "33G", key = key })
         else
             -- Run str() on the object
             require("r.send").cmd("str(" .. key .. ")")
         end
     else
-        if curline:find("%(#.*\t") or curline:find(";#.*\t") then
+        if curline:find("F#.*\t") or curline:find("C#.*\t") then
             -- Function or special object; show documentation
             key = key:gsub("`", "")
             require("r.doc").ask_R_doc(key, M.get_pkg_name(), false)
         else
             if
                 string.find(key, ":%$")
-                or curline:find("%[#.*\t")
-                or curline:find("%$#.*\t")
-                or curline:find("<#.*\t")
-                or curline:find(">#.*\t")
+                or curline:find("l#.*\t")
+                or curline:find("d#.*\t")
+                or curline:find("4#.*\t")
+                or curline:find("7#.*\t")
                 or curline:find(":#.*\t")
             then
                 -- Expand or collapse the object in libraries view
-                job.stdin("Server", "33L" .. key .. "\n")
+                require("r.lsp").send_msg({ code = "33L", key = key })
             else
                 require("r.send").cmd("str(" .. key .. ")")
             end
@@ -492,7 +492,7 @@ function M.on_right_click()
     if line:find("^   ##") then return end
 
     local isfunction = false
-    if line:find("%(#") then isfunction = true end
+    if line:find("F#") then isfunction = true end
 
     if state.hasbrowsermenu then vim.fn.aunmenu("]RBrowser") end
 
@@ -543,7 +543,6 @@ end
 function M.on_BufUnload()
     state.buf = nil
     state.win = nil
-    send_to_nvimcom("N", "OnOBBufUnload")
 end
 
 --- Return Object Browser buffer number

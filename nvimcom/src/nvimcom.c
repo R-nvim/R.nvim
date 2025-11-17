@@ -7,6 +7,15 @@
 #include <R_ext/eventloop.h>
 #endif
 
+#include <inttypes.h>
+#include <stddef.h>
+#ifdef WIN32
+#define bzero(b, len) (memset((b), '\0', (len)), (void)0)
+// Include for _setmode and _O_BINARY
+#include <fcntl.h>
+#include <io.h>
+#endif
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,10 +94,6 @@ static int maxdepth = 12; // How many levels to parse in lists and S4 objects
 // the listing is too slow.
 static int curdepth = 0; // Current level of the list or S4 object being parsed
                          // for auto-completion.
-static int autoglbenv = 0; // Should the list of objects in .GlobalEnv be
-// automatically updated after each top level command is executed? It will
-// always be 2 if cmp-r is installed; otherwise, it will be 1 if the Object
-// Browser is open.
 
 static char tmpdir[512]; // The environment variable RNVIM_TMPDIR.
 static int setwidth = 0; // Set the option width after each command is executed
@@ -170,7 +175,7 @@ SEXP fmt_txt(SEXP txt) {
 SEXP fmt_usage(SEXP fnm, SEXP args) {
     const char *f = CHAR(STRING_ELT(fnm, 0));
     const char *a = CHAR(STRING_ELT(args, 0));
-    char *b = format_usage(f, a);
+    char *b = format_usage(f, a, 1);
     SEXP ans = R_NilValue;
     PROTECT(ans = NEW_CHARACTER(1));
     SET_STRING_ELT(ans, 0, mkChar(b));
@@ -310,35 +315,6 @@ static void send_to_nvim(char *msg) {
  * @param cmd The message to be sent.
  */
 void nvimcom_msg_to_nvim(char **cmd) { send_to_nvim(*cmd); }
-
-/**
- * @brief Escape single quotes.
- *
- * We use single quotes to define strings to be sent to Neovim. Consequently,
- * single quotes within such strings must be escaped to avoid Lua errors
- * when evaluating the string.
- *
- * @param buf Original string.
- * @param buf2 Destination buffer of the new string with escaped quotes.
- * @param bsize Size limit of destination buffer.
- */
-static void nvimcom_squo(const char *buf, char *buf2, int bsize) {
-    int i = 0, j = 0;
-    while (j < bsize) {
-        if (buf[i] == '\'') {
-            buf2[j] = '\\';
-            j++;
-            buf2[j] = '\'';
-        } else if (buf[i] == 0) {
-            buf2[j] = 0;
-            break;
-        } else {
-            buf2[j] = buf[i];
-        }
-        i++;
-        j++;
-    }
-}
 
 /**
  * @brief Quote strings with backticks.
@@ -484,34 +460,34 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
     p = str_cat(p, ebuf);
 
     if (Rf_isLogical(*x)) {
-        p = str_cat(p, "\006%\006");
+        p = str_cat(p, "\006b\006");
     } else if (Rf_isNumeric(*x)) {
-        p = str_cat(p, "\006{\006");
+        p = str_cat(p, "\006n\006");
     } else if (Rf_isFactor(*x)) {
-        p = str_cat(p, "\006!\006");
+        p = str_cat(p, "\006f\006");
     } else if (Rf_isValidString(*x)) {
-        p = str_cat(p, "\006~\006");
+        p = str_cat(p, "\006t\006");
     } else if (Rf_isFunction(*x)) {
-        p = str_cat(p, "\006(\006");
+        p = str_cat(p, "\006F\006");
         xgroup = 1;
     } else if (Rf_isFrame(*x)) {
-        p = str_cat(p, "\006$\006");
+        p = str_cat(p, "\006d\006");
         xgroup = 2;
     } else if (Rf_isNewList(*x)) {
-        p = str_cat(p, "\006[\006");
+        p = str_cat(p, "\006l\006");
         xgroup = 3;
     } else if (Rf_isS4(*x)) {
-        p = str_cat(p, "\006<\006");
+        p = str_cat(p, "\0064\006");
         xgroup = 4;
     } else if (Rf_inherits(*x, "S7_object")) {
-        p = str_cat(p, "\006>\006");
+        p = str_cat(p, "\0067\006");
         xgroup = 7;
     } else if (Rf_isEnvironment(*x)) {
-        p = str_cat(p, "\006:\006");
+        p = str_cat(p, "\006e\006");
     } else if (TYPEOF(*x) == PROMSXP) {
-        p = str_cat(p, "\006&\006");
+        p = str_cat(p, "\006p\006");
     } else {
-        p = str_cat(p, "\006*\006");
+        p = str_cat(p, "\006o\006");
     }
 
     // Specific class of object, if any
@@ -524,13 +500,26 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
     p = str_cat(p, "\006.GlobalEnv\006");
 
     if (xgroup == 1) {
-        /* It would be necessary to port args2buff() from src/main/deparse.c to
-           here but it's too big. So, it's better to call nvimcom:::nvim.args()
-           during auto completion. FORMALS() may return an object that will
-           later crash R:
-           https://github.com/jalvesaq/Vim-R/issues/543#issuecomment-748981771
-         */
-        p = str_cat(p, ">not_checked<");
+        SEXP cmdSexp, cmdexpr, ans;
+        ParseStatus status;
+        int er = 0;
+        char b[64];
+        snprintf(b, 63, "nvimcom:::nvim.args('%s')", xname);
+        PROTECT(cmdSexp = allocVector(STRSXP, 1));
+        SET_STRING_ELT(cmdSexp, 0, mkChar(b));
+        PROTECT(cmdexpr = R_ParseVector(cmdSexp, -1, &status, R_NilValue));
+        if (status == PARSE_OK) {
+            PROTECT(ans = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
+            if (er) {
+                p = str_cat(p, ">ERROR<");
+            } else {
+                p = str_cat(p, CHAR(STRING_ELT(ans, 0)));
+            }
+            UNPROTECT(1);
+        } else {
+            p = str_cat(p, ">INVALID<");
+        }
+        UNPROTECT(2);
     }
 
     // Add label
@@ -614,7 +603,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
 
     if (xgroup > 1) {
         char newenv[576];
-        SEXP elmt = R_NilValue;
+        SEXP elmt;
         const char *ename;
 
         if (xgroup == 4 || xgroup == 7) {
@@ -775,47 +764,66 @@ static void nvimcom_globalenv_list(void) {
     }
 }
 
+static char *unscape_str(const char *a) {
+    size_t l = strlen(a);
+    char *b = (char *)calloc(2 * l + 32, sizeof(char));
+    size_t j = 0;
+    size_t i = 0;
+    while (i < l) {
+        if (a[i] == '\\' && a[i + 1] == 'u' && a[i + 2] == '0' &&
+            a[i + 3] == '0' && a[i + 4] == '1') {
+            if (a[i + 5] == '2') {
+                b[j] = '\'';
+                j++;
+                i += 6;
+            } else if (a[i + 5] == '3') {
+                b[j] = '"';
+                j++;
+                i += 6;
+            }
+        } else {
+            b[j] = a[i];
+            i++;
+            j++;
+        }
+    }
+    return b;
+}
+
 /**
  * @brief Evaluate an R expression.
  *
  * @param buf The expression to be evaluated.
  */
 static void nvimcom_eval_expr(const char *buf) {
-    if (verbose > 3)
-        Rprintf("nvimcom_eval_expr: '%s'\n", buf);
+    char *b = unscape_str(buf);
 
-    char rep[128];
+    if (verbose > 3)
+        Rprintf("nvimcom_eval_expr: '%s'\n", b);
 
     SEXP cmdSexp, cmdexpr, ans;
     ParseStatus status;
     int er = 0;
 
     PROTECT(cmdSexp = allocVector(STRSXP, 1));
-    SET_STRING_ELT(cmdSexp, 0, mkChar(buf));
+    SET_STRING_ELT(cmdSexp, 0, mkChar(b));
     PROTECT(cmdexpr = R_ParseVector(cmdSexp, -1, &status, R_NilValue));
 
-    char buf2[80];
-    nvimcom_squo(buf, buf2, 80);
     if (status == PARSE_OK) {
         /* Only the first command will be executed if the expression includes
          * a semicolon. */
         PROTECT(ans = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv, &er));
         if (er && verbose > 1) {
-            strcpy(rep, "lua require('r.log').warn('Error running: ");
-            strncat(rep, buf2, 80);
-            strcat(rep, "')");
-            send_to_nvim(rep);
+            REprintf("Error running: %s\n", b);
         }
         UNPROTECT(1);
     } else {
         if (verbose > 1) {
-            strcpy(rep, "lua require('r.log').warn('Invalid command: ");
-            strncat(rep, buf2, 80);
-            strcat(rep, "')");
-            send_to_nvim(rep);
+            REprintf("Invalid command: %s\n", b);
         }
     }
     UNPROTECT(2);
+    free(b);
 }
 
 /**
@@ -868,7 +876,7 @@ static void nvimcom_checklibs(void) {
     char buf[128];
     ParseStatus status;
     int er = 0;
-    LibInfo *lib;
+    const LibInfo *lib;
 
     nlibs = newnlibs;
 
@@ -922,8 +930,7 @@ void nvimcom_task(void) {
 #endif
     if (rns_port[0] != 0) {
         nvimcom_checklibs();
-        if (autoglbenv)
-            nvimcom_globalenv_list();
+        nvimcom_globalenv_list();
     }
     if (setwidth && getenv("COLUMNS")) {
         int columns = atoi(getenv("COLUMNS"));
@@ -1012,7 +1019,7 @@ static void nvimcom_fire(void) {
 static void SrcrefInfo(void) {
     // Adapted from SrcrefPrompt(), at src/main/eval.c
     if (debugging == 0) {
-        send_to_nvim("lua require('r.debug').stop()");
+        send_to_nvim("require('r.debug').stop()");
         return;
     }
 
@@ -1022,15 +1029,10 @@ static void SrcrefInfo(void) {
         if (isString(filename) && length(filename)) {
             size_t slen = strlen(CHAR(STRING_ELT(filename, 0)));
             char *buf = calloc(sizeof(char), (2 * slen + 56));
-            char *buf2 = calloc(sizeof(char), (2 * slen + 56));
-            snprintf(buf, 2 * slen + 1, "%s", CHAR(STRING_ELT(filename, 0)));
-            nvimcom_squo(buf, buf2, 2 * slen + 32);
-            snprintf(buf, 2 * slen + 55,
-                     "lua require('r.debug').jump('%s', %d)", buf2,
-                     asInteger(R_Srcref));
+            snprintf(buf, 2 * slen + 1, "require('r.debug').jump('%s', %d)",
+                     CHAR(STRING_ELT(filename, 0)), asInteger(R_Srcref));
             send_to_nvim(buf);
             free(buf);
-            free(buf2);
         }
     }
 }
@@ -1080,12 +1082,12 @@ static void nvimcom_send_running_info(const char *r_info, const char *nvv) {
 
 #ifdef _WIN64
     snprintf(msg, 2175,
-             "lua require('r.run').set_nvimcom_info('%s', %" PRId64
-             ", '%" PRId64 "', %s)",
+             "require('r.run').set_nvimcom_info('%s', %" PRId64 ", '%" PRId64
+             "', %s)",
              nvv, R_PID, (long long)GetForegroundWindow(), r_info);
 #else
     snprintf(msg, 2175,
-             "lua require('r.run').set_nvimcom_info('%s', %d, '%ld', %s)", nvv,
+             "require('r.run').set_nvimcom_info('%s', %d, '%ld', %s)", nvv,
              R_PID, (long)GetForegroundWindow(), r_info);
 #endif
     send_to_nvim(msg);
@@ -1113,21 +1115,6 @@ static void nvimcom_parse_received_msg(char *buf) {
         r_is_busy = 1;
         break;
 #endif
-    case 'A': // Object Browser started
-        if (autoglbenv == 0)
-            autoglbenv = 1;
-#ifdef WIN32
-        if (!r_is_busy)
-            nvimcom_globalenv_list();
-#else
-        flag_glbenv = 1;
-        nvimcom_fire();
-#endif
-        break;
-    case 'N': // Object Browser closed
-        if (autoglbenv == 1)
-            autoglbenv = 0;
-        break;
     case 'G':
 #ifdef WIN32
         if (!r_is_busy)
@@ -1273,16 +1260,21 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
  *
  * @param rinfo Information on R to be passed to nvim.
  */
-SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
-                   SEXP tml, SEXP dbg, SEXP nvv, SEXP rinfo) {
+SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP szl, SEXP tml,
+                   SEXP dbg, SEXP nvv, SEXP rinfo) {
     verbose = *INTEGER(vrb);
     allnames = *INTEGER(anm);
     setwidth = *INTEGER(swd);
-    autoglbenv = *INTEGER(age);
     maxdepth = *INTEGER(imd);
     sizelimit = *INTEGER(szl);
     timelimit = (double)*INTEGER(tml);
     debug_r = *INTEGER(dbg);
+
+#ifdef WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+    _setmode(_fileno(stderr), _O_BINARY);
+    _setmode(_fileno(stdin), _O_BINARY);
+#endif
 
     if (getenv("RNVIM_TMPDIR")) {
         strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 500);
@@ -1306,7 +1298,7 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
     if (getenv("RNVIM_PORT"))
         strncpy(rns_port, getenv("RNVIM_PORT"), 15);
 
-    set_doc_width(getenv("CMPR_DOC_WIDTH"));
+    set_doc_width(getenv("R_LS_DOC_WIDTH"));
 
     if (verbose > 0)
         REprintf("nvimcom %s loaded\n", CHAR(STRING_ELT(nvv, 0)));
@@ -1314,7 +1306,7 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP age, SEXP imd, SEXP szl,
         if (getenv("NVIM_IP_ADDRESS")) {
             REprintf("  NVIM_IP_ADDRESS: %s\n", getenv("NVIM_IP_ADDRESS"));
         }
-        REprintf("  CMPR_DOC_WIDTH: %s\n", getenv("CMPR_DOC_WIDTH"));
+        REprintf("  R_LS_DOC_WIDTH: %s\n", getenv("R_LS_DOC_WIDTH"));
         REprintf("  RNVIM_PORT: %s\n", rns_port);
         REprintf("  RNVIM_ID: %s\n", getenv("RNVIM_ID"));
         REprintf("  RNVIM_TMPDIR: %s\n", tmpdir);

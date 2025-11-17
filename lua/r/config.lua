@@ -2,6 +2,33 @@ local utils = require("r.utils")
 local uv = vim.uv
 local hooks = require("r.hooks")
 
+---@class RLSConfigOpts
+---Enable the completion provider
+---@field completion? boolean
+---
+---Enable the hover provider
+---@field hover? boolean
+---
+---Enable the signature help provider
+---@field signature? boolean
+---
+---Text width of documentation window displayed when
+---an item is selected
+---@field doc_width? integer
+---
+---List of functions that are expected to receive a data.frame is the first
+---argument
+---@field fun_data_1? string[]
+---
+---List of functions that are expected to be within the arguments list of a
+---function that receives a data.frame as its first argument
+---@field fun_data_2? table
+---
+---Path to `yaml-intelligence-resources.json`
+---@field quarto_intel? string
+---
+---Highlight color of R output in hover and resolve windows
+---@field rout_fg_colors? table
 
 ---@class RConfigUserOpts
 ---
@@ -33,6 +60,10 @@ local hooks = require("r.hooks")
 ---Whether to add additional highlighting to R output; defaults to `false`.
 ---Do `:help Rout_more_colors` for more information.
 ---@field Rout_more_colors? boolean
+---
+---Whether highlighting to R output should follow the current colorscheme. Defaults to `false`.
+---Do `:help Rout_follow_colorscheme` for more information.
+---@field Rout_follow_colorscheme? boolean
 ---
 ---The R prompt string; defaults to `""`.
 ---Do `:help R_prompt_str` for more information.
@@ -93,6 +124,9 @@ local hooks = require("r.hooks")
 ---Options for fine-grained control of the object browser. Do `:help compl_data`
 ---for more information.
 ---@field compl_data? { max_depth: integer, max_size: integer, max_time: integer }
+---
+---Options for the r_ls (R.nvim's built-in language server)
+---@field r_ls? RLSConfigOpts
 ---
 ---Whether to use R.nvim's configuration for Tmux if running R in an external
 ---terminal emulator. Set to `false` if you want to use your own `.tmux.conf`.
@@ -378,126 +412,134 @@ local hooks = require("r.hooks")
 ---@field term_title? string -- Pid of window application.
 ---@field term_pid? integer -- Part of the window title.
 
--- stylua: ignore start
 ---@type RConfig
 local config = {
-    OutDec              = ".",
-    RStudio_cmd         = "",
-    R_app               = "R",
-    R_args              = { },
-    R_cmd               = "R",
-    R_path              = "",
-    Rout_more_colors    = false,
-    R_prompt_str        = "",
-    R_continue_str      = "",
-    pipe_version        = "native",
-    auto_scroll         = true,
-    auto_start          = "no",
-    auto_quit           = false,
-    bracketed_paste     = false,
-    buffer_opts         = "winfixwidth winfixheight nobuflisted",
-    clear_console       = true,
-    clear_line          = false,
-    close_term          = true,
-    convert_range_int   = false,
-    compldir            = "",
-    compl_data          = {
+    OutDec = ".",
+    RStudio_cmd = "",
+    R_app = "R",
+    R_args = {},
+    R_cmd = "R",
+    R_path = "",
+    Rout_more_colors = false,
+    Rout_follow_colorscheme = false,
+    R_prompt_str = "",
+    R_continue_str = "",
+    pipe_version = "native",
+    auto_scroll = true,
+    auto_start = "no",
+    auto_quit = false,
+    bracketed_paste = false,
+    buffer_opts = "winfixwidth winfixheight nobuflisted",
+    clear_console = true,
+    clear_line = false,
+    close_term = true,
+    convert_range_int = false,
+    compldir = "",
+    compl_data = {
         max_depth = 3,
         max_size = 1000000,
         max_time = 100,
     },
-    config_tmux         = true,
-    debug               = true,
-    debug_center        = false,
-    debug_jump          = true,
-    disable_cmds        = { "" },
-    editing_mode        = "",
-    esc_term            = true,
-    external_term       = "",
-    has_X_tools         = false,
-    hl_term             = true,
-    hook                = {
-                              on_filetype = function() end,
-                              after_config = function() end,
-                              after_R_start = function() end,
-                              after_ob_open = function() end,
-                          },
-    insert_mode_cmds    = false,
-    latexcmd            = { "default" },
-    latex_build_dir     = "",
-    sweaveargs          = "",
-    listmethods         = false,
+    r_ls = {
+        completion = true,
+        hover = true,
+        signature = true,
+        doc_width = 0,
+        fun_data_1 = { "select", "rename", "mutate", "filter" },
+        fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
+        quarto_intel = nil,
+        rout_fg_colors = {},
+    },
+    config_tmux = true,
+    debug = true,
+    debug_center = false,
+    debug_jump = true,
+    disable_cmds = { "" },
+    editing_mode = "",
+    esc_term = true,
+    external_term = "",
+    has_X_tools = false,
+    hl_term = true,
+    hook = {
+        on_filetype = function() end,
+        after_config = function() end,
+        after_R_start = function() end,
+        after_ob_open = function() end,
+    },
+    insert_mode_cmds = false,
+    latexcmd = { "default" },
+    latex_build_dir = "",
+    sweaveargs = "",
+    listmethods = false,
     local_R_library_dir = "",
-    max_paste_lines     = 20,
-    min_editor_width    = 80,
-    setwd               = "no",
-    nvimpager           = "split_h",
-    objbr_allnames      = false,
-    objbr_auto_start    = false,
-    objbr_h             = 10,
-    objbr_opendf        = true,
-    objbr_openlist      = false,
-    objbr_place         = "script,right",
-    objbr_w             = 40,
-    objbr_mappings      = {
-                              s = "summary",
-                              p = "plot",
-                          },
-    objbr_placeholder   = "{object}",
-    open_example        = true,
-    open_html           = "open and focus",
-    open_pdf            = "open and focus",
-    paragraph_begin     = true,
-    parenblock          = true,
-    path_split_fun      = "file.path",
-    pdfviewer           = "",
+    max_paste_lines = 20,
+    min_editor_width = 80,
+    setwd = "no",
+    nvimpager = "split_h",
+    objbr_allnames = false,
+    objbr_auto_start = false,
+    objbr_h = 10,
+    objbr_opendf = true,
+    objbr_openlist = false,
+    objbr_place = "script,right",
+    objbr_w = 40,
+    objbr_mappings = {
+        s = "summary",
+        p = "plot",
+    },
+    objbr_placeholder = "{object}",
+    open_example = true,
+    open_html = "open and focus",
+    open_pdf = "open and focus",
+    paragraph_begin = true,
+    parenblock = true,
+    path_split_fun = "file.path",
+    pdfviewer = "",
     quarto_preview_args = "",
-    quarto_render_args  = "",
+    quarto_render_args = "",
     quarto_chunk_hl = {
         highlight = true,
-        yaml_hl = vim.fn.has("nvim-0.11") == 1 and true or false,
+        yaml_hl = true,
         virtual_title = true,
         bg = "",
-        events = ""
+        events = "",
     },
-    rconsole_height     = 15,
-    rconsole_width      = 80,
+    rconsole_height = 15,
+    rconsole_width = 80,
     register_treesitter = true,
-    remote_compldir     = "",
-    rm_knit_cache       = false,
-    rmarkdown_args      = "",
-    rmd_environment     = ".GlobalEnv",
-    rmhidden            = false,
-    rnvim_home          = "",
-    routnotab           = false,
-    rproj_prioritise    = {
-                               "pipe_version"
-                          },
-    set_home_env        = true,
-    setwidth            = 2,
-    silent_term         = false,
-    skim_app_path       = "",
-    source_args         = "",
-    specialplot         = false,
-    start_libs          = "base,stats,graphics,grDevices,utils,methods",
-    synctex             = true,
-    texerr              = true,
-    tmpdir              = "",
-    user_login          = "",
-    user_maps_only      = false,
-    view_df = {
-        open_app = "",  -- How to open the CSV in Neovim or an external application.
-        how = "tabnew", -- How to display the data within Neovim if not using an external application.
-        csv_sep = "",   -- Field separator to be used when saving the CSV.
-        n_lines = -1,   -- Number of lines to save in the CSV (0 for all lines).
-        save_fun = "",  -- Save the data.frame in a CSV file
-        open_fun = "",  -- Use an R function to open the data.frame directly (no conversion to CSV needed)
+    remote_compldir = "",
+    rm_knit_cache = false,
+    rmarkdown_args = "",
+    rmd_environment = ".GlobalEnv",
+    rmhidden = false,
+    rnvim_home = "",
+    routnotab = false,
+    rproj_prioritise = {
+        "pipe_version",
     },
-    wait                = 60,
-    set_params          = "yes",
+    set_home_env = true,
+    setwidth = 2,
+    silent_term = false,
+    skim_app_path = "",
+    source_args = "",
+    specialplot = false,
+    start_libs = "base,stats,graphics,grDevices,utils,datasets,methods",
+    synctex = true,
+    texerr = true,
+    tmpdir = "",
+    user_login = "",
+    user_maps_only = false,
+    view_df = {
+        open_app = "", -- How to open the CSV in Neovim or an external application.
+        how = "tabnew", -- How to display the data within Neovim if not using an external application.
+        csv_sep = "", -- Field separator to be used when saving the CSV.
+        n_lines = -1, -- Number of lines to save in the CSV (0 for all lines).
+        save_fun = "", -- Save the data.frame in a CSV file
+        open_fun = "", -- Use an R function to open the data.frame directly (no conversion to CSV needed)
+    },
+    wait = 60,
+    set_params = "yes",
 }
-
--- stylua: ignore end
 
 local user_opts = {}
 local did_real_setup = false
@@ -666,7 +708,9 @@ end
 
 local set_directories = function()
     -- config.rnvim_home should be the directory where the plugin files are.
-    config.rnvim_home = vim.fn.expand("<script>:h:h")
+    local rndir = debug.getinfo(1, "S").source
+    rndir = rndir:match("^@(.*)/lua/r/.*")
+    config.rnvim_home = rndir
 
     -- config.uservimfiles must be a writable directory. It will be config.rnvim_home
     -- unless it's not writable. Then it wil be ~/.vim or ~/vimfiles.
@@ -712,6 +756,7 @@ local set_directories = function()
         config.rnvim_home = utils.normalize_windows_path(config.rnvim_home)
         config.uservimfiles = utils.normalize_windows_path(config.uservimfiles)
     end
+    vim.env.RNVIM_HOME = rndir
 
     if config.compldir ~= "" then
         config.compldir = vim.fn.expand(config.compldir)
@@ -788,7 +833,7 @@ local check_readme = function()
     -- Create or update the README (objls_ files will be regenerated if older than
     -- the README).
     local need_readme = false
-    local first_line = "Last change in this file: 2025-09-13"
+    local first_line = "Last change in this file: 2025-11-17"
     if
         vim.fn.filereadable(config.compldir .. "/README") == 0
         or vim.fn.readfile(config.compldir .. "/README")[1] ~= first_line
@@ -826,9 +871,8 @@ local check_readme = function()
             "",
             "  1. Name.",
             "",
-            "  2. Single character representing the type of object (look at the function",
-            "     nvimcom_glbnv_line at nvimcom/src/nvimcom.c to know the meaning of the",
-            "     characters).",
+            "  2. Single character representing the type of object (look at kind_tbl",
+            "     at nvimcom/src/apps/complete.c to know the meaning of the characters).",
             "",
             "  3. Class.",
             "",
@@ -858,6 +902,16 @@ end
 local do_common_global = function()
     config.uname = uv.os_uname().sysname
     config.is_windows = config.uname:find("Windows", 1, true) ~= nil
+    if config.r_ls.doc_width == 0 then
+        local dw = vim.o.columns / 2 - 4
+        if dw < 30 then dw = 30 end
+        if dw > 80 then dw = 80 end
+        vim.env.R_LS_DOC_WIDTH = tostring(dw)
+    else
+        vim.env.R_LS_DOC_WIDTH = tostring(config.r_ls.doc_width)
+    end
+
+    -- Environment variable to nvimcom and rnvimserver
 
     set_pdf_viewer()
     set_directories()
@@ -880,11 +934,6 @@ local do_common_global = function()
     end
 
     if config.R_app:find("radian") then config.hl_term = false end
-
-    -- The environment variables RNVIM_COMPLCB and RNVIM_COMPLInfo must be defined
-    -- before starting the rnvimserver because it needs them at startup.
-    vim.env.RNVIM_COMPL_CB = "require('cmp_r').complete_cb"
-    vim.env.RNVIM_RSLV_CB = "require('cmp_r').resolve_cb"
 
     -- Look for invalid options
     local objbrplace = vim.split(config.objbr_place, ",")
@@ -943,10 +992,48 @@ local do_common_global = function()
     end
 end
 
+local mtime = function(fname)
+    local fd = vim.uv.fs_open(fname, "r", tonumber("644", 8))
+    local mt
+    if fd then
+        mt = vim.uv.fs_fstat(fd).mtime.sec
+        vim.uv.fs_close(fd)
+    end
+    return mt
+end
+
+--- Install the "rout" parser, required to properly highlight R output in
+--- hover and resolve windows from the language server
+local check_rout_parser = function()
+    local routp = config.rnvim_home .. "/parser/rout.so"
+    local mt1 = mtime(config.rnvim_home .. "/resources/tree-sitter-rout/grammar.js")
+    local mt2 = mtime(routp)
+    if mt1 and mt2 and mt2 > mt1 then return end
+    if vim.fn.executable("tree-sitter") == 0 then return end
+
+    vim.uv.fs_mkdir(config.rnvim_home .. "/parser", tonumber("755", 8))
+    local cwdir = vim.uv.cwd()
+    vim.uv.chdir(config.rnvim_home .. "/resources/tree-sitter-rout")
+    -- from nvim-treesitter
+    local obj = vim.system({ "tree-sitter", "generate" }, { text = true }):wait(3000)
+    if obj.code ~= 0 then
+        swarn("Error generating tree-sitter parser for `rout`: " .. obj.stderr)
+        return
+    end
+    obj = vim.system({ "tree-sitter", "build", "-o", routp }, { text = true }):wait(3000)
+    if obj.code ~= 0 then
+        swarn("Error building tree-sitter parser for `rout`: " .. obj.stderr)
+        return
+    end
+    if cwdir then vim.uv.chdir(cwdir) end
+end
+
 local global_setup = function()
     local gtime = uv.hrtime()
 
-    if vim.g.R_Nvim_status == 0 then vim.g.R_Nvim_status = 1 end
+    if not vim.g.R_Nvim_status or vim.g.R_Nvim_status == 0 then
+        vim.g.R_Nvim_status = 1
+    end
 
     apply_user_opts()
 
@@ -956,7 +1043,6 @@ local global_setup = function()
 
     if config.external_term == "" then config.auto_quit = true end
 
-    -- Load functions that were not converted to Lua yet
     -- Configure more values that depend on either system features or other
     -- config values.
     -- Fix some invalid values
@@ -973,7 +1059,13 @@ local global_setup = function()
 
     -- Override default config values with user options for the second time.
     for k, v in pairs(user_opts) do
-        config[k] = v
+        if type(v) == "table" then
+            for k2, v2 in pairs(v) do
+                config[k][k2] = v2
+            end
+        else
+            config[k] = v
+        end
     end
 
     require("r.commands").create_user_commands()
@@ -984,6 +1076,29 @@ local global_setup = function()
 
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
+
+    check_rout_parser()
+    local set_hl = vim.api.nvim_set_hl
+    if config.Rout_follow_colorscheme then
+        set_hl(0, "@rout_normal", { link = "Normal" })
+        set_hl(0, "@rout_number", { link = "@number.float.r" })
+        set_hl(0, "@rout_negnum", { link = "@number.float.r" })
+        set_hl(0, "@rout_constant", { link = "@constant.builtin.r" })
+        set_hl(0, "@rout_false", { link = "@boolean.r" })
+        set_hl(0, "@rout_true", { link = "@boolean.r" })
+        set_hl(0, "@rout_inf", { link = "@constant.builtin.r" })
+    else
+        local c = config.r_ls.rout_fg_colors
+        if c then
+            set_hl(0, "@rout_normal", { fg = c.Normal and c.Normal or "#00d700" })
+            set_hl(0, "@rout_number", { fg = c.Number and c.Number or "#ffaf00" })
+            set_hl(0, "@rout_negnum", { fg = c.Negnum and c.Negnum or "#ff875f" })
+            set_hl(0, "@rout_constant", { fg = c.Constant and c.Constant or "#00af5f" })
+            set_hl(0, "@rout_false", { fg = c.False and c.False or "#ff5f5f" })
+            set_hl(0, "@rout_true", { fg = c.True and c.True or "#5fd787" })
+            set_hl(0, "@rout_inf", { fg = c.Inf and c.Inf or "#00afff" })
+        end
+    end
 end
 
 local M = {}
@@ -1020,10 +1135,16 @@ M.real_setup = function()
 
     require("r.rproj").apply_settings(config)
 
+    local no_ts = { "rhelp" }
     if config.register_treesitter then
         vim.treesitter.language.register("markdown", { "quarto", "rmd" })
+    else
+        table.insert(no_ts, "quarto")
+        table.insert(no_ts, "rmd")
     end
-    vim.treesitter.start()
+    if not vim.tbl_contains(no_ts, vim.bo.filetype) then vim.treesitter.start() end
+
+    require("r.lsp").attach_to_buffer(vim.api.nvim_get_current_buf())
 end
 
 --- Return the table with the final configure variables: the default values
@@ -1050,7 +1171,7 @@ M.check_health = function()
         end)
     end
 
-    if vim.fn.has("nvim-0.10.4") ~= 1 then swarn("R.nvim requires Neovim >= 0.10.4") end
+    if vim.fn.has("nvim-0.11.4") ~= 1 then swarn("R.nvim requires Neovim >= 0.11.4") end
 
     -- Check if treesitter is available
     local function has_parser(parser_name, parsers)

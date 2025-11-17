@@ -23,8 +23,12 @@
 #include "logging.h"
 #include "utilities.h"
 #include "complete.h"
+#include "resolve.h"
+#include "hover.h"
+#include "signature.h"
 #include "obbr.h"
 #include "tcp.h"
+#include "lsp.h"
 
 #ifdef WIN32
 static HANDLE Tid; // Identifier of thread running TCP connection loop.
@@ -32,25 +36,27 @@ static HANDLE Tid; // Identifier of thread running TCP connection loop.
 static pthread_t Tid; // Thread ID
 #endif
 
-struct sockaddr_in servaddr;         // Server address structure
-static int sockfd;                   // socket file descriptor
-static int connfd;                   // Connection file descriptor
-static unsigned long fb_size = 1024; // Final buffer size
-static int r_conn;                   // R connection status flag
-static char *VimSecret;              // Secret for communication with Vim
-static int VimSecretLen;             // Length of Vim secret
-static char *finalbuffer;            // Final buffer for message processing
+struct sockaddr_in servaddr;  // Server address structure
+static int sockfd;            // socket file descriptor
+static int connfd;            // Connection file descriptor
+static size_t fb_size = 1024; // Final buffer size
+static int r_conn;            // R connection status flag
+static char *VimSecret;       // Secret for communication with Vim
+static int VimSecretLen;      // Length of Vim secret
+static char *finalbuffer;     // Final buffer for message processing
 
 // Parse the message from R
 static void ParseMsg(char *b) {
 #ifdef Debug_NRS
-    if (strlen(b) > 500)
-        Log("ParseMsg(): strlen(b) = %" PRI_SIZET "", strlen(b));
+    if (strlen(b) > 2000)
+        Log("\x1b[32mTCP_in\x1b[0m, strlen = %zu", strlen(b));
     else
-        Log("ParseMsg():\n%s", b);
+        Log("\x1b[32mTCP in\x1b[0m: %s", b);
 #endif
 
     if (*b == '+') {
+        char code;
+        char *id;
         b++;
         switch (*b) {
         case 'G':
@@ -67,65 +73,70 @@ static void ParseMsg(char *b) {
             if (auto_obbr)
                 lib2ob();
             break;
-        case 'C': // strtok doesn't work here because "base" might be empty.
+        case 'C':
             b++;
-            char *id = b;
-            char *base = id;
-            char *fnm;
-            char *dtfrm;
-            char *args;
-            while (*base != ';')
-                base++;
-            *base = 0;
-            base++;
-            fnm = base;
-            while (*fnm != ';')
-                fnm++;
-            *fnm = 0;
-            fnm++;
-            dtfrm = fnm;
-            while (*dtfrm != ';')
-                dtfrm++;
-            *dtfrm = 0;
-            dtfrm++;
-            args = dtfrm;
-            while (*args != 0 && *args != ';')
-                args++;
-            *args = 0;
-            args++;
-            b = args;
-            while (*b != 0 && *b != '\n')
-                b++;
+            complete(b);
+            break;
+        case 'R':
+        case 'H':
+        case 's':
+        case 'h':
+            code = *b;
+            b++;
+            id = b;
+            b = strstr(b, "|");
+            *b = '\0';
+            if (code == 'R') {
+                send_item_doc(id, ++b);
+            } else if (code == 'H') {
+                send_hover_doc(id, ++b);
+            } else if (code == 's') {
+                sig_seek(id, ++b);
+            } else if (code == 'h') {
+                hov_seek(id, ++b);
+            }
+            break;
+        case 'S':
+            b++;
+            id = b;
+            b = strstr(b, "|");
             *b = 0;
-            complete(id, base, *fnm ? fnm : NULL, *dtfrm ? dtfrm : NULL,
-                     *args ? args : NULL);
+            b++;
+            const char *wrd = b;
+            b = strstr(b, "|");
+            *b = 0;
+            glbnv_signature(id, wrd, ++b);
             break;
         case 'D': // set max_depth of lists in the completion data
             b++;
             set_max_depth(atoi(b));
             break;
+        case 'N':
+            b++;
+            send_null(b);
         }
         return;
     }
 
     // Send the command to R.nvim
-    printf("\x11%" PRI_SIZET "\x11%s\n", strlen(b), b);
-    fflush(stdout);
+    char *cmd = (char *)malloc(sizeof(char) * strlen(b) + 1);
+    if (cmd) {
+        strcpy(cmd, b);
+        send_cmd_to_nvim(b);
+        free(cmd);
+    }
 }
 
-static void RegisterPort(int bindportn) // Function to register port number to R
-{
+// Function to register port number to R
+static void RegisterPort(int bindportn) {
     // Register the port:
-    printf("lua require('r.run').set_rns_port('%d')\n", bindportn);
-    fflush(stdout);
+    char pcmd[128];
+    sprintf(pcmd, "require('r.run').set_rns_port('%d')", bindportn);
+    send_cmd_to_nvim(pcmd);
 }
 
 /**
  * @brief Initializes the socket for the server.
- *
- * This function creates a socket for the server and performs necessary
- * initializations. On Windows, it also initializes Winsock. The function
- * exits the program if socket creation fails.
  *
  * @note For Windows, WSAStartup is called to start the Winsock API.
  */
@@ -164,12 +175,6 @@ static void initialize_socket(void) {
 #define PORT_END 10199
 /**
  * @brief Binds the server socket to an available port.
- *
- * This function initializes the server address structure and attempts to bind
- * the server socket to an available port starting from 10101 up to 10199.
- * It registers the port number for R to connect. The function exits the
- * program if it fails to bind the socket to any of the ports in the specified
- * range.
  */
 static void bind_to_port(void) {
     Log("bind_to_port()");
@@ -201,11 +206,6 @@ static void bind_to_port(void) {
 
 /**
  * @brief Sets the server to listen for incoming connections.
- *
- * This function sets the server to listen on the socket for incoming
- * connections. It configures the socket to allow up to 5 pending connection
- * requests in the queue. The function exits the program if it fails to set
- * the socket to listen state.
  */
 static void listening_for_connections(void) {
     Log("listening_for_connections()");
@@ -220,10 +220,6 @@ static void listening_for_connections(void) {
 /**
  * @brief Accepts an incoming connection on the listening socket.
  *
- * This function waits for and accepts the first incoming connection request
- * on the listening socket. It stores the connection file descriptor in
- * 'connfd' and sets the 'r_conn' flag to indicate a successful connection.
- * The function exits the program if it fails to accept a connection.
  */
 static void accept_connection(void) {
     Log("accept_connection()");
@@ -247,11 +243,6 @@ static void accept_connection(void) {
 /**
  * @brief Initializes listening for incoming connections.
  *
- * This function is responsible for the entire process of setting up the
- * server to listen for and accept incoming connections. It calls a series of
- * functions to initialize the socket, bind it to a port, set it to listen
- * for connections, and then accept an incoming connection.
- *
  * @note A previous version of this function was adapted from
  * https://www.geeksforgeeks.org/socket-programming-in-cc-handling-multiple-clients-on-server-without-multi-threading/
  */
@@ -268,7 +259,7 @@ static void get_whole_msg(char *b) {
     Log("get_whole_msg()");
     char *p;
     char tmp[1];
-    int msg_size;
+    size_t msg_size;
 
     if (strstr(b, VimSecret) != b) {
         fprintf(stderr, "Strange string received {%s}: \"%s\"\n", VimSecret, b);
@@ -307,11 +298,12 @@ static void get_whole_msg(char *b) {
 
     // FIXME: Delete this check when the code proved to be reliable
     if (strlen(finalbuffer) != msg_size) {
-        fprintf(stderr, "Divergent TCP message size: %" PRI_SIZET " x %d\n",
-                strlen(p), msg_size);
+        fprintf(stderr, "Divergent TCP message size: %zu x %zu\n", strlen(p),
+                msg_size);
         fflush(stderr);
     }
 
+    r_running = 1;
     ParseMsg(finalbuffer);
 }
 
@@ -344,10 +336,8 @@ static void *receive_msg(void *v)
             sockfd = -1;
             if (rlen != -1 && rlen != 0) {
                 fprintf(stderr, "TCP socket -1: restarting...\n");
-                fprintf(stderr,
-                        "Wrong TCP data length: %" PRI_SIZET " x %" PRI_SIZET
-                        "\n",
-                        blen, rlen);
+                fprintf(stderr, "Wrong TCP data length: %zu x %zu\n", blen,
+                        rlen);
                 fflush(stderr);
             }
             break;
@@ -362,7 +352,7 @@ static void *receive_msg(void *v)
 
 // Function to send messages to R (nvimcom package)
 void send_to_nvimcom(char *msg) {
-    Log("TCP out: %s", msg);
+    Log("\x1b[35mTCP out\x1b[0m: %s", msg);
     if (connfd) {
         size_t len = strlen(msg);
         if (send(connfd, msg, len, 0) != (ssize_t)len) {
@@ -374,6 +364,12 @@ void send_to_nvimcom(char *msg) {
         fprintf(stderr, "nvimcom is not connected");
         fflush(stderr);
     }
+}
+
+void nvimcom_eval(const char *cmd) {
+    char buf[1024];
+    snprintf(buf, 1023, "E%s%s", getenv("RNVIM_ID"), cmd);
+    send_to_nvimcom(buf);
 }
 
 // Start server and listen for connections

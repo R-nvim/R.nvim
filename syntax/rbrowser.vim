@@ -14,20 +14,20 @@ setlocal iskeyword=@,48-57,_,.
 
 setlocal conceallevel=2
 setlocal concealcursor=nvc
-syn match rbrowserNumeric	"{#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserCharacter	/\~#.*\t/ contains=rbrowserDelim,rbrowserTab
-syn match rbrowserFactor	"!#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserFunction	"(#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserControl 	";#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserDF  	"\$#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserList	"\[#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserLogical	"%#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserLibrary	"##.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserS4	"<#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserS7	">#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserEnv	":#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserLazy	"&#.*\t" contains=rbrowserDelim,rbrowserTab
-syn match rbrowserUnknown	"\*#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserNumeric	"n#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserCharacter	"t#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserFactor	"f#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserFunction	"F#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserControl 	"C#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserDF  	"d#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserList	"l#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserLogical	"b#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserLibrary	":#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserS4	"4#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserS7	"7#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserEnv	"e#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserLazy	"p#.*\t" contains=rbrowserDelim,rbrowserTab
+syn match rbrowserUnknown	"o#.*\t" contains=rbrowserDelim,rbrowserTab
 syn match rbrowserNmSpace	"^.GlobalEnv "
 syn match rbrowserNmSpace	"^Libraries "
 syn match rbrowserLink		" Libraries$"
@@ -45,7 +45,7 @@ syn match rbrowserTab contained "\t"
 syn match rbrowserLen " \[[0-9]\+, [0-9]\+\]$" contains=rbrowserEspSpc
 syn match rbrowserLen " \[[0-9]\+\]$" contains=rbrowserEspSpc
 syn match rbrowserErr /Error: label isn't "character"./
-syn match rbrowserDelim contained /!#\|\~#\|(#\|\$#\|\[#\|{#\|%#\|##\|<#\|>#\|:#\|;#\|&#\|\*#/ conceal
+syn match rbrowserDelim contained /\S#/ conceal
 
 hi def link rbrowserNmSpace	Title
 hi def link rbrowserNumeric	Number

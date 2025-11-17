@@ -29,7 +29,6 @@ NvimcomEnv$tcb <- FALSE
         options(nvimcom.allnames = FALSE)
         options(nvimcom.texerrs = TRUE)
         options(nvimcom.setwidth = TRUE)
-        options(nvimcom.autoglbenv = 0)
         options(nvimcom.debug_r = TRUE)
         options(nvimcom.nvimpager = TRUE)
         options(nvimcom.max_depth = 12)
@@ -66,7 +65,6 @@ NvimcomEnv$tcb <- FALSE
             as.integer(getOption("nvimcom.verbose")),
             as.integer(getOption("nvimcom.allnames")),
             as.integer(getOption("nvimcom.setwidth")),
-            as.integer(getOption("nvimcom.autoglbenv")),
             as.integer(getOption("nvimcom.max_depth")),
             as.integer(getOption("nvimcom.max_size")),
             as.integer(getOption("nvimcom.max_time")),
@@ -94,7 +92,7 @@ NvimcomEnv$tcb <- FALSE
 .onUnload <- function(libpath) {
     NvimcomEnv$tcb <- FALSE
     try(.C(nvimcom_Stop), silent = TRUE)
-    Sys.sleep(0.2)
+    Sys.sleep(0.01)
     try(library.dynam.unload("nvimcom", libpath), silent = TRUE)
 }
 
@@ -150,7 +148,7 @@ send_nvimcom_info <- function(Rpid) {
         winID <- "0"
     }
     msg <- paste0(
-        "lua require('r.run').set_nvimcom_info('",
+        "require('r.run').set_nvimcom_info('",
         NvimcomEnv$info[1],
         "', ",
         Rpid,
@@ -166,6 +164,6 @@ send_nvimcom_info <- function(Rpid) {
 # registered by reg.finalizer() to be called when R is quitting. Only
 # necessary if running in a external terminal emulator.
 final_msg <- function(e) {
-    .C(nvimcom_msg_to_nvim, "lua require('r.job').end_of_R_session()")
+    .C(nvimcom_msg_to_nvim, "require('r.job').end_of_R_session()")
     return(invisible(NULL))
 }

@@ -4,7 +4,7 @@
 char *str_cat(char *dest, const char *src);
 int str_here(const char *string, const char *substring);
 void format(const char *orig, char *dest, char delim, char nl);
-char *format_usage(const char *fnm, const char *args);
+char *format_usage(const char *fnm, const char *args, int md_block);
 void set_doc_width(const char *width);
 int get_doc_width(void);
 

@@ -29,7 +29,7 @@ typedef struct liststatus_ {
 typedef struct pkg_data_ {
     char *name;    // The package name
     char *version; // The package version number
-    char *fname;   // Objls_ file name in the compldir
+    char *fname;   // Objls_ file name in the cmp_dir
     char *descr;   // The package short description
     char *objls;   // A copy of the objls_ file
     char *alias;   // A copy of the alias_ file
@@ -45,9 +45,9 @@ void set_max_depth(int m);
 int get_list_status(const char *s, int stt);
 void toggle_list_status(char *s);
 void update_inst_libs(void);
-void update_pkg_list(char *libnms);  // Update package list
-void update_glblenv_buffer(char *g); // Update global environment buffer
-void build_objls(void);              // Build list of objects for completion
+void update_pkg_list(char *libnms);        // Update package list
+void update_glblenv_buffer(const char *g); // Update global environment buffer
+void build_objls(void); // Build list of objects for completion
 void finished_building_objls(void);
 void init_ds_vars(void);
 void change_all(int stt);

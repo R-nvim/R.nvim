@@ -134,7 +134,6 @@ M.vim_leave = function()
             i = i - 1
         end
     end
-    require("r.job").stop_rns()
 
     for _, fn in pairs(del_list) do
         vim.fn.delete(fn)
@@ -225,6 +224,7 @@ M.finish_code_formatting = function(lnum1, lnum2, txt)
 end
 
 M.finish_inserting = function(type, txt)
+    txt = txt:gsub("\019", "'")
     local lns = vim.split(txt, "\020")
     local lines
     if type == "comment" then

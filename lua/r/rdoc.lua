@@ -19,18 +19,39 @@ M.set_buf_options = function()
         vim.api.nvim_set_option_value("filetype", "rmd", { scope = "local" })
     end
 
-    vim.cmd([[
-        syn match rdocArgReg / [A-Za-z\._]\{-} / contains=rdocArgDelim,rdocArgItem transparent
-        syn match rdocArgItem /[A-Za-z\._]/ contained
-        syn match rdocArgDelim / / contained conceal
-        hi def link rdocArgItem Identifier
-    ]])
-    local buf = vim.api.nvim_get_current_buf()
-    if vim.fn.has("nvim-0.11") == 1 then
-        local ns = vim.api.nvim_create_namespace("RDocumentation")
-        vim.hl.range(buf, ns, "Title", { 0, 0 }, { 0, -1 }, {})
-    else
-        vim.api.nvim_buf_add_highlight(buf, -1, "Title", 0, 0, -1)
+    local b = vim.api.nvim_get_current_buf()
+    local ns = vim.api.nvim_create_namespace("RDocumentation")
+    vim.hl.range(b, ns, "Title", { 0, 0 }, { 0, -1 }, {})
+    local m = vim.api.nvim_buf_set_extmark
+    local lines = vim.api.nvim_buf_get_lines(b, 0, -1, true)
+    for k, v in pairs(lines) do
+        if v:find("^ ") then
+            local e = 0
+            local s
+            while true do
+                s = v:find(" ", e + 1)
+                if s then e = v:find(" ", s + 1) end
+                if s and e then
+                    m(b, ns, k - 1, s, { end_col = e - 1, hl_group = "Special" })
+                    m(
+                        b,
+                        ns,
+                        k - 1,
+                        s - 1,
+                        { end_col = s, hl_group = "Ignore", conceal = "" }
+                    )
+                    m(
+                        b,
+                        ns,
+                        k - 1,
+                        e - 1,
+                        { end_col = e, hl_group = "Ignore", conceal = "" }
+                    )
+                else
+                    break
+                end
+            end
+        end
     end
     require("r.config").real_setup()
     require("r.maps").create("rdoc")

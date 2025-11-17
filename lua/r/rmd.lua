@@ -273,6 +273,7 @@ M.setup = function()
     -- Record setup time for debugging
     rmdtime = (uv.hrtime() - rmdtime) / 1000000000
     require("r.edit").add_to_debug_info("rmd setup", rmdtime, "Time")
+
     vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
 
     if config.quarto_chunk_hl.highlight == nil then
@@ -281,7 +282,7 @@ M.setup = function()
     if config.quarto_chunk_hl.highlight then setup_chunk_hl() end
 
     if config.quarto_chunk_hl.yaml_hl == nil then
-        config.quarto_chunk_hl.yaml_hl = vim.fn.has("nvim-0.11") == 1 and true or false
+        config.quarto_chunk_hl.yaml_hl = true
     end
     if config.quarto_chunk_hl.yaml_hl then setup_yaml_hl() end
 end

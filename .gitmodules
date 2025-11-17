@@ -4,3 +4,6 @@
 [submodule "tests/xdg/local/share/nvim/site/pack/testing/start/nvim-treesitter"]
 	path = tests/xdg/local/share/nvim/site/pack/testing/start/nvim-treesitter
 	url = https://github.com/nvim-treesitter/nvim-treesitter
+[submodule "resources/tree-sitter-rout"]
+	path = resources/tree-sitter-rout
+	url = https://github.com/R-nvim/tree-sitter-rout

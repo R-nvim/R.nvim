@@ -1,6 +1,6 @@
 # For building omnls files
 #' @param x
-nvim.fix.string <- function(x, edq = FALSE) {
+fix_string <- function(x, edq = FALSE) {
     x <- gsub("\\\\", "\x12", x)
     x <- gsub("'", "\x13", x)
     x <- gsub("\n", "\\\\n", x)
@@ -105,7 +105,7 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass = NULL) {
         } else if (type == "character") {
             res <- append(
                 res,
-                paste0(field, "\x04\"", nvim.fix.string(frm[[field]], TRUE), "\"\x05")
+                paste0(field, "\x04\"", fix_string(frm[[field]], TRUE), "\"\x05")
             )
         } else if (type == "logical" || type == "double" || type == "integer") {
             res <- append(
@@ -115,10 +115,8 @@ nvim.args <- function(funcname, txt = "", pkg = NULL, objclass = NULL) {
         } else if (type == "NULL") {
             res <- append(res, paste0(field, "\x04NULL\x05"))
         } else if (type == "language") {
-            res <- append(
-                res,
-                paste0(field, "\x04", nvim.fix.string(deparse(frm[[field]])), "\x05")
-            )
+            txt <- gsub("  *", " ", paste0(deparse(frm[[field]]), collapse = ""))
+            res <- append(res, paste0(field, "\x04", fix_string(txt), "\x05"))
         } else if (type == "list") {
             res <- append(res, paste0(field, "\x04list()\x05"))
         } else {
@@ -235,9 +233,10 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
         }
     }
 
+    # See kind_tbl at nvim/src/apps/complete.c
     if (is.null(xx)) {
         x.class <- ""
-        x.group <- "*"
+        x.group <- "o"
     } else {
         if (
             x == "break" ||
@@ -247,45 +246,45 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
                 x == "repeat" ||
                 x == "while"
         ) {
-            x.group <- ";"
+            x.group <- "C"
             x.class <- "flow-control"
         } else {
             x.class <- class(xx)[1]
             if (is.function(xx)) {
-                x.group <- "f"
-            } else if (is.list(xx)) {
-                x.group <- "["
-            } else if (isS4(xx)) {
-                x.group <- "<"
-            } else if (inherits(xx, "S7_object")) {
-                x.group <- ">"
-            } else if (is.numeric(xx)) {
-                x.group <- "{"
-            } else if (is.factor(xx)) {
-                x.group <- "!"
-            } else if (is.character(xx)) {
-                x.group <- "~"
-            } else if (is.logical(xx)) {
-                x.group <- "%"
+                x.group <- "F"
             } else if (is.data.frame(xx)) {
-                x.group <- "$"
+                x.group <- "d"
+            } else if (is.list(xx)) {
+                x.group <- "l"
+            } else if (isS4(xx)) {
+                x.group <- "4"
+            } else if (inherits(xx, "S7_object")) {
+                x.group <- "7"
+            } else if (is.numeric(xx)) {
+                x.group <- "n"
+            } else if (is.factor(xx)) {
+                x.group <- "f"
+            } else if (is.character(xx)) {
+                x.group <- "t"
+            } else if (is.logical(xx)) {
+                x.group <- "b"
             } else if (is.environment(xx)) {
-                x.group <- ":"
+                x.group <- "e"
             } else {
-                x.group <- "*"
+                x.group <- "o"
             }
         }
     }
 
-    n <- nvim.fix.string(x)
+    n <- fix_string(x)
 
     if (curlevel == maxlevel || maxlevel == 0) {
-        if (x.group == "f") {
+        if (x.group == "F") {
             if (curlevel == 0) {
                 info <- nvim.getInfo(printenv, x)
                 cat(
                     n,
-                    "\006(\006function\006",
+                    "\006F\006function\006",
                     printenv,
                     "\006",
                     nvim.args(x, pkg = printenv),
@@ -297,7 +296,7 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
                 # some libraries have functions as list elements
                 cat(
                     n,
-                    "\006(\006function\006",
+                    "\006F\006function\006",
                     printenv,
                     "\006\006\006\006\n",
                     sep = ""
@@ -377,7 +376,7 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
                             !is.null(xattr) &&
                             length(xattr) == 1
                     ) {
-                        info <- paste0("\006\006", nvim.fix.string(.Call(rd2md, xattr)))
+                        info <- paste0("\006\006", fix_string(.Call(rd2md, xattr)))
                     }
                 }
                 cat(
@@ -401,10 +400,10 @@ nvim.cmpl.line <- function(x, envir, printenv, curlevel, maxlevel = 0) {
         if ((is.list(xx) || is.environment(xx))) {
             obj.names <- names(xx)
             s <- "$"
-        } else if (x.group == "<") {
+        } else if (x.group == "4") {
             obj.names <- slotNames(xx)
             s <- "@"
-        } else if (x.group == ">") {
+        } else if (x.group == "7") {
             s7c <- S7::S7_class(xx)
             obj.names <- names(s7c@properties)
             s <- "@"
@@ -448,6 +447,13 @@ GetFunDescription <- function(pkg) {
     if (!file.exists(paste0(pth, pkg, ".rdx"))) {
         return(NULL)
     }
+
+    # Example of how to call fetchRdDB for a single function:
+    # pkg <- "utils"
+    # pth <- paste0("/path/to/installed/library/", pkg, "/help/", pkg)
+    # fnm <- "RweaveLatex"
+    # tools:::fetchRdDB(pth, fnm)
+
     pkgRdDB <- tools:::fetchRdDB(paste0(pth, pkg))
     NvimcomEnv$pkgRdDB[[pkg]] <- pkgRdDB
 
@@ -457,8 +463,8 @@ GetFunDescription <- function(pkg) {
         x <- paste0(x, collapse = "")
         ttl <- .Call(get_section, x, "title")
         dsc <- .Call(get_section, x, "description")
-        ttl <- nvim.fix.string(ttl)
-        dsc <- nvim.fix.string(dsc)
+        ttl <- fix_string(ttl)
+        dsc <- fix_string(dsc)
         x <- paste0("\006", ttl, "\006", dsc)
         x
     }
@@ -502,7 +508,7 @@ get_arg_doc_list <- function(fun, pkg) {
             )
         }
     )
-    line <- nvim.fix.string(paste0(fun, "\x06", paste0(args, collapse = "")))
+    line <- fix_string(paste0(fun, "\x06", paste0(args, collapse = "")))
     cat(line, sep = "", "\n")
 }
 

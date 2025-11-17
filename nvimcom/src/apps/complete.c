@@ -6,39 +6,38 @@
 #include "global_vars.h"
 #include "utilities.h"
 #include "../common.h"
-#include "tcp.h"
 #include "complete.h"
+#include "lsp.h"
 
-static char compl_cb[64];   // Completion callback buffer
-static char resolve_cb[64]; // Completion info buffer
+// The kind numbers are from vim.lsp.protocol.CompletionItemKind
+static const char *kind_tbl[16][2] = {
+    {"a", "6"},  //  function arg      Variable
+    {"c", "5"},  //  data.frame column Field
+    {"n", "12"}, //  numeric           Value
+    {"f", "5"},  //  factor            Field
+    {"t", "1"},  //  character         Text
+    {"F", "3"},  //  function          Function
+    {"d", "22"}, //  data.frame        Struct
+    {"l", "22"}, //  list              Struct
+    {"4", "7"},  //  S4                Class
+    {"7", "7"},  //  S7                Class
+    {"b", "2"},  //  logical           Method
+    {"L", "9"},  //  library           Module
+    {"C", "4"},  //  control           Constructor
+    {"e", "8"},  //  environment       Interface
+    {"p", "23"}, //  promise           Event
+    {"o", "25"}, //  other             TypeParameter
+};
 
-void init_compl_vars(void) {
-    strncpy(compl_cb, getenv("RNVIM_COMPL_CB"), 63);
-    strncpy(resolve_cb, getenv("RNVIM_RSLV_CB"), 63);
-}
+static char *cmp_buf;              // Completion buffer
+static size_t cmp_buf_sz = 163840; // Completion buffer size
 
-/**
- * Checks if the string `b` can be found through string `a`.
- * @param a The string to be checked.
- * @param b The substring to look for at the start of `a`.
- * @return 1 if `b` can be found through `a`, 0 otherwise.
- */
-static int fuzzy_find(const char *a, const char *b) {
-    int i = 0;
-    int j = 0;
-    while (a[i] && b[j]) {
-        while (a[i] && a[i] != b[j])
-            i++;
-        if (b[j] == '$' || b[j] == '@') {
-            for (int k = 0; k <= j; k++)
-                if (a[k] != b[k])
-                    return 0;
-        }
-        if (a[i])
-            i++;
-        j++;
-    }
-    return b[j] == '\0';
+static const char *get_kind(const char *cls) {
+    for (size_t i = 0; i < 16; i++)
+        if (*kind_tbl[i][0] == *cls)
+            return kind_tbl[i][1];
+    Log("get_kind: %s", cls);
+    return kind_tbl[15][1];
 }
 
 static int count_twice(const char *b1, const char *b2, const char ch) {
@@ -68,10 +67,9 @@ static char *find_obj(char *objls, const char *dfbase) {
 
 static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
     size_t skip = strlen(dtfrm) + 1; // The data.frame name + "$"
-    unsigned long nsz;
     char dfbase[64];
-    snprintf(dfbase, 63, "%s$%s", dtfrm, base);
-    char *s = NULL;
+    snprintf(dfbase, 63, "%s$%s", dtfrm, base ? base : "");
+    const char *s = NULL;
 
     if (glbnv_buffer)
         s = find_obj(glbnv_buffer, dfbase);
@@ -93,23 +91,23 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
 
     while (*s && str_here(s, dfbase)) {
         // Avoid buffer overflow if the information is bigger than
-        // compl_buffer.
-        nsz = strlen(s) + 1024 + (p - compl_buffer);
-        if (compl_buffer_size < nsz)
-            p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                            nsz - compl_buffer_size + 32768);
+        // cmp_buf.
+        size_t nsz = strlen(s) + 1024 + (p - cmp_buf);
+        if (cmp_buf_sz < nsz)
+            p = grow_buffer(&cmp_buf, &cmp_buf_sz, nsz - cmp_buf_sz + 32768);
 
-        p = str_cat(p, "{label = '");
+        p = str_cat(p, "{\"label\":\"");
         p = str_cat(p, s + skip);
-        p = str_cat(p, "', cls = 'c', env = '");
+        p = str_cat(p, "\",\"sortText\":\"_");
+        p = str_cat(p, s + skip);
+        p = str_cat(p, "\",\"cls\":\"c\",\"kind\":5,\"env\":\"");
         p = str_cat(p, dtfrm);
-        p = str_cat(p, "'}, ");
+        p = str_cat(p, "\"},");
 
         while (*s != '\n')
             s++;
         s++;
     }
-
     return p;
 }
 
@@ -117,13 +115,15 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
 // usage, and tittle and description of objects to avoid extremely large data
 // transfer.
 static char *parse_objls(const char *s, const char *base, const char *pkg,
-                         char *lib, char *p) {
+                         const char *lib, char *p) {
     int i;
-    unsigned long nsz;
+    size_t nsz;
     const char *f[7];
+    char order[4];
 
     while (*s != 0) {
-        if (fuzzy_find(s, base)) {
+        int z = fuzzy_find(s, base);
+        if (z) {
             i = 0;
             while (i < 7) {
                 f[i] = s;
@@ -148,25 +148,35 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
                 continue;
 
             // Avoid buffer overflow if the information is bigger than
-            // compl_buffer.
-            nsz = 1024 + (p - compl_buffer);
-            if (compl_buffer_size < nsz)
-                p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                                nsz - compl_buffer_size + 32768);
+            // cmp_buf.
+            nsz = 1024 + (p - cmp_buf);
+            if (cmp_buf_sz < nsz)
+                p = grow_buffer(&cmp_buf, &cmp_buf_sz,
+                                nsz - cmp_buf_sz + 32768);
 
-            p = str_cat(p, "{label = '");
+            p = str_cat(p, "{\"label\":\"");
             if (pkg) {
                 p = str_cat(p, pkg);
                 p = str_cat(p, "::");
             }
             p = str_cat(p, f[0]);
-            p = str_cat(p, "', cls = '");
+            p = str_cat(p, "\",\"sortText\":\"");
+            snprintf(order, 3, "%02d", z);
+            p = str_cat(p, order);
+            if (pkg) {
+                p = str_cat(p, pkg);
+                p = str_cat(p, "::");
+            }
+            p = str_cat(p, f[0]);
+            p = str_cat(p, "\",\"cls\":\"");
             p = str_cat(p, f[1]);
+            p = str_cat(p, "\",\"kind\":");
+            p = str_cat(p, get_kind(f[1]));
             if (lib) {
-                p = str_cat(p, "', env = '");
+                p = str_cat(p, ",\"env\":\"");
                 p = str_cat(p, lib);
             }
-            p = str_cat(p, "'}, ");
+            p = str_cat(p, "\"},");
             // big data will be truncated.
         } else {
             while (*s != '\n')
@@ -177,205 +187,61 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
     return p;
 }
 
-void get_alias(char **pkg, char **fun) {
-    char *s = malloc(strlen(*pkg) + strlen(*fun) + 3);
-    sprintf(s, "%s\n", *fun);
-    char *p;
-    char *f;
-    PkgData *pd = pkgList;
-    if (**pkg != '#')
-        while (pd && !str_here(pd->name, *pkg))
-            pd = pd->next;
-    while (pd) {
-        if (pd->alias) {
-            p = pd->alias;
-            while (*p) {
-                f = p;
-                while (*f)
-                    f++;
-                f++;
-                if (*f && str_here(f, s)) {
-                    *pkg = pd->name;
-                    *fun = p;
-                    free(s);
-                    return;
-                }
-                p = f;
-                while (*p && *p != '\n')
-                    p++;
-                p++;
-            }
-        }
-        pd = pd->next;
-    }
-    *pkg = NULL;
-    free(s);
-}
-
-void resolve_arg_item(char *pkg, char *fnm, char *itm) {
-    Log("resolve_arg_item: %s, %s, %s", pkg, fnm, itm);
-    PkgData *p = pkgList;
-    while (p) {
-        if (strcmp(p->name, pkg) == 0) {
-            if (p->args) {
-                char *s = p->args;
-                while (*s) {
-                    if (strcmp(s, fnm) == 0) {
-                        while (*s)
-                            s++;
-                        while (*s != '\n') {
-                            if (*s == 0) {
-                                while (*s != '\005') {
-                                    // Look for \0 or ' ' because some arguments
-                                    // share the same documentation item.
-                                    // Example: lm()
-                                    if (*s == 0 || *s == ' ') {
-                                        s++;
-                                        if (str_here(s, itm)) {
-                                            s += strlen(itm);
-                                            if (*s == '\005' || *s == ',') {
-                                                while (*s && *s != '\005')
-                                                    s++;
-                                                s++;
-                                                char *b = calloc(strlen(s) + 2,
-                                                                 sizeof(char));
-                                                format(s, b, ' ', '\x14');
-                                                printf("lua %s('%s')\n",
-                                                       resolve_cb, b);
-                                                fflush(stdout);
-                                                free(b);
-                                                return;
-                                            }
-                                        }
-                                    }
-                                    s++;
-                                }
-                            }
-                            s++;
-                        }
-                        printf("lua %s('')\n", resolve_cb);
-                        fflush(stdout);
-                        return;
-                    } else {
-                        while (*s != '\n')
-                            s++;
-                        s++;
-                    }
-                }
-            }
-            break;
-        }
-        p = p->next;
-    }
-    printf("lua %s('')\n", resolve_cb);
-    fflush(stdout);
-}
-
-/*
- * TODO: Candidate for completion_services.c
- *
- * @desc: Return user_data of a specific item with function usage, title and
- * description to be displayed in the float window
- * @param wrd:
- * @param pkg:
- * */
-void resolve(const char *wrd, const char *pkg) {
-    Log("resolve: %s, %s", wrd, pkg);
-    int i;
-    unsigned long nsz;
-    const char *f[7];
-    char *s;
-
-    if (strcmp(pkg, ".GlobalEnv") == 0) {
-        s = glbnv_buffer;
-    } else {
-        PkgData *pd = pkgList;
-        while (pd) {
-            if (strcmp(pkg, pd->name) == 0)
-                break;
-            else
-                pd = pd->next;
-        }
-
-        if (pd == NULL)
-            return;
-
-        s = pd->objls;
-    }
-
-    memset(compl_buffer, 0, compl_buffer_size);
-    char *p = compl_buffer;
-
-    while (*s != 0) {
-        if (strcmp(s, wrd) == 0) {
-            i = 0;
-            while (i < 7) {
-                f[i] = s;
-                i++;
-                while (*s != 0)
-                    s++;
-                s++;
-            }
-            while (*s != '\n' && *s != 0)
-                s++;
-            if (*s == '\n')
-                s++;
-
-            if (f[1][0] == '(' && str_here(f[4], ">not_checked<")) {
-                snprintf(compl_buffer, 1024,
-                         "E%snvimcom:::nvim.GlobalEnv.fun.args(\"%s\")\n",
-                         getenv("RNVIM_ID"), wrd);
-                send_to_nvimcom(compl_buffer);
-                return;
-            }
-
-            // Avoid buffer overflow if the information is bigger than
-            // compl_buffer.
-            nsz = strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 +
-                  (p - compl_buffer);
-            if (compl_buffer_size < nsz)
-                p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                                nsz - compl_buffer_size + 32768);
-
-            size_t sz = strlen(f[5]) + strlen(f[6]) + 16;
-            char *buffer = malloc(sz);
-            p = str_cat(p, f[2]);
-            p = str_cat(p, " `");
-            p = str_cat(p, f[3]);
-            p = str_cat(p, "::");
-            p = str_cat(p, f[0]);
-            p = str_cat(p, "`\x14\x14**");
-            format(f[5], buffer, ' ', '\x14');
-            p = str_cat(p, buffer);
-            p = str_cat(p, "**\x14\x14");
-            format(f[6], buffer, ' ', '\x14');
-            p = str_cat(p, buffer);
-            free(buffer);
-            if (f[1][0] == '(') {
-                char *b = format_usage(f[0], f[4]);
-                p = str_cat(p, b);
-                free(b);
-            }
-            printf("lua %s('%s')\n", resolve_cb, compl_buffer);
-            fflush(stdout);
-            return;
-        }
-        while (*s != '\n')
-            s++;
+static char *complete_args(char *p, const char *s, const char *funcnm,
+                           const char *libnm) {
+    const char *a;
+    char order[16];
+    while (*s)
         s++;
+    s++;
+    if (*s == 'F') { // Check if it's a function
+        int i;
+        i = 3;
+        while (i) {
+            s++;
+            if (*s == 0)
+                i--;
+        }
+        s++;
+        int o = 0;
+        while (*s) {
+            p = str_cat(p, "{\"label\":\"");
+            a = s;
+            while (*a != '\x05' && *a != '\x04')
+                a++;
+            char *b = calloc(a - s + 2, sizeof(char));
+            i = 0;
+            while (*s != '\x05' && *s != '\x04') {
+                b[i] = *s;
+                i++;
+                s++;
+            }
+            p = str_cat(p, b);
+            free(b);
+            p = str_cat(p, " = \",\"sortText\":\"_");
+            o++;
+            snprintf(order, 15, "%02d", o);
+            p = str_cat(p, order);
+            p = str_cat(p, "\",\"cls\":\"a\",\"kind\":6,\"env\":\"");
+            p = str_cat(p, libnm);
+            p = str_cat(p, ":");
+            p = str_cat(p, funcnm);
+            p = str_cat(p, "\"},");
+            if (*s == '\x04') {
+                // skip default value
+                s++;
+                while (*s != '\x05') {
+                    i++;
+                    s++;
+                }
+            }
+            s++;
+        }
     }
-    printf("lua %s('')\n", resolve_cb);
-    fflush(stdout);
+    return p;
 }
 
-/*
- * TODO: Candidate for completion_services.c
- *
- * @desc:
- * @param p:
- * @param funcnm:
- * */
-char *complete_args(char *p, char *funcnm) {
+static char *seek_fun_complete_args(char *p, char *funcnm) {
     // Check if function is "pkg::fun"
     char *pkg = NULL;
     if (strstr(funcnm, "::")) {
@@ -387,61 +253,13 @@ char *complete_args(char *p, char *funcnm) {
     }
 
     PkgData *pd = pkgList;
-    char *s;
-    char a[64];
-    int i;
     while (pd) {
         if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0))) {
-            s = pd->objls;
+            const char *s = pd->objls;
             while (*s != 0) {
                 if (strcmp(s, funcnm) == 0) {
-                    while (*s)
-                        s++;
-                    s++;
-                    if (*s == '(') { // Check if it's a function
-                        i = 3;
-                        while (i) {
-                            s++;
-                            if (*s == 0)
-                                i--;
-                        }
-                        s++;
-                        while (*s) {
-                            i = 0;
-                            p = str_cat(p, "{label = '");
-                            while (*s != '\x05' && *s != '\x04' && i < 63) {
-                                a[i] = *s;
-                                i++;
-                                s++;
-                            }
-                            a[i] = 0;
-                            p = str_cat(p, a);
-                            p = str_cat(p, " = ");
-                            if (*s == '\x04') {
-                                p = str_cat(p, "', def = '");
-                                i = 0;
-                                s++;
-                                while (*s != '\x05' && i < 63) {
-                                    a[i] = *s;
-                                    i++;
-                                    s++;
-                                }
-                                a[i] = 0;
-                                p = str_cat(p, a);
-                            }
-                            p = str_cat(p, "', cls = 'a', env='");
-                            p = str_cat(p, pd->name);
-                            p = str_cat(p, "\x02");
-                            p = str_cat(p, funcnm);
-                            p = str_cat(p, "'},");
-                            s++;
-                        }
-                        break;
-                    } else {
-                        while (*s != '\n')
-                            s++;
-                        s++;
-                    }
+                    p = complete_args(p, s, funcnm, pd->name);
+                    return p;
                 } else {
                     while (*s != '\n')
                         s++;
@@ -455,130 +273,132 @@ char *complete_args(char *p, char *funcnm) {
 }
 
 // Read the DESCRIPTION of all installed libraries
-static char *complete_instlibs(char *p, const char *base) {
+static void complete_instlibs(char *p, const char *base) {
     update_inst_libs();
 
     Log("instlibs = %p", (void *)instlibs);
     if (!instlibs)
-        return p;
+        return;
 
-    unsigned long len;
     InstLibs *il;
-    size_t sz = 1024;
-    char *buffer = malloc(sz);
 
     il = instlibs;
     while (il) {
-        len = strlen(il->descr) + (p - compl_buffer) + 1024;
-        if (compl_buffer_size < len)
-            p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                            len - compl_buffer_size + 32768);
+        size_t len = strlen(il->descr) + (p - cmp_buf) + 1024;
+        if (cmp_buf_sz < len)
+            p = grow_buffer(&cmp_buf, &cmp_buf_sz, len - cmp_buf_sz + 32768);
 
-        if (str_here(il->name, base) && il->si) {
-            if ((strlen(il->title) + strlen(il->descr)) > sz) {
-                free(buffer);
-                sz = strlen(il->title) + strlen(il->descr) + 1;
-                buffer = malloc(sz);
-            }
-
-            p = str_cat(p, "{label = '");
+        if (!base || (str_here(il->name, base) && il->si)) {
+            p = str_cat(p, "{\"label\":\"");
             p = str_cat(p, il->name);
-            p = str_cat(p, "', cls = 'l', env = '**");
-            format(il->title, buffer, ' ', '\x14');
-            p = str_cat(p, buffer);
-            p = str_cat(p, "**\x14\x14");
-            format(il->descr, buffer, ' ', '\x14');
-            p = str_cat(p, buffer);
-            p = str_cat(p, "\x14'},");
+            p = str_cat(p, "\",\"cls\":\"L\",\"kind\":9},");
         }
         il = il->next;
     }
-    free(buffer);
-    return p;
 }
 
-/*
- * TODO: Candidate for completion_services.c
- *
- * @desc:
- * @param id: Completion ID (integer incremented at each completion), possibily
- * used by cmp to abort outdated completion.
- * @param base: Keyword being completed.
- * @param funcnm: Function name when the keyword being completed is one of its
- * arguments.
- * @param dtfrm: Name of data.frame when the keyword being completed is an
- * argument of a function listed in either fun_data_1 or fun_data_2.
- * @param funargs Function arguments from a .GlobalEnv function.
- */
-void complete(const char *id, char *base, char *funcnm, char *dtfrm,
-              char *funargs) {
-    Log("complete(%s, %s, %s, %s, %s)", id, base, funcnm, dtfrm, funargs);
-    char *p;
+void complete(const char *params) {
+    Log("complete: %s", params);
+    char *id = strstr(params, "\"orig_id\":");
+    char *base = strstr(params, "\"base\":\"");
+    char *fnm = strstr(params, "\"fnm\":\"");
+    char *df = strstr(params, "\"df\":\"");
+    char *fargs = strstr(params, "\"fargs\":\"");
+    cut_json_int(&id, 10);
+    cut_json_str(&base, 8);
+    cut_json_str(&fnm, 7);
+    cut_json_str(&df, 6);
+    cut_json_str(&fargs, 9);
+    if (base && *base == ' ')
+        base = NULL;
 
-    memset(compl_buffer, 0, compl_buffer_size);
-    p = compl_buffer;
+    Log("complete(id=%s, base=%s, fnm=%s, df=%s, fargs=%s)", id, base, fnm, df,
+        fargs);
+
+    char *p;
+    memset(cmp_buf, 0, cmp_buf_sz);
+    p = cmp_buf;
 
     // Get menu completion for installed libraries
-    if (funcnm && *funcnm == '\004') {
-        p = complete_instlibs(p, base);
-        printf("\x11%" PRI_SIZET "\x11"
-               "lua %s(%s, {%s})\n",
-               strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 10,
-               compl_cb, id, compl_buffer);
-        fflush(stdout);
+    if (fnm && *fnm == '#') {
+        complete_instlibs(p, base);
+        send_menu_items(cmp_buf, id);
         return;
     }
 
-    if (funargs || funcnm) {
-        if (funargs) {
+    if (fargs || fnm) {
+        if (fargs) {
+            replace_char(fargs, '\x13', '"');
             // Insert arguments of .GlobalEnv function
-            p = str_cat(p, funargs);
-        } else if (funcnm) {
+            p = str_cat(p, fargs);
+        } else {
             // Completion of arguments of a library's function
-            p = complete_args(p, funcnm);
+            const char *s = NULL;
+            if (glbnv_buffer) {
+                s = seek_word(glbnv_buffer, fnm);
+                if (s && is_function(s)) {
+                    p = complete_args(p, s, fnm, ".GlobalEnv");
+                }
+            }
+
+            if (!s)
+                p = seek_fun_complete_args(p, fnm);
 
             // Add columns of a data.frame
-            if (dtfrm) {
-                p = get_df_cols(dtfrm, base, p);
+            if (df) {
+                p = get_df_cols(df, base, p);
             }
         }
 
         // base will be empty if completing only function arguments
-        if (base[0] == 0) {
-            printf("\x11%" PRI_SIZET "\x11"
-                   "lua %s(%s, {%s})\n",
-                   strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 10,
-                   compl_cb, id, compl_buffer);
-            fflush(stdout);
+        if (!base) {
+            send_menu_items(cmp_buf, id);
             return;
         }
     }
 
-    // Finish filling the compl_buffer
-    if (glbnv_buffer)
+    // Finish filling the cmp_buf
+    if (glbnv_buffer && base)
         p = parse_objls(glbnv_buffer, base, NULL, ".GlobalEnv", p);
 
-    PkgData *pd = pkgList;
-
-    // Check if base is "pkg::fun"
-    char *pkg = NULL;
-    if (strstr(base, "::")) {
-        pkg = base;
-        base = strstr(base, "::");
-        *base = 0;
-        base++;
-        base++;
+    if (base) {
+        PkgData *pd = pkgList;
+        // Check if base is "pkg::fun"
+        char *pkg = NULL;
+        if (strstr(base, "::")) {
+            pkg = base;
+            base = strstr(base, "::");
+            *base = 0;
+            base++;
+            base++;
+        }
+        while (pd) {
+            if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0)))
+                p = parse_objls(pd->objls, base, pkg, pd->name, p);
+            pd = pd->next;
+        }
     }
-
-    while (pd) {
-        if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0)))
-            p = parse_objls(pd->objls, base, pkg, pd->name, p);
-        pd = pd->next;
-    }
-
-    printf("\x11%" PRI_SIZET "\x11"
-           "lua %s(%s, {%s})\n",
-           strlen(compl_cb) + strlen(id) + strlen(compl_buffer) + 10, compl_cb,
-           id, compl_buffer);
-    fflush(stdout);
+    send_menu_items(cmp_buf, id);
 }
+
+void complete_fig_tbl(const char *params) {
+    Log("complete_fig_tbl: %s", params);
+
+    char *id = strstr(params, "\"orig_id\":");
+    char *items = strstr(params, "\"items\":[{") + 9;
+
+    cut_json_int(&id, 10);
+
+    char *end_items = strstr(items, "}],");
+    if (end_items) {
+        end_items++;
+    } else {
+        end_items = strstr(items, "]}");
+    }
+    if (!end_items)
+        return;
+    *end_items = '\0';
+    send_menu_items(items, id);
+}
+
+void init_cmp(void) { cmp_buf = calloc(cmp_buf_sz, sizeof(char)); }

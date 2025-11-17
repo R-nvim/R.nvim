@@ -112,7 +112,7 @@ M.command = function(what)
 end
 
 --- Helper function to get code block from Rmd or Quarto document.
---- The function is called by cmp_r too.
+--- The function is called by r_ls too.
 ---@param bufnr  integer The buffer number.
 ---@return table|nil
 M.get_code_chunks = function(bufnr)
@@ -396,6 +396,7 @@ local ns = vim.api.nvim_create_namespace("RQuartoNamespace")
 --- Special highlight for Quarto and Rmd code blocks
 M.hl_code_bg = function()
     local config = require("r.config").get_config()
+    if not config.register_treesitter then return end
     vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
     local chunks = M.get_code_chunks(0)
     if not chunks then return end

@@ -23,7 +23,7 @@ nvim.edit <- function(name, file, title) {
     dput(name)
     sink()
 
-    .C(nvimcom_msg_to_nvim, paste0("lua require('r.edit').obj('", editf, "')"))
+    .C(nvimcom_msg_to_nvim, paste0("require('r.edit').obj('", editf, "')"))
 
     while (file.exists(waitf)) {
         Sys.sleep(1)
@@ -49,7 +49,7 @@ nvim_capture_source_output <- function(s, nm) {
     o <- gsub("'", "\x13", o)
     .C(
         nvimcom_msg_to_nvim,
-        paste0("lua require('r.edit').get_output('", nm, "', '", o, "')")
+        paste0("require('r.edit').get_output('", nm, "', '", o, "')")
     )
 }
 
@@ -64,7 +64,7 @@ nvim_dput <- function(oname, howto = "tabnew") {
     .C(
         nvimcom_msg_to_nvim,
         paste0(
-            "lua require('r.run').show_obj('",
+            "require('r.run').show_obj('",
             howto,
             "', '",
             oname,
@@ -112,7 +112,7 @@ nvim_viewobj <- function(
             .C(
                 nvimcom_msg_to_nvim,
                 paste0(
-                    "lua require('r.log').warn('",
+                    "require('r.log').warn('",
                     '"',
                     oname,
                     '"',
@@ -134,7 +134,7 @@ nvim_viewobj <- function(
             .C(
                 nvimcom_msg_to_nvim,
                 paste0(
-                    "lua vim.schedule(function() require('r.send').cmd('",
+                    "vim.schedule(function() require('r.send').cmd('",
                     cmd,
                     "') end)"
                 )
@@ -166,7 +166,7 @@ nvim_viewobj <- function(
         }
         .C(
             nvimcom_msg_to_nvim,
-            paste0("lua require('r.edit').view_df('", oname, "', '", txt, "')")
+            paste0("require('r.edit').view_df('", oname, "', '", txt, "')")
         )
     } else {
         nvim_dput(oname)
@@ -246,130 +246,20 @@ nvim_insert <- function(cmd, howto = "tabnew") {
         .C(
             nvimcom_msg_to_nvim,
             paste0(
-                "lua require('r.log').warn('Error trying to execute the command \"",
+                "require('r.log').warn('Error trying to execute the command \"",
                 cmd,
                 "\"')"
             )
         )
     } else {
         o <- gsub("\\\\", "\\\\\\\\", o)
-        o <- gsub("'", "\\\\'", o)
+        o <- gsub("'", "\x13", o)
         o <- paste0(o, collapse = "\x14")
         .C(
             nvimcom_msg_to_nvim,
-            paste0("lua require('r.edit').finish_inserting('", howto, "', '", o, "')")
+            paste0("require('r.edit').finish_inserting('", howto, "', '", o, "')")
         )
     }
-    return(invisible(NULL))
-}
-
-format_text <- function(txt) {
-    txt <- .Call(fmt_txt, txt[1])
-    txt
-}
-
-format_usage <- function(fnm, args) {
-    txt <- .Call(fmt_usage, fnm, args)
-    txt
-}
-
-#' Output the arguments of a function as extra information to be shown during
-#' auto-completion.
-#' Called by rnvimserver when the user selects a function created in the
-#' .GlobalEnv environment in the completion menu.
-#' menu.
-#' @param funcname Name of function selected in the completion menu.
-nvim.GlobalEnv.fun.args <- function(funcname) {
-    txt <- nvim.args(funcname)
-    # txt <- gsub("\\\\", "\\\\\\\\", txt)
-    txt <- format_usage(funcname, txt)
-    txt <- paste0("function [.GlobalEnv]", txt)
-    .C(
-        nvimcom_msg_to_nvim,
-        paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')")
-    )
-    return(invisible(NULL))
-}
-
-#' Output the minimal information on an object during auto-completion.
-#' @param obj Object selected in the completion menu.
-#' @param prnt Parent environment
-nvim.min.info <- function(obj, prnt) {
-    isnull <- try(is.null(obj), silent = TRUE)
-    if (class(isnull)[1] != "logical") {
-        return(invisible(NULL))
-    }
-    if (isnull[1]) {
-        return(invisible(NULL))
-    }
-
-    txt <- paste0(class(obj)[1], " [", prnt, "]")
-    objlbl <- attr(obj, "label", exact = TRUE)
-    if (!is.null(objlbl) && is.character(objlbl)) {
-        txt <- append(
-            txt,
-            c("", paste0("**", format_text(objlbl), "**"))
-        )
-    }
-    if (is.data.frame(obj)) {
-        txt <- append(txt, paste0("dim: ", nrow(obj), " x ", ncol(obj)))
-    } else if (is.list(obj)) {
-        txt <- append(txt, paste0("number of elements: ", length(obj)))
-    }
-
-    txt <- gsub("'", "\x13", txt)
-    txt <- paste0(txt, collapse = "\x14")
-
-    .C(
-        nvimcom_msg_to_nvim,
-        paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')")
-    )
-    return(invisible(NULL))
-}
-
-#' Output the summary as extra information on an object during auto-completion.
-#' @param obj Object selected in the completion menu.
-#' @param prnt Parent environment
-nvim.get.summary <- function(obj, prnt) {
-    isnull <- try(is.null(obj), silent = TRUE)
-    if (class(isnull)[1] != "logical") {
-        return(invisible(NULL))
-    }
-    if (isnull[1]) {
-        return(invisible(NULL))
-    }
-
-    owd <- getOption("width")
-    width <- as.integer(Sys.getenv("CMPR_DOC_WIDTH"))
-    if (is.na(width)) {
-        width <- 58
-    }
-    options(width = width)
-    txt <- paste0(class(obj)[1], " [", prnt, "]")
-    objlbl <- attr(obj, "label", exact = TRUE)
-    if (!is.null(objlbl) && is.character(objlbl)) {
-        objlbl <- format_text(objlbl)
-        objlbl <- nvim.fix.string(objlbl)
-        txt <- append(txt, c("", objlbl))
-    }
-    txt <- append(txt, "\x14\x14---\x14```rout")
-    if (is.factor(obj) || is.numeric(obj) || is.logical(obj)) {
-        sobj <- try(summary(obj), silent = TRUE)
-        txt <- append(txt, capture.output(print(sobj)))
-    } else {
-        sobj <- try(capture.output(utils::str(obj)), silent = TRUE)
-        txt <- append(txt, sobj)
-    }
-    txt <- append(txt, c("```", ""))
-    options(width = owd)
-
-    txt <- gsub("'", "\x13", txt)
-    txt <- paste0(txt, collapse = "\x14")
-
-    .C(
-        nvimcom_msg_to_nvim,
-        paste0("lua ", Sys.getenv("RNVIM_RSLV_CB"), "('", txt, "')")
-    )
     return(invisible(NULL))
 }
 
@@ -462,128 +352,6 @@ nvim.getclass <- function(x) {
     }
 
     return(cls)
-}
-
-nvim.getmethod <- function(fname, objclass) {
-    if (
-        exists(fname, where = 1) &&
-            is.function(get(fname, pos = 1)) &&
-            (isGeneric(fname) || isS3stdGeneric(fname))
-    ) {
-        mtd <- rownames(attr(methods(fname), "info"))
-        for (obc in objclass) {
-            fnm <- paste0(fname, ".", obc)
-            idx <- grep(paste0("^", fnm, "$"), mtd)
-            if (length(idx) == 1) {
-                fun <- NULL
-                try(fun <- getS3method(fname, obc))
-                if (is.function(fun)) {
-                    frm <- formals(fun)
-                    luatbl <- sapply(
-                        frm,
-                        function(x) {
-                            if (length(x) == 0) {
-                                return("")
-                            } else {
-                                return(" = ")
-                            }
-                        }
-                    )
-                    env <- paste0("#\x02", fnm)
-                    clpstr <- paste0("', cls = 'a', env = '", env, "'}, {label = '")
-                    luastr <- paste0(names(luatbl), unname(luatbl), collapse = clpstr)
-                    luastr <- paste0(
-                        "{label = '",
-                        luastr,
-                        "', cls = 'a', env = '",
-                        env,
-                        "'}"
-                    )
-                    return(luastr)
-                }
-            }
-        }
-    }
-    return(fname)
-}
-
-#' Complete arguments of functions.
-#' Called during nvim-cmp completion with cmp-r as source.
-#' @param id Completion identification number.
-#' @param rkeyword Name of function whose arguments are being completed.
-#' @param argkey First characters of argument to be completed.
-#' @param firstobj First parameter of function being completed.
-#' @param lib Name of library preceding the function name
-#' (example: `library::function`).
-#' @param ldf Whether the function is in `R_fun_data_1` or not.
-nvim_complete_args <- function(
-    id,
-    rkeyword,
-    argkey,
-    firstobj = "",
-    lib = NULL,
-    ldf = FALSE
-) {
-    # Check if rkeyword is a .GlobalEnv function:
-    if (length(grep(paste0("^", rkeyword, "$"), objects(.GlobalEnv))) == 1) {
-        args <- nvim.args(rkeyword, txt = argkey)
-        args <- gsub("\005$", "", args)
-        argsl <- strsplit(args, "\005")[[1]]
-        argsl <- sub("\004.*", "", argsl)
-        args <- paste0(
-            "{label = '",
-            paste(argsl, collapse = "', cls = 'a', env = '.GlobalEnv'}, {label = '"),
-            "', cls = 'a', env = '.GlobalEnv'}, "
-        )
-        msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";;", args)
-        .C(nvimcom_msg_to_nvim, msg)
-        return(invisible(NULL))
-    }
-
-    if (firstobj != "" && exists(firstobj, where = 1)) {
-        # Completion of columns of data.frame
-        if (ldf && is.data.frame(get(firstobj))) {
-            if (is.null(lib)) {
-                msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";", firstobj, ";")
-            } else {
-                msg <- paste0(
-                    "+C",
-                    id,
-                    ";",
-                    argkey,
-                    ";",
-                    lib,
-                    "::",
-                    rkeyword,
-                    ";",
-                    firstobj,
-                    ";"
-                )
-            }
-            .C(nvimcom_msg_to_nvim, msg)
-            return(invisible(NULL))
-        }
-
-        # Completion of method arguments
-        objclass <- nvim.getclass(firstobj)
-        if (objclass[1] != "#E#" && objclass[1] != "") {
-            mthd <- nvim.getmethod(rkeyword, objclass)
-            if (mthd != rkeyword) {
-                msg <- paste0("+C", id, ";", argkey, ";;;", mthd, ", ")
-                .C(nvimcom_msg_to_nvim, msg)
-                return(invisible(NULL))
-            }
-        }
-    }
-
-    # Normal completion of arguments
-    if (is.null(lib)) {
-        msg <- paste0("+C", id, ";", argkey, ";", rkeyword, ";;")
-    } else {
-        msg <- paste0("+C", id, ";", argkey, ";", lib, "::", rkeyword, ";;")
-    }
-    .C(nvimcom_msg_to_nvim, msg)
-    return(invisible(NULL))
 }
 
 update_params <- function(fname) {

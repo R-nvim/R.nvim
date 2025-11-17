@@ -10,6 +10,7 @@
 #include "logging.h"
 #include "data_structures.h"
 #include "tcp.h"
+#include "lsp.h"
 
 static int building_objls;     // Flag for building compl lists
 static int more_to_build;      // Flag for more lists to build
@@ -17,81 +18,26 @@ static LibPath *libpaths;      // Pointer to first library path
 static size_t glbnv_buffer_sz; // Global environment buffer size
 static ListStatus *listTree;   // Root node of the list status tree
 static int max_depth = 2;      // Max list depth in nvimcom
+static char *cmp_dir;          // Directory for completion files
 
 void set_max_depth(int m) { max_depth = m; }
-
-/**
- * @brief Reads the entire contents of a specified file into a buffer.
- *
- * This function opens the file specified by the filename and reads its entire
- * content into a dynamically allocated buffer. It ensures that the file is read
- * in binary mode to preserve the data format. This function is typically used
- * to load files containing data relevant to the R.nvim plugin, such as
- * completion lists or configuration data.
- *
- * @param fn The name of the file to be read.
- * @param verbose Flag to indicate whether to print error messages. If set to a
- * non-zero value, error messages are printed to stderr.
- * @return Returns a pointer to a buffer containing the file's content if
- * successful. Returns NULL if the file cannot be opened or in case of a read
- * error.
- */
-static char *read_file(const char *fn, int verbose) {
-    FILE *f = fopen(fn, "rb");
-    if (!f) {
-        if (verbose) {
-            fprintf(stderr, "Error opening '%s'", fn);
-            fflush(stderr);
-        }
-        return NULL;
-    }
-    fseek(f, 0L, SEEK_END);
-    long sz = ftell(f);
-    if (sz == 0) {
-        // List of objects is empty. Perhaps no object was created yet.
-        // The args_datasets files is empty
-        fclose(f);
-        return calloc(1, sizeof(char));
-    }
-
-    char *b = calloc(1, sz + 1);
-    if (!b) {
-        fclose(f);
-        fputs("Error allocating memory\n", stderr);
-        fflush(stderr);
-        return NULL;
-    }
-
-    rewind(f);
-    if (1 != fread(b, sz, 1, f)) {
-        fclose(f);
-        free(b);
-        fprintf(stderr, "Error reading '%s'\n", fn);
-        fflush(stderr);
-        return NULL;
-    }
-    fclose(f);
-    return b;
-}
 
 /**
  * Compares two ASCII strings in a case-insensitive manner.
  * @param a First string.
  * @param b Second string.
- * @return An integer less than, equal to, or greater than zero if a is found,
+ * @return An integer less than, equal to, or greater than zero
  *         respectively, to be less than, to match, or be greater than b.
  */
 static int ascii_ic_cmp(const char *a, const char *b) {
-    int d;
-    unsigned x, y;
     while (*a && *b) {
-        x = (unsigned char)*a;
-        y = (unsigned char)*b;
+        unsigned x = (unsigned char)*a;
+        unsigned y = (unsigned char)*b;
         if (x <= 'Z')
             x += 32;
         if (y <= 'Z')
             y += 32;
-        d = x - y;
+        int d = x - y;
         if (d != 0)
             return d;
         a++;
@@ -120,11 +66,6 @@ void change_all(int stt) { change_all_stt(listTree, stt); }
 
 /**
  * @brief Copy a string, skipping consecutive spaces.
- *
- * This function takes an input string and produces an output string where
- * consecutive spaces are reduced to a single space. The output string is
- * null-terminated. The function does not modify the input string.
- *
  * @param input The input string with potential consecutive spaces.
  * @param output The output buffer where the trimmed string will be stored.
  *               This buffer should be large enough to hold the result.
@@ -146,10 +87,6 @@ static void skip_consecutive_spaces(const char *input, char *output) {
 
 static int read_field_data(char *s, int i) {
     while (s[i]) {
-        // Fix https://github.com/R-nvim/cmp-r/issues/17
-        if (s[i] == '\\')
-            s[i] = ' ';
-
         if (s[i] == '\n' && s[i + 1] == ' ') {
             s[i] = ' ';
             i++;
@@ -168,13 +105,6 @@ static int read_field_data(char *s, int i) {
 /**
  * @brief Parses the DESCRIPTION file of an R package to extract metadata.
  *
- * This function reads the DESCRIPTION file of an R package and extracts key
- * metadata, including the Title and Description fields. It is used to provide
- * more detailed information about R packages in the Neovim environment,
- * particularly for features like auto-completion and package management within
- * the R.nvim plugin. The parsed information is used to update the data
- * structures that represent installed R libraries.
- *
  * @param descr Pointer to a string containing the contents of a DESCRIPTION
  * file.
  * @param fnm The name of the R package whose DESCRIPTION file is being parsed.
@@ -182,10 +112,10 @@ static int read_field_data(char *s, int i) {
 static void parse_descr(char *descr, const char *fnm) {
     int i = 0;
     int dlen = strlen(descr);
-    char *title, *description;
+    const char *title, *description;
     title = NULL;
     description = NULL;
-    InstLibs *lib, *ptr, *prev;
+    InstLibs *lib, *ptr;
     while (i < dlen) {
         if ((i == 0 || descr[i - 1] == '\n' || descr[i - 1] == 0) &&
             str_here(descr + i, "Title: ")) {
@@ -213,8 +143,8 @@ static void parse_descr(char *descr, const char *fnm) {
                 lib->next = instlibs;
                 instlibs = lib;
             } else {
+                InstLibs *prev = NULL;
                 ptr = instlibs;
-                prev = NULL;
                 while (ptr && ascii_ic_cmp(fnm, ptr->name) > 0) {
                     prev = ptr;
                     ptr = ptr->next;
@@ -252,7 +182,7 @@ static void parse_descr(char *descr, const char *fnm) {
 void update_inst_libs(void) {
     Log("update_inst_libs()");
     DIR *d;
-    struct dirent *dir;
+    const struct dirent *dir;
     char fname[512];
     char *descr;
     InstLibs *il;
@@ -302,7 +232,7 @@ void update_inst_libs(void) {
     // New libraries found. Overwrite ~/.cache/R.nvim/inst_libs
     if (n) {
         char fnm[1032];
-        snprintf(fnm, 1031, "%s/inst_libs", compldir);
+        snprintf(fnm, 1031, "%s/inst_libs", cmp_dir);
         FILE *f = fopen(fnm, "w");
         if (f == NULL) {
             fprintf(stderr, "Could not write to '%s'\n", fnm);
@@ -369,14 +299,6 @@ static char *get_pkg_descr(const char *pkgnm, int again) {
 
 /**
  * @brief Count the number of separator characters in a given buffer.
- *
- * This function scans a buffer and counts the number of occurrences of
- * the separator character '\006'. It is primarily used to parse and validate
- * data structure representations received from R. The function also checks if
- * the size of the buffer is 1, indicating an empty package with no exported
- * objects. In case of an unexpected number of separators, it logs an error,
- * frees the buffer, and returns NULL.
- *
  * @param b1 Pointer to the buffer to be scanned.
  * @param size Pointer to an integer where the size of the buffer will be
  * stored.
@@ -390,7 +312,7 @@ static char *count_sep(char *b1, int *size) {
     if (*size == 1)
         return b1;
 
-    char *s0 = b1;
+    const char *s0 = b1;
     char *s1 = b1;
     int n = 0;
     while (*s1) {
@@ -419,19 +341,9 @@ static char *count_sep(char *b1, int *size) {
 /**
  * @brief Validates and prepares the buffer containing completion data.
  *
- * This function processes a buffer that is expected to contain data for auto
- * completion, ensuring that there are exactly 7 '\006' separators between
- * newline characters. It modifies the buffer in place, replacing certain
- * control characters with their corresponding representations and ensuring the
- * data is correctly formatted for subsequent processing. The function is part
- * of the handling for auto completion data in the R.nvim plugin, facilitating
- * the communication and data exchange between Neovim and R.
- *
  * @param buffer Pointer to the buffer containing auto completion data.
  * @param size Pointer to an integer representing the size of the buffer.
- * @return Returns a pointer to the processed buffer if the validation is
- * successful. Returns NULL if the buffer does not meet the expected format or
- * validation fails.
+ * @return Returns a pointer to the processed buffer.
  */
 static char *check_omils_buffer(char *b, int *size) {
     // Ensure that there are exactly 7 \006 between new line characters
@@ -451,20 +363,10 @@ static char *check_omils_buffer(char *b, int *size) {
 
 /**
  * @brief Reads the contents of an auto completion list file into a buffer.
- *
- * This function opens and reads the specified auto completion file (typically
- * named 'objls_'). It allocates memory for the buffer and loads the file
- * contents into it. The buffer is used to store completion items (like function
- * names and variables) available in R packages for use in auto completion in
- * Neovim. If the file is empty, it indicates that no completion items are
- * available or the file is yet to be populated.
- *
  * @param fn The name of the file to be read.
  * @param size A pointer to an integer where the size of the read data will be
  * stored.
- * @return Returns a pointer to a buffer containing the file contents if
- * successful. Returns NULL if the file cannot be opened, is empty, or in case
- * of a read error.
+ * @return Returns a pointer to a buffer containing the file contents.
  */
 static char *read_objls_file(const char *fn, int *size) {
     char *b = read_file(fn, 1);
@@ -476,7 +378,7 @@ static char *read_objls_file(const char *fn, int *size) {
 
 static char *read_alias_file(const char *nm) {
     char fnm[512];
-    snprintf(fnm, 511, "%s/alias_%s", compldir, nm);
+    snprintf(fnm, 511, "%s/alias_%s", cmp_dir, nm);
     char *b = read_file(fnm, 1);
     if (!b)
         return NULL;
@@ -491,7 +393,7 @@ static char *read_alias_file(const char *nm) {
 
 static char *read_args_file(const char *nm) {
     char fnm[512];
-    snprintf(fnm, 511, "%s/args_%s", compldir, nm);
+    snprintf(fnm, 511, "%s/args_%s", cmp_dir, nm);
     char *b = read_file(fnm, 1);
     if (!b)
         return NULL;
@@ -532,7 +434,7 @@ static PkgData *new_pkg_data(const char *nm, const char *vrsn) {
     pd->descr = get_pkg_descr(pd->name, 1);
     pd->loaded = 1;
 
-    snprintf(buf, 1023, "%s/objls_%s_%s", compldir, nm, vrsn);
+    snprintf(buf, 1023, "%s/objls_%s_%s", cmp_dir, nm, vrsn);
     pd->fname = malloc((strlen(buf) + 1) * sizeof(char));
     strcpy(pd->fname, buf);
 
@@ -656,17 +558,9 @@ void update_pkg_list(char *libnms) {
 
 /**
  * @brief Updates the buffer containing the global environment data from R.
- *
- * This function is responsible for updating the global environment buffer
- * with new data received from R. It ensures the buffer is appropriately sized
- * and formatted for further processing. The global environment buffer contains
- * data about the R global environment, such as variables and functions, which
- * are used for features like auto-completion in Neovim. The function also
- * triggers a refresh of related UI components if necessary.
- *
  * @param g A string containing the new global environment data.
  */
-void update_glblenv_buffer(char *g) {
+void update_glblenv_buffer(const char *g) {
     Log("update_glblenv_buffer()");
     int glbnv_size = strlen(g);
 
@@ -743,16 +637,12 @@ int get_list_status(const char *s, int stt) {
     return stt;
 }
 
-/**
- * Description:
- * @param s:
- */
 void toggle_list_status(char *s) {
     ListStatus *p = search(listTree, s);
     if (p) {
 
         // Count list levels
-        char *t = s;
+        const char *t = s;
         int n = 0;
         while (*t) {
             if (*t == '$' || *t == '@')
@@ -774,7 +664,7 @@ void toggle_list_status(char *s) {
 // Send to R.nvim the command to read the list of libraries loaded in R
 void build_objls(void) {
     Log("build_objls()");
-    unsigned long nsz;
+    size_t nsz;
 
     if (building_objls) {
         more_to_build = 1;
@@ -782,8 +672,9 @@ void build_objls(void) {
     }
     building_objls = 1;
 
-    memset(compl_buffer, 0, compl_buffer_size);
-    char *p = compl_buffer;
+    size_t buf_sz = 4096;
+    char *buf = (char *)calloc(buf_sz, sizeof(char));
+    char *p = buf;
 
     PkgData *pkg = pkgList;
 
@@ -792,13 +683,11 @@ void build_objls(void) {
     int k = 0;
     while (pkg) {
         if (pkg->to_build == 0) {
-            nsz = strlen(pkg->name) + 1024 + (p - compl_buffer);
-            if (compl_buffer_size < nsz)
-                p = grow_buffer(&compl_buffer, &compl_buffer_size,
-                                nsz - compl_buffer_size + 32768);
-            p = str_cat(p, "'");
+            nsz = strlen(pkg->name) + 1024 + (p - buf);
+            if (buf_sz < nsz)
+                p = grow_buffer(&buf, &buf_sz, nsz - buf_sz + 1024);
             p = str_cat(p, pkg->name);
-            p = str_cat(p, "', ");
+            p = str_cat(p, " ");
             pkg->to_build = 1;
             k++;
         }
@@ -807,8 +696,12 @@ void build_objls(void) {
 
     if (k > 0) {
         // Build all the objls_ files.
-        printf("lua require('r.server').build_objls({%s})\n", compl_buffer);
-        fflush(stdout);
+        char *cmd = (char *)malloc((124 + strlen(buf)) * sizeof(char));
+        sprintf(cmd, "require('r.server').build_objls('%s')", buf);
+        send_cmd_to_nvim(cmd);
+        free(cmd);
+
+        free(buf);
     }
 }
 
@@ -846,8 +739,7 @@ static void finish_bol(void) {
     }
 
     // Message to Neovim: Update both syntax and Rhelp_list
-    printf("lua require('r.server').update_Rhelp_list()\n");
-    fflush(stdout);
+    send_cmd_to_nvim("require('r.server').update_Rhelp_list()");
 }
 
 // This function is called by lua/r/server.lua when R finishes building
@@ -869,33 +761,33 @@ static void fill_inst_libs(void) {
     Log("fill_inst_libs");
     InstLibs *il = NULL;
     char fname[1032];
-    snprintf(fname, 1031, "%s/inst_libs", compldir);
+    snprintf(fname, 1031, "%s/inst_libs", cmp_dir);
     char *b = read_file(fname, 0);
     if (!b)
         return;
     char *s = b;
-    char *n, *t, *d;
     while (*s) {
+        const char *n, *t, *d;
         n = s;
         t = NULL;
         d = NULL;
         while (*s && *s != '\006')
             s++;
-        if (*s && *s == '\006') {
+        if (*s == '\006') {
             *s = 0;
             s++;
             if (*s) {
                 t = s;
                 while (*s && *s != '\006')
                     s++;
-                if (*s && *s == '\006') {
+                if (*s == '\006') {
                     *s = 0;
                     s++;
                     if (*s) {
                         d = s;
                         while (*s && *s != '\n')
                             s++;
-                        if (*s && *s == '\n') {
+                        if (*s == '\n') {
                             *s = 0;
                             s++;
                         } else
@@ -928,6 +820,9 @@ static void fill_inst_libs(void) {
 
 void init_ds_vars(void) {
     char fname[512];
+    cmp_dir =
+        (char *)malloc(sizeof(char) * strlen(getenv("RNVIM_COMPLDIR")) + 1);
+    strcpy(cmp_dir, getenv("RNVIM_COMPLDIR"));
     snprintf(fname, 511, "%s/libPaths", tmpdir);
     char *b = read_file(fname, 1);
 #ifdef WIN32

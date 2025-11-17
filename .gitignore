@@ -10,7 +10,9 @@ nvimcom/src/apps/*.dll
 nvimcom/src/apps/rnvimserver
 nvimcom/src/apps/rnvimserver.exe
 nvimcom/src/apps/compile_flags.txt
+parser/
 resources/__pycache__/
 resources/*.pyc
+resources/tree-sitter-rout/src
 .tests
 deps
