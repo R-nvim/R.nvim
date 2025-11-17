@@ -4,6 +4,12 @@
 
 # R.nvim
 
+**Note**: the autocompletion depending on
+[nvim-cmp](https://github.com/hrsh7th/nvim-cmp) and
+[cmp-r](https://github.com/R-nvim/cmp-r) was replaced by a built-in language
+server. If you experience problems, please, report the bugs that you have
+found, and configure your plugin manager to use version `0.99.1` of `R.nvim`.
+
 R.nvim adds R support to Neovim, including:
 
 - Communication with R via Neovim's built-in terminal or tmux
