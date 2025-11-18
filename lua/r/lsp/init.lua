@@ -427,19 +427,20 @@ end
 ---@param req_id string
 M.hover = function(req_id)
     local word = require("r.cursor").get_keyword()
-    local c = vim.treesitter.get_captures_at_cursor()
+    if word == "" then
+        M.send_msg({ code = "N" .. req_id })
+        return
+    end
 
+    local c = vim.treesitter.get_captures_at_cursor()
     if vim.tbl_contains(c, "function.call") then
         local first_obj = require("r.cursor").get_first_obj()
         if first_obj ~= "" then
             M.send_msg({ code = "H", orig_id = req_id, word = word, fobj = first_obj })
-        else
-            M.send_msg({ code = "H", orig_id = req_id, word = word })
+            return
         end
-    elseif vim.tbl_contains(c, "variable") and vim.g.R_Nvim_status == 7 then
-        M.send_msg({ code = "H", orig_id = req_id, word = word })
     end
-    M.send_msg({ code = "N" .. req_id })
+    M.send_msg({ code = "H", orig_id = req_id, word = word })
 end
 
 ---Identify what function should have its signature displayed on a float window
