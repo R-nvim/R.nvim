@@ -1477,6 +1477,7 @@ features in your R.nvim config. Below are the default values:
     doc_width = 0,
     fun_data_1 = { "select", "rename", "mutate", "filter" },
     fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
+    fun_data_formula = { ggplot = { "facet_wrap", "facet_grid", "vars" } },
     quarto_intel = nil,
 
  }
@@ -1505,6 +1506,21 @@ Meaning of optons:
     This option is overridden by `g:R_fun_data_1`.
     Default: `{ggplot = {'aes'}, with = {'*'}}`.
 
+  - `fun_data_formula`: Dictionary with parent functions as keys. The value of
+    each key is a list of functions where formula (`~`) column completion
+    should be triggered. When typing `~` followed by a partial column name
+    inside one of these functions, R.nvim will search backwards through the
+    buffer to find the parent function (e.g., `ggplot`) and complete column
+    names from its first argument (the data.frame). This is useful for ggplot2
+    faceting functions that use formula syntax.
+    Default: `{ggplot = {'facet_wrap', 'facet_grid', 'vars'}}`.
+
+    Example usage:
+>r
+    ggplot(mtcars, aes(x = mpg)) +
+        geom_point() +
+        facet_wrap(~cyl)  # Typing ~ will complete column names from mtcars
+<
   - `quarto_intel`: Path to `yaml-intelligence-resources.json` which is part
     of `quarto` application and has all necessary information for completion
     of valid YAML options in an Quarto document. Default: `nil` (R.nvim will
