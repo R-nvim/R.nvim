@@ -1070,6 +1070,7 @@ local global_setup = function()
 
     require("r.commands").create_user_commands()
     vim.fn.timer_start(1, require("r.config").check_health)
+
     vim.schedule(function() require("r.server").check_nvimcom_version() end)
 
     hooks.run(config, "after_config", true)
@@ -1124,6 +1125,9 @@ end
 --- Set the default value of config variables that depend on system features.
 --- Apply any settings defined in a .Rproj file
 M.real_setup = function()
+    -- Do nothing if the buffer was created by `:checkhealth r`
+    if vim.api.nvim_buf_get_name(0) == "" and vim.bo.buflisted == false then return end
+
     if not did_real_setup then
         did_real_setup = true
         global_setup()
