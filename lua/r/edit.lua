@@ -147,6 +147,126 @@ M.vim_leave = function()
     end
 end
 
+--- Create a buffer and check the languages at different cursor positions
+---@return table
+local check_buffer = function(ft, lines, langs)
+    -- Create a temporary buffer in a temporary window
+    local b = vim.api.nvim_create_buf(false, false)
+    vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
+    vim.api.nvim_set_option_value("number", false, { scope = "local" })
+    vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
+    vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
+    local w = vim.api.nvim_open_win(b, true, {
+        relative = "win",
+        row = 1,
+        col = 1,
+        width = 20,
+        height = 13,
+        hide = true,
+    })
+
+    vim.api.nvim_buf_set_lines(b, 0, -1, false, lines)
+    vim.api.nvim_set_option_value("filetype", ft, { buf = b })
+    vim.cmd("redraw")
+
+    -- Wait for treesitter to parse the buffer, likely a racing issue here
+    vim.wait(100)
+
+    for k, v in pairs(langs) do
+        vim.api.nvim_win_set_cursor(w, { v[2], v[3] })
+        langs[k][4] = require("r.utils").get_lang()
+    end
+
+    vim.api.nvim_win_close(w, true)
+    vim.api.nvim_buf_delete(b, { force = true })
+
+    return langs
+end
+
+local print_lang_check = function(langtbl)
+    local res = {}
+    for _, v in pairs(langtbl) do
+        if v[1] == v[4] then
+            table.insert(res, { "\n  Correctly detected: " })
+            table.insert(res, { v[1], "Special" })
+        else
+            table.insert(res, { "\n  Wrongly detected: ", "WarningMsg" })
+            table.insert(res, { v[1], "Special" })
+            table.insert(res, { " vs " })
+            table.insert(res, { v[4], "Special" })
+        end
+    end
+    return res
+end
+
+--- Check if language detection using treesitter is working
+---@return table
+local check_lang = function()
+    -- Quarto document
+    local lines = {
+        "---",
+        "title: Test",
+        "---",
+        "",
+        "Normal text.",
+        "",
+        "```{r}",
+        "x <- 1",
+        "```",
+        "",
+        "Normal text again.",
+    }
+
+    -- Expected language at different cursor positions
+    local qlangs = {
+        { "yaml", 2, 0, "" },
+        { "markdown", 4, 0, "" },
+        { "markdown_inline", 5, 0, "" },
+        { "r", 8, 0, "" },
+    }
+
+    qlangs = check_buffer("quarto", lines, qlangs)
+
+    -- Rnoweb document
+    lines = {
+        "\\documentclass{article}",
+        "\\begin{document}",
+        "",
+        "Normal text.",
+        "",
+        "<<example>>=",
+        "x <- 1",
+        "@",
+        "",
+        "Normal text again.",
+        "",
+        "\\end{document}",
+    }
+
+    -- Expected language at different cursor positions
+    local nlangs = {
+        { "latex", 4, 0, "" },
+        { "chunk_header", 6, 0, "" },
+        { "r", 7, 0, "" },
+        { "chunk_end", 8, 0, "" },
+    }
+
+    nlangs = check_buffer("rnoweb", lines, nlangs)
+
+    local result = { { "Language detection in a Quarto document", "Title" }, { ":" } }
+    local qres = print_lang_check(qlangs)
+    for _, v in pairs(qres) do
+        table.insert(result, v)
+    end
+    table.insert(result, { "\nLanguage detection in an Rnoweb document", "Title" })
+    table.insert(result, { ":" })
+    local nres = print_lang_check(nlangs)
+    for _, v in pairs(nres) do
+        table.insert(result, v)
+    end
+    return result
+end
+
 M.show_debug_info = function()
     local info = {}
     for k, v in pairs(debug_info) do
@@ -175,6 +295,11 @@ M.show_debug_info = function()
         else
             warn("debug_info error: " .. type(v))
         end
+    end
+
+    local lang_lines = check_lang()
+    for _, v in pairs(lang_lines) do
+        table.insert(info, v)
     end
     vim.schedule(function() vim.api.nvim_echo(info, false, {}) end)
 end
