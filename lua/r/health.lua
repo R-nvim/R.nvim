@@ -22,11 +22,11 @@ local check_buffer = function(ft, lines, langs)
 
     -- Create a temporary buffer in a temporary window
     local b = vim.api.nvim_create_buf(false, false)
-    vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local", buf = b })
-    vim.api.nvim_set_option_value("number", false, { scope = "local", buf = b })
-    vim.api.nvim_set_option_value("swapfile", false, { scope = "local", buf = b })
-    vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local", buf = b })
-    local w = vim.api.nvim_open_win(b, false, {
+    vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
+    vim.api.nvim_set_option_value("number", false, { scope = "local" })
+    vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
+    vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
+    local w = vim.api.nvim_open_win(b, true, {
         relative = "win",
         row = 1,
         col = 1,
