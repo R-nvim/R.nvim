@@ -24,6 +24,11 @@ local hooks = require("r.hooks")
 ---function that receives a data.frame as its first argument
 ---@field fun_data_2? table
 ---
+---Dictionary with parent functions as keys. The value of each key is a list
+---of functions where formula (~) column completion should be triggered, looking
+---for the parent function's first argument as the dataframe
+---@field fun_data_formula? table
+---
 ---Path to `yaml-intelligence-resources.json`
 ---@field quarto_intel? string
 ---
@@ -447,6 +452,7 @@ local config = {
         doc_width = 0,
         fun_data_1 = { "select", "rename", "mutate", "filter" },
         fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
+        fun_data_formula = { ggplot = { "facet_wrap", "facet_grid", "vars" } },
         quarto_intel = nil,
         rout_fg_colors = {},
     },

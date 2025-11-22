@@ -14,6 +14,104 @@ local M = {}
 
 local get_piped_obj
 
+---Extract the first argument from a call node's arguments
+---@param call_node TSNode The call node
+---@return string | nil The first argument text
+local function get_first_arg_from_call(call_node)
+    for child in call_node:iter_children() do
+        if child:type() == "arguments" then
+            for arg in child:iter_children() do
+                if arg:type() == "argument" then
+                    -- Get the value of the first argument
+                    for arg_child in arg:iter_children() do
+                        if arg_child:named() and arg_child:type() ~= "identifier" then
+                            -- Skip if it's a function call (not a simple identifier)
+                            if arg_child:type() == "call" then return nil end
+                            if arg_child:type() == "identifier" then
+                                return vim.treesitter.get_node_text(arg_child, 0)
+                            end
+                        elseif arg_child:type() == "identifier" then
+                            return vim.treesitter.get_node_text(arg_child, 0)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+---Find a call to parent_fn in a binary operator chain (ggplot + layers)
+---@param node TSNode The starting node
+---@param parent_fn string The function name to find (e.g., "ggplot")
+---@return TSNode | nil The call node if found
+local function find_call_in_chain(node, parent_fn)
+    if node:type() == "call" then
+        for child in node:iter_children() do
+            if child:type() == "identifier" then
+                local fn_name = vim.treesitter.get_node_text(child, 0)
+                if fn_name == parent_fn then return node end
+            end
+        end
+    elseif node:type() == "binary_operator" then
+        -- Check both sides of the + operator
+        for child in node:iter_children() do
+            if child:named() then
+                local result = find_call_in_chain(child, parent_fn)
+                if result then return result end
+            end
+        end
+    end
+    return nil
+end
+
+---Find parent function's dataframe by using Treesitter to traverse the AST
+---@param parent_fn string The parent function to look for (e.g., "ggplot")
+---@param lnum integer Current line number (1-indexed)
+---@return string | nil The dataframe name if found
+local function find_ggplot_dataframe(parent_fn, lnum)
+    -- Get the parser and tree
+    local ok, parser = pcall(vim.treesitter.get_parser, 0, "r")
+    if not ok or not parser then return nil end
+
+    local tree = parser:parse()[1]
+    if not tree then return nil end
+
+    -- Get node at current position (use column 0, we'll traverse up)
+    local root = tree:root()
+    local node = root:named_descendant_for_range(lnum - 1, 0, lnum - 1, 0)
+    if not node then return nil end
+
+    -- Walk up the tree to find the binary_operator chain (ggplot + layers)
+    ---@type TSNode?
+    local current = node
+    while current do
+        if current:type() == "binary_operator" then
+            -- Found a + chain, search for the parent function
+            local call_node = find_call_in_chain(current, parent_fn)
+            if call_node then
+                -- Found the parent function, extract first argument
+                local firstobj = get_first_arg_from_call(call_node)
+                if firstobj then return firstobj end
+
+                -- Check for piped data before the call
+                local call_start_row = call_node:start()
+                local line = vim.api.nvim_buf_get_lines(
+                    0,
+                    call_start_row,
+                    call_start_row + 1,
+                    true
+                )[1]
+                local pobj = get_piped_obj(line, call_start_row + 1)
+                if pobj then return pobj end
+            end
+        end
+        current = current:parent()
+    end
+
+    return nil
+end
+
 ---Return object piped through either `|>` or `%>%`
 ---@param line string | nil
 ---@param lnum integer
@@ -96,6 +194,9 @@ local need_R_args = function(line, lnum)
     local lib = nil
     lib, funname, firstobj, nline, nlnum, cnum = get_first_obj(line, lnum + 1)
 
+    -- Save original nlnum for formula search (before fun_data_2 modifies it)
+    local orig_nlnum = nlnum
+
     -- Check if this is a function for which we expect to complete data frame column names
     if funname then
         -- Check if the data.frame is supposed to be the first argument:
@@ -122,6 +223,25 @@ local need_R_args = function(line, lnum)
                         end
                     end
                 end
+            end
+        end
+
+        -- Check for formula functions (facet_wrap, facet_grid, vars, etc.)
+        -- These functions take column names as arguments, so complete from parent ggplot's data
+        if not listdf and options.fun_data_formula then
+            for parent_fn, formula_fns in pairs(options.fun_data_formula) do
+                for _, fn in pairs(formula_fns) do
+                    if fn == funname then
+                        -- Found matching function, now find parent's dataframe
+                        local df = find_ggplot_dataframe(parent_fn, orig_nlnum)
+                        if df then
+                            firstobj = df
+                            listdf = 3
+                        end
+                        break
+                    end
+                end
+                if listdf then break end
             end
         end
     end
@@ -377,7 +497,7 @@ function M.complete(req_id, lnum, cnum)
                 if wrd then msg = msg .. ", '" .. wrd .. "'" end
                 if nra.lib then msg = msg .. ", lib = '" .. nra.lib .. "'" end
                 if nra.listdf then
-                    if nra.listdf == 1 then
+                    if nra.listdf == 1 or nra.listdf == 3 then
                         msg = msg .. ", df = '" .. nra.firstobj .. "'"
                     elseif nra.listdf == 2 then
                         msg = msg .. ", df = '" .. nra.firstobj2 .. "'"
@@ -386,12 +506,18 @@ function M.complete(req_id, lnum, cnum)
                 msg = msg .. ")"
                 send_to_nvimcom("E", msg)
             elseif nra.listdf then
+                local df_name
+                if nra.listdf == 1 or nra.listdf == 3 then
+                    df_name = nra.firstobj
+                else
+                    df_name = nra.firstobj2
+                end
                 M.send_msg({
                     code = "5",
                     orig_id = req_id,
                     base = wrd,
                     fnm = nra.fnm,
-                    df = nra.listdf == 1 and nra.firstobj or nra.firstobj2,
+                    df = df_name,
                 })
             end
             return
