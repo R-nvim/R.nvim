@@ -1517,7 +1517,7 @@ Meaning of optons:
 
     Example usage:
 >r
-    ggplot(mtcars, aes(x = mpg)) +
+    ggplot(mtcars, aes(x = mpg, y = hp)) +
         geom_point() +
         facet_wrap(~cyl)  # Typing ~ will complete column names from mtcars
 <
