@@ -18,8 +18,7 @@ end
 --- Create a buffer and check the languages at different cursor positions
 ---@return table
 local check_buffer = function(ft, lines, langs)
-	local health_buf = vim.api.nvim_get_current_buf()
-	local health_win = vim.api.nvim_get_current_win()
+    local health_win = vim.api.nvim_get_current_win()
 
     -- Create a temporary buffer in a temporary window
     local b = vim.api.nvim_create_buf(false, false)
@@ -48,7 +47,7 @@ local check_buffer = function(ft, lines, langs)
         langs[k][4] = require("r.utils").get_lang()
     end
 
-		vim.api.nvim_set_current_win(health_win)
+    vim.api.nvim_set_current_win(health_win)
 
     vim.api.nvim_win_close(w, true)
     vim.api.nvim_buf_delete(b, { force = true })
