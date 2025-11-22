@@ -1,4 +1,5 @@
 local send_to_nvimcom = require("r.run").send_to_nvimcom
+
 local warn = require("r.log").warn
 
 local client_id
@@ -427,20 +428,30 @@ end
 ---@param req_id string
 M.hover = function(req_id)
     local word = require("r.cursor").get_keyword()
+
     if word == "" then
         M.send_msg({ code = "N" .. req_id })
         return
     end
 
-    local c = vim.treesitter.get_captures_at_cursor()
-    if vim.tbl_contains(c, "function.call") then
-        local first_obj = require("r.cursor").get_first_obj()
-        if first_obj ~= "" then
-            M.send_msg({ code = "H", orig_id = req_id, word = word, fobj = first_obj })
-            return
+    local msg = { code = "H", orig_id = req_id, word = word }
+
+    local bufnr = vim.api.nvim_get_current_buf()
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local row, col = cursor[1] - 1, cursor[2]
+
+    local ok, captures = pcall(vim.treesitter.get_captures_at_pos, bufnr, row, col)
+    if ok and captures then
+        for _, capture in ipairs(captures) do
+            if capture.capture == "function.call" then
+                local first_obj = require("r.cursor").get_first_obj()
+                if first_obj ~= "" then msg.fobj = first_obj end
+                break
+            end
         end
     end
-    M.send_msg({ code = "H", orig_id = req_id, word = word })
+
+    M.send_msg(msg)
 end
 
 ---Identify what function should have its signature displayed on a float window
