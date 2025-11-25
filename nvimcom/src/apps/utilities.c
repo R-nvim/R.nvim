@@ -13,7 +13,9 @@
  * @return Pointer to the resized buffer.
  */
 char *grow_buffer(char **b, size_t *sz, size_t inc) {
+#ifdef Debug_NRS
     Log("\x1b[31mgrow_buffer\x1b[0m: %zu, %zu", *sz, inc);
+#endif
     *sz += inc;
     char *tmp = calloc(*sz, sizeof(char));
     strcpy(tmp, *b);
