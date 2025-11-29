@@ -341,7 +341,7 @@ local get_word = function(line, cnum, pttrn)
     local preline
     while true do
         preline = line:sub(1, i)
-        if cnum == vim.fn.strwidth(preline) then break end
+        if cnum <= vim.fn.strchars(preline) then break end
         i = i + 1
     end
     local pattern = pttrn and pttrn
