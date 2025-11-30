@@ -501,7 +501,11 @@ function M.complete(req_id, lnum, cnum)
                     if nra.listdf == 1 or nra.listdf == 3 then
                         msg = msg .. ", df = '" .. nra.firstobj .. "'"
                     elseif nra.listdf == 2 then
-                        msg = msg .. ", df = '" .. nra.firstobj2 .. "'"
+                        if nra.firstobj2 then
+                            msg = msg .. ", df = '" .. nra.firstobj2 .. "'"
+                        elseif nra.firstobj then
+                            msg = msg .. ", df = '" .. nra.firstobj .. "'"
+                        end
                     end
                 end
                 msg = msg .. ")"
