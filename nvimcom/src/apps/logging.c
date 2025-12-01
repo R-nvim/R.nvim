@@ -1,15 +1,12 @@
 #include <stdarg.h> // For va_list
-                    //
+
+#include "logging.h"
 #ifdef Debug_NRS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#endif
 
-#include "logging.h"
-
-#ifdef Debug_NRS
 static char *fnm;
 #endif
 
