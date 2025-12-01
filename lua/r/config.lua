@@ -651,7 +651,9 @@ local apply_user_opts = function()
         -- 1. Check the option exists
         -----------------------------------------------------------------------
         if default_val == nil then
-            swarn("Invalid option `" .. key_name .. "`.")
+            if not key_name:find("r_ls.fun_data") then
+                swarn("Invalid option `" .. key_name .. "`.")
+            end
             return
         end
 
