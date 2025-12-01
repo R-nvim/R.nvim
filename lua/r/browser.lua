@@ -445,7 +445,7 @@ function M.on_double_click()
             send_to_nvimcom("L", key)
         elseif
             curline:find("l#.*\t")
-            or curline:find("d$#.*\t")
+            or curline:find("d#.*\t")
             or curline:find("4#.*\t")
             or curline:find("7#.*\t")
             or curline:find(":#.*\t")

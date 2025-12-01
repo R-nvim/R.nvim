@@ -139,9 +139,21 @@ void hover(const char *params) {
         }
     }
 
+    char *pkg = NULL;
+    if (strstr(word, "::")) {
+        pkg = word;
+        word = strstr(word, "::");
+        *word = '\0';
+        word += 2;
+    }
+
     PkgData *pd = pkgList;
     while (pd) {
         if (pd->objls) {
+            if (pkg && strcmp(pkg, pd->name) != 0) {
+                pd = pd->next;
+                continue;
+            }
             const char *s = seek_word(pd->objls, word);
             if (s) {
                 if (is_function(s)) {

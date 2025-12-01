@@ -81,7 +81,7 @@ nvim.help <- function(topic, w, firstobj, pkg) {
     if (missing(pkg)) {
         h <- utils::help(topic, help_type = "text")
     } else {
-        h <- utils::help(topic, pkg = as.character(pkg), help_type = "text")
+        h <- utils::help(topic, package = as.character(pkg), help_type = "text")
     }
 
     if (length(h) == 0) {
