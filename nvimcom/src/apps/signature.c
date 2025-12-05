@@ -33,6 +33,7 @@ static int get_info(const char *s) {
 
     // Avoid buffer overflow if the information is too lengthy.
     nsz = strlen(f[0]) + strlen(f[4]) + 512;
+    nsz = nsz * 2;
     if (sig_buf_sz < nsz)
         p = grow_buffer(&sig_buf, &sig_buf_sz, nsz - sig_buf_sz);
 
