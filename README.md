@@ -28,6 +28,14 @@ R.nvim adds R support to Neovim, including:
 
 ## Installation
 
+The `R.nvim` repository must be cloned with its submodule `tree-sitter-rout`.
+If your plugin manager does not clone the submodules, you can clone the
+repository manually with this command:
+
+```sh
+git clone --recurse-submodules https://github.com/R-nvim/R.nvim
+```
+
 Please, see the list of dependencies at section 3.1 of
 [doc/R.nvim.txt](https://github.com/R-nvim/R.nvim/blob/main/doc/R.nvim.txt).
 
