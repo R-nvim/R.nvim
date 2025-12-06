@@ -1019,7 +1019,9 @@ local check_rout_parser = function()
     if mt1 and mt2 and mt2 > mt1 then return end
     if vim.fn.executable("tree-sitter") == 0 then return end
 
-    vim.uv.fs_mkdir(config.rnvim_home .. "/parser", tonumber("755", 8))
+    local _, err = vim.uv.fs_mkdir(config.rnvim_home .. "/parser", tonumber("755", 8))
+    if err and not err:find("EEXIST") then return end
+
     local cwdir = vim.uv.cwd()
     vim.uv.chdir(config.rnvim_home .. "/resources/tree-sitter-rout")
     -- from nvim-treesitter
