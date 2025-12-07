@@ -576,7 +576,7 @@ M.action = function(rcmd, mode, args)
     if rcmd == "dputtab" then
         M.send_to_nvimcom(
             "E",
-            'nvimcom:::nvim_dput("' .. rkeyword .. '"' .. argmnts .. ")"
+            "nvimcom:::nvim_dput('" .. rkeyword .. "'" .. argmnts .. ")"
         )
         return
     end
