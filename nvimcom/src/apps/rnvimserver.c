@@ -532,6 +532,9 @@ int main(int argc, char **argv) {
     _setmode(_fileno(stderr), _O_BINARY);
     _setmode(_fileno(stdin), _O_BINARY);
 #endif
+#ifdef Debug_NRS
+    init_logging();
+#endif
     lsp_loop();
     return 0;
 }
