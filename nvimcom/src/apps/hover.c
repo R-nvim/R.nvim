@@ -30,7 +30,7 @@ static int get_info(const char *s) {
         s++;
 
     // Avoid buffer overflow if the information is bigger than
-    // cmp_buf.
+    // hov_buf.
     char *p = hov_buf;
     nsz = strlen(f[4]) + strlen(f[5]) + strlen(f[6]) + 1024 + (p - hov_buf);
     if (hov_buf_sz < nsz)

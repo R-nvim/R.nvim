@@ -65,6 +65,7 @@ static int verbose = 0;  // 1: version number; 2: initial information; 3: TCP in
                          // and out; 4: more verbose; 5: really verbose.
 static int allnames = 0; // Show hidden objects in auto completion and
                          // Object Browser?
+static int fun_args = 1; // Complete arguments of .GlovalEnv functions?
 static int nlibs = 0;    // Number of loaded libraries.
 
 static char rns_port[16]; // rnvimserver port.
@@ -499,7 +500,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
 
     p = str_cat(p, "\006.GlobalEnv\006");
 
-    if (xgroup == 1) {
+    if (xgroup == 1 && fun_args) {
         SEXP cmdSexp, cmdexpr, ans;
         ParseStatus status;
         int er = 0;
@@ -690,6 +691,14 @@ static void send_glb_env(void) {
     glbnvbuf2 = tmp;
 }
 
+static void decrease_max_depth(int md) {
+    maxdepth = md;
+    char b[16];
+    snprintf(b, 15, "+D%d", maxdepth);
+    send_to_nvim(b);
+    REprintf("    New max_depth: %d\n", maxdepth);
+}
+
 /**
  * @brief Generate a list of objects in .GlobalEnv and store it in the
  * glbnvbuf2 buffer. The string stored in glbnvbuf2 represents a file with the
@@ -749,18 +758,25 @@ static void nvimcom_globalenv_list(void) {
         send_glb_env();
 
     double tmdiff = 1000 * ((double)clock() - tm) / CLOCKS_PER_SEC;
-    if (tmdiff > timelimit || strlen(glbnvbuf1) > sizelimit) {
-        maxdepth = curdepth - 1;
-        char b[16];
-        snprintf(b, 15, "+D%d", maxdepth);
-        send_to_nvim(b);
-        if (verbose)
-            REprintf(
-                "nvimcom:\n"
-                "    Time to build list of objects: %g ms (max_time = %g ms)\n"
-                "    List size: %zu bytes (max_size = %d bytes)\n"
-                "    New max_depth: %d\n",
-                tmdiff, timelimit, strlen(glbnvbuf1), sizelimit, maxdepth);
+    if (tmdiff > timelimit) {
+        REprintf(
+            "nvimcom:\n"
+            "    Time to build list of objects: %g ms (max_time = %g ms).\n",
+            tmdiff, timelimit);
+        if (fun_args) {
+            fun_args = 0;
+            REprintf("    Completion of arguments of .GlobalEnv functions "
+                     "disabled.\n");
+        } else {
+            decrease_max_depth(curdepth - 1);
+        }
+    } else {
+        if (strlen(glbnvbuf1) > sizelimit) {
+            REprintf("nvimcom:\n"
+                     "    List size: %zu bytes (max_size = %d bytes).\n",
+                     strlen(glbnvbuf1), sizelimit);
+            decrease_max_depth(curdepth - 1);
+        }
     }
 }
 

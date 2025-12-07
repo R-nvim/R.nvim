@@ -170,13 +170,13 @@ M.choose_lib = function(topic, libs)
             if choice then
                 send_to_nvimcom(
                     "E",
-                    'nvimcom:::nvim.help("'
+                    "nvimcom:::nvim.help('"
                         .. topic
-                        .. '", '
+                        .. "', "
                         .. htw
-                        .. 'L, package="'
+                        .. "L, pkg='"
                         .. choice
-                        .. '")'
+                        .. "')"
                 )
             end
         end)

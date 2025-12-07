@@ -31,13 +31,14 @@ static int get_info(const char *s) {
     memset(sig_buf, 0, sig_buf_sz);
     char *p = sig_buf;
 
-    // Avoid buffer overflow if the information is too lengthy.
-    nsz = strlen(f[0]) + strlen(f[4]) + 512;
-    if (sig_buf_sz < nsz)
-        p = grow_buffer(&sig_buf, &sig_buf_sz, nsz - sig_buf_sz);
-
     if (f[1][0] == 'F') {
         char *b = format_usage(f[0], f[4], 0);
+
+        // Avoid buffer overflow if the information is too lengthy.
+        nsz = strlen(b) + 512;
+        if (sig_buf_sz < nsz)
+            p = grow_buffer(&sig_buf, &sig_buf_sz, nsz - sig_buf_sz);
+
         str_cat(p, b);
         free(b);
         return 1;

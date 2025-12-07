@@ -353,7 +353,7 @@ static void *receive_msg(void *v)
 // Function to send messages to R (nvimcom package)
 void send_to_nvimcom(char *msg) {
     Log("\x1b[35mTCP out\x1b[0m: %s", msg);
-    if (connfd) {
+    if (connfd && r_conn) {
         size_t len = strlen(msg);
         if (send(connfd, msg, len, 0) != (ssize_t)len) {
             fprintf(stderr, "Partial/failed write.\n");
