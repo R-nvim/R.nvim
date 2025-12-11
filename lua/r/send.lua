@@ -212,7 +212,7 @@ M.source_lines = function(lines, what)
     if #lines < config.max_paste_lines then
         rcmd = table.concat(lines, "\n")
         if what and what == "PythonCode" then
-            rcmd = 'reticulate::py_run_string(r"(' .. rcmd .. ')")'
+            rcmd = 'reticulate::py_run_string(r"---(' .. rcmd .. ')---")'
         end
     else
         vim.fn.writefile(lines, config.source_write)
@@ -593,7 +593,7 @@ M.line = function(m)
 
     if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, vim.bo.filetype) then
         if quarto.is_python(lang) then
-            line = 'reticulate::py_run_string(r"(' .. line .. ')")'
+            line = 'reticulate::py_run_string(r"---(' .. line .. ')---")'
             ok = M.cmd(line)
             if ok and m == "move" then cursor.move_next_line() end
             return
