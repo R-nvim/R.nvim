@@ -435,9 +435,6 @@ M.view_df = function(oname, txt)
                 vim.api.nvim_buf_set_lines(0, 0, -1, true, csv_lines)
             end
         end
-        if fname:lower():find("%.tsv") or fname:lower():find("%.csv") then
-            vim.api.nvim_set_option_value("filetype", "csv", { scope = "local" })
-        end
         vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local", buf = 0 })
         vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
         vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })

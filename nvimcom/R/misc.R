@@ -151,6 +151,7 @@ nvim_viewobj <- function(
                     quote = FALSE,
                     fileEncoding = fenc
                 ))
+                oname <- paste0(oname, ".tsv")
             } else {
                 txt <- capture.output(write.table(
                     o,
@@ -158,6 +159,9 @@ nvim_viewobj <- function(
                     row.names = FALSE,
                     fileEncoding = fenc
                 ))
+                if (getOption("nvimcom.delim") == ",") {
+                    oname <- paste0(oname, ".csv")
+                }
             }
             txt <- paste0(txt, collapse = "\x14")
             txt <- gsub("'", "\x13", txt)
