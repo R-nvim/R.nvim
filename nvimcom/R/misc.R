@@ -58,9 +58,10 @@ nvim_capture_source_output <- function(s, nm) {
 #' @param oname The name of the object under cursor.
 #' @param howto How to show the output (never included when called by R.nvim).
 nvim_dput <- function(oname, howto = "tabnew") {
-    o <- capture.output(eval(parse(text = paste0("dput(", oname, ")"))))
-    o <- paste0(o, collapse = "\x14")
-    o <- gsub("'", "\x13", o)
+    fn <- paste0(Sys.getenv("RNVIM_TMPDIR"), "/dput")
+    sink(fn)
+    eval(parse(text = paste0("dput(", oname, ")")))
+    sink()
     .C(
         nvimcom_msg_to_nvim,
         paste0(
@@ -69,7 +70,7 @@ nvim_dput <- function(oname, howto = "tabnew") {
             "', '",
             oname,
             "', 'r', '",
-            o,
+            fn,
             "')"
         )
     )
