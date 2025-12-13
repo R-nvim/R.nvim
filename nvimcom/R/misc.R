@@ -39,28 +39,15 @@ vi <- function(name = NULL, file = "") {
     nvim.edit(name, file)
 }
 
-#' Function called by R.nvim when the user wants to source a line of code and
-#' capture its output in a new Vim tab (default key binding `o`)
-#' @param s A string representing the line of code to be source.
-#' @param nm The name of the buffer to be created in the Vim tab.
-nvim_capture_source_output <- function(s, nm) {
-    o <- capture.output(base::source(s, echo = TRUE), file = NULL)
-    o <- paste0(o, collapse = "\x14")
-    o <- gsub("'", "\x13", o)
-    .C(
-        nvimcom_msg_to_nvim,
-        paste0("require('r.edit').get_output('", nm, "', '", o, "')")
-    )
-}
-
 #' Function called by R.nvim when the user wants to run the command `dput()`
 #' over the word under cursor and see its output in a new Vim tab.
 #' @param oname The name of the object under cursor.
 #' @param howto How to show the output (never included when called by R.nvim).
 nvim_dput <- function(oname, howto = "tabnew") {
     o <- capture.output(eval(parse(text = paste0("dput(", oname, ")"))))
-    o <- paste0(o, collapse = "\x14")
+    o <- gsub("\\\\", "\x12", o)
     o <- gsub("'", "\x13", o)
+    o <- paste0(o, collapse = "\x14")
     .C(
         nvimcom_msg_to_nvim,
         paste0(
@@ -150,6 +137,7 @@ nvim_viewobj <- function(
                     quote = FALSE,
                     fileEncoding = fenc
                 ))
+                oname <- paste0(oname, ".tsv")
             } else {
                 txt <- capture.output(write.table(
                     o,
@@ -157,9 +145,13 @@ nvim_viewobj <- function(
                     row.names = FALSE,
                     fileEncoding = fenc
                 ))
+                if (getOption("nvimcom.delim") == ",") {
+                    oname <- paste0(oname, ".csv")
+                }
             }
-            txt <- paste0(txt, collapse = "\x14")
+            txt <- gsub("\\\\", "\x12", txt)
             txt <- gsub("'", "\x13", txt)
+            txt <- paste0(txt, collapse = "\x14")
         } else {
             txt <- save_fun(o, oname)
             if (is.null(txt)) txt <- oname
@@ -252,7 +244,7 @@ nvim_insert <- function(cmd, howto = "tabnew") {
             )
         )
     } else {
-        o <- gsub("\\\\", "\\\\\\\\", o)
+        o <- gsub("\\\\", "\x12", o)
         o <- gsub("'", "\x13", o)
         o <- paste0(o, collapse = "\x14")
         .C(
