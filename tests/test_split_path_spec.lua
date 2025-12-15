@@ -14,8 +14,17 @@ describe(
         local function test_split_path(content, cursor_pos, expected_result, description)
             it(description, function()
                 local bufnr = setup_buffer(content, cursor_pos)
-                local parsers = require("nvim-treesitter.parsers")
-                local parser = parsers.get_parser(bufnr, "r")
+
+                -- Ensure R parser is loaded
+                vim.treesitter.language.add("r")
+
+                -- Get parser for the buffer
+                local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
+                if not ok or not parser then
+                    pending("treesitter parser for R is not available")
+                    return
+                end
+
                 parser:parse()
 
                 require("r.path").separate()
