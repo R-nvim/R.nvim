@@ -388,17 +388,13 @@ key bindings to send code to the R Console.
 The command <LocalLeader>td will run `dput()` with the object under cursor as
 argument and insert the output in a new tab. The command <LocalLeader>rv will
 also run `dput()` with the object under cursor as argument and show the output
-in a new tab, while <LocalLeader>vs will show it in a horizontal split, and
-<LocalLeader>vv will show it in a vertical split. However, if the object under
-the cursor is a data.frame or a matrix, instead of displaying the output of
-`dput()`, the commands will save the data.frame or matrix in a text file with
-values separated by tab characters and display this file. The command
-<LocalLeader>vh will show the `head()` of the data.frame or matrix in a
-horizontal split that opens above the current window. This behavior can be
-customized, and you can configure R.nvim to call an external application to
-display the data.frame or matrix (see |view_df|). All files involved in these
-operations are created in R.nvim's temporary directory and deleted when R
-quits.
+in a new tab. However, if the object under the cursor is a data.frame or a
+matrix, instead of displaying the output of `dput()`, the commands will save
+the data.frame or matrix in a text file with values separated by tab
+characters and display this file. This behavior can be customized, and you can
+configure R.nvim to call an external application to display the data.frame or
+matrix (see |view_df|). All files involved in these operations are created in
+R.nvim's temporary directory and deleted when R quits.
 
 You can source all .R files in a directory with the Normal mode command
 `:RSourceDir`, which accepts an optional argument (the directory to be
@@ -2122,7 +2118,7 @@ The default values are:
    view_df = {
       open_app = "",  -- How to open the CSV
       how = "tabnew", -- How to display the data if doing it within Neovim
-      csv_sep = "",   -- Field separator to be used when saving the CSV.
+      csv_sep = "\t", -- Field separator to be used when saving the CSV.
       n_lines = -1,   -- Number of lines to save in the CSV (0 for all lines).
       save_fun = "",  -- R function to save the data.frame in a CSV file
       open_fun = "",  -- R function to open the data.frame directly
