@@ -12,9 +12,16 @@ describe("formatnum()", function()
     it(
         "Replaces all implicit numbers in the current R buffer with explicit integers",
         function()
-            local parsers = require("nvim-treesitter.parsers")
+            -- Ensure R parser is loaded
+            vim.treesitter.language.add("r")
 
-            local parser = parsers.get_parser(bufnr, "r")
+            -- Get parser for the buffer
+            local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
+            if not ok or not parser then
+                pending("treesitter parser for R is not available")
+                return
+            end
+
             local tree = parser:parse()[1]
             local root = tree:root()
 

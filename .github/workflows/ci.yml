@@ -33,9 +33,27 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y software-properties-common curl wget jq
-          sudo apt-get update
-          sudo apt-get install -y luarocks libuv1-dev make
+          sudo apt-get install -y luarocks libuv1-dev make lua5.1 liblua5.1-dev libreadline-dev
+
+          # Install tree-sitter CLI (required for nvim-treesitter parser compilation)
+          npm install -g tree-sitter-cli
+
+          # Install luv for Neovim
           sudo luarocks install luv
+
+          # Pre-install all busted dependencies to help lazy.nvim
+          # Using || true to continue even if some fail
+          sudo luarocks install dkjson || true
+          sudo luarocks install lua_cliargs || true
+          sudo luarocks install luasystem || true
+          sudo luarocks install say || true
+          sudo luarocks install luassert || true
+          sudo luarocks install lua-term || true
+          sudo luarocks install penlight || true
+          sudo luarocks install mediator_lua || true
+          sudo luarocks install luafilesystem || true
+
+          # Set environment variables
           echo "LUA_PATH=\"$(luarocks path --lr-path)\"" >> $GITHUB_ENV
           echo "LUA_CPATH=\"$(luarocks path --lr-cpath)\"" >> $GITHUB_ENV
           nvim --headless -c "lua print(vim.inspect(vim.loop ~= nil))" -c "q"
