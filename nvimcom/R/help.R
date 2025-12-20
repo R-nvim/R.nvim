@@ -61,7 +61,7 @@ nvim.help <- function(topic, w, firstobj, pkg) {
         if (!inherits(ret, "try-error")) {
             suppressMessages(print(ret))
             return(invisible(NULL))
-        } else if (!missing(pkg) && pkgload::is_dev_pkg(pkg)) {
+        } else if (!missing(pkg) && pkgload::is_dev_package(pkg)) {
             warn(ret)
             return(invisible(NULL))
         }
@@ -72,7 +72,7 @@ nvim.help <- function(topic, w, firstobj, pkg) {
 
         if (!inherits(ret, "try-error")) {
             return(invisible(NULL))
-        } else if (!missing(pkg) && pkg %in% devtools::dev_pkgs()) {
+        } else if (!missing(pkg) && pkg %in% devtools::dev_packages()) {
             warn(ret)
             return(invisible(NULL))
         }
