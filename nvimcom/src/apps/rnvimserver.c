@@ -240,6 +240,31 @@ static void handle_initialize(const char *request_id) {
         p = str_cat(p, "\"completionProvider\":{\"resolveProvider\":true,"
                        "\"triggerCharacters\":[\".\",\" "
                        "\",\":\",\"(\",\"$\",\"\\\\\"]}");
+        has_cpblt = 1;
+    }
+    if (!disable || strstr(disable, "definition") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"definitionProvider\":true");
+        has_cpblt = 1;
+    }
+    if (!disable || strstr(disable, "documentSymbol") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"documentSymbolProvider\":true");
+        has_cpblt = 1;
+    }
+    if (!disable || strstr(disable, "references") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"referencesProvider\":true");
+        has_cpblt = 1;
+    }
+    if (!disable || strstr(disable, "implementation") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"implementationProvider\":true");
+        has_cpblt = 1;
     }
 
     str_cat(p, "}}}");
@@ -248,6 +273,12 @@ static void handle_initialize(const char *request_id) {
 
     send_ls_response(request_id, res);
 }
+
+// Forward declarations
+static void send_definition_result(const char *params);
+static void send_document_symbols_result(const char *params);
+static void send_references_result(const char *params);
+static void send_implementation_result(const char *params);
 
 static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
@@ -277,6 +308,18 @@ static void handle_exe_cmd(const char *params) {
     case 'N':
         cut_json_str(&code, 1);
         send_null(code);
+        break;
+    case 'D': // Definition result from Lua
+        send_definition_result(params);
+        break;
+    case 'Y': // Document symbols result from Lua
+        send_document_symbols_result(params);
+        break;
+    case 'R': // References result from Lua
+        send_references_result(params);
+        break;
+    case 'I': // Implementation result from Lua
+        send_implementation_result(params);
         break;
     case '1': // Start TCP server and wait nvimcom connection
         start_server();
@@ -387,6 +430,377 @@ static void handle_signature(const char *id) {
     send_cmd_to_nvim(h_cmd);
 }
 
+static void handle_definition(const char *id) {
+    char d_cmd[128];
+    snprintf(d_cmd, 127, "require('r.lsp').definition(%s)", id);
+    send_cmd_to_nvim(d_cmd);
+}
+
+static void handle_document_symbols(const char *id) {
+    char s_cmd[128];
+    snprintf(s_cmd, 127, "require('r.lsp').document_symbols(%s)", id);
+    send_cmd_to_nvim(s_cmd);
+}
+
+static void handle_references(const char *id) {
+    char r_cmd[128];
+    snprintf(r_cmd, 127, "require('r.lsp').references(%s)", id);
+    send_cmd_to_nvim(r_cmd);
+}
+
+static void handle_implementation(const char *id) {
+    char i_cmd[128];
+    snprintf(i_cmd, 127, "require('r.lsp').implementation(%s)", id);
+    send_cmd_to_nvim(i_cmd);
+}
+
+static void send_definition_result(const char *params) {
+    // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
+    // because those functions NULL-terminate and modify the params string!
+    char *id = strstr(params, "\"orig_id\":");
+    char *locations = strstr(params, "\"locations\":");
+    char *uri = strstr(params, "\"uri\":\"");
+    char *line_field = strstr(params, "\"line\":");
+    char *col_field = strstr(params, "\"col\":");
+
+    if (!id) {
+        return;
+    }
+
+    cut_json_int(&id, 10);
+
+    if (locations) {
+        // Format: "locations":[{file:"...",line:N,col:N},...]
+        char *arr_start = strchr(locations, '[');
+        char *arr_end = strrchr(locations, ']');
+        if (!arr_start || !arr_end) {
+            send_null(id);
+            return;
+        }
+
+        size_t result_size = 4096;
+        char *result = (char *)malloc(result_size);
+        char *p = result;
+        p += snprintf(p, result_size, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":[", id);
+
+        char *loc = arr_start + 1;
+        int first = 1;
+        while (loc < arr_end) {
+            char *obj_start = strchr(loc, '{');
+            if (!obj_start || obj_start >= arr_end) break;
+
+            char *obj_end = strchr(obj_start, '}');
+            if (!obj_end || obj_end > arr_end) break;
+
+            char *file = strstr(obj_start, "\"file\":\"");
+            char *line = strstr(obj_start, "\"line\":");
+            char *col = strstr(obj_start, "\"col\":");
+
+            if (file && line && col && file < obj_end && line < obj_end && col < obj_end) {
+                file += 8;
+                char *file_end = strchr(file, '"');
+                if (file_end && file_end < obj_end) {
+                    size_t file_len = file_end - file;
+                    char *file_str = (char *)malloc(file_len + 1);
+                    strncpy(file_str, file, file_len);
+                    file_str[file_len] = '\0';
+
+                    line += 7;
+                    col += 6;
+                    int line_num = atoi(line);
+                    int col_num = atoi(col);
+
+                    if (!first) {
+                        p += snprintf(p, result_size - (p - result), ",");
+                    }
+                    first = 0;
+
+                    p += snprintf(p, result_size - (p - result),
+                        "{\"uri\":\"file://%s\",\"range\":{\"start\":{\"line\":%d,\"character\":%d},"
+                        "\"end\":{\"line\":%d,\"character\":%d}}}",
+                        file_str, line_num, col_num, line_num, col_num);
+
+                    free(file_str);
+                }
+            }
+
+            loc = obj_end + 1;
+        }
+
+        p += snprintf(p, result_size - (p - result), "]}");
+        send_ls_response(id, result);
+        free(result);
+    } else {
+        // Single location: use the fields we already found
+        if (!uri || !line_field || !col_field) {
+            return;
+        }
+
+        cut_json_str(&uri, 7);
+        cut_json_int(&line_field, 7);
+        cut_json_int(&col_field, 6);
+
+        // Build the LSP Location response
+        const char *fmt =
+            "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
+            "{\"uri\":\"%s\",\"range\":{\"start\":{\"line\":%s,\"character\":%s},"
+            "\"end\":{\"line\":%s,\"character\":%s}}}}";
+
+        size_t len = strlen(uri) + strlen(id) + strlen(line_field) * 2 + strlen(col_field) * 2 + 256;
+        char *res = (char *)malloc(len);
+        snprintf(res, len - 1, fmt, id, uri, line_field, col_field, line_field, col_field);
+        send_ls_response(id, res);
+        free(res);
+    }
+}
+
+static void send_document_symbols_result(const char *params) {
+    char *id = strstr(params, "\"orig_id\":");
+    char *symbols = strstr(params, "\"symbols\":");
+
+    if (!id) {
+        return;
+    }
+
+    cut_json_int(&id, 10);
+
+    if (!symbols) {
+        send_null(id);
+        return;
+    }
+
+    // Find the symbols array
+    char *arr_start = strchr(symbols, '[');
+    char *arr_end = strrchr(symbols, ']');
+    if (!arr_start || !arr_end) {
+        send_null(id);
+        return;
+    }
+
+    // Build the result - we'll pass through the symbols array as-is since Lua already formatted it correctly
+    // The Lua code sends DocumentSymbol objects with all required fields
+    size_t result_size = (arr_end - arr_start) + 256;
+    char *result = (char *)malloc(result_size);
+
+    // Extract just the array content
+    size_t array_len = arr_end - arr_start + 1;
+    char *array_content = (char *)malloc(array_len + 1);
+    strncpy(array_content, arr_start, array_len);
+    array_content[array_len] = '\0';
+
+    snprintf(result, result_size, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":%s}", id, array_content);
+
+    send_ls_response(id, result);
+    free(array_content);
+    free(result);
+}
+
+static void send_references_result(const char *params) {
+    // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
+    // because those functions NULL-terminate and modify the params string!
+    char *id = strstr(params, "\"orig_id\":");
+    char *locations = strstr(params, "\"locations\":");
+    char *uri = strstr(params, "\"uri\":\"");
+    char *line_field = strstr(params, "\"line\":");
+    char *col_field = strstr(params, "\"col\":");
+
+    if (!id) {
+        return;
+    }
+
+    cut_json_int(&id, 10);
+
+    if (locations) {
+        // Format: "locations":[{file:"...",line:N,col:N},...]
+        char *arr_start = strchr(locations, '[');
+        char *arr_end = strrchr(locations, ']');
+        if (!arr_start || !arr_end) {
+            send_null(id);
+            return;
+        }
+
+        size_t result_size = 4096;
+        char *result = (char *)malloc(result_size);
+        char *p = result;
+        p += snprintf(p, result_size, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":[", id);
+
+        char *loc = arr_start + 1;
+        int first = 1;
+        while (loc < arr_end) {
+            char *obj_start = strchr(loc, '{');
+            if (!obj_start || obj_start >= arr_end) break;
+
+            char *obj_end = strchr(obj_start, '}');
+            if (!obj_end || obj_end > arr_end) break;
+
+            char *file = strstr(obj_start, "\"file\":\"");
+            char *line = strstr(obj_start, "\"line\":");
+            char *col = strstr(obj_start, "\"col\":");
+
+            if (file && line && col && file < obj_end && line < obj_end && col < obj_end) {
+                file += 8;
+                char *file_end = strchr(file, '"');
+                if (file_end && file_end < obj_end) {
+                    size_t file_len = file_end - file;
+                    char *file_str = (char *)malloc(file_len + 1);
+                    strncpy(file_str, file, file_len);
+                    file_str[file_len] = '\0';
+
+                    line += 7;
+                    col += 6;
+                    int line_num = atoi(line);
+                    int col_num = atoi(col);
+
+                    if (!first) {
+                        p += snprintf(p, result_size - (p - result), ",");
+                    }
+                    first = 0;
+
+                    p += snprintf(p, result_size - (p - result),
+                        "{\"uri\":\"file://%s\",\"range\":{\"start\":{\"line\":%d,\"character\":%d},"
+                        "\"end\":{\"line\":%d,\"character\":%d}}}",
+                        file_str, line_num, col_num, line_num, col_num);
+
+                    free(file_str);
+                }
+            }
+
+            loc = obj_end + 1;
+        }
+
+        p += snprintf(p, result_size - (p - result), "]}");
+        send_ls_response(id, result);
+        free(result);
+    } else {
+        if (!uri || !line_field || !col_field) {
+            return;
+        }
+
+        cut_json_str(&uri, 7);
+        cut_json_int(&line_field, 7);
+        cut_json_int(&col_field, 6);
+
+        const char *fmt =
+            "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
+            "{\"uri\":\"%s\",\"range\":{\"start\":{\"line\":%s,\"character\":%s},"
+            "\"end\":{\"line\":%s,\"character\":%s}}}}";
+
+        size_t len = strlen(uri) + strlen(id) + strlen(line_field) * 2 + strlen(col_field) * 2 + 256;
+        char *res = (char *)malloc(len);
+        snprintf(res, len - 1, fmt, id, uri, line_field, col_field, line_field, col_field);
+        send_ls_response(id, res);
+        free(res);
+    }
+}
+
+static void send_implementation_result(const char *params) {
+    Log("[DEBUG C] send_implementation_result called\n");
+    Log("[DEBUG C] Params: %s\n", params);
+
+    // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
+    // because those functions NULL-terminate and modify the params string!
+    char *id = strstr(params, "\"orig_id\":");
+    char *locations = strstr(params, "\"locations\":");
+    char *uri = strstr(params, "\"uri\":\"");
+    char *line_field = strstr(params, "\"line\":");
+    char *col_field = strstr(params, "\"col\":");
+
+    if (!id) {
+        Log("[DEBUG C] No orig_id found in params\n");
+        return;
+    }
+
+    cut_json_int(&id, 10);
+    Log("[DEBUG C] Request ID: %s\n", id);
+
+    if (locations) {
+        Log("[DEBUG C] Multiple locations found\n");
+        // Format: "locations":[{file:"...",line:N,col:N},...]
+        char *arr_start = strchr(locations, '[');
+        char *arr_end = strrchr(locations, ']');
+        if (!arr_start || !arr_end) {
+            send_null(id);
+            return;
+        }
+
+        size_t result_size = 4096;
+        char *result = (char *)malloc(result_size);
+        char *p = result;
+        p += snprintf(p, result_size, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":[", id);
+
+        char *loc = arr_start + 1;
+        int first = 1;
+        while (loc < arr_end) {
+            char *obj_start = strchr(loc, '{');
+            if (!obj_start || obj_start >= arr_end) break;
+
+            char *obj_end = strchr(obj_start, '}');
+            if (!obj_end || obj_end > arr_end) break;
+
+            char *file = strstr(obj_start, "\"file\":\"");
+            char *line = strstr(obj_start, "\"line\":");
+            char *col = strstr(obj_start, "\"col\":");
+
+            if (file && line && col && file < obj_end && line < obj_end && col < obj_end) {
+                file += 8;
+                char *file_end = strchr(file, '"');
+                if (file_end && file_end < obj_end) {
+                    size_t file_len = file_end - file;
+                    char *file_str = (char *)malloc(file_len + 1);
+                    strncpy(file_str, file, file_len);
+                    file_str[file_len] = '\0';
+
+                    line += 7;
+                    col += 6;
+                    int line_num = atoi(line);
+                    int col_num = atoi(col);
+
+                    if (!first) {
+                        p += snprintf(p, result_size - (p - result), ",");
+                    }
+                    first = 0;
+
+                    p += snprintf(p, result_size - (p - result),
+                        "{\"uri\":\"file://%s\",\"range\":{\"start\":{\"line\":%d,\"character\":%d},"
+                        "\"end\":{\"line\":%d,\"character\":%d}}}",
+                        file_str, line_num, col_num, line_num, col_num);
+
+                    free(file_str);
+                }
+            }
+
+            loc = obj_end + 1;
+        }
+
+        p += snprintf(p, result_size - (p - result), "]}");
+        Log("[DEBUG C] Sending implementation LSP response: %s\n", result);
+        send_ls_response(id, result);
+        free(result);
+    } else {
+        Log("[DEBUG C] Single location (not array)\n");
+        if (!uri || !line_field || !col_field) {
+            Log("[DEBUG C] Missing uri, line, or col field\n");
+            return;
+        }
+
+        cut_json_str(&uri, 7);
+        cut_json_int(&line_field, 7);
+        cut_json_int(&col_field, 6);
+
+        const char *fmt =
+            "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
+            "{\"uri\":\"%s\",\"range\":{\"start\":{\"line\":%s,\"character\":%s},"
+            "\"end\":{\"line\":%s,\"character\":%s}}}}";
+
+        size_t len = strlen(uri) + strlen(id) + strlen(line_field) * 2 + strlen(col_field) * 2 + 256;
+        char *res = (char *)malloc(len);
+        snprintf(res, len - 1, fmt, id, uri, line_field, col_field, line_field, col_field);
+        Log("[DEBUG C] Sending single implementation response: %s\n", res);
+        send_ls_response(id, res);
+        free(res);
+    }
+}
+
 // --- Main Server Loop ---
 
 static void lsp_loop(void) {
@@ -475,6 +889,14 @@ static void lsp_loop(void) {
                 handle_hover(id);
             } else if (strcmp(method, "textDocument/signatureHelp") == 0) {
                 handle_signature(id);
+            } else if (strcmp(method, "textDocument/definition") == 0) {
+                handle_definition(id);
+            } else if (strcmp(method, "textDocument/documentSymbol") == 0) {
+                handle_document_symbols(id);
+            } else if (strcmp(method, "textDocument/references") == 0) {
+                handle_references(id);
+            } else if (strcmp(method, "textDocument/implementation") == 0) {
+                handle_implementation(id);
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {

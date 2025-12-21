@@ -12,6 +12,9 @@ local hooks = require("r.hooks")
 ---Enable the signature help provider
 ---@field signature? boolean
 ---
+---Enable the definition provider
+---@field definition? boolean
+---
 ---Text width of documentation window displayed when
 ---an item is selected
 ---@field doc_width? integer
@@ -449,6 +452,7 @@ local config = {
         completion = true,
         hover = true,
         signature = true,
+        definition = true,
         doc_width = 0,
         fun_data_1 = { "select", "rename", "mutate", "filter" },
         fun_data_2 = { ggplot = { "aes" }, with = { "*" } },

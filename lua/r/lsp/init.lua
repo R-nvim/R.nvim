@@ -13,74 +13,22 @@ local attach_list = {}
 
 local M = {}
 
+local ast = require("r.lsp.ast")
+
 local get_piped_obj
-
----Extract the first argument from a call node's arguments
----@param call_node TSNode The call node
----@return string | nil The first argument text
-local function get_first_arg_from_call(call_node)
-    for child in call_node:iter_children() do
-        if child:type() == "arguments" then
-            for arg in child:iter_children() do
-                if arg:type() == "argument" then
-                    -- Get the value of the first argument
-                    for arg_child in arg:iter_children() do
-                        if arg_child:named() and arg_child:type() ~= "identifier" then
-                            -- Skip if it's a function call (not a simple identifier)
-                            if arg_child:type() == "call" then return nil end
-                            if arg_child:type() == "identifier" then
-                                return vim.treesitter.get_node_text(arg_child, 0)
-                            end
-                        elseif arg_child:type() == "identifier" then
-                            return vim.treesitter.get_node_text(arg_child, 0)
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return nil
-end
-
----Find a call to parent_fn in a binary operator chain (ggplot + layers)
----@param node TSNode The starting node
----@param parent_fn string The function name to find (e.g., "ggplot")
----@return TSNode | nil The call node if found
-local function find_call_in_chain(node, parent_fn)
-    if node:type() == "call" then
-        for child in node:iter_children() do
-            if child:type() == "identifier" then
-                local fn_name = vim.treesitter.get_node_text(child, 0)
-                if fn_name == parent_fn then return node end
-            end
-        end
-    elseif node:type() == "binary_operator" then
-        -- Check both sides of the + operator
-        for child in node:iter_children() do
-            if child:named() then
-                local result = find_call_in_chain(child, parent_fn)
-                if result then return result end
-            end
-        end
-    end
-    return nil
-end
 
 ---Find parent function's dataframe by using Treesitter to traverse the AST
 ---@param parent_fn string The parent function to look for (e.g., "ggplot")
 ---@param lnum integer Current line number (1-indexed)
 ---@return string | nil The dataframe name if found
 local function find_ggplot_dataframe(parent_fn, lnum)
-    -- Get the parser and tree
-    local ok, parser = pcall(vim.treesitter.get_parser, 0, "r")
-    if not ok or not parser then return nil end
+    local bufnr = vim.api.nvim_get_current_buf()
 
-    local tree = parser:parse()[1]
-    if not tree then return nil end
+    -- Get parser and root using ast utilities
+    local parser, root = ast.get_parser_and_root(bufnr, "r")
+    if not parser then return nil end
 
-    -- Get node at current position (use column 0, we'll traverse up)
-    local root = tree:root()
-    local node = root:named_descendant_for_range(lnum - 1, 0, lnum - 1, 0)
+    local node = ast.node_at_position(bufnr, lnum - 1, 0)
     if not node then return nil end
 
     -- Walk up the tree to find the binary_operator chain (ggplot + layers)
@@ -88,17 +36,17 @@ local function find_ggplot_dataframe(parent_fn, lnum)
     local current = node
     while current do
         if current:type() == "binary_operator" then
-            -- Found a + chain, search for the parent function
-            local call_node = find_call_in_chain(current, parent_fn)
+            -- Found a + chain, search for the parent function using ast utility
+            local call_node = ast.find_call_in_chain(bufnr, current, parent_fn)
             if call_node then
-                -- Found the parent function, extract first argument
-                local firstobj = get_first_arg_from_call(call_node)
+                -- Found the parent function, extract first argument using ast utility
+                local firstobj = ast.get_first_call_argument(bufnr, call_node)
                 if firstobj then return firstobj end
 
                 -- Check for piped data before the call
                 local call_start_row = call_node:start()
                 local line = vim.api.nvim_buf_get_lines(
-                    0,
+                    bufnr,
                     call_start_row,
                     call_start_row + 1,
                     true
@@ -606,6 +554,91 @@ M.signature = function(req_id)
     end
 end
 
+---Go to definition of the symbol under cursor
+---@param req_id string
+M.definition = function(req_id)
+    -- Check if we're in R code for non-R filetypes
+    if vim.bo.filetype ~= "r" then
+        local cpos = vim.api.nvim_win_get_cursor(0)
+        if not cpos then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+        local lnum = cpos[1] - 1
+        local lang = get_lang(lnum)
+        if lang ~= "r" then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+    end
+
+    -- Delegate to the definition module
+    require("r.lsp.definition").goto_definition(req_id)
+end
+
+---Get document symbols for the current buffer
+---@param req_id string
+M.document_symbols = function(req_id)
+    -- Check if we're in R code for non-R filetypes
+    if vim.bo.filetype ~= "r" then
+        local cpos = vim.api.nvim_win_get_cursor(0)
+        if not cpos then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+        local lnum = cpos[1] - 1
+        local lang = get_lang(lnum)
+        if lang ~= "r" then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+    end
+
+    require("r.lsp.definition").document_symbols(req_id)
+end
+
+---Find all references to the symbol under cursor
+---@param req_id string
+M.references = function(req_id)
+    -- Check if we're in R code for non-R filetypes
+    if vim.bo.filetype ~= "r" then
+        local cpos = vim.api.nvim_win_get_cursor(0)
+        if not cpos then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+        local lnum = cpos[1] - 1
+        local lang = get_lang(lnum)
+        if lang ~= "r" then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+    end
+
+    require("r.lsp.references").find_references(req_id)
+end
+
+---Find implementations of the symbol under cursor
+---@param req_id string
+M.implementation = function(req_id)
+    -- Check if we're in R code for non-R filetypes
+    if vim.bo.filetype ~= "r" then
+        local cpos = vim.api.nvim_win_get_cursor(0)
+        if not cpos then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+        local lnum = cpos[1] - 1
+        local lang = get_lang(lnum)
+        if lang ~= "r" then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+    end
+
+    require("r.lsp.implementation").find_implementations(req_id)
+end
+
 --- Execute lua command sent by rnvimserver
 local function exe_cmd(_, result, _)
     local res = result.command
@@ -657,6 +690,14 @@ end
 ---@param rns_env table Environment variables
 function M.start(rns_path, rns_env)
     vim.lsp.config("r_ls", {})
+    require("r.lsp.workspace").setup()
+
+    vim.api.nvim_create_user_command(
+        "RRebuildIndex",
+        function() require("r.lsp.definition").rebuild_index() end,
+        { desc = "Rebuild R workspace definition index" }
+    )
+
     client_id = vim.lsp.start({
         name = "r_ls",
         cmd = { rns_path },
