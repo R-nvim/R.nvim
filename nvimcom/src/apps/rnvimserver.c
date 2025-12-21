@@ -270,6 +270,12 @@ static void handle_initialize(const char *request_id) {
         p = str_cat(p, "\"completionProvider\":{\"resolveProvider\":true,"
                        "\"triggerCharacters\":[\".\",\" "
                        "\",\":\",\"(\",\"$\",\"\\\\\"]}");
+        has_cpblt = 1;
+    }
+    if (!disable || strstr(disable, "definition") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"definitionProvider\":true");
     }
 
     str_cat(p, "}}}");
@@ -278,6 +284,9 @@ static void handle_initialize(const char *request_id) {
 
     send_ls_response(request_id, res);
 }
+
+// Forward declaration
+static void send_definition_result(const char *params);
 
 static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
@@ -307,6 +316,9 @@ static void handle_exe_cmd(const char *params) {
     case 'N':
         cut_json_str(&code, 1);
         send_null(code);
+        break;
+    case 'D': // Definition result from Lua
+        send_definition_result(params);
         break;
     case '1': // Start TCP server and wait nvimcom connection
         start_server();
@@ -420,6 +432,123 @@ static void handle_signature(const char *id) {
     send_cmd_to_nvim(h_cmd);
 }
 
+static void handle_definition(const char *id) {
+    char d_cmd[128];
+    snprintf(d_cmd, 127, "require('r.lsp').definition(%s)", id);
+    send_cmd_to_nvim(d_cmd);
+}
+
+static void send_definition_result(const char *params) {
+    // Parse the definition result from Lua
+    // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
+    // because those functions NULL-terminate and modify the params string!
+    char *id = strstr(params, "\"orig_id\":");
+    char *locations = strstr(params, "\"locations\":");
+    char *uri = strstr(params, "\"uri\":\"");
+    char *line_field = strstr(params, "\"line\":");
+    char *col_field = strstr(params, "\"col\":");
+
+    if (!id) {
+        return;
+    }
+
+    // Now it's safe to call cut_json_* functions
+    cut_json_int(&id, 10);
+
+    // Check if we have multiple locations or single location
+    if (locations) {
+        // Multiple locations: parse the array and build Location[]
+        // Format: "locations":[{file:"...",line:N,col:N},...]
+        char *arr_start = strchr(locations, '[');
+        char *arr_end = strrchr(locations, ']');
+        if (!arr_start || !arr_end) {
+            send_null(id);
+            return;
+        }
+
+        // Build the result array
+        size_t result_size = 4096;
+        char *result = (char *)malloc(result_size);
+        char *p = result;
+        p += snprintf(p, result_size, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":[", id);
+
+        // Parse each location object
+        char *loc = arr_start + 1;
+        int first = 1;
+        while (loc < arr_end) {
+            char *obj_start = strchr(loc, '{');
+            if (!obj_start || obj_start >= arr_end) break;
+
+            char *obj_end = strchr(obj_start, '}');
+            if (!obj_end || obj_end > arr_end) break;
+
+            // Extract file, line, col from this object
+            char *file = strstr(obj_start, "\"file\":\"");
+            char *line = strstr(obj_start, "\"line\":");
+            char *col = strstr(obj_start, "\"col\":");
+
+            if (file && line && col && file < obj_end && line < obj_end && col < obj_end) {
+                // Parse file
+                file += 8;
+                char *file_end = strchr(file, '"');
+                if (file_end && file_end < obj_end) {
+                    size_t file_len = file_end - file;
+                    char *file_str = (char *)malloc(file_len + 1);
+                    strncpy(file_str, file, file_len);
+                    file_str[file_len] = '\0';
+
+                    // Parse line and col
+                    line += 7;
+                    col += 6;
+                    int line_num = atoi(line);
+                    int col_num = atoi(col);
+
+                    // Add comma if not first
+                    if (!first) {
+                        p += snprintf(p, result_size - (p - result), ",");
+                    }
+                    first = 0;
+
+                    // Add Location object
+                    p += snprintf(p, result_size - (p - result),
+                        "{\"uri\":\"file://%s\",\"range\":{\"start\":{\"line\":%d,\"character\":%d},"
+                        "\"end\":{\"line\":%d,\"character\":%d}}}",
+                        file_str, line_num, col_num, line_num, col_num);
+
+                    free(file_str);
+                }
+            }
+
+            loc = obj_end + 1;
+        }
+
+        p += snprintf(p, result_size - (p - result), "]}");
+        send_ls_response(id, result);
+        free(result);
+    } else {
+        // Single location: use the fields we already found
+        if (!uri || !line_field || !col_field) {
+            return;
+        }
+
+        cut_json_str(&uri, 7);
+        cut_json_int(&line_field, 7);
+        cut_json_int(&col_field, 6);
+
+        // Build the LSP Location response
+        const char *fmt =
+            "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
+            "{\"uri\":\"%s\",\"range\":{\"start\":{\"line\":%s,\"character\":%s},"
+            "\"end\":{\"line\":%s,\"character\":%s}}}}";
+
+        size_t len = strlen(uri) + strlen(id) + strlen(line_field) * 2 + strlen(col_field) * 2 + 256;
+        char *res = (char *)malloc(len);
+        snprintf(res, len - 1, fmt, id, uri, line_field, col_field, line_field, col_field);
+        send_ls_response(id, res);
+        free(res);
+    }
+}
+
 // --- Main Server Loop ---
 
 static void lsp_loop(void) {
@@ -508,6 +637,8 @@ static void lsp_loop(void) {
                 handle_hover(id);
             } else if (strcmp(method, "textDocument/signatureHelp") == 0) {
                 handle_signature(id);
+            } else if (strcmp(method, "textDocument/definition") == 0) {
+                handle_definition(id);
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {

@@ -610,6 +610,28 @@ M.signature = function(req_id)
     end
 end
 
+---Go to definition of the symbol under cursor
+---@param req_id string
+M.definition = function(req_id)
+    -- Check if we're in R code for non-R filetypes
+    if vim.bo.filetype ~= "r" then
+        local cpos = vim.api.nvim_win_get_cursor(0)
+        if not cpos then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+        local lnum = cpos[1] - 1
+        local lang = get_lang(lnum)
+        if lang ~= "r" then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+    end
+
+    -- Delegate to the definition module
+    require("r.lsp.definition").goto_definition(req_id)
+end
+
 --- Execute lua command sent by rnvimserver
 local function exe_cmd(_, result, _)
     local res = result.command
@@ -661,6 +683,16 @@ end
 ---@param rns_env table Environment variables
 function M.start(rns_path, rns_env)
     vim.lsp.config("r_ls", {})
+    -- Setup definition module for workspace indexing
+    require("r.lsp.definition").setup()
+
+    -- User command to rebuild the definition index
+    vim.api.nvim_create_user_command(
+        "RRebuildIndex",
+        function() require("r.lsp.definition").rebuild_index() end,
+        { desc = "Rebuild R workspace definition index" }
+    )
+
     client_id = vim.lsp.start({
         name = "r_ls",
         cmd = { rns_path },
