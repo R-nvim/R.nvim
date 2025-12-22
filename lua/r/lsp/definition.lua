@@ -69,11 +69,36 @@ local function get_query()
     return nil
 end
 
---- Find definitions in a buffer using tree-sitter
----@param symbol string The symbol to find
+--- The extract_symbols() function use this class to return symbol information
+--- using tree-sitter.
+--- Common symbol information structure
+---@class SymbolInfo
+---@field name string Symbol name
+---@field kind integer Symbol kind (12=function, 13=variable)
+---@field is_definition boolean Whether this is a definition
+---@field file string File path
+---@field name_start_row integer 0-indexed
+---@field name_start_col integer 0-indexed
+---@field name_end_row integer 0-indexed
+---@field name_end_col integer 0-indexed
+---@field def_start_row integer 0-indexed (full definition range)
+---@field def_start_col integer 0-indexed
+---@field def_end_row integer 0-indexed
+---@field def_end_col integer 0-indexed
+---@field detail string? Additional info (e.g., function parameters)
+
+--- Extract all symbols from a buffer (generic core function)
+--- This is used by:
+--- - find_in_buffer() for goto-definition
+--- - parse_file_definitions() for workspace indexing
+--- - extract_document_symbols() for textDocument/documentSymbol
+--- - (future) find_all_references() for rename/references
 ---@param bufnr integer Buffer number
----@return table[] List of locations {file, line, col}
-local function find_in_buffer(symbol, bufnr)
+---@param options? {symbol_name: string?} Optional filter by symbol name
+---@return SymbolInfo[]
+local function extract_symbols(bufnr, options)
+    options = options or {}
+
     local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
     if not ok or not parser then return {} end
 
@@ -84,29 +109,131 @@ local function find_in_buffer(symbol, bufnr)
     local query = get_query()
     if not query then return {} end
 
-    local matches = {}
+    local symbols = {}
     local seen = {}
+    local file = vim.api.nvim_buf_get_name(bufnr)
 
     for id, node in query:iter_captures(root, bufnr) do
         local capture_name = query.captures[id]
-        if capture_name == "name" or capture_name == "var_name" then
-            local text = vim.treesitter.get_node_text(node, bufnr)
-            if text == symbol then
-                local start_row, start_col = node:start()
-                local file = vim.api.nvim_buf_get_name(bufnr)
 
-                -- Create unique key to avoid duplicates from overlapping patterns
-                local key = string.format("%s:%d:%d", file, start_row, start_col)
-                if not seen[key] then
-                    seen[key] = true
-                    table.insert(matches, {
-                        file = file,
-                        line = start_row, -- 0-indexed
-                        col = start_col, -- 0-indexed
-                    })
+        -- Handle function definitions
+        if capture_name == "definition" then
+            local parent = node
+            if parent and parent:type() == "binary_operator" then
+                local lhs = parent:field("lhs")[1]
+                local rhs = parent:field("rhs")[1]
+
+                if lhs and rhs and rhs:type() == "function_definition" then
+                    local name = vim.treesitter.get_node_text(lhs, bufnr)
+
+                    -- Apply symbol name filter if provided
+                    if not options.symbol_name or name == options.symbol_name then
+                        local name_start_row, name_start_col = lhs:start()
+                        local name_end_row, name_end_col = lhs:end_()
+                        local def_start_row, def_start_col = parent:start()
+                        local def_end_row, def_end_col = parent:end_()
+
+                        -- Extract parameters for detail
+                        local params = rhs:field("parameters")[1]
+                        local param_text = ""
+                        if params then
+                            param_text = vim.treesitter.get_node_text(params, bufnr)
+                        end
+
+                        local key = string.format(
+                            "%s:%d:%d",
+                            name,
+                            name_start_row,
+                            name_start_col
+                        )
+                        if not seen[key] then
+                            seen[key] = true
+                            table.insert(symbols, {
+                                name = name,
+                                kind = 12, -- Function
+                                is_definition = true,
+                                file = file,
+                                name_start_row = name_start_row,
+                                name_start_col = name_start_col,
+                                name_end_row = name_end_row,
+                                name_end_col = name_end_col,
+                                def_start_row = def_start_row,
+                                def_start_col = def_start_col,
+                                def_end_row = def_end_row,
+                                def_end_col = def_end_col,
+                                detail = param_text,
+                            })
+                        end
+                    end
                 end
             end
         end
+
+        -- Handle variable assignments (non-function)
+        if capture_name == "var_definition" then
+            local parent = node
+            if parent and parent:type() == "binary_operator" then
+                local lhs = parent:field("lhs")[1]
+                local rhs = parent:field("rhs")[1]
+
+                -- Skip if it's a function (already handled above)
+                if lhs and rhs and rhs:type() ~= "function_definition" then
+                    local name = vim.treesitter.get_node_text(lhs, bufnr)
+
+                    -- Apply symbol name filter if provided
+                    if not options.symbol_name or name == options.symbol_name then
+                        local name_start_row, name_start_col = lhs:start()
+                        local name_end_row, name_end_col = lhs:end_()
+                        local def_start_row, def_start_col = parent:start()
+                        local def_end_row, def_end_col = parent:end_()
+
+                        local key = string.format(
+                            "%s:%d:%d",
+                            name,
+                            name_start_row,
+                            name_start_col
+                        )
+                        if not seen[key] then
+                            seen[key] = true
+                            table.insert(symbols, {
+                                name = name,
+                                kind = 13, -- Variable
+                                is_definition = true,
+                                file = file,
+                                name_start_row = name_start_row,
+                                name_start_col = name_start_col,
+                                name_end_row = name_end_row,
+                                name_end_col = name_end_col,
+                                def_start_row = def_start_row,
+                                def_start_col = def_start_col,
+                                def_end_row = def_end_row,
+                                def_end_col = def_end_col,
+                                detail = nil,
+                            })
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return symbols
+end
+
+--- Find definitions in a buffer using tree-sitter
+---@param symbol string The symbol to find
+---@param bufnr integer Buffer number
+---@return table[] List of locations {file, line, col}
+local function find_in_buffer(symbol, bufnr)
+    local symbols = extract_symbols(bufnr, { symbol_name = symbol })
+
+    local matches = {}
+    for _, sym in ipairs(symbols) do
+        table.insert(matches, {
+            file = sym.file,
+            line = sym.name_start_row, -- 0-indexed
+            col = sym.name_start_col, -- 0-indexed
+        })
     end
 
     return matches
@@ -283,36 +410,15 @@ local function parse_file_definitions(filepath)
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(content, "\n"))
     vim.bo[bufnr].filetype = "r"
 
-    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
-    if ok and parser then
-        local tree = parser:parse()[1]
-        if tree then
-            local root = tree:root()
-            local query = get_query()
-            if query then
-                -- Track seen locations to avoid duplicates from overlapping patterns
-                local seen = {}
-                for id, node in query:iter_captures(root, bufnr) do
-                    local capture_name = query.captures[id]
-                    if capture_name == "name" or capture_name == "var_name" then
-                        local text = vim.treesitter.get_node_text(node, bufnr)
-                        local start_row, start_col = node:start()
-
-                        -- Create unique key for this location
-                        local key = string.format("%s:%d:%d", text, start_row, start_col)
-                        if not seen[key] then
-                            seen[key] = true
-                            if not definitions[text] then definitions[text] = {} end
-                            table.insert(definitions[text], {
-                                file = filepath,
-                                line = start_row,
-                                col = start_col,
-                            })
-                        end
-                    end
-                end
-            end
-        end
+    -- Use extract_symbols to get all symbols
+    local symbols = extract_symbols(bufnr)
+    for _, sym in ipairs(symbols) do
+        if not definitions[sym.name] then definitions[sym.name] = {} end
+        table.insert(definitions[sym.name], {
+            file = filepath, -- Use provided filepath, not the temp buffer name
+            line = sym.name_start_row,
+            col = sym.name_start_col,
+        })
     end
 
     vim.api.nvim_buf_delete(bufnr, { force = true })
@@ -602,124 +708,46 @@ end
 ---@param bufnr integer Buffer number
 ---@return table[] List of DocumentSymbol objects
 local function extract_document_symbols(bufnr)
-    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
-    if not ok or not parser then return {} end
+    -- Use extract_symbols to get all symbols
+    local symbols = extract_symbols(bufnr)
 
-    local tree = parser:parse()[1]
-    if not tree then return {} end
-
-    local root = tree:root()
-    local query = get_query()
-    if not query then return {} end
-
-    local symbols = {}
-    local seen = {}
-
-    for id, node in query:iter_captures(root, bufnr) do
-        local capture_name = query.captures[id]
-
-        -- Handle function definitions
-        if capture_name == "definition" then
-            local parent = node
-            if parent and parent:type() == "binary_operator" then
-                local lhs = parent:field("lhs")[1]
-                local rhs = parent:field("rhs")[1]
-
-                if lhs and rhs and rhs:type() == "function_definition" then
-                    local name = vim.treesitter.get_node_text(lhs, bufnr)
-                    local name_start_row, name_start_col = lhs:start()
-                    local name_end_row, name_end_col = lhs:end_()
-                    local def_start_row, def_start_col = parent:start()
-                    local def_end_row, def_end_col = parent:end_()
-
-                    -- Extract parameters for detail
-                    local params = rhs:field("parameters")[1]
-                    local param_text = ""
-                    if params then
-                        param_text = vim.treesitter.get_node_text(params, bufnr)
-                    end
-
-                    local key =
-                        string.format("%s:%d:%d", name, name_start_row, name_start_col)
-                    if not seen[key] then
-                        seen[key] = true
-                        table.insert(symbols, {
-                            name = name,
-                            detail = param_text,
-                            kind = 12, -- Function
-                            range = {
-                                start = {
-                                    line = def_start_row,
-                                    character = def_start_col,
-                                },
-                                ["end"] = { line = def_end_row, character = def_end_col },
-                            },
-                            selectionRange = {
-                                start = {
-                                    line = name_start_row,
-                                    character = name_start_col,
-                                },
-                                ["end"] = {
-                                    line = name_end_row,
-                                    character = name_end_col,
-                                },
-                            },
-                        })
-                    end
-                end
-            end
-        end
-
-        -- Handle variable assignments (non-function)
-        if capture_name == "var_definition" then
-            local parent = node
-            if parent and parent:type() == "binary_operator" then
-                local lhs = parent:field("lhs")[1]
-                local rhs = parent:field("rhs")[1]
-
-                -- Skip if it's a function (already handled above)
-                if lhs and rhs and rhs:type() ~= "function_definition" then
-                    local name = vim.treesitter.get_node_text(lhs, bufnr)
-                    local name_start_row, name_start_col = lhs:start()
-                    local name_end_row, name_end_col = lhs:end_()
-                    local def_start_row, def_start_col = parent:start()
-                    local def_end_row, def_end_col = parent:end_()
-
-                    local key =
-                        string.format("%s:%d:%d", name, name_start_row, name_start_col)
-                    if not seen[key] then
-                        seen[key] = true
-                        table.insert(symbols, {
-                            name = name,
-                            kind = 13, -- Variable
-                            range = {
-                                start = {
-                                    line = def_start_row,
-                                    character = def_start_col,
-                                },
-                                ["end"] = { line = def_end_row, character = def_end_col },
-                            },
-                            selectionRange = {
-                                start = {
-                                    line = name_start_row,
-                                    character = name_start_col,
-                                },
-                                ["end"] = {
-                                    line = name_end_row,
-                                    character = name_end_col,
-                                },
-                            },
-                        })
-                    end
-                end
-            end
-        end
+    -- Convert to LSP DocumentSymbol format
+    local document_symbols = {}
+    for _, sym in ipairs(symbols) do
+        table.insert(document_symbols, {
+            name = sym.name,
+            detail = sym.detail,
+            kind = sym.kind,
+            range = {
+                start = {
+                    line = sym.def_start_row,
+                    character = sym.def_start_col,
+                },
+                ["end"] = {
+                    line = sym.def_end_row,
+                    character = sym.def_end_col,
+                },
+            },
+            selectionRange = {
+                start = {
+                    line = sym.name_start_row,
+                    character = sym.name_start_col,
+                },
+                ["end"] = {
+                    line = sym.name_end_row,
+                    character = sym.name_end_col,
+                },
+            },
+        })
     end
 
     -- Sort symbols by line number
-    table.sort(symbols, function(a, b) return a.range.start.line < b.range.start.line end)
+    table.sort(
+        document_symbols,
+        function(a, b) return a.range.start.line < b.range.start.line end
+    )
 
-    return symbols
+    return document_symbols
 end
 
 --- Handle textDocument/documentSymbol request
