@@ -173,9 +173,14 @@ send_definition <- function(req_id, pkg, symbol) {
         }
         # No source reference - deparse to temp file
         tmpfile <- file.path(tempdir(), paste0(pkg_name, "_", symbol, ".R"))
-        header <- sprintf("# %s::%s (no source available - deparsed)", pkg_name, symbol)
-        body <- deparse(fn)
-        writeLines(c(header, "", body), tmpfile)
+
+        # Check if cached file already exists
+        if (!file.exists(tmpfile)) {
+            header <- sprintf("# %s::%s (no source available - deparsed)", pkg_name, symbol)
+            body <- deparse(fn)
+            writeLines(c(header, "", body), tmpfile)
+        }
+
         return(list(file = tmpfile, line = 3, col = 0))
     }
 
