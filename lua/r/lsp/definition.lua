@@ -4,7 +4,6 @@
 
 local M = {}
 
-local config = require("r.config").get_config()
 local warn = require("r.log").warn
 
 --- Cache for workspace definitions: { symbol_name -> [{file, line, col}] }
@@ -375,8 +374,7 @@ function M.goto_definition(req_id)
     end
 
     -- 3. Try package lookup if R is running
-    local options = config.r_ls or {}
-    if options.definition_packages ~= false and vim.g.R_Nvim_status == 7 then
+    if vim.g.R_Nvim_status == 7 then
         -- If qualified (pkg::fn), use that package
         -- Otherwise, let nvimcom search loaded packages
         local target_pkg = pkg or ""

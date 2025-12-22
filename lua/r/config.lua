@@ -453,7 +453,6 @@ local config = {
         hover = true,
         signature = true,
         definition = true,
-        definition_packages = true,
         doc_width = 0,
         fun_data_1 = { "select", "rename", "mutate", "filter" },
         fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
