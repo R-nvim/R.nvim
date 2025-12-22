@@ -464,13 +464,6 @@ local function parse_qualified_name(symbol)
     return nil, symbol, false
 end
 
---- Helper to create a unique key for a location (for deduplication)
----@param loc table {file, line, col}
----@return string
-local function location_key(loc)
-    return string.format("%s:%d:%d", loc.file, loc.line, loc.col)
-end
-
 --- Main entry point for goto definition
 --- Called from rnvimserver via client/exeRnvimCmd
 ---@param req_id string LSP request ID
