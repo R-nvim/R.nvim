@@ -276,6 +276,12 @@ static void handle_initialize(const char *request_id) {
         if (has_cpblt)
             p = str_cat(p, ",");
         p = str_cat(p, "\"definitionProvider\":true");
+        has_cpblt = 1;
+    }
+    if (!disable || strstr(disable, "documentSymbol") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"documentSymbolProvider\":true");
     }
 
     str_cat(p, "}}}");
@@ -285,8 +291,9 @@ static void handle_initialize(const char *request_id) {
     send_ls_response(request_id, res);
 }
 
-// Forward declaration
+// Forward declarations
 static void send_definition_result(const char *params);
+static void send_document_symbols_result(const char *params);
 
 static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
@@ -319,6 +326,9 @@ static void handle_exe_cmd(const char *params) {
         break;
     case 'D': // Definition result from Lua
         send_definition_result(params);
+        break;
+    case 'Y': // Document symbols result from Lua
+        send_document_symbols_result(params);
         break;
     case '1': // Start TCP server and wait nvimcom connection
         start_server();
@@ -438,6 +448,12 @@ static void handle_definition(const char *id) {
     send_cmd_to_nvim(d_cmd);
 }
 
+static void handle_document_symbols(const char *id) {
+    char s_cmd[128];
+    snprintf(s_cmd, 127, "require('r.lsp').document_symbols(%s)", id);
+    send_cmd_to_nvim(s_cmd);
+}
+
 static void send_definition_result(const char *params) {
     // Parse the definition result from Lua
     // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
@@ -549,6 +565,48 @@ static void send_definition_result(const char *params) {
     }
 }
 
+static void send_document_symbols_result(const char *params) {
+    // Parse the document symbols result from Lua
+    char *id = strstr(params, "\"orig_id\":");
+    char *symbols = strstr(params, "\"symbols\":");
+
+    if (!id) {
+        return;
+    }
+
+    cut_json_int(&id, 10);
+
+    if (!symbols) {
+        send_null(id);
+        return;
+    }
+
+    // Find the symbols array
+    char *arr_start = strchr(symbols, '[');
+    char *arr_end = strrchr(symbols, ']');
+    if (!arr_start || !arr_end) {
+        send_null(id);
+        return;
+    }
+
+    // Build the result - we'll pass through the symbols array as-is since Lua already formatted it correctly
+    // The Lua code sends DocumentSymbol objects with all required fields
+    size_t result_size = (arr_end - arr_start) + 256;
+    char *result = (char *)malloc(result_size);
+
+    // Extract just the array content
+    size_t array_len = arr_end - arr_start + 1;
+    char *array_content = (char *)malloc(array_len + 1);
+    strncpy(array_content, arr_start, array_len);
+    array_content[array_len] = '\0';
+
+    snprintf(result, result_size, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":%s}", id, array_content);
+
+    send_ls_response(id, result);
+    free(array_content);
+    free(result);
+}
+
 // --- Main Server Loop ---
 
 static void lsp_loop(void) {
@@ -639,6 +697,8 @@ static void lsp_loop(void) {
                 handle_signature(id);
             } else if (strcmp(method, "textDocument/definition") == 0) {
                 handle_definition(id);
+            } else if (strcmp(method, "textDocument/documentSymbol") == 0) {
+                handle_document_symbols(id);
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {

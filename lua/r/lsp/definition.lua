@@ -17,6 +17,7 @@ local file_mtimes = {}
 --- Whether initial indexing has been done
 local indexed = false
 
+--- TODO: Maybe add targets nodes so we can search in target pipeline? Maybe use a config option?
 --- Tree-sitter query for finding function definitions
 --- Matches patterns like: fn_name <- function(...) or fn_name = function(...)
 local definition_query_str = [[
@@ -595,6 +596,146 @@ function M.debug_index()
         end
     end
     print("======================================")
+end
+
+--- Extract document symbols from the current buffer
+---@param bufnr integer Buffer number
+---@return table[] List of DocumentSymbol objects
+local function extract_document_symbols(bufnr)
+    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
+    if not ok or not parser then return {} end
+
+    local tree = parser:parse()[1]
+    if not tree then return {} end
+
+    local root = tree:root()
+    local query = get_query()
+    if not query then return {} end
+
+    local symbols = {}
+    local seen = {}
+
+    for id, node in query:iter_captures(root, bufnr) do
+        local capture_name = query.captures[id]
+
+        -- Handle function definitions
+        if capture_name == "definition" then
+            local parent = node
+            if parent and parent:type() == "binary_operator" then
+                local lhs = parent:field("lhs")[1]
+                local rhs = parent:field("rhs")[1]
+
+                if lhs and rhs and rhs:type() == "function_definition" then
+                    local name = vim.treesitter.get_node_text(lhs, bufnr)
+                    local name_start_row, name_start_col = lhs:start()
+                    local name_end_row, name_end_col = lhs:end_()
+                    local def_start_row, def_start_col = parent:start()
+                    local def_end_row, def_end_col = parent:end_()
+
+                    -- Extract parameters for detail
+                    local params = rhs:field("parameters")[1]
+                    local param_text = ""
+                    if params then
+                        param_text = vim.treesitter.get_node_text(params, bufnr)
+                    end
+
+                    local key =
+                        string.format("%s:%d:%d", name, name_start_row, name_start_col)
+                    if not seen[key] then
+                        seen[key] = true
+                        table.insert(symbols, {
+                            name = name,
+                            detail = param_text,
+                            kind = 12, -- Function
+                            range = {
+                                start = {
+                                    line = def_start_row,
+                                    character = def_start_col,
+                                },
+                                ["end"] = { line = def_end_row, character = def_end_col },
+                            },
+                            selectionRange = {
+                                start = {
+                                    line = name_start_row,
+                                    character = name_start_col,
+                                },
+                                ["end"] = {
+                                    line = name_end_row,
+                                    character = name_end_col,
+                                },
+                            },
+                        })
+                    end
+                end
+            end
+        end
+
+        -- Handle variable assignments (non-function)
+        if capture_name == "var_definition" then
+            local parent = node
+            if parent and parent:type() == "binary_operator" then
+                local lhs = parent:field("lhs")[1]
+                local rhs = parent:field("rhs")[1]
+
+                -- Skip if it's a function (already handled above)
+                if lhs and rhs and rhs:type() ~= "function_definition" then
+                    local name = vim.treesitter.get_node_text(lhs, bufnr)
+                    local name_start_row, name_start_col = lhs:start()
+                    local name_end_row, name_end_col = lhs:end_()
+                    local def_start_row, def_start_col = parent:start()
+                    local def_end_row, def_end_col = parent:end_()
+
+                    local key =
+                        string.format("%s:%d:%d", name, name_start_row, name_start_col)
+                    if not seen[key] then
+                        seen[key] = true
+                        table.insert(symbols, {
+                            name = name,
+                            kind = 13, -- Variable
+                            range = {
+                                start = {
+                                    line = def_start_row,
+                                    character = def_start_col,
+                                },
+                                ["end"] = { line = def_end_row, character = def_end_col },
+                            },
+                            selectionRange = {
+                                start = {
+                                    line = name_start_row,
+                                    character = name_start_col,
+                                },
+                                ["end"] = {
+                                    line = name_end_row,
+                                    character = name_end_col,
+                                },
+                            },
+                        })
+                    end
+                end
+            end
+        end
+    end
+
+    -- Sort symbols by line number
+    table.sort(symbols, function(a, b) return a.range.start.line < b.range.start.line end)
+
+    return symbols
+end
+
+--- Handle textDocument/documentSymbol request
+---@param req_id string LSP request ID
+function M.document_symbols(req_id)
+    local symbols = extract_document_symbols(0)
+
+    if #symbols > 0 then
+        require("r.lsp").send_msg({
+            code = "Y",
+            orig_id = req_id,
+            symbols = symbols,
+        })
+    else
+        require("r.lsp").send_msg({ code = "N" .. req_id })
+    end
 end
 
 return M

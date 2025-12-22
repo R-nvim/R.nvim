@@ -632,6 +632,27 @@ M.definition = function(req_id)
     require("r.lsp.definition").goto_definition(req_id)
 end
 
+---Get document symbols for the current buffer
+---@param req_id string
+M.document_symbols = function(req_id)
+    -- Check if we're in R code for non-R filetypes
+    if vim.bo.filetype ~= "r" then
+        local cpos = vim.api.nvim_win_get_cursor(0)
+        if not cpos then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+        local lnum = cpos[1] - 1
+        local lang = get_lang(lnum)
+        if lang ~= "r" then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+    end
+
+    require("r.lsp.definition").document_symbols(req_id)
+end
+
 --- Execute lua command sent by rnvimserver
 local function exe_cmd(_, result, _)
     local res = result.command
