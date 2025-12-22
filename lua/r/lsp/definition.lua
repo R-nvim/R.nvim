@@ -84,6 +84,7 @@ local function find_in_buffer(symbol, bufnr)
     if not query then return {} end
 
     local matches = {}
+    local seen = {}
 
     for id, node in query:iter_captures(root, bufnr) do
         local capture_name = query.captures[id]
@@ -92,11 +93,17 @@ local function find_in_buffer(symbol, bufnr)
             if text == symbol then
                 local start_row, start_col = node:start()
                 local file = vim.api.nvim_buf_get_name(bufnr)
-                table.insert(matches, {
-                    file = file,
-                    line = start_row, -- 0-indexed
-                    col = start_col, -- 0-indexed
-                })
+
+                -- Create unique key to avoid duplicates from overlapping patterns
+                local key = string.format("%s:%d:%d", file, start_row, start_col)
+                if not seen[key] then
+                    seen[key] = true
+                    table.insert(matches, {
+                        file = file,
+                        line = start_row, -- 0-indexed
+                        col = start_col, -- 0-indexed
+                    })
+                end
             end
         end
     end
@@ -108,6 +115,153 @@ end
 ---@param symbol string The symbol to find
 ---@return table[] List of locations
 function M.find_in_current_buffer(symbol) return find_in_buffer(symbol, 0) end
+
+--- Check if a node is a function parameter with the given name
+---@param func_node any Function definition node
+---@param symbol string Symbol to look for
+---@param bufnr integer Buffer number
+---@return table? Location {file, line, col} or nil
+local function find_in_function_params(func_node, symbol, bufnr)
+    local params = func_node:field("parameters")
+    if not params or #params == 0 then return nil end
+
+    for _, param_list in ipairs(params) do
+        for child in param_list:iter_children() do
+            -- Parameters can be: identifier, parameter (with default), or ...
+            local param_name = nil
+            if child:type() == "identifier" then
+                param_name = vim.treesitter.get_node_text(child, bufnr)
+            elseif child:type() == "parameter" then
+                local name_node = child:field("name")[1]
+                if name_node then
+                    param_name = vim.treesitter.get_node_text(name_node, bufnr)
+                end
+            end
+
+            if param_name == symbol then
+                local start_row, start_col = child:start()
+                return {
+                    file = vim.api.nvim_buf_get_name(bufnr),
+                    line = start_row,
+                    col = start_col,
+                }
+            end
+        end
+    end
+    return nil
+end
+
+--- Find the closest definition in scope by walking up the tree
+---@param symbol string The symbol to find
+---@param bufnr integer Buffer number
+---@param row integer Cursor row (0-indexed)
+---@param col integer Cursor column (0-indexed)
+---@return table? Location {file, line, col} or nil
+local function find_in_scope(symbol, bufnr, row, col)
+    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
+    if not ok or not parser then return nil end
+
+    local tree = parser:parse()[1]
+    if not tree then return nil end
+
+    -- Get the node at cursor position
+    local node = tree:root():descendant_for_range(row, col, row, col)
+    if not node then return nil end
+
+    local query = get_query()
+    if not query then return nil end
+
+    -- Walk up the tree to find containing scopes
+    ---@type TSNode?
+    local current = node
+    while current do
+        -- Check if we're inside a function - look for parameters first
+        if current:type() == "function_definition" then
+            local param_match = find_in_function_params(current, symbol, bufnr)
+            if param_match then return param_match end
+
+            -- Then check for local assignments within this function body
+            local body = current:field("body")[1]
+            if body then
+                local body_matches = {}
+                for id, match_node in query:iter_captures(body, bufnr) do
+                    local capture_name = query.captures[id]
+                    if capture_name == "name" or capture_name == "var_name" then
+                        local text = vim.treesitter.get_node_text(match_node, bufnr)
+                        if text == symbol then
+                            local start_row, start_col = match_node:start()
+                            -- Only consider assignments before the cursor
+                            if
+                                start_row < row or (start_row == row and start_col <= col)
+                            then
+                                table.insert(body_matches, {
+                                    file = vim.api.nvim_buf_get_name(bufnr),
+                                    line = start_row,
+                                    col = start_col,
+                                })
+                            end
+                        end
+                    end
+                end
+                -- Return the closest match before cursor
+                if #body_matches > 0 then
+                    table.sort(body_matches, function(a, b)
+                        if a.line ~= b.line then return a.line > b.line end
+                        return a.col > b.col
+                    end)
+                    return body_matches[1]
+                end
+            end
+        end
+
+        current = current:parent()
+    end
+
+    -- No match in local scope, look for top-level file definitions only
+    local file_matches = {}
+    local root = tree:root()
+    for id, match_node in query:iter_captures(root, bufnr) do
+        local capture_name = query.captures[id]
+        if capture_name == "name" or capture_name == "var_name" then
+            local text = vim.treesitter.get_node_text(match_node, bufnr)
+            if text == symbol then
+                local start_row, start_col = match_node:start()
+                -- Only consider definitions before the cursor
+                if start_row < row or (start_row == row and start_col <= col) then
+                    -- Check if this definition is at the top level (not inside a function)
+                    local is_top_level = true
+                    local parent = match_node:parent()
+                    while parent do
+                        if parent:type() == "function_definition" then
+                            is_top_level = false
+                            break
+                        end
+                        parent = parent:parent()
+                    end
+
+                    if is_top_level then
+                        table.insert(file_matches, {
+                            file = vim.api.nvim_buf_get_name(bufnr),
+                            line = start_row,
+                            col = start_col,
+                        })
+                    end
+                end
+            end
+        end
+    end
+
+    -- Return the closest top-level match before cursor
+    if #file_matches > 0 then
+        table.sort(file_matches, function(a, b)
+            if a.line ~= b.line then return a.line > b.line end
+            return a.col > b.col
+        end)
+        return file_matches[1]
+    end
+
+    return nil
+end
 
 --- Parse an R file and extract all definitions
 ---@param filepath string Absolute path to the file
@@ -135,17 +289,25 @@ local function parse_file_definitions(filepath)
             local root = tree:root()
             local query = get_query()
             if query then
+                -- Track seen locations to avoid duplicates from overlapping patterns
+                local seen = {}
                 for id, node in query:iter_captures(root, bufnr) do
                     local capture_name = query.captures[id]
                     if capture_name == "name" or capture_name == "var_name" then
                         local text = vim.treesitter.get_node_text(node, bufnr)
                         local start_row, start_col = node:start()
-                        if not definitions[text] then definitions[text] = {} end
-                        table.insert(definitions[text], {
-                            file = filepath,
-                            line = start_row,
-                            col = start_col,
-                        })
+
+                        -- Create unique key for this location
+                        local key = string.format("%s:%d:%d", text, start_row, start_col)
+                        if not seen[key] then
+                            seen[key] = true
+                            if not definitions[text] then definitions[text] = {} end
+                            table.insert(definitions[text], {
+                                file = filepath,
+                                line = start_row,
+                                col = start_col,
+                            })
+                        end
                     end
                 end
             end
@@ -322,37 +484,31 @@ function M.goto_definition(req_id)
 
     local pkg, symbol, _ = parse_qualified_name(word)
 
-    -- Collect all definitions from buffer and workspace (with deduplication)
-    local all_locations = {}
-    local seen = {}
+    -- 1. Try scope-aware search in current buffer first
+    local cursor_pos = vim.api.nvim_win_get_cursor(0)
+    local row = cursor_pos[1] - 1 -- Convert to 0-indexed
+    local col = cursor_pos[2]
 
-    -- 1. Check current buffer first (fastest, handles local scope)
-    local buffer_matches = M.find_in_current_buffer(symbol)
-    for _, loc in ipairs(buffer_matches) do
-        local key = location_key(loc)
-        if not seen[key] then
-            seen[key] = true
-            table.insert(all_locations, loc)
-        end
+    local scope_match = find_in_scope(symbol, 0, row, col)
+    if scope_match then
+        local msg = {
+            code = "D",
+            orig_id = req_id,
+            uri = "file://" .. scope_match.file,
+            line = scope_match.line,
+            col = scope_match.col,
+        }
+        require("r.lsp").send_msg(msg)
+        return
     end
 
-    -- 2. Check workspace index (excluding current buffer to avoid duplicates)
+    -- 2. Check workspace index for other files
     M.index_workspace()
     local workspace_locations = workspace_index[symbol] or {}
-    local current_file = vim.api.nvim_buf_get_name(0)
-    for _, loc in ipairs(workspace_locations) do
-        local key = location_key(loc)
-        if loc.file ~= current_file and not seen[key] then
-            seen[key] = true
-            table.insert(all_locations, loc)
-        end
-    end
-
-    -- If we found definitions, send them
-    if #all_locations > 0 then
-        if #all_locations == 1 then
+    if #workspace_locations > 0 then
+        if #workspace_locations == 1 then
             -- Single result: send as Location
-            local loc = all_locations[1]
+            local loc = workspace_locations[1]
             local msg = {
                 code = "D",
                 orig_id = req_id,
@@ -366,7 +522,7 @@ function M.goto_definition(req_id)
             local msg = {
                 code = "D",
                 orig_id = req_id,
-                locations = all_locations,
+                locations = workspace_locations,
             }
             require("r.lsp").send_msg(msg)
         end
