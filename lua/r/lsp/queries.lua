@@ -9,6 +9,7 @@ local M = {}
 local query_cache = {}
 
 --- Query string definitions (copied from original utils.lua)
+-- TODO: Maybe add targets nodes so we can search in target pipeline? Maybe use a config option?
 local query_strings = {
     definitions = [[
         ; Function assignments with <- operator
@@ -33,6 +34,12 @@ local query_strings = {
         (binary_operator
             lhs: (identifier) @var_name
             operator: "<-"
+            rhs: (_) @var_value) @var_definition
+
+        ; Variable assignments with <<- (non-function)
+        (binary_operator
+            lhs: (identifier) @var_name
+            operator: "<<-"
             rhs: (_) @var_value) @var_definition
 
         ; Variable assignments with = (non-function)
