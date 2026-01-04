@@ -4,8 +4,6 @@
 
 local M = {}
 
-local utils = require("r.lsp.utils")
-
 --- Symbol definition with scope information
 ---@class SymbolDefinition
 ---@field name string Symbol name

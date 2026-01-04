@@ -24,8 +24,7 @@ local get_piped_obj
 local function find_ggplot_dataframe(parent_fn, lnum)
     local bufnr = vim.api.nvim_get_current_buf()
 
-    -- Get parser and root using ast utilities
-    local parser, root = ast.get_parser_and_root(bufnr, "r")
+    local parser, _ = ast.get_parser_and_root(bufnr, "r")
     if not parser then return nil end
 
     local node = ast.node_at_position(bufnr, lnum - 1, 0)

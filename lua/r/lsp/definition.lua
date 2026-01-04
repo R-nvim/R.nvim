@@ -69,24 +69,6 @@ local function get_query()
     return nil
 end
 
---- The extract_symbols() function use this class to return symbol information
---- using tree-sitter.
---- Common symbol information structure
----@class SymbolInfo
----@field name string Symbol name
----@field kind integer Symbol kind (12=function, 13=variable)
----@field is_definition boolean Whether this is a definition
----@field file string File path
----@field name_start_row integer 0-indexed
----@field name_start_col integer 0-indexed
----@field name_end_row integer 0-indexed
----@field name_end_col integer 0-indexed
----@field def_start_row integer 0-indexed (full definition range)
----@field def_start_col integer 0-indexed
----@field def_end_row integer 0-indexed
----@field def_end_col integer 0-indexed
----@field detail string? Additional info (e.g., function parameters)
-
 --- Extract all symbols from a buffer (generic core function)
 --- This is used by:
 --- - find_in_buffer() for goto-definition
