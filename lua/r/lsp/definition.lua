@@ -4,8 +4,6 @@
 
 local M = {}
 
-local warn = require("r.log").warn
-
 --- Cache for workspace definitions: { symbol_name -> [{file, line, col}] }
 ---@type table<string, table[]>
 local workspace_index = {}
@@ -16,58 +14,6 @@ local file_mtimes = {}
 
 --- Whether initial indexing has been done
 local indexed = false
-
---- TODO: Maybe add targets nodes so we can search in target pipeline? Maybe use a config option?
---- Tree-sitter query for finding function definitions
---- Matches patterns like: fn_name <- function(...) or fn_name = function(...)
-local definition_query_str = [[
-    ; Function assignments with <- operator
-    (binary_operator
-        lhs: (identifier) @name
-        operator: "<-"
-        rhs: (function_definition)) @definition
-
-    ; Function assignments with <<- operator
-    (binary_operator
-        lhs: (identifier) @name
-        operator: "<<-"
-        rhs: (function_definition)) @definition
-
-    ; Function assignments with = operator
-    (binary_operator
-        lhs: (identifier) @name
-        operator: "="
-        rhs: (function_definition)) @definition
-
-    ; Variable assignments with <- (non-function)
-    (binary_operator
-        lhs: (identifier) @var_name
-        operator: "<-"
-        rhs: (_) @var_value) @var_definition
-
-    ; Variable assignments with = (non-function)
-    (binary_operator
-        lhs: (identifier) @var_name
-        operator: "="
-        rhs: (_) @var_value) @var_definition
-]]
-
---- Cached parsed query
----@type vim.treesitter.Query?
-local definition_query = nil
-
---- Get or create the definition query
----@return vim.treesitter.Query?
-local function get_query()
-    if definition_query then return definition_query end
-    local ok, query = pcall(vim.treesitter.query.parse, "r", definition_query_str)
-    if ok then
-        definition_query = query
-        return query
-    end
-    warn("Failed to parse tree-sitter query for definitions")
-    return nil
-end
 
 --- Extract all symbols from a buffer (generic core function)
 --- This is used by:
@@ -88,7 +34,7 @@ local function extract_symbols(bufnr, options)
     if not tree then return {} end
 
     local root = tree:root()
-    local query = get_query()
+    local query = require("r.lsp.queries").get("definitions")
     if not query then return {} end
 
     local symbols = {}
@@ -277,7 +223,7 @@ local function find_in_scope(symbol, bufnr, row, col)
     local node = tree:root():descendant_for_range(row, col, row, col)
     if not node then return nil end
 
-    local query = get_query()
+    local query = require("r.lsp.queries").get("definitions")
     if not query then return nil end
 
     -- Walk up the tree to find containing scopes

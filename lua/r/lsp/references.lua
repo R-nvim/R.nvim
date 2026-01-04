@@ -21,7 +21,7 @@ local function find_all_workspace_references(symbol, req_id)
     local workspace_locations = workspace.get_definitions(symbol)
     vim.list_extend(all_refs, workspace_locations)
 
-    local query = utils.get_query("references")
+    local query = require("r.lsp.queries").get("references")
     if query then
         local bufnr = vim.api.nvim_get_current_buf()
         local parser, root = ast.get_parser_and_root(bufnr)
@@ -97,7 +97,7 @@ function M.find_references(req_id)
 
     local all_refs = {}
 
-    local query = utils.get_query("references")
+    local query = require("r.lsp.queries").get("references")
     if not query then
         utils.send_null(req_id)
         return

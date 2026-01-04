@@ -3,14 +3,6 @@
 
 local M = {}
 
---- Get tree-sitter query (delegates to queries module)
----@param query_type string Query type: "definitions"|"references"|"implementations"
----@return vim.treesitter.Query?
-function M.get_query(query_type)
-    local queries = require("r.lsp.queries")
-    return queries.get(query_type or "definitions")
-end
-
 --- Common symbol information structure
 ---@class SymbolInfo
 ---@field name string Symbol name
@@ -78,7 +70,7 @@ function M.extract_symbols(bufnr, options)
     if not tree then return {} end
 
     local root = tree:root()
-    local query = M.get_query("definitions")
+    local query = require("r.lsp.queries").get("definitions")
     if not query then return {} end
 
     local symbols = {}
