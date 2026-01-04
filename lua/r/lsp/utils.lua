@@ -3,85 +3,6 @@
 
 local M = {}
 
-local warn = require("r.log").warn
-
---- Tree-sitter query for finding function definitions
---- Matches patterns like: fn_name <- function(...) or fn_name = function(...)
-local definition_query_str = [[
-    ; Function assignments with <- operator
-    (binary_operator
-        lhs: (identifier) @name
-        operator: "<-"
-        rhs: (function_definition)) @definition
-
-    ; Function assignments with <<- operator
-    (binary_operator
-        lhs: (identifier) @name
-        operator: "<<-"
-        rhs: (function_definition)) @definition
-
-    ; Function assignments with = operator
-    (binary_operator
-        lhs: (identifier) @name
-        operator: "="
-        rhs: (function_definition)) @definition
-
-    ; Variable assignments with <- (non-function)
-    (binary_operator
-        lhs: (identifier) @var_name
-        operator: "<-"
-        rhs: (_) @var_value) @var_definition
-
-    ; Variable assignments with = (non-function)
-    (binary_operator
-        lhs: (identifier) @var_name
-        operator: "="
-        rhs: (_) @var_value) @var_definition
-]]
-
---- Tree-sitter query for finding all identifier references
-local reference_query_str = [[
-    ; Capture ALL identifier nodes for reference tracking
-    (identifier) @reference
-]]
-
---- Tree-sitter query for finding S3/S4 method implementations
-local implementation_query_str = [[
-    ; S3 method pattern: funcname.classname <- function
-    (binary_operator
-        lhs: (identifier) @s3_method_name
-        operator: "<-"
-        rhs: (function_definition)) @s3_method
-
-    ; S3 method pattern with = operator
-    (binary_operator
-        lhs: (identifier) @s3_method_name
-        operator: "="
-        rhs: (function_definition)) @s3_method
-
-    ; S4 setMethod pattern
-    (call
-        function: (identifier) @setmethod_fn
-        arguments: (arguments) @setmethod_args) @s4_method
-
-    ; S4 setGeneric pattern
-    (call
-        function: (identifier) @setgeneric_fn
-        arguments: (arguments) @setgeneric_args) @s4_generic
-
-    ; UseMethod calls (defines S3 generics)
-    (call
-        function: (identifier) @usemethod_fn
-        arguments: (arguments) @usemethod_args) @s3_generic
-]]
-
---- Cached parsed queries
----@type table<string, vim.treesitter.Query?>
-local query_cache = {}
-
---- Get or create a query for the specified type
----@param query_type? string Query type: "definitions", "references", "implementations"
----@return vim.treesitter.Query?
 --- Get tree-sitter query (delegates to queries module)
 ---@param query_type string Query type: "definitions"|"references"|"implementations"
 ---@return vim.treesitter.Query?
@@ -282,15 +203,11 @@ function M.parse_file_definitions(filepath)
     local definitions = {}
 
     local bufnr, _, cleanup = buffer.load_file_to_buffer(filepath)
-    if not bufnr then
-        return definitions
-    end
+    if not bufnr then return definitions end
 
     local symbols = M.extract_symbols(bufnr)
     for _, sym in ipairs(symbols) do
-        if not definitions[sym.name] then
-            definitions[sym.name] = {}
-        end
+        if not definitions[sym.name] then definitions[sym.name] = {} end
         table.insert(definitions[sym.name], {
             file = filepath, -- Use provided filepath, not the temp buffer name
             line = sym.name_start_row,
@@ -298,7 +215,7 @@ function M.parse_file_definitions(filepath)
         })
     end
 
-    cleanup()
+    if cleanup then cleanup() end
     return definitions
 end
 
@@ -390,12 +307,8 @@ end
 ---@return string? keyword, string? error
 function M.get_keyword_safe()
     local ok, word = pcall(require("r.cursor").get_keyword)
-    if not ok then
-        return nil, "Failed to get keyword"
-    end
-    if word == "" then
-        return nil, "No keyword at cursor"
-    end
+    if not ok then return nil, "Failed to get keyword" end
+    if word == "" then return nil, "No keyword at cursor" end
     return word, nil
 end
 
@@ -407,9 +320,7 @@ function M.prepare_workspace(update_buffer)
     local workspace = require("r.lsp.workspace")
     workspace.index_workspace()
 
-    if update_buffer then
-        workspace.update_modified_buffer()
-    end
+    if update_buffer then workspace.update_modified_buffer() end
 end
 
 return M

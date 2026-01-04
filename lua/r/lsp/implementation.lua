@@ -18,20 +18,15 @@ end
 --- Find implementations of a generic function (S3/S4 methods)
 ---@param req_id string LSP request ID
 function M.find_implementations(req_id)
-    -- Get keyword safely
     local word, err = utils.get_keyword_safe()
-    if err then
+    if err or not word then
         utils.send_null(req_id)
         return
     end
 
-    -- Prepare workspace
     utils.prepare_workspace()
 
-    local implementations = {}
-
-    -- Strategy 1: Static analysis - find S3 methods (word.classname)
-    implementations = find_s3_methods(word)
+    local implementations = find_s3_methods(word)
 
     -- Strategy 2: Dynamic lookup via nvimcom (if R is running)
     -- TODO: Implement async R query for runtime method discovery
