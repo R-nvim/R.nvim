@@ -597,7 +597,7 @@ M.document_symbols = function(req_id)
         end
     end
 
-    require("r.lsp.definition").document_symbols(req_id)
+    require("r.lsp.symbols").document_symbols(req_id)
 end
 
 ---Find all references to the symbol under cursor
@@ -697,7 +697,7 @@ function M.start(rns_path, rns_env)
 
     vim.api.nvim_create_user_command(
         "RRebuildIndex",
-        function() require("r.lsp.definition").rebuild_index() end,
+        function() require("r.lsp.workspace").rebuild_index() end,
         { desc = "Rebuild R workspace definition index" }
     )
 
