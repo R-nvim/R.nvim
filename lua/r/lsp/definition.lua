@@ -49,18 +49,54 @@ local function find_in_scope(symbol, bufnr, row, col)
     return nil
 end
 
---- Parse a potentially qualified symbol (pkg::fn or pkg:::fn)
----@param symbol string
+--- Parse a potentially qualified symbol using tree-sitter
+--- Handles pkg::fn (public) and pkg:::fn (internal) namespace operators
+---@param bufnr integer Buffer number
+---@param row integer Cursor row (0-indexed)
+---@param col integer Cursor column (0-indexed)
 ---@return string? pkg Package name or nil
----@return string fn Function/symbol name
+---@return string symbol Function/symbol name
 ---@return boolean internal Whether it's an internal symbol (:::)
-local function parse_qualified_name(symbol)
-    -- TODO: Use tree-sitter for more robust parsing
-    local pkg, fn = symbol:match("^([%w%.]+):::(.+)$")
-    if pkg then return pkg, fn, true end
-    pkg, fn = symbol:match("^([%w%.]+)::(.+)$")
-    if pkg then return pkg, fn, false end
-    return nil, symbol, false
+local function parse_qualified_name_at_cursor(bufnr, row, col)
+    local ast = require("r.lsp.ast")
+
+    local node = ast.node_at_position(bufnr, row, col)
+    if not node then
+        local word = require("r.cursor").get_keyword()
+        return nil, word, false
+    end
+
+    -- Walk up to find if we're inside a namespace_operator
+    local current = node
+    while current do
+        if current:type() == "namespace_operator" then
+            local lhs = current:field("lhs")[1]
+            local rhs = current:field("rhs")[1]
+            local operator = current:field("operator")[1]
+
+            if lhs and rhs then
+                local pkg = vim.treesitter.get_node_text(lhs, bufnr)
+                local symbol = vim.treesitter.get_node_text(rhs, bufnr)
+                local is_internal = false
+
+                if operator then
+                    local op_text = vim.treesitter.get_node_text(operator, bufnr)
+                    is_internal = (op_text == ":::")
+                end
+
+                return pkg, symbol, is_internal
+            end
+        end
+        current = current:parent()
+    end
+
+    -- Not a qualified name, return the symbol under cursor
+    local word = vim.treesitter.get_node_text(node, bufnr)
+    -- If the node is too large (e.g., we're on whitespace), fall back to get_keyword
+    if #word > 100 or word:match("%s") then
+        word = require("r.cursor").get_keyword()
+    end
+    return nil, word, false
 end
 
 --- Find definition in R package source
@@ -86,30 +122,27 @@ end
 --- Called from rnvimserver via client/exeRnvimCmd
 ---@param req_id string LSP request ID
 function M.goto_definition(req_id)
-    local word = require("r.cursor").get_keyword()
-
-    if word == "" then
-        require("r.lsp").send_msg({ code = "N" .. req_id })
-        return
-    end
-
-    local pkg, symbol, _ = parse_qualified_name(word)
-
-    -- 1. Try scope-aware search in current buffer first
     local cursor_pos = vim.api.nvim_win_get_cursor(0)
     local row = cursor_pos[1] - 1 -- Convert to 0-indexed
     local col = cursor_pos[2]
+    local bufnr = vim.api.nvim_get_current_buf()
 
-    local scope_match = find_in_scope(symbol, 0, row, col)
+    -- Parse qualified name using tree-sitter
+    local pkg, symbol, _ = parse_qualified_name_at_cursor(bufnr, row, col)
+
+    if not symbol or symbol == "" then
+        utils.send_null(req_id)
+        return
+    end
+
+    -- 1. Try scope-aware search in current buffer first
+    local scope_match = find_in_scope(symbol, bufnr, row, col)
     if scope_match then
-        local msg = {
-            code = "D",
-            orig_id = req_id,
+        utils.send_response("D", req_id, {
             uri = "file://" .. scope_match.file,
             line = scope_match.line,
             col = scope_match.col,
-        }
-        require("r.lsp").send_msg(msg)
+        })
         return
     end
 
@@ -119,22 +152,16 @@ function M.goto_definition(req_id)
         if #workspace_locations == 1 then
             -- Single result: send as Location
             local loc = workspace_locations[1]
-            local msg = {
-                code = "D",
-                orig_id = req_id,
+            utils.send_response("D", req_id, {
                 uri = "file://" .. loc.file,
                 line = loc.line,
                 col = loc.col,
-            }
-            require("r.lsp").send_msg(msg)
+            })
         else
             -- Multiple results: send as Location[]
-            local msg = {
-                code = "D",
-                orig_id = req_id,
+            utils.send_response("D", req_id, {
                 locations = workspace_locations,
-            }
-            require("r.lsp").send_msg(msg)
+            })
         end
         return
     end
@@ -148,7 +175,7 @@ function M.goto_definition(req_id)
         return
     end
 
-    require("r.lsp").send_msg({ code = "N" .. req_id })
+    utils.send_null(req_id)
 end
 
 --- Handle definition response from nvimcom
@@ -159,15 +186,13 @@ end
 ---@param col integer? Column number
 function M.handle_definition_response(req_id, filepath, line, col)
     if filepath and filepath ~= "" then
-        require("r.lsp").send_msg({
-            code = "D",
-            orig_id = req_id,
+        utils.send_response("D", req_id, {
             uri = "file://" .. filepath,
             line = (line or 1) - 1, -- Convert to 0-indexed
             col = (col or 1) - 1,
         })
     else
-        require("r.lsp").send_msg({ code = "N" .. req_id })
+        utils.send_null(req_id)
     end
 end
 
