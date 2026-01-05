@@ -26,96 +26,27 @@ function M.find_in_current_buffer(symbol)
     return matches
 end
 
---- Search for definition in enclosing scopes using custom definitions query
---- This handles <<- assignments which aren't captured by tree-sitter locals query
----@param symbol string The symbol to find
----@param bufnr integer Buffer number
----@param row integer Cursor row (0-indexed)
----@param col integer Cursor column (0-indexed)
----@return table? Location {file, line, col} or nil
-local function find_in_enclosing_scopes(symbol, bufnr, row, col)
-    local ast = require("r.lsp.ast")
-    local queries = require("r.lsp.queries")
-
-    local _, root = ast.get_parser_and_root(bufnr)
-    if not root then return nil end
-
-    local node = ast.node_at_position(bufnr, row, col)
-    if not node then return nil end
-
-    local query = queries.get("definitions")
-    if not query then return nil end
-
-    local file = vim.api.nvim_buf_get_name(bufnr)
-
-    -- Collect enclosing function scopes
-    local scopes = ast.collect_ancestors(node, "function_definition")
-    table.insert(scopes, root) -- Add file scope
-
-    -- Search each scope from innermost to outermost
-    for _, scope_node in ipairs(scopes) do
-        local search_node = scope_node
-        if scope_node:type() == "function_definition" then
-            search_node = scope_node:field("body")[1] or scope_node
-        end
-
-        local matches = {}
-        for id, match_node in query:iter_captures(search_node, bufnr) do
-            local capture_name = query.captures[id]
-            if capture_name == "name" or capture_name == "var_name" then
-                local text = vim.treesitter.get_node_text(match_node, bufnr)
-                if text == symbol then
-                    local start_row, start_col = match_node:start()
-                    -- Only consider assignments before the cursor
-                    if start_row < row or (start_row == row and start_col <= col) then
-                        table.insert(matches, {
-                            file = file,
-                            line = start_row,
-                            col = start_col,
-                        })
-                    end
-                end
-            end
-        end
-
-        -- Return the closest match before cursor in this scope
-        if #matches > 0 then
-            table.sort(matches, function(a, b)
-                if a.line ~= b.line then return a.line > b.line end
-                return a.col > b.col
-            end)
-            return matches[1]
-        end
-    end
-
-    return nil
-end
-
---- Scope-aware definition search
---- First tries scope.lua (for local definitions), then falls back to
---- searching enclosing scopes with custom query (for <<- assignments)
+--- Scope-aware definition search using scope.lua
+--- Handles both standard assignments (<-, =) and super-assignments (<<-)
 ---@param symbol string The symbol to find
 ---@param bufnr integer Buffer number
 ---@param row integer Cursor row (0-indexed)
 ---@param col integer Cursor column (0-indexed)
 ---@return table? Location {file, line, col} or nil
 local function find_in_scope(symbol, bufnr, row, col)
-    -- First try scope.lua for standard local definitions
     local scope_ctx = scope.get_scope_at_position(bufnr, row, col)
-    if scope_ctx then
-        local def = scope.resolve_symbol(symbol, scope_ctx)
-        if def then
-            return {
-                file = def.location.file,
-                line = def.location.line,
-                col = def.location.col,
-            }
-        end
+    if not scope_ctx then return nil end
+
+    local def = scope.resolve_symbol(symbol, scope_ctx)
+    if def then
+        return {
+            file = def.location.file,
+            line = def.location.line,
+            col = def.location.col,
+        }
     end
 
-    -- Fall back to searching enclosing scopes with custom query
-    -- This handles <<- assignments and other edge cases
-    return find_in_enclosing_scopes(symbol, bufnr, row, col)
+    return nil
 end
 
 --- Parse a potentially qualified symbol (pkg::fn or pkg:::fn)

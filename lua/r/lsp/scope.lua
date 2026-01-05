@@ -53,22 +53,18 @@ local function get_enclosing_scopes(bufnr, row, col)
     return scopes
 end
 
---- Find a definition within a specific scope node
+--- Find a definition within a specific scope node using locals query
 ---@param bufnr number Buffer number
 ---@param scope_node table Tree-sitter node representing a scope
 ---@param symbol string Symbol name to find
+---@param is_root_scope boolean Whether this is the root/file scope
 ---@return SymbolDefinition|nil
-local function find_definition_in_scope(bufnr, scope_node, symbol)
+local function find_definition_with_locals(bufnr, scope_node, symbol, is_root_scope)
     local ast = require("r.lsp.ast")
     local query = vim.treesitter.query.get("r", "locals")
-    if not query then
-        return nil
-    end
+    if not query then return nil end
 
     local file = vim.api.nvim_buf_get_name(bufnr)
-
-    local _, root = ast.get_parser_and_root(bufnr)
-    local is_root_scope = (root and scope_node == root)
 
     for id, node in query:iter_captures(scope_node, bufnr) do
         if query.captures[id] == "local.definition" then
@@ -116,6 +112,120 @@ local function find_definition_in_scope(bufnr, scope_node, symbol)
     return nil
 end
 
+--- Find a definition using custom definitions query (handles <<- operator)
+--- The tree-sitter locals query doesn't capture <<- as it's a super-assignment
+---@param bufnr number Buffer number
+---@param scope_node table Tree-sitter node representing a scope
+---@param symbol string Symbol name to find
+---@param cursor_row number Cursor row for "before cursor" filtering
+---@param cursor_col number Cursor column for "before cursor" filtering
+---@param is_root_scope boolean Whether this is the root/file scope
+---@return SymbolDefinition|nil
+local function find_definition_with_custom_query(
+    bufnr,
+    scope_node,
+    symbol,
+    cursor_row,
+    cursor_col,
+    is_root_scope
+)
+    local ast = require("r.lsp.ast")
+    local queries = require("r.lsp.queries")
+
+    local query = queries.get("definitions")
+    if not query then return nil end
+
+    local file = vim.api.nvim_buf_get_name(bufnr)
+
+    -- For function scopes, search the body
+    local search_node = scope_node
+    if scope_node:type() == "function_definition" then
+        search_node = scope_node:field("body")[1] or scope_node
+    end
+
+    local matches = {}
+    for id, node in query:iter_captures(search_node, bufnr) do
+        local capture_name = query.captures[id]
+        if capture_name == "name" or capture_name == "var_name" then
+            local text = vim.treesitter.get_node_text(node, bufnr)
+            if text == symbol then
+                local start_row, start_col = node:start()
+                -- Only consider assignments before the cursor
+                if start_row < cursor_row or (start_row == cursor_row and start_col <= cursor_col) then
+                    local kind = 13
+                    local binary_op = ast.find_ancestor(node, "binary_operator")
+                    if binary_op then
+                        local rhs = binary_op:field("rhs")[1]
+                        if rhs and rhs:type() == "function_definition" then
+                            kind = 12
+                        end
+                    end
+
+                    table.insert(matches, {
+                        name = symbol,
+                        kind = kind,
+                        location = {
+                            file = file,
+                            line = start_row,
+                            col = start_col,
+                        },
+                        visibility = is_root_scope and "public" or "private",
+                        _row = start_row,
+                        _col = start_col,
+                    })
+                end
+            end
+        end
+    end
+
+    -- Return the closest match before cursor
+    if #matches > 0 then
+        table.sort(matches, function(a, b)
+            if a._row ~= b._row then return a._row > b._row end
+            return a._col > b._col
+        end)
+        local result = matches[1]
+        result._row = nil
+        result._col = nil
+        return result
+    end
+
+    return nil
+end
+
+--- Find a definition within a specific scope node
+--- First tries the tree-sitter locals query, then falls back to custom query
+--- for <<- assignments which aren't captured by locals
+---@param bufnr number Buffer number
+---@param scope_node table Tree-sitter node representing a scope
+---@param symbol string Symbol name to find
+---@param cursor_row? number Cursor row for custom query (optional)
+---@param cursor_col? number Cursor column for custom query (optional)
+---@return SymbolDefinition|nil
+local function find_definition_in_scope(bufnr, scope_node, symbol, cursor_row, cursor_col)
+    local ast = require("r.lsp.ast")
+    local _, root = ast.get_parser_and_root(bufnr)
+    local is_root_scope = (root and scope_node == root)
+
+    -- First try the standard locals query
+    local def = find_definition_with_locals(bufnr, scope_node, symbol, is_root_scope)
+    if def then return def end
+
+    -- Fall back to custom query for <<- and other edge cases
+    if cursor_row and cursor_col then
+        return find_definition_with_custom_query(
+            bufnr,
+            scope_node,
+            symbol,
+            cursor_row,
+            cursor_col,
+            is_root_scope
+        )
+    end
+
+    return nil
+end
+
 --- Get scope context at a position
 ---@param bufnr number Buffer number
 ---@param row number Row (0-indexed)
@@ -143,8 +253,14 @@ function M.resolve_symbol(symbol, scope_context)
     if not scope_context or not scope_context.scope_nodes then return nil end
 
     -- Search scopes from innermost to outermost
-    for _, scope_node in ipairs(scope_context.scope_nodes) do
-        local def = find_definition_in_scope(scope_context.bufnr, scope_node, symbol)
+    for _, func_node in ipairs(scope_context.scope_nodes) do
+        local def = find_definition_in_scope(
+            scope_context.bufnr,
+            func_node,
+            symbol,
+            scope_context.row,
+            scope_context.col
+        )
         if def then return def end
     end
 
