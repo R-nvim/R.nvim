@@ -132,6 +132,29 @@ function M.rebuild_index()
     vim.notify("R workspace index rebuilt", vim.log.levels.INFO)
 end
 
+--- Debug function to show workspace index state
+function M.debug_index()
+    M.index_workspace()
+    local cwd = vim.fn.getcwd()
+    local files = {}
+    utils.find_r_files(cwd, files)
+
+    print("=== R.nvim Definition Index Debug ===")
+    print("Working directory: " .. cwd)
+    print("Files found: " .. #files)
+    for _, f in ipairs(files) do
+        print("  - " .. f)
+    end
+    print("Symbols indexed: " .. vim.tbl_count(workspace_index))
+    for symbol, locations in pairs(workspace_index) do
+        print("  " .. symbol .. " (" .. #locations .. " locations)")
+        for _, loc in ipairs(locations) do
+            print("    -> " .. loc.file .. ":" .. (loc.line + 1))
+        end
+    end
+    print("======================================")
+end
+
 --- Setup autocommand to update index on file save
 function M.setup()
     vim.api.nvim_create_autocmd("BufWritePost", {
