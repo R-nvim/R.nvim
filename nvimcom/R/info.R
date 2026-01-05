@@ -176,7 +176,11 @@ send_definition <- function(req_id, pkg, symbol) {
 
         # Check if cached file already exists
         if (!file.exists(tmpfile)) {
-            header <- sprintf("# %s::%s (no source available - deparsed)", pkg_name, symbol)
+            header <- sprintf(
+                "# %s::%s (no source available - deparsed)",
+                pkg_name,
+                symbol
+            )
             body <- deparse(fn)
             writeLines(c(header, "", body), tmpfile)
         }
@@ -185,9 +189,22 @@ send_definition <- function(req_id, pkg, symbol) {
     }
 
     # Base R packages - skip when searching installed (they're always loaded)
-    base_pkgs <- c("base", "utils", "stats", "graphics", "grDevices",
-                   "datasets", "methods", "tools", "compiler", "parallel",
-                   "splines", "stats4", "tcltk", "grid")
+    base_pkgs <- c(
+        "base",
+        "utils",
+        "stats",
+        "graphics",
+        "grDevices",
+        "datasets",
+        "methods",
+        "tools",
+        "compiler",
+        "parallel",
+        "splines",
+        "stats4",
+        "tcltk",
+        "grid"
+    )
 
     # Helper to check if symbol is exported from a package
     is_exported <- function(pkg_name, sym) {
@@ -247,8 +264,12 @@ send_definition <- function(req_id, pkg, symbol) {
             installed <- setdiff(installed, base_pkgs)
 
             for (p in installed) {
-                if (p %in% already_loaded) next
-                if (length(matches) >= 10) break  # Limit for speed
+                if (p %in% already_loaded) {
+                    next
+                }
+                if (length(matches) >= 10) {
+                    break
+                } # Limit for speed
                 tryCatch(
                     {
                         # Only check exported functions
@@ -276,7 +297,7 @@ send_definition <- function(req_id, pkg, symbol) {
     # Sort matches: base packages first, then alphabetically
     if (length(matches) > 1) {
         is_base <- match_pkgs %in% base_pkgs
-        order_idx <- order(!is_base, match_pkgs)  # TRUE (base) sorts before FALSE
+        order_idx <- order(!is_base, match_pkgs) # TRUE (base) sorts before FALSE
         matches <- matches[order_idx]
         match_pkgs <- match_pkgs[order_idx]
     }
