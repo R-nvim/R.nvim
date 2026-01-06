@@ -612,9 +612,12 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
             if (len > 0) {
                 for (int i = 0; i < len; i++) {
                     ename = CHAR(STRING_ELT(sn, i));
-                    PROTECT(elmt = R_do_slot(*x, Rf_install(ename)));
-                    p = nvimcom_glbnv_line(&elmt, ename, newenv, p, depth + 1);
-                    UNPROTECT(1);
+                    if (R_has_slot(*x, Rf_install(ename)) == 1) {
+                        PROTECT(elmt = R_do_slot(*x, Rf_install(ename)));
+                        p = nvimcom_glbnv_line(&elmt, ename, newenv, p,
+                                               depth + 1);
+                        UNPROTECT(1);
+                    }
                 }
             }
         } else {
