@@ -117,6 +117,7 @@ Main dependencies:
       and Rnoweb documents: https://quarto.org/
 
    The R packages:
+      - `parallel`: to generate cache files for auto-completion.
       - `knitr`: to generate final documents from Rnoweb, Rmd or Quarto.
       - `quarto`: to generate final documents from Quarto.
       - `rmarkdown`: to generate final documents from Rmd.

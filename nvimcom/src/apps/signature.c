@@ -15,7 +15,6 @@ static size_t sig_buf_sz = 1024;
 
 static int get_info(const char *s) {
     int i;
-    size_t nsz;
     const char *f[7];
     i = 0;
     while (i < 7) {
@@ -35,7 +34,7 @@ static int get_info(const char *s) {
         char *b = format_usage(f[0], f[4], 0);
 
         // Avoid buffer overflow if the information is too lengthy.
-        nsz = strlen(b) + 512;
+        size_t nsz = strlen(b) + 512;
         if (sig_buf_sz < nsz)
             p = grow_buffer(&sig_buf, &sig_buf_sz, nsz - sig_buf_sz);
 
@@ -82,24 +81,34 @@ void glbnv_signature(const char *req_id, const char *word, const char *args) {
 }
 
 // Seek the function in loaded libraries
-static void seek_in_libs(const char *id, const char *word) {
-    PkgData *pd = pkgList;
-    while (pd) {
-        if (pd->objls) {
-            const char *s = seek_word(pd->objls, word);
+static void seek_in_libs(const char *id, char *word) {
+    LibList *lib;
+    char *pkg = NULL;
+    if (strstr(word, "::")) {
+        lib = inst_libs;
+        pkg = word;
+        word = strstr(word, "::");
+        *word = '\0';
+        word += 2;
+    } else {
+        lib = loaded_libs;
+    }
+    while (lib) {
+        if (!pkg || strcmp(lib->pkg->name, pkg) == 0) {
+            const char *s = seek_word(lib->pkg->objls, word);
             if (s) {
-                int is_function = get_info(s);
-                if (is_function)
+                int is_fun = get_info(s);
+                if (is_fun)
                     send_result(id, sig_buf);
                 return;
             }
         }
-        pd = pd->next;
+        lib = lib->next;
     }
     send_null(id);
 }
 
-void sig_seek(const char *id, const char *word) { seek_in_libs(id, word); }
+void sig_seek(const char *id, char *word) { seek_in_libs(id, word); }
 
 void signature(const char *params) {
     Log("signature: %s", params);
@@ -119,8 +128,8 @@ void signature(const char *params) {
     if (glbnv_buffer) {
         const char *s = seek_word(glbnv_buffer, word);
         if (s) {
-            int is_function = get_info(s);
-            if (is_function)
+            int is_fun = get_info(s);
+            if (is_fun)
                 send_result(id, sig_buf);
             return;
         }

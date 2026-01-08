@@ -612,9 +612,12 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
             if (len > 0) {
                 for (int i = 0; i < len; i++) {
                     ename = CHAR(STRING_ELT(sn, i));
-                    PROTECT(elmt = R_do_slot(*x, Rf_install(ename)));
-                    p = nvimcom_glbnv_line(&elmt, ename, newenv, p, depth + 1);
-                    UNPROTECT(1);
+                    if (R_has_slot(*x, Rf_install(ename)) == 1) {
+                        PROTECT(elmt = R_do_slot(*x, Rf_install(ename)));
+                        p = nvimcom_glbnv_line(&elmt, ename, newenv, p,
+                                               depth + 1);
+                        UNPROTECT(1);
+                    }
                 }
             }
         } else {
@@ -856,7 +859,7 @@ static void send_libnames(void) {
         lib = lib->next;
     } while (lib);
 
-    libbuf = malloc(totalsz + 1);
+    libbuf = calloc(totalsz + 1, sizeof(char));
 
     libbuf[0] = 0;
     str_cat(libbuf, "+L");
@@ -864,10 +867,9 @@ static void send_libnames(void) {
     do {
         str_cat(libbuf, lib->name);
         str_cat(libbuf, "\003");
-        str_cat(libbuf, lib->version);
-        str_cat(libbuf, "\004");
         lib = lib->next;
     } while (lib);
+    str_cat(libbuf, "\004");
     libbuf[totalsz] = 0;
     send_to_nvim(libbuf);
     free(libbuf);
