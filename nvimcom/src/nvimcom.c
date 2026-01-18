@@ -859,7 +859,7 @@ static void send_libnames(void) {
         lib = lib->next;
     } while (lib);
 
-    libbuf = malloc(totalsz + 1);
+    libbuf = calloc(totalsz + 1, sizeof(char));
 
     libbuf[0] = 0;
     str_cat(libbuf, "+L");
@@ -867,10 +867,9 @@ static void send_libnames(void) {
     do {
         str_cat(libbuf, lib->name);
         str_cat(libbuf, "\003");
-        str_cat(libbuf, lib->version);
-        str_cat(libbuf, "\004");
         lib = lib->next;
     } while (lib);
+    str_cat(libbuf, "\004");
     libbuf[totalsz] = 0;
     send_to_nvim(libbuf);
     free(libbuf);

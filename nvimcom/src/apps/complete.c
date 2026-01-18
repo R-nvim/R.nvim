@@ -75,14 +75,14 @@ static char *get_df_cols(const char *dtfrm, const char *base, char *p) {
         s = find_obj(glbnv_buffer, dfbase);
 
     if (!s) {
-        PkgData *pd = pkgList;
-        while (pd) {
-            if (pd->objls) {
-                s = find_obj(pd->objls, dfbase);
+        LibList *lib = loaded_libs;
+        while (lib) {
+            if (lib->pkg->objls) {
+                s = find_obj(lib->pkg->objls, dfbase);
                 if (s)
                     break;
             }
-            pd = pd->next;
+            lib = lib->next;
         }
     }
 
@@ -120,6 +120,12 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
     size_t nsz;
     const char *f[7];
     char order[4];
+
+    if (*s == 0) {
+        // FIXME: delete this block
+        fprintf(stderr, "parse_objls: s is 0");
+        fflush(stderr);
+    }
 
     while (*s != 0) {
         int z = fuzzy_find(s, base);
@@ -244,21 +250,25 @@ static char *complete_args(char *p, const char *s, const char *funcnm,
 static char *seek_fun_complete_args(char *p, char *funcnm) {
     // Check if function is "pkg::fun"
     char *pkg = NULL;
+    LibList *lib;
     if (strstr(funcnm, "::")) {
         pkg = funcnm;
         funcnm = strstr(funcnm, "::");
         *funcnm = 0;
         funcnm++;
         funcnm++;
+        lib = inst_libs;
+    } else {
+        lib = loaded_libs;
     }
 
-    PkgData *pd = pkgList;
-    while (pd) {
-        if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0))) {
-            const char *s = pd->objls;
+    while (lib) {
+        if (lib->pkg->objls &&
+            (pkg == NULL || (strcmp(lib->pkg->name, pkg) == 0))) {
+            const char *s = lib->pkg->objls;
             while (*s != 0) {
                 if (strcmp(s, funcnm) == 0) {
-                    p = complete_args(p, s, funcnm, pd->name);
+                    p = complete_args(p, s, funcnm, lib->pkg->name);
                     return p;
                 } else {
                     while (*s != '\n')
@@ -267,33 +277,25 @@ static char *seek_fun_complete_args(char *p, char *funcnm) {
                 }
             }
         }
-        pd = pd->next;
+        lib = lib->next;
     }
     return p;
 }
 
-// Read the DESCRIPTION of all installed libraries
 static void complete_instlibs(char *p, const char *base) {
-    update_inst_libs();
+    LibList *lib = inst_libs;
+    while (lib) {
+        if (!base || (str_here(lib->pkg->name, base))) {
+            size_t len = p - cmp_buf + 1024;
+            if (cmp_buf_sz < len)
+                p = grow_buffer(&cmp_buf, &cmp_buf_sz,
+                                len - cmp_buf_sz + 32768);
 
-    Log("instlibs = %p", (void *)instlibs);
-    if (!instlibs)
-        return;
-
-    InstLibs *il;
-
-    il = instlibs;
-    while (il) {
-        size_t len = strlen(il->descr) + (p - cmp_buf) + 1024;
-        if (cmp_buf_sz < len)
-            p = grow_buffer(&cmp_buf, &cmp_buf_sz, len - cmp_buf_sz + 32768);
-
-        if (!base || (str_here(il->name, base) && il->si)) {
             p = str_cat(p, "{\"label\":\"");
-            p = str_cat(p, il->name);
+            p = str_cat(p, lib->pkg->name);
             p = str_cat(p, "\",\"cls\":\"L\",\"kind\":9},");
         }
-        il = il->next;
+        lib = lib->next;
     }
 }
 
@@ -362,20 +364,27 @@ void complete(const char *params) {
         p = parse_objls(glbnv_buffer, base, NULL, ".GlobalEnv", p);
 
     if (base) {
-        PkgData *pd = pkgList;
         // Check if base is "pkg::fun"
         char *pkg = NULL;
+        LibList *lib;
         if (strstr(base, "::")) {
             pkg = base;
             base = strstr(base, "::");
             *base = 0;
             base++;
             base++;
+            lib = inst_libs;
+            // Log("complete inst LIB: %p", (void *)lib);
+        } else {
+            lib = loaded_libs;
+            // Log("complete loaded LIB: %p", (void *)lib);
         }
-        while (pd) {
-            if (pd->objls && (pkg == NULL || (strcmp(pd->name, pkg) == 0)))
-                p = parse_objls(pd->objls, base, pkg, pd->name, p);
-            pd = pd->next;
+        Log("LIB: %p, base: %s, pkg: %s", (void *)lib, base, pkg);
+        while (lib) {
+            // Log("complete. lib: %p", (void *)lib->pkg);
+            if (pkg == NULL || (strcmp(lib->pkg->name, pkg) == 0))
+                p = parse_objls(lib->pkg->objls, base, pkg, lib->pkg->name, p);
+            lib = lib->next;
         }
     }
     send_menu_items(cmp_buf, id);

@@ -432,12 +432,15 @@ GetFunDescription <- function(pkg) {
         return(NULL)
     }
 
+    ttl <- gsub("'", "\x13", gsub("\\n *", " ", pd$Title))
+    dsc <- gsub("'", "\x13", gsub("\\n *", " ", pd$Description))
     als <- readRDS(idx)
     als <- cbind(unname(als), names(als))
+    als <- rbind(c(ttl, dsc), als)
     colnames(als) <- c("alias", "name")
     write.table(
         als,
-        sep = "\t",
+        sep = "\006",
         row.names = FALSE,
         col.names = FALSE,
         quote = FALSE,
@@ -548,13 +551,15 @@ nvim.bol <- function(cmpllist, libname) {
     packname <- paste0("package:", libname)
 
     if (nvim.grepl(paste0(packname, "$"), loadpack) == FALSE) {
-        ok <- try(require(
+        ok <- require(
             libname,
             warn.conflicts = FALSE,
             quietly = TRUE,
             character.only = TRUE
-        ))
-        if (!ok) return(invisible(NULL))
+        )
+        if (!ok) {
+            return(invisible(NULL))
+        }
     }
 
     obj.list <- objects(packname, all.names = TRUE)
@@ -582,62 +587,55 @@ nvim.bol <- function(cmpllist, libname) {
     } else {
         writeLines(text = "", con = cmpllist)
     }
+    # if (!libname %in% c("base", "utils", "nvimcom")) {
+    #     detach(packname)
+    # }
     return(invisible(NULL))
 }
 
 #' This function calls nvim.bol which writes three files in `~/.cache/R.nvim`:
-#' @param p Character vector with names of libraries.
-nvim.build.cmplls <- function(p) {
-    if (length(p) > 1) {
-        n <- 0
-        for (pkg in p) {
-            n <- n + nvim.build.cmplls(pkg)
-        }
-        if (n > 0) {
-            return(invisible(1))
-        }
-        return(invisible(0))
-    }
+nvim.build.cmplls <- function() {
     # No verbosity because running as Neovim job
     options(nvimcom.verbose = 0)
 
-    pvi <- utils::packageDescription(p)$Version
-    bdir <- paste0(Sys.getenv("RNVIM_COMPLDIR"), "/")
+    bdir <- Sys.getenv("RNVIM_COMPLDIR")
     odir <- dir(bdir)
-    pbuilt <- odir[grep(paste0("objls_", p, "_"), odir)]
-    abuilt <- odir[grep(paste0("args_", p, "_"), odir)]
+    pbuilt <- sub("objls_", "", odir[grep("objls_", odir)])
+    cp <- data.frame(pkg = sub("_.*", "", pbuilt), cvrs = sub(".*_", "", pbuilt))
 
-    need_build <- FALSE
+    instp <- installed.packages()
+    ip <- data.frame(pkg = instp[, "Package"], ivrs = instp[, "Version"])
 
-    if (length(pbuilt) == 0) {
-        # no completion file
-        need_build <- TRUE
-    } else {
-        if (length(pbuilt) > 1) {
-            # completion file is duplicated (should never happen)
-            need_build <- TRUE
-        } else {
-            pvb <- sub(".*_.*_", "", pbuilt)
-            # completion file is either outdated or older than the README
-            if (
-                pvb != pvi ||
-                    file.info(paste0(bdir, "README"))$mtime >
-                        file.info(paste0(bdir, pbuilt))$mtime
-            ) {
-                need_build <- TRUE
-            }
-        }
+    p <- merge(cp, ip, all = TRUE)
+
+    # Delete cache files of uninstalled packages?
+    # u <- p[is.na(p$ivrs), ]
+
+    # Delete outdated cache files
+    o <- p[!is.na(p$ivrs) & !is.na(p$cvrs) & p$ivrs != p$cvrs, ]
+    if (nrow(o) > 0) {
+        unlink(file.path(bdir, paste("objls", o$pkg, o$cvrs, sep = "_")))
+        unlink(file.path(bdir, paste("alias", o$pkg, sep = "_")))
+        unlink(file.path(bdir, paste("args", o$pkg, sep = "_")))
     }
 
-    if (need_build) {
+    # Build missing or outdated cache files
+    b <- p[!is.na(p$ivrs) & (is.na(p$cvrs) | p$ivrs != p$cvrs), ]
+    if (nrow(b) == 0) {
+        return(invisible(1))
+    }
+
+    process_row <- function(i) {
+        p <- b$pkg[i]
+        pvi <- b$ivrs[i]
+
         msg <- paste0("ECHO: Building completion list for \"", p, "\"\x14\n")
         cat(msg)
         flush(stdout())
-        unlink(c(paste0(bdir, pbuilt), paste0(bdir, abuilt)))
         t1 <- Sys.time()
-        nvim.bol(paste0(bdir, "objls_", p, "_", pvi), p)
+        nvim.bol(paste0(bdir, "/objls_", p, "_", pvi), p)
         t2 <- Sys.time()
-        nvim.buildargs(paste0(bdir, "args_", p), p)
+        nvim.buildargs(paste0(bdir, "/args_", p), p)
         t3 <- Sys.time()
         msg <- paste0(
             "INFO: ",
@@ -650,8 +648,10 @@ nvim.build.cmplls <- function(p) {
         )
         cat(msg)
         flush(stdout())
-
-        return(invisible(1))
     }
+
+    num_cores <- max(c(parallel::detectCores() - 2, 1))
+    results <- parallel::mclapply(1:nrow(b), process_row, mc.cores = num_cores)
+
     return(invisible(0))
 }
