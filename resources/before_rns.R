@@ -1,5 +1,3 @@
-libs <- libs[libs != ""]
-
 # R may break strings while sending them even if they are short
 out <- function(x) {
     # R.nvim will wait for more input if the string doesn't end with "\x14"
@@ -44,12 +42,11 @@ if (is.na(isdir)) {
 
 setwd(Sys.getenv("RNVIM_TMPDIR"))
 
-# Save libPaths for rnvimserver
+# libPaths
 libp <- unique(c(
     unlist(strsplit(Sys.getenv("R_LIBS_USER"), .Platform$path.sep)),
     .libPaths()
 ))
-cat(libp, sep = "\n", colapse = "\n", file = "libPaths")
 
 # Check R version
 R_version <- paste0(version[c("major", "minor")], collapse = ".")
@@ -217,28 +214,6 @@ if (length(np) == 1) {
     writeLines(
         nvimcom_info,
         paste0(Sys.getenv("RNVIM_COMPLDIR"), "/nvimcom_info")
-    )
-
-    # Save lib names for rnvimserver
-    hasl <- rep(FALSE, length(libs))
-    lver <- rep("", length(libs))
-    for (i in 1:length(libs)) {
-        if (length(find.package(libs[i], quiet = TRUE, verbose = FALSE)) > 0) {
-            hasl[i] <- TRUE
-            lver[i] <- packageDescription(libs[i])$Version
-        }
-    }
-    libs <- libs[hasl]
-    lver <- lver[hasl]
-    cat(
-        paste(libs, lver, collapse = '\n', sep = '_'),
-        '\n',
-        sep = '',
-        file = paste0(
-            Sys.getenv("RNVIM_TMPDIR"),
-            "/libnames_",
-            Sys.getenv("RNVIM_ID")
-        )
     )
     quit(save = "no")
 }
