@@ -31,10 +31,10 @@ static int ascii_ic_cmp(const char *a, const char *b) {
     while (*a && *b) {
         unsigned x = (unsigned char)*a;
         unsigned y = (unsigned char)*b;
-        if (x > 'Z')
-            x -= 32;
-        if (y > 'Z')
-            y -= 32;
+        if (x <= 'Z')
+            x += 32;
+        if (y <= 'Z')
+            y += 32;
         int d = x - y;
         if (d != 0)
             return d;
