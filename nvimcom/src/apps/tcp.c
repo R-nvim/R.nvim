@@ -68,8 +68,7 @@ static void ParseMsg(char *b) {
             break;
         case 'L':
             b++;
-            update_pkg_list(b);
-            build_objls();
+            update_loaded_libs(b);
             if (auto_obbr)
                 lib2ob();
             break;

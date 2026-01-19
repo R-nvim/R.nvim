@@ -28,8 +28,8 @@
  * Global variables (declared in global_vars.h)
  */
 
-InstLibs *instlibs;    // Pointer to first installed library
-PkgData *pkgList;      // Pointer to first package data
+LibList *inst_libs;    // Pointer to first package data
+LibList *loaded_libs;  // Pointer to loaded library
 char *glbnv_buffer;    // Global environment buffer
 char tmpdir[256];      // Temporary directory
 int auto_obbr;         // Auto object browser flag
@@ -88,32 +88,17 @@ void print_listTree(ListStatus *root, FILE *f) {
     }
 }
 
-static void send_rns_info(void) {
-    PkgData *pkg = pkgList;
-
-    int ln = 9;
-    int lv = 5;
-    char fmt[64];
-    while (pkg) {
-        if (strlen(pkg->name) > ln)
-            ln = strlen(pkg->name);
-        if (strlen(pkg->version) > lv)
-            lv = strlen(pkg->version);
-        pkg = pkg->next;
+static void log_rns_info(void) {
+    LibList *lib = loaded_libs;
+    while (lib) {
+        if (lib->pkg && lib->pkg->name)
+            Log("INFO: %s {%s}", lib->pkg->name, lib->pkg->fname);
+        else if (lib->pkg)
+            Log("INFO pkg: %p", (void *)lib->pkg);
+        else
+            Log("INFO: %p", (void *)lib);
+        lib = lib->next;
     }
-    sprintf(fmt, " [%%d, %%d, %%d, %%4d] %%%ds %%%ds %%s\x14", ln, lv);
-
-    printf("lua require('r.server').echo_rns_info('doc_width: %d.\x14Loaded "
-           "packages:\x14",
-           get_doc_width());
-    pkg = pkgList;
-    while (pkg) {
-        printf(fmt, pkg->to_build, pkg->built, pkg->loaded, pkg->nobjs,
-               pkg->name, pkg->version, pkg->descr);
-        pkg = pkg->next;
-    }
-    printf("')\n");
-    fflush(stdout);
 }
 
 // --- LSP Communication Helper ---
@@ -241,9 +226,7 @@ static void handle_initialize(const char *request_id) {
     init_cmp();
     init_obbr_vars();
     init_ds_vars();
-
-    update_inst_libs();
-    update_pkg_list(NULL);
+    init_lib_list();
 
     char res[1024] = {0};
     char *p = res;
@@ -354,10 +337,10 @@ static void handle_exe_cmd(const char *params) {
         code++;
         switch (*code) {
         case '1':
-            finished_building_objls();
+            finish_updating_loaded_libs(1);
             break;
         case '2':
-            send_rns_info();
+            log_rns_info();
             break;
         case '3':
             update_glblenv_buffer("");
@@ -511,7 +494,7 @@ static void lsp_loop(void) {
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {
-                build_objls();
+                load_cached_data();
             } else if (strcmp(method, "$/cancelRequest") == 0) {
                 Log("\x1b[31;1mCANCEL %s", id);
                 rm_active_request(id);

@@ -8,6 +8,7 @@ local b_out = {}
 local b_time
 local o_err = {}
 local pkgbuild_attempt = false
+local libs_in_rns = ""
 local rhelp_list = {}
 local building_objls = false
 local check_executable = require("r.utils").check_executable
@@ -253,7 +254,6 @@ local init_exit = function(_, data, _)
     b_err = {}
     b_out = {}
     edit.add_for_deletion(config.tmpdir .. "/bo_code.R")
-    edit.add_for_deletion(config.localtmpdir .. "/libs_in_rns_" .. vim.env.RNVIM_ID)
     edit.add_for_deletion(config.tmpdir .. "/libnames_" .. vim.env.RNVIM_ID)
     if #b_warn > 0 then
         local wrn = table.concat(b_warn, "\n")
@@ -295,29 +295,37 @@ local list_libs_from_buffer = function()
         end
     end
     local libs = ""
-    if #start_libs > 4 then libs = '"' .. start_libs:gsub(",", '", "') .. '"' end
+    if #start_libs > 4 then libs = start_libs:gsub(",", "\003") end
     if #flibs > 0 then
-        if libs ~= "" then libs = libs .. ", " end
-        libs = libs .. '"' .. table.concat(flibs, '", "') .. '"'
+        if libs ~= "" then libs = libs .. "\003" end
+        libs = libs .. table.concat(flibs, "\003")
     end
+    libs = libs .. "\003\004"
     return libs
 end
 
 -- Add words to the completion list of :Rhelp
-local add_to_Rhelp_list = function(lib)
-    local omf = config.compldir .. "/objls_" .. lib
+local fill_Rhelp_list = function()
+    libs_in_rns = string.gsub(libs_in_rns, " *$", "")
+    local libs = vim.split(libs_in_rns, "\003", { trimempty = true })
+    libs_in_rns = ""
+    rhelp_list = {}
 
-    -- List of objects
-    local olist = vim.fn.readfile(omf)
+    for _, v in pairs(libs) do
+        local omf = config.compldir .. "/args_" .. v
 
-    -- Library setwidth has no functions
-    if #olist == 0 or (#olist == 1 and #olist[1] < 3) then return end
+        -- List of objects
+        local olist = vim.fn.readfile(omf)
 
-    -- List of objects for :Rhelp completion
-    for _, xx in ipairs(olist) do
-        local xxx = vim.fn.split(xx, "\006")
-        if #xxx > 0 and not string.match(xxx[1], "%$") then
-            table.insert(rhelp_list, xxx[1])
+        -- Some libraries have no functions
+        if #olist > 0 then
+            -- List of objects for :Rhelp completion
+            for _, xx in ipairs(olist) do
+                local xxx = vim.fn.split(xx, "\006")
+                if #xxx > 0 and not string.match(xxx[1], "%$") then
+                    table.insert(rhelp_list, xxx[1])
+                end
+            end
         end
     end
 end
@@ -327,6 +335,7 @@ end
 --- _   string The complete command line, including "Rhelp".
 --- _   number Cursor position in complete command line.
 M.list_objs = function(arg, _, _)
+    if libs_in_rns ~= "" then fill_Rhelp_list() end
     local lob = {}
     for _, xx in ipairs(rhelp_list) do
         if xx:sub(1, 1) == arg:sub(1, 1) then table.insert(lob, xx) end
@@ -334,21 +343,11 @@ M.list_objs = function(arg, _, _)
     return lob
 end
 
--- This function is called for the first time before R is running because we
--- support auto completion of default libraries' objects.
-M.update_Rhelp_list = function()
-    if
-        vim.fn.filereadable(config.localtmpdir .. "/libs_in_rns_" .. vim.env.RNVIM_ID)
-        == 0
-    then
-        return
-    end
-
-    local libs_in_rns =
-        vim.fn.readfile(config.localtmpdir .. "/libs_in_rns_" .. vim.env.RNVIM_ID)
-    for _, lib in ipairs(libs_in_rns) do
-        add_to_Rhelp_list(lib)
-    end
+---This function is called for the first time before R is running because we
+---support auto completion of default libraries' objects.
+---@param libnames string
+M.update_Rhelp_list = function(libnames)
+    libs_in_rns = libnames
     if
         vim.g.R_Nvim_status == 3
         and (
@@ -361,6 +360,9 @@ M.update_Rhelp_list = function()
 end
 
 M.check_nvimcom_version = function()
+    local libs = list_libs_from_buffer()
+    vim.fn.writefile({ libs }, config.tmpdir .. "/libnames_" .. vim.env.RNVIM_ID)
+
     local flines
     local nvimcom_desc_path = config.rnvim_home .. "/nvimcom/DESCRIPTION"
 
@@ -372,9 +374,7 @@ M.check_nvimcom_version = function()
         flines = { "needed_nvc_version <- NULL" }
     end
 
-    local libs = list_libs_from_buffer()
     table.insert(flines, 'nvim_r_home <- "' .. config.rnvim_home .. '"')
-    table.insert(flines, "libs <- c(" .. libs .. ")")
     vim.list_extend(
         flines,
         vim.fn.readfile(config.rnvim_home .. "/resources/before_rns.R")
@@ -403,20 +403,15 @@ M.check_nvimcom_version = function()
         { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm },
         jobh
     )
-    edit.add_for_deletion(config.tmpdir .. "/libPaths")
 end
 
 --- Build objls_ files
----@param objs string List of packages whose completion files need to be
----built.
-M.build_objls = function(objs)
+M.build_cache_files = function()
     if vim.g.R_Nvim_status < 3 then vim.g.R_Nvim_status = 3 end
-    local olist = vim.split(objs, " ", { trimempty = true })
     local Rcode = {
         "library('nvimcom', character.only = TRUE, warn.conflicts = FALSE,",
         "  verbose = FALSE, quietly = TRUE, mask.ok = 'vi')",
-        "p <- c('" .. table.concat(olist, "', '") .. "')",
-        "nvimcom:::nvim.build.cmplls(p)",
+        "nvimcom:::nvim.build.cmplls()",
     }
     local scrptnm = config.tmpdir .. "/bo_code.R"
     vim.fn.writefile(Rcode, scrptnm)

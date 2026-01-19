@@ -162,7 +162,7 @@ local get_first_obj = function(line, lnum)
                 -- The opening parenthesis is here. Now, get the function and
                 -- its first object (if in the same line)
                 piece = string.sub(line, 1, idx - 1)
-                funname = string.match(piece, ".-([%w%._]+)%s*$")
+                funname = string.match(piece, ".-([%w%.:_]+)%s*$")
                 if funname then pkg = string.match(piece, ".-([%w%._]+)::" .. funname) end
                 piece = string.sub(line, idx + 1)
                 firstobj = string.match(piece, "%s-([%w%.%_]+)")
@@ -345,7 +345,7 @@ local get_word = function(line, cnum, pttrn)
         i = i + 1
     end
     local pattern = pttrn and pttrn
-        or "([%a\192-\244\128-\191_.][%w_.@$\192-\244\128-\191]*)$"
+        or "([%a\192-\244\128-\191_.][%w_.:@$\192-\244\128-\191]*)$"
     local wrd = preline:match(pattern)
     return wrd
 end
