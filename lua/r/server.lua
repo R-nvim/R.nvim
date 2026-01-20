@@ -170,6 +170,8 @@ local start_rnvimserver = function()
     disable = disable .. (config.r_ls.signature and "" or "signature")
     disable = disable .. (config.r_ls.hover and "" or "hover")
     disable = disable .. (config.r_ls.definition and "" or "definition")
+    disable = disable .. (config.r_ls.references and "" or "references")
+    disable = disable .. (config.r_ls.implementation and "" or "implementation")
     rns_env.R_LS_DISABLE = disable
 
     -- We have to set R's home directory on Windows because rnvimserver will
