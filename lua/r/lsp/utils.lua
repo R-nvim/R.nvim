@@ -19,6 +19,20 @@ local M = {}
 ---@field def_end_col integer 0-indexed
 ---@field detail string? Additional info (e.g., function parameters)
 
+--- Check if a node is at the top level (not inside a function)
+---@param node table Tree-sitter node
+---@return boolean
+local function is_top_level(node)
+    local current = node:parent()
+    while current do
+        if current:type() == "function_definition" then
+            return false
+        end
+        current = current:parent()
+    end
+    return true
+end
+
 --- Helper function to create a SymbolInfo table
 local function create_symbol_info(
     name,
@@ -58,7 +72,7 @@ end
 --- - extract_document_symbols() for textDocument/documentSymbol
 --- - find_references() and find_implementations() for workspace search
 ---@param bufnr integer Buffer number
----@param options? {symbol_name: string?} Optional filter by symbol name
+---@param options? {symbol_name: string?, top_level_only: boolean?} Optional filters
 ---@return SymbolInfo[]
 function M.extract_symbols(bufnr, options)
     options = options or {}
@@ -87,7 +101,12 @@ function M.extract_symbols(bufnr, options)
                 local lhs = parent:field("lhs")[1]
                 local rhs = parent:field("rhs")[1]
 
-                if lhs and rhs and rhs:type() == "function_definition" then
+                if
+                    lhs
+                    and rhs
+                    and rhs:type() == "function_definition"
+                    and (not options.top_level_only or is_top_level(parent))
+                then
                     local name = vim.treesitter.get_node_text(lhs, bufnr)
 
                     -- Apply symbol name filter if provided
@@ -142,7 +161,12 @@ function M.extract_symbols(bufnr, options)
                 local lhs = parent:field("lhs")[1]
                 local rhs = parent:field("rhs")[1]
 
-                if lhs and rhs and rhs:type() ~= "function_definition" then
+                if
+                    lhs
+                    and rhs
+                    and rhs:type() ~= "function_definition"
+                    and (not options.top_level_only or is_top_level(parent))
+                then
                     local name = vim.treesitter.get_node_text(lhs, bufnr)
 
                     -- Apply symbol name filter if provided
@@ -197,7 +221,8 @@ function M.parse_file_definitions(filepath)
     local bufnr, _, cleanup = buffer.load_file_to_buffer(filepath)
     if not bufnr then return definitions end
 
-    local symbols = M.extract_symbols(bufnr)
+    -- Only extract top-level definitions for workspace indexing
+    local symbols = M.extract_symbols(bufnr, { top_level_only = true })
     for _, sym in ipairs(symbols) do
         if not definitions[sym.name] then definitions[sym.name] = {} end
         table.insert(definitions[sym.name], {
