@@ -337,38 +337,9 @@ end
 ---@param cnum integer Cursor position (LSP: UTF-16 code units, same as characters for BMP)
 ---@param pttrn? string Pattern to get word for completion
 local get_word = function(line, cnum, pttrn)
-    -- Convert character position to byte position for line:sub()
-    -- byteidx returns -1 if cnum is beyond the string length
     local byte_idx = vim.fn.byteidx(line, cnum)
-    if byte_idx < 0 then
-        -- Cursor is beyond string end, use line length
-        byte_idx = #line
-    end
-
-    local i = byte_idx
-    local preline
-    local iterations = 0
-    while true do
-        preline = line:sub(1, i)
-        local char_cnt = vim.fn.strchars(preline)
-
-        if cnum <= char_cnt or i >= #line then
-            break
-        end
-
-        i = i + 1
-        iterations = iterations + 1
-        -- Safety check: prevent infinite loop (should never hit 100 iterations)
-        if iterations > 100 then
-            vim.notify(
-                "[R.nvim] get_word: Unexpected loop iteration limit reached. " ..
-                "line: '" .. line .. "', cnum: " .. tostring(cnum),
-                vim.log.levels.WARN
-            )
-            break
-        end
-    end
-
+    if byte_idx < 0 then byte_idx = #line end
+    local preline = line:sub(1, byte_idx)
     local pattern = pttrn and pttrn
         or "([%a\192-\244\128-\191_.][%w_.:@$\192-\244\128-\191]*)$"
     local wrd = preline:match(pattern)
