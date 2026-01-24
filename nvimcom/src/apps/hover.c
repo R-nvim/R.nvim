@@ -87,10 +87,10 @@ void send_hover_doc(const char *hid, const char *hdoc) {
 
 // Seek object in loaded libraries
 static void seek_in_libs(const char *id, const char *word) {
-    PkgData *pd = pkgList;
-    while (pd) {
-        if (pd->objls) {
-            const char *s = seek_word(pd->objls, word);
+    LibList *lib = loaded_libs;
+    while (lib) {
+        if (lib->pkg->objls) {
+            const char *s = seek_word(lib->pkg->objls, word);
             if (s) {
                 if (is_function(s)) {
                     get_info(s);
@@ -99,7 +99,7 @@ static void seek_in_libs(const char *id, const char *word) {
                 }
             }
         }
-        pd = pd->next;
+        lib = lib->next;
     }
     send_null(id);
 }
@@ -139,22 +139,25 @@ void hover(const char *params) {
         }
     }
 
+    LibList *lib;
     char *pkg = NULL;
     if (strstr(word, "::")) {
         pkg = word;
         word = strstr(word, "::");
         *word = '\0';
         word += 2;
+        lib = inst_libs;
+    } else {
+        lib = loaded_libs;
     }
 
-    PkgData *pd = pkgList;
-    while (pd) {
-        if (pd->objls) {
-            if (pkg && strcmp(pkg, pd->name) != 0) {
-                pd = pd->next;
+    while (lib) {
+        if (lib->pkg->objls) {
+            if (pkg && strcmp(pkg, lib->pkg->name) != 0) {
+                lib = lib->next;
                 continue;
             }
-            const char *s = seek_word(pd->objls, word);
+            const char *s = seek_word(lib->pkg->objls, word);
             if (s) {
                 if (is_function(s)) {
                     if (r_running && fobj) {
@@ -179,7 +182,7 @@ void hover(const char *params) {
                 return;
             }
         }
-        pd = pd->next;
+        lib = lib->next;
     }
 
     send_null(id);

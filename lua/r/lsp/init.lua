@@ -109,7 +109,7 @@ local get_first_obj = function(line, lnum)
                 -- The opening parenthesis is here. Now, get the function and
                 -- its first object (if in the same line)
                 piece = string.sub(line, 1, idx - 1)
-                funname = string.match(piece, ".-([%w%._]+)%s*$")
+                funname = string.match(piece, ".-([%w%.:_]+)%s*$")
                 if funname then pkg = string.match(piece, ".-([%w%._]+)::" .. funname) end
                 piece = string.sub(line, idx + 1)
                 firstobj = string.match(piece, "%s-([%w%.%_]+)")
@@ -281,18 +281,14 @@ end
 --- Get the word before the cursor, considering that Unicode
 --- characters use more bytes than occupy display cells
 ---@param line string Current line
----@param cnum integer Cursor position in number of display cells
+---@param cnum integer Cursor position (LSP: UTF-16 code units, same as characters for BMP)
 ---@param pttrn? string Pattern to get word for completion
 local get_word = function(line, cnum, pttrn)
-    local i = cnum
-    local preline
-    while true do
-        preline = line:sub(1, i)
-        if cnum <= vim.fn.strchars(preline) then break end
-        i = i + 1
-    end
+    local byte_idx = vim.fn.byteidx(line, cnum)
+    if byte_idx < 0 then byte_idx = #line end
+    local preline = line:sub(1, byte_idx)
     local pattern = pttrn and pttrn
-        or "([%a\192-\244\128-\191_.][%w_.@$\192-\244\128-\191]*)$"
+        or "([%a\192-\244\128-\191_.][%w_.:@$\192-\244\128-\191]*)$"
     local wrd = preline:match(pattern)
     return wrd
 end
