@@ -1461,19 +1461,28 @@ of the R's workspace (`.GlobalEnv`), including column names of data.frames.
 Note: If you are using the `languageserver` package, you should disable in
 your `~/.Rprofile` the features that overlap with R.nvim's ones:
 >r
-   options(languageserver.server_capabilities =
-               list(hoverProvider = FALSE,
-	            signatureHelpProvider = FALSE,
-	            completionProvider = FALSE,
-                    completionItemResolve = FALSE))
+    options(
+        languageserver.server_capabilities = list(
+            hoverProvider = FALSE,
+            signatureHelpProvider = FALSE,
+            completionProvider = FALSE,
+            completionItemResolve = FALSE,
+            definitionProvider = FALSE,
+            referencesProvider = FALSE,
+            implementationProvider = FALSE
+        )
+    )
 <
 Alternatively, you can disable or change R.nvim's built-in language server
 features in your R.nvim config. Below are the default values:
 >lua
  r_ls = {
-    completion = true, -- enable the completion provider
-    hover = true,      -- enable the hover provider
-    signature = true,  -- enable the signature help provider
+    completion = true,     -- enable the completion provider
+    hover = true,          -- enable the hover provider
+    signature = true,      -- enable the signature help provider
+    implementation = true, -- enable the implementation provider
+    definition = true,     -- enable the definition provider
+    references = true,     -- enable the references provider
     doc_width = 0,
     fun_data_1 = { "select", "rename", "mutate", "filter" },
     fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
@@ -1482,13 +1491,19 @@ features in your R.nvim config. Below are the default values:
 
  }
 <
-Meaning of optons:
+Meaning of options:
 
   - `completion`: Enable the completion provider
 
   - `hover`: Enable the hover provider
 
   - `signature`: Enable the signature help provider
+
+  - `implementation`: Enable the implementation provider
+  
+  - `definition`: Enable the definition provider
+
+  - `references`: Enable the references provider
 
   - `doc_width`: The expected maximum width of the floating documentation
     window. The default value will be between 30 and 80 columns, depending
