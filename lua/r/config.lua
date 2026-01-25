@@ -44,6 +44,19 @@ local hooks = require("r.hooks")
 ---Highlight color of R output in hover and resolve windows
 ---@field rout_fg_colors? table
 
+---@class RDiagnosticsConfigOpts
+---Enable lintr diagnostics (requires lintr and jsonlite R packages)
+---@field enable? boolean
+---
+---Delay in milliseconds before running diagnostics after text change
+---@field debounce_ms? integer
+---
+---Run diagnostics on file save
+---@field on_save? boolean
+---
+---Run diagnostics on text change
+---@field on_change? boolean
+
 ---@class RConfigUserOpts
 ---
 ---Used to set R's `OutDec` option; see `?options` in R; do `:help OutDec` for
@@ -141,6 +154,9 @@ local hooks = require("r.hooks")
 ---
 ---Options for the r_ls (R.nvim's built-in language server)
 ---@field r_ls? RLSConfigOpts
+---
+---Options for lintr diagnostics. Do `:help lsp_diagnostics` for more information.
+---@field lsp_diagnostics? RDiagnosticsConfigOpts
 ---
 ---Whether to use R.nvim's configuration for Tmux if running R in an external
 ---terminal emulator. Set to `false` if you want to use your own `.tmux.conf`.
@@ -467,6 +483,12 @@ local config = {
         fun_data_formula = { ggplot = { "facet_wrap", "facet_grid", "vars" } },
         quarto_intel = nil,
         rout_fg_colors = {},
+    },
+    lsp_diagnostics = {
+        enable = true, -- Disabled by default; requires lintr and jsonlite R packages
+        debounce_ms = 500,
+        on_save = true,
+        on_change = true,
     },
     config_tmux = true,
     debug = true,
@@ -1097,6 +1119,9 @@ local global_setup = function()
 
     hooks.run(config, "after_config", true)
 
+    -- Setup lintr diagnostics global autocmds
+    require("r.lsp.diagnostics").setup()
+
     gtime = (uv.hrtime() - gtime) / 1000000000
     require("r.edit").add_to_debug_info("global setup", gtime, "Time")
 
@@ -1171,6 +1196,9 @@ M.real_setup = function()
     if not vim.tbl_contains(no_ts, vim.bo.filetype) then vim.treesitter.start() end
 
     require("r.lsp").attach_to_buffer(vim.api.nvim_get_current_buf())
+
+    -- Setup lintr diagnostics for this buffer
+    require("r.lsp.diagnostics").setup_buffer(vim.api.nvim_get_current_buf())
 end
 
 --- Return the table with the final configure variables: the default values
