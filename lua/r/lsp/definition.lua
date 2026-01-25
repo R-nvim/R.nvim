@@ -106,8 +106,9 @@ end
 ---@param req_id string Request ID for async response
 function M.find_in_package(pkg, symbol, req_id)
     if vim.g.R_Nvim_status ~= 7 then
-        -- R is not running, can't query packages
-        return nil
+        -- R is not running, can't query packages; respond immediately
+        utils.send_null(req_id)
+        return "pending"
     end
 
     -- Send request to nvimcom to get source reference
