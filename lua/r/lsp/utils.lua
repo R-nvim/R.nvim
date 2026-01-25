@@ -257,8 +257,16 @@ function M.find_r_files(dir, files, max_depth, current_depth)
         local full_path = dir .. "/" .. name
 
         if type == "directory" then
-            -- Skip hidden directories and common non-source directories
-            if not name:match("^%.") and name ~= "node_modules" and name ~= "renv" then
+            -- Skip hidden directories and common non-source/dependency/build directories
+            if
+                not name:match("^%.")
+                and name ~= "node_modules"
+                and name ~= "renv"
+                and name ~= "packrat"
+                and name ~= ".Rproj.user"
+                and name ~= "build"
+                and name ~= "dist"
+            then
                 M.find_r_files(full_path, files, max_depth, current_depth + 1)
             end
         elseif type == "file" then
