@@ -78,7 +78,7 @@ end
 --- Get the first parameter passed to the function currently under the cursor
 --- Also look for piped objects as first parameters.
 ---@return string
-M.get_first_obj = function()
+local get_first_obj_2 = function()
     -- FIXME: The algorithm is too simple to correctly get the first object
     -- in complex cases.
     -- FIXME: try to use tree-sitter instead of patterns to find the first object
@@ -198,6 +198,12 @@ M.get_first_obj = function()
     if firstobj:find('"') then firstobj = firstobj:gsub('"', '\\"') end
 
     return firstobj
+end
+
+M.get_first_obj = function()
+    local fobj = get_first_obj_2()
+    if fobj:find("=") then return "" end
+    return fobj
 end
 
 ---Get the word either under or after the cursor.

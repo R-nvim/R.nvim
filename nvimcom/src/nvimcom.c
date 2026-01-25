@@ -126,7 +126,6 @@ static int flag_debug = 0;  // Do we need to get file name and line information
  */
 typedef struct lib_info_ {
     char *name;
-    char *version;
     unsigned long strlen;
     struct lib_info_ *next;
 } LibInfo;
@@ -283,7 +282,6 @@ static void send_to_nvim(char *msg) {
     // Send the message
     char *pCur = msg;
     char *pEnd = msg + len;
-    int loop = 0;
     while (pCur < pEnd) {
         sent = send(sfd, pCur, pEnd - pCur, 0);
         if (sent >= 0) {
@@ -291,15 +289,6 @@ static void send_to_nvim(char *msg) {
         } else if (sent == -1) {
             REprintf("Error sending message to R.nvim: %zu x %zu\n", len,
                      pCur - msg);
-            return;
-        }
-        loop++;
-        if (loop == 100) {
-            // The goal here is to avoid infinite loop.
-            // TODO: Maybe delete this check because php code does not have
-            // something similar
-            REprintf("Too many attempts to send message to R.nvim: %zu x %zu\n",
-                     len, sent);
             return;
         }
     }
@@ -366,16 +355,13 @@ static void nvimcom_backtick(const char *b1, char *b2) {
  * number of a library
  *
  * @param nm Name of the library.
- * @param vrsn Version number of the library.
  * @return Pointer to the new LibInfo structure.
  */
-static LibInfo *nvimcom_lib_info_new(const char *nm, const char *vrsn) {
+static LibInfo *nvimcom_lib_info_new(const char *nm) {
     LibInfo *pi = calloc(1, sizeof(LibInfo));
     pi->name = malloc((strlen(nm) + 1) * sizeof(char));
     strcpy(pi->name, nm);
-    pi->version = malloc((strlen(vrsn) + 1) * sizeof(char));
-    strcpy(pi->version, vrsn);
-    pi->strlen = strlen(pi->name) + strlen(pi->version) + 2;
+    pi->strlen = strlen(pi->name) + 2;
     return pi;
 }
 
@@ -384,10 +370,9 @@ static LibInfo *nvimcom_lib_info_new(const char *nm, const char *vrsn) {
  * libraries.
  *
  * @param nm The name of the library
- * @param vrsn The version number of the library
  */
-static void nvimcom_lib_info_add(const char *nm, const char *vrsn) {
-    LibInfo *pi = nvimcom_lib_info_new(nm, vrsn);
+static void nvimcom_lib_info_add(const char *nm) {
+    LibInfo *pi = nvimcom_lib_info_new(nm);
     if (libList) {
         pi->next = libList;
         libList = pi;
@@ -866,10 +851,11 @@ static void send_libnames(void) {
     lib = libList;
     do {
         str_cat(libbuf, lib->name);
-        str_cat(libbuf, "\003");
         lib = lib->next;
+        if (lib)
+            str_cat(libbuf, ",");
     } while (lib);
-    str_cat(libbuf, "\004");
+    str_cat(libbuf, "#");
     libbuf[totalsz] = 0;
     send_to_nvim(libbuf);
     free(libbuf);
@@ -888,12 +874,9 @@ static void nvimcom_checklibs(void) {
     if (nlibs == newnlibs)
         return;
 
-    SEXP l, cmdSexp, cmdexpr, ans;
+    SEXP l;
     const char *libname;
     char *libn;
-    char buf[128];
-    ParseStatus status;
-    int er = 0;
     const LibInfo *lib;
 
     nlibs = newnlibs;
@@ -906,27 +889,8 @@ static void nvimcom_checklibs(void) {
             libn = strstr(libn, ":");
             libn++;
             lib = nvimcom_get_lib(libn);
-            if (!lib) {
-                snprintf(buf, 127, "utils::packageDescription('%s')$Version",
-                         libn);
-                PROTECT(cmdSexp = allocVector(STRSXP, 1));
-                SET_STRING_ELT(cmdSexp, 0, mkChar(buf));
-                PROTECT(cmdexpr =
-                            R_ParseVector(cmdSexp, -1, &status, R_NilValue));
-                if (status != PARSE_OK) {
-                    REprintf("nvimcom error parsing: %s\n", buf);
-                } else {
-                    PROTECT(ans = R_tryEval(VECTOR_ELT(cmdexpr, 0), R_GlobalEnv,
-                                            &er));
-                    if (er) {
-                        REprintf("nvimcom error executing: %s\n", buf);
-                    } else {
-                        nvimcom_lib_info_add(libn, CHAR(STRING_ELT(ans, 0)));
-                    }
-                    UNPROTECT(1);
-                }
-                UNPROTECT(2);
-            }
+            if (!lib)
+                nvimcom_lib_info_add(libn);
         }
         UNPROTECT(1);
     }
