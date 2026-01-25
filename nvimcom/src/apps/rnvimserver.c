@@ -710,9 +710,6 @@ static void send_references_result(const char *params) {
 }
 
 static void send_implementation_result(const char *params) {
-    Log("[DEBUG C] send_implementation_result called\n");
-    Log("[DEBUG C] Params: %s\n", params);
-
     // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
     // because those functions NULL-terminate and modify the params string!
     char *id = strstr(params, "\"orig_id\":");
@@ -722,15 +719,12 @@ static void send_implementation_result(const char *params) {
     char *col_field = strstr(params, "\"col\":");
 
     if (!id) {
-        Log("[DEBUG C] No orig_id found in params\n");
         return;
     }
 
     cut_json_int(&id, 10);
-    Log("[DEBUG C] Request ID: %s\n", id);
 
     if (locations) {
-        Log("[DEBUG C] Multiple locations found\n");
         // Format: "locations":[{file:"...",line:N,col:N},...]
         char *arr_start = strchr(locations, '[');
         char *arr_end = strrchr(locations, ']');
@@ -789,13 +783,10 @@ static void send_implementation_result(const char *params) {
         }
 
         p += snprintf(p, result_size - (p - result), "]}");
-        Log("[DEBUG C] Sending implementation LSP response: %s\n", result);
         send_ls_response(id, result);
         free(result);
     } else {
-        Log("[DEBUG C] Single location (not array)\n");
         if (!uri || !line_field || !col_field) {
-            Log("[DEBUG C] Missing uri, line, or col field\n");
             return;
         }
 
@@ -811,7 +802,6 @@ static void send_implementation_result(const char *params) {
         size_t len = strlen(uri) + strlen(id) + strlen(line_field) * 2 + strlen(col_field) * 2 + 256;
         char *res = (char *)malloc(len);
         snprintf(res, len - 1, fmt, id, uri, line_field, col_field, line_field, col_field);
-        Log("[DEBUG C] Sending single implementation response: %s\n", res);
         send_ls_response(id, res);
         free(res);
     }
