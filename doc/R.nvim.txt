@@ -1500,7 +1500,6 @@ Meaning of options:
   - `signature`: Enable the signature help provider
 
   - `implementation`: Enable the implementation provider
-  
   - `definition`: Enable the definition provider
 
   - `references`: Enable the references provider
