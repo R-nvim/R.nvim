@@ -121,12 +121,6 @@ static char *parse_objls(const char *s, const char *base, const char *pkg,
     const char *f[7];
     char order[4];
 
-    if (*s == 0) {
-        // FIXME: delete this block
-        fprintf(stderr, "parse_objls: s is 0");
-        fflush(stderr);
-    }
-
     while (*s != 0) {
         int z = fuzzy_find(s, base);
         if (*base == '\0' || z) {

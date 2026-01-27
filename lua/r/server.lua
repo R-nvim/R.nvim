@@ -183,11 +183,7 @@ local start_rnvimserver = function()
     edit.add_for_deletion(config.tmpdir .. "/run_R_stdout")
     edit.add_for_deletion(config.tmpdir .. "/run_R_stderr")
 
-    vim.api.nvim_create_user_command(
-        "RGetNRSInfo",
-        require("r.server").request_rns_info,
-        {}
-    )
+    vim.api.nvim_create_user_command("RGetNRSInfo", require("r.server").echo_rns_info, {})
 end
 
 -- Function to build the package
@@ -279,12 +275,13 @@ end
 -- List R libraries from buffer
 local list_libs_from_buffer = function()
     local start_libs = config.start_libs or "base,stats,graphics,grDevices,utils,methods"
+    start_libs = string.gsub(start_libs, " ", "")
+    local flibs = vim.split(start_libs, ",")
+
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
-    local lib
-    local flibs = {}
     for _, v in pairs(lines) do
         if v:find("^%s*library%s*%(") or v:find("^%s*require%s*%(") then
-            lib = string.gsub(v, "%s*", "")
+            local lib = string.gsub(v, "%s*", "")
             lib = string.gsub(lib, "%s*,.*", "")
             lib = string.gsub(lib, "%s*library%s*%(%s*", "")
             lib = string.gsub(lib, "%s*require%s*%(%s*", "")
@@ -294,14 +291,8 @@ local list_libs_from_buffer = function()
             table.insert(flibs, lib)
         end
     end
-    local libs = ""
-    if #start_libs > 4 then libs = start_libs:gsub(",", "\003") end
-    if #flibs > 0 then
-        if libs ~= "" then libs = libs .. "\003" end
-        libs = libs .. table.concat(flibs, "\003")
-    end
-    libs = libs .. "\003\004"
-    return libs
+    local libs = table.concat(flibs, ",") .. "#"
+    vim.fn.writefile({ libs }, config.tmpdir .. "/libnames_" .. vim.env.RNVIM_ID)
 end
 
 -- Add words to the completion list of :Rhelp
@@ -360,8 +351,7 @@ M.update_Rhelp_list = function(libnames)
 end
 
 M.check_nvimcom_version = function()
-    local libs = list_libs_from_buffer()
-    vim.fn.writefile({ libs }, config.tmpdir .. "/libnames_" .. vim.env.RNVIM_ID)
+    list_libs_from_buffer()
 
     local flines
     local nvimcom_desc_path = config.rnvim_home .. "/nvimcom/DESCRIPTION"
@@ -429,9 +419,6 @@ M.build_cache_files = function()
     )
 end
 
--- Get information from rnvimserver (currently only the names of loaded libraries).
-M.request_rns_info = function() require("r.lsp").send_msg({ code = "42" }) end
-
 -- Called by rnvimserver when it gets an error running R code
 M.show_bol_error = function(stt)
     if vim.fn.filereadable(config.tmpdir .. "/run_R_stderr") == 1 then
@@ -452,12 +439,11 @@ M.show_bol_error = function(stt)
     end
 end
 
--- Callback function
-M.echo_rns_info = function(info)
-    local lines = vim.split(info, "\020")
-    local tbl = {}
+M.echo_rns_info = function()
+    local tbl = { { "Loaded libraries", "Title" }, { ":\n" } }
+    local lines = vim.split(libs_in_rns, ",")
     for _, v in pairs(lines) do
-        table.insert(tbl, { v .. "\n" })
+        table.insert(tbl, { "  " .. v .. "\n" })
     end
     vim.schedule(function() vim.api.nvim_echo(tbl, false, {}) end)
 end

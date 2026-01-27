@@ -50,13 +50,6 @@ static void get_alias(char **pkg, char **fun, char **args) {
     char *f;
     LibList *lib = inst_libs;
 
-    // FIXME: The old code tested if **pkg == '#'.
-    // Delete this block after confirming that **pkg never is '#'
-    if (**pkg == '#') {
-        fprintf(stderr, "get_alias # : %s, %s\n", *pkg, *fun);
-        fflush(stderr);
-    }
-
     Log("get_alias 1: %s, %s", *pkg, *fun);
     while (lib && !str_here(lib->pkg->name, *pkg))
         lib = lib->next;

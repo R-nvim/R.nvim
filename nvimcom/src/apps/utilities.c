@@ -3,7 +3,9 @@
 #include <string.h>
 
 #include "utilities.h"
+#ifdef Debug_NRS
 #include "logging.h"
+#endif
 
 /**
  * Grows a buffer to a new size.

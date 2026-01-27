@@ -295,7 +295,6 @@ static void get_whole_msg(char *b) {
     }
     *p = 0;
 
-    // FIXME: Delete this check when the code proved to be reliable
     if (strlen(finalbuffer) != msg_size) {
         fprintf(stderr, "Divergent TCP message size: %zu x %zu\n", strlen(p),
                 msg_size);

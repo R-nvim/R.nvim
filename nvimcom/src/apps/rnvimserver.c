@@ -88,19 +88,6 @@ void print_listTree(ListStatus *root, FILE *f) {
     }
 }
 
-static void log_rns_info(void) {
-    LibList *lib = loaded_libs;
-    while (lib) {
-        if (lib->pkg && lib->pkg->name)
-            Log("INFO: %s {%s}", lib->pkg->name, lib->pkg->fname);
-        else if (lib->pkg)
-            Log("INFO pkg: %p", (void *)lib->pkg);
-        else
-            Log("INFO: %p", (void *)lib);
-        lib = lib->next;
-    }
-}
-
 // --- LSP Communication Helper ---
 
 /**
@@ -338,9 +325,6 @@ static void handle_exe_cmd(const char *params) {
         switch (*code) {
         case '1':
             finish_updating_loaded_libs(1);
-            break;
-        case '2':
-            log_rns_info();
             break;
         case '3':
             update_glblenv_buffer("");

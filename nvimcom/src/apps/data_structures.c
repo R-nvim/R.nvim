@@ -65,7 +65,6 @@ void change_all(int stt) { change_all_stt(listTree, stt); }
 static void delete_pkg(PkgData *pd) {
     free(pd->name);
     free(pd->version);
-    free(pd->fname);
     if (pd->objls)
         free(pd->objls);
     if (pd->args)
@@ -210,14 +209,14 @@ static char *read_args_file(const char *nm) {
     return b;
 }
 
-static void load_pkg_data(PkgData *pd) {
+static void load_pkg_data(PkgData *pd, const char *fname) {
     // Log("load_pkg_data(%s)", pd->name);
     int size;
     read_alias_file(pd);
     pd->args = read_args_file(pd->name);
     if (!pd->objls) {
         pd->nobjs = 0;
-        pd->objls = read_objls_file(pd->fname, &size);
+        pd->objls = read_objls_file(fname, &size);
         if (size > 2)
             for (int i = 0; i < size; i++)
                 if (pd->objls[i] == '\n')
@@ -226,7 +225,7 @@ static void load_pkg_data(PkgData *pd) {
 }
 
 static PkgData *new_pkg_data(const char *nm, const char *vrsn) {
-    char buf[1024];
+    char fname[1024];
 
     PkgData *pd = calloc(1, sizeof(PkgData));
     pd->name = malloc((strlen(nm) + 1) * sizeof(char));
@@ -234,15 +233,13 @@ static PkgData *new_pkg_data(const char *nm, const char *vrsn) {
     pd->version = malloc((strlen(vrsn) + 1) * sizeof(char));
     strcpy(pd->version, vrsn);
 
-    snprintf(buf, 1023, "%s/objls_%s_%s", cmp_dir, nm, vrsn);
-    pd->fname = malloc((strlen(buf) + 1) * sizeof(char));
-    strcpy(pd->fname, buf);
+    snprintf(fname, 1023, "%s/objls_%s_%s", cmp_dir, nm, vrsn);
 
     // Check if objls_ exist
-    if (access(buf, F_OK) == 0) {
-        load_pkg_data(pd);
+    if (access(fname, F_OK) == 0) {
+        load_pkg_data(pd, fname);
     } else {
-        fprintf(stderr, "Cache file '%s' not found\n", buf);
+        fprintf(stderr, "Cache file '%s' not found\n", fname);
         fflush(stderr);
     }
     return pd;
@@ -342,9 +339,9 @@ void finish_updating_loaded_libs(int has_new_lib) {
     sprintf(msg, "require('r.server').update_Rhelp_list('%s')", lib_names);
 
     char *p = lib_names;
-    while (*p && *p != '\004') {
+    while (*p && *p != '#' && *p != '\n') {
         const char *nm = p;
-        while (*p != '\003')
+        while (*p != ',' && *p != '#')
             p++;
         *p = 0;
         p++;
@@ -360,7 +357,7 @@ void finish_updating_loaded_libs(int has_new_lib) {
     // Message to Neovim: Update Rhelp_list
     p = msg;
     while (*p) {
-        if (*p == '\004' || *p == '\n')
+        if (*p == '#' || *p == '\n')
             *p = ' ';
         p++;
     }
@@ -376,9 +373,9 @@ void update_loaded_libs(char *libnms) {
     strcpy(lib_names, libnms);
 
     // Check if we already have the required cache data
-    while (*libnms && *libnms != '\004') {
+    while (*libnms && *libnms != '#' && *libnms != '\n') {
         const char *nm = libnms;
-        while (*libnms != '\003')
+        while (*libnms != ',' && *libnms != '#')
             libnms++;
         *libnms = 0;
         libnms++;

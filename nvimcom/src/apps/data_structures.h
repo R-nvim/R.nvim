@@ -1,12 +1,6 @@
 #ifndef DATA_STRUCTURES_H
 #define DATA_STRUCTURES_H
 
-// Structure for paths to libraries
-typedef struct libpaths_ {
-    char *path;             // Path to library
-    struct libpaths_ *next; // Next path
-} LibPath;
-
 // Structure for list or library open/close status in the Object Browser
 typedef struct liststatus_ {
     char *key; // Name of the object or library. Library names are prefixed with
@@ -20,7 +14,6 @@ typedef struct liststatus_ {
 typedef struct pkg_data_ {
     char *name;    // The package name
     char *version; // The package version number
-    char *fname;   // Objls_ file name in the cmp_dir
     char *title;   // The package short description
     char *descr;   // The package description
     char *alias;   // A copy of the alias_ file
