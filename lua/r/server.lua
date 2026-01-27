@@ -166,9 +166,14 @@ local start_rnvimserver = function()
     rns_env.RNVIM_RPATH = config.R_cmd
     rns_env.RNVIM_LOCAL_TMPDIR = config.localtmpdir
     rns_env.RNVIM_MAX_DEPTH = tostring(config.compl_data.max_depth)
-    local disable = config.r_ls.completion and "" or "completion"
-    disable = disable .. (config.r_ls.signature and "" or "signature")
-    disable = disable .. (config.r_ls.hover and "" or "hover")
+    local disable_parts = {}
+    if not config.r_ls.completion then table.insert(disable_parts, "completion") end
+    if not config.r_ls.signature then table.insert(disable_parts, "signature") end
+    if not config.r_ls.hover then table.insert(disable_parts, "hover") end
+    if not config.r_ls.definition then table.insert(disable_parts, "definition") end
+    if not config.r_ls.references then table.insert(disable_parts, "references") end
+    if not config.r_ls.implementation then table.insert(disable_parts, "implementation") end
+    local disable = table.concat(disable_parts)
     rns_env.R_LS_DISABLE = disable
 
     -- We have to set R's home directory on Windows because rnvimserver will
