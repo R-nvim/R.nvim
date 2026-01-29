@@ -31,7 +31,7 @@ void send_item_doc(const char *req_id, const char *doc) {
     char *fdoc = (char *)calloc(strlen(doc) + 1, sizeof(char));
     format(doc, fdoc, ' ', '\x14');
     char *edoc = esc_json(fdoc);
-    size_t len = strlen(edoc) + strlen(last_item.item) + strlen(req_id) + 128;
+    size_t len = strlen(edoc) + strlen(last_item.item) + 128;
     char *res = (char *)malloc(len);
 
     snprintf(res, len, fmt, req_id, last_item.item, edoc);
