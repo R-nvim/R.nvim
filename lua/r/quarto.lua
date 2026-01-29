@@ -378,7 +378,7 @@ M.codelines_from_chunks = function(chunks)
         local lang = chunk:get_lang()
         local content = chunk:get_content()
         if M.is_python(lang) then
-            content = 'reticulate::py_run_string(r"(' .. content .. ')")'
+            content = 'reticulate::py_run_string(r"---(' .. content .. ')---")'
         end
         if M.is_python(lang) or M.is_r(lang) then
             local lines = vim.fn.split(content, "\n")
