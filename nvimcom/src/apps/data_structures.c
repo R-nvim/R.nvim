@@ -341,7 +341,7 @@ void finish_updating_loaded_libs(int has_new_lib) {
     char *p = lib_names;
     while (*p && *p != '#' && *p != '\n') {
         const char *nm = p;
-        while (*p != ',' && *p != '#')
+        while (*p && *p != ',' && *p != '#')
             p++;
         *p = 0;
         p++;
