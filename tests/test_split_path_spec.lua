@@ -4,28 +4,10 @@ local test_utils = require("./utils")
 describe(
     "The split_path() function correctly splits a path into its components",
     function()
-        local function setup_buffer(content, cursor_pos)
-            local bufnr = test_utils.create_r_buffer_from_string(content, "r")
-            vim.api.nvim_set_current_buf(bufnr)
-            vim.api.nvim_win_set_cursor(0, cursor_pos)
-            return bufnr
-        end
-
         local function test_split_path(content, cursor_pos, expected_result, description)
             it(description, function()
-                local bufnr = setup_buffer(content, cursor_pos)
-
-                -- Ensure R parser is loaded
-                vim.treesitter.language.add("r")
-
-                -- Get parser for the buffer
-                local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
-                if not ok or not parser then
-                    pending("treesitter parser for R is not available")
-                    return
-                end
-
-                parser:parse()
+                local bufnr = test_utils.setup_lsp_test(content, cursor_pos)
+                if not bufnr then return end
 
                 require("r.path").separate()
 

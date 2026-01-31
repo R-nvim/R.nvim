@@ -9,20 +9,10 @@ describe("LSP goto-definition", function()
     local send_msg_stub
 
     local function setup_test(content, cursor_pos)
-        local bufnr = test_utils.create_r_buffer_from_string(content, "r")
-        vim.api.nvim_set_current_buf(bufnr)
-        vim.api.nvim_win_set_cursor(0, cursor_pos)
-        vim.treesitter.language.add("r")
-        local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
-        if not ok or not parser then
-            pending("treesitter parser for R is not available")
-            return nil
-        end
-        parser:parse()
-        return bufnr
+        return test_utils.setup_lsp_test(content, cursor_pos)
     end
 
-    local function get_last_message() return sent_messages[#sent_messages] end
+    local function get_last_message() return test_utils.get_last_message(sent_messages) end
 
     local function assert_null_response(req_id)
         local msg = get_last_message()
