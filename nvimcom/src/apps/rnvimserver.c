@@ -275,7 +275,7 @@ static void handle_initialize(const char *request_id) {
 }
 
 // Forward declarations
-static void send_location_result(const char *params, const char *debug_name);
+static void send_location_result(const char *params);
 static void send_definition_result(const char *params);
 static void send_document_symbols_result(const char *params);
 static void send_references_result(const char *params);
@@ -456,7 +456,7 @@ static void handle_implementation(const char *id) {
 }
 
 // Generic function to handle location-based LSP responses (definition, references, implementation)
-static void send_location_result(const char *params, const char *debug_name) {
+static void send_location_result(const char *params) {
     // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
     // because those functions NULL-terminate and modify the params string!
     char *id = strstr(params, "\"orig_id\":");
@@ -465,25 +465,12 @@ static void send_location_result(const char *params, const char *debug_name) {
     char *line_field = strstr(params, "\"line\":");
     char *col_field = strstr(params, "\"col\":");
 
-    if (!id) {
-        if (debug_name) {
-            Log("[DEBUG C] No orig_id found in params for %s\n", debug_name);
-        }
+    if (!id)
         return;
-    }
 
     cut_json_int(&id, 10);
 
-    if (debug_name) {
-        Log("[DEBUG C] %s called\n", debug_name);
-        Log("[DEBUG C] Params: %s\n", params);
-        Log("[DEBUG C] Request ID: %s\n", id);
-    }
-
     if (locations) {
-        if (debug_name) {
-            Log("[DEBUG C] Multiple locations found\n");
-        }
         // Format: "locations":[{file:"...",line:N,col:N},...]
         char *arr_start = strchr(locations, '[');
         char *arr_end = strrchr(locations, ']');
@@ -542,22 +529,12 @@ static void send_location_result(const char *params, const char *debug_name) {
         }
 
         p += snprintf(p, result_size - (p - result), "]}");
-        if (debug_name) {
-            Log("[DEBUG C] Sending %s LSP response: %s\n", debug_name, result);
-        }
         send_ls_response(id, result);
         free(result);
     } else {
         // Single location: use the fields we already found
-        if (debug_name) {
-            Log("[DEBUG C] Single location (not array)\n");
-        }
-        if (!uri || !line_field || !col_field) {
-            if (debug_name) {
-                Log("[DEBUG C] Missing uri, line, or col field\n");
-            }
+        if (!uri || !line_field || !col_field)
             return;
-        }
 
         cut_json_str(&uri, 7);
         cut_json_int(&line_field, 7);
@@ -572,16 +549,13 @@ static void send_location_result(const char *params, const char *debug_name) {
         size_t len = strlen(uri) + strlen(id) + strlen(line_field) * 2 + strlen(col_field) * 2 + 256;
         char *res = (char *)malloc(len);
         snprintf(res, len - 1, fmt, id, uri, line_field, col_field, line_field, col_field);
-        if (debug_name) {
-            Log("[DEBUG C] Sending single %s response: %s\n", debug_name, res);
-        }
         send_ls_response(id, res);
         free(res);
     }
 }
 
 static void send_definition_result(const char *params) {
-    send_location_result(params, NULL);
+    send_location_result(params);
 }
 
 static void send_document_symbols_result(const char *params) {
@@ -626,11 +600,11 @@ static void send_document_symbols_result(const char *params) {
 }
 
 static void send_references_result(const char *params) {
-    send_location_result(params, NULL);
+    send_location_result(params);
 }
 
 static void send_implementation_result(const char *params) {
-    send_location_result(params, "send_implementation_result");
+    send_location_result(params);
 }
 
 // --- Main Server Loop ---
