@@ -485,7 +485,7 @@ local config = {
         rout_fg_colors = {},
     },
     lsp_diagnostics = {
-        enable = true, -- Disabled by default; requires lintr and jsonlite R packages
+        enable = false,
         debounce_ms = 500,
         on_save = true,
         on_change = true,
