@@ -28,8 +28,8 @@
  * Global variables (declared in global_vars.h)
  */
 
-InstLibs *instlibs;    // Pointer to first installed library
-PkgData *pkgList;      // Pointer to first package data
+LibList *inst_libs;    // Pointer to first package data
+LibList *loaded_libs;  // Pointer to loaded library
 char *glbnv_buffer;    // Global environment buffer
 char tmpdir[256];      // Temporary directory
 int auto_obbr;         // Auto object browser flag
@@ -86,34 +86,6 @@ void print_listTree(ListStatus *root, FILE *f) {
         print_listTree(root->left, f);
         print_listTree(root->right, f);
     }
-}
-
-static void send_rns_info(void) {
-    PkgData *pkg = pkgList;
-
-    int ln = 9;
-    int lv = 5;
-    char fmt[64];
-    while (pkg) {
-        if (strlen(pkg->name) > ln)
-            ln = strlen(pkg->name);
-        if (strlen(pkg->version) > lv)
-            lv = strlen(pkg->version);
-        pkg = pkg->next;
-    }
-    sprintf(fmt, " [%%d, %%d, %%d, %%4d] %%%ds %%%ds %%s\x14", ln, lv);
-
-    printf("lua require('r.server').echo_rns_info('doc_width: %d.\x14Loaded "
-           "packages:\x14",
-           get_doc_width());
-    pkg = pkgList;
-    while (pkg) {
-        printf(fmt, pkg->to_build, pkg->built, pkg->loaded, pkg->nobjs,
-               pkg->name, pkg->version, pkg->descr);
-        pkg = pkg->next;
-    }
-    printf("')\n");
-    fflush(stdout);
 }
 
 // --- LSP Communication Helper ---
@@ -241,9 +213,7 @@ static void handle_initialize(const char *request_id) {
     init_cmp();
     init_obbr_vars();
     init_ds_vars();
-
-    update_inst_libs();
-    update_pkg_list(NULL);
+    init_lib_list();
 
     char res[1024] = {0};
     char *p = res;
@@ -305,6 +275,7 @@ static void handle_initialize(const char *request_id) {
 }
 
 // Forward declarations
+static void send_location_result(const char *params);
 static void send_definition_result(const char *params);
 static void send_document_symbols_result(const char *params);
 static void send_references_result(const char *params);
@@ -397,10 +368,7 @@ static void handle_exe_cmd(const char *params) {
         code++;
         switch (*code) {
         case '1':
-            finished_building_objls();
-            break;
-        case '2':
-            send_rns_info();
+            finish_updating_loaded_libs(1);
             break;
         case '3':
             update_glblenv_buffer("");
@@ -487,7 +455,8 @@ static void handle_implementation(const char *id) {
     send_cmd_to_nvim(i_cmd);
 }
 
-static void send_definition_result(const char *params) {
+// Generic function to handle location-based LSP responses (definition, references, implementation)
+static void send_location_result(const char *params) {
     // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
     // because those functions NULL-terminate and modify the params string!
     char *id = strstr(params, "\"orig_id\":");
@@ -496,9 +465,8 @@ static void send_definition_result(const char *params) {
     char *line_field = strstr(params, "\"line\":");
     char *col_field = strstr(params, "\"col\":");
 
-    if (!id) {
+    if (!id)
         return;
-    }
 
     cut_json_int(&id, 10);
 
@@ -565,9 +533,8 @@ static void send_definition_result(const char *params) {
         free(result);
     } else {
         // Single location: use the fields we already found
-        if (!uri || !line_field || !col_field) {
+        if (!uri || !line_field || !col_field)
             return;
-        }
 
         cut_json_str(&uri, 7);
         cut_json_int(&line_field, 7);
@@ -585,6 +552,10 @@ static void send_definition_result(const char *params) {
         send_ls_response(id, res);
         free(res);
     }
+}
+
+static void send_definition_result(const char *params) {
+    send_location_result(params);
 }
 
 static void send_document_symbols_result(const char *params) {
@@ -629,209 +600,11 @@ static void send_document_symbols_result(const char *params) {
 }
 
 static void send_references_result(const char *params) {
-    // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
-    // because those functions NULL-terminate and modify the params string!
-    char *id = strstr(params, "\"orig_id\":");
-    char *locations = strstr(params, "\"locations\":");
-    char *uri = strstr(params, "\"uri\":\"");
-    char *line_field = strstr(params, "\"line\":");
-    char *col_field = strstr(params, "\"col\":");
-
-    if (!id) {
-        return;
-    }
-
-    cut_json_int(&id, 10);
-
-    if (locations) {
-        // Format: "locations":[{file:"...",line:N,col:N},...]
-        char *arr_start = strchr(locations, '[');
-        char *arr_end = strrchr(locations, ']');
-        if (!arr_start || !arr_end) {
-            send_null(id);
-            return;
-        }
-
-        size_t result_size = 4096;
-        char *result = (char *)malloc(result_size);
-        char *p = result;
-        p += snprintf(p, result_size, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":[", id);
-
-        char *loc = arr_start + 1;
-        int first = 1;
-        while (loc < arr_end) {
-            char *obj_start = strchr(loc, '{');
-            if (!obj_start || obj_start >= arr_end) break;
-
-            char *obj_end = strchr(obj_start, '}');
-            if (!obj_end || obj_end > arr_end) break;
-
-            char *file = strstr(obj_start, "\"file\":\"");
-            char *line = strstr(obj_start, "\"line\":");
-            char *col = strstr(obj_start, "\"col\":");
-
-            if (file && line && col && file < obj_end && line < obj_end && col < obj_end) {
-                file += 8;
-                char *file_end = strchr(file, '"');
-                if (file_end && file_end < obj_end) {
-                    size_t file_len = file_end - file;
-                    char *file_str = (char *)malloc(file_len + 1);
-                    strncpy(file_str, file, file_len);
-                    file_str[file_len] = '\0';
-
-                    line += 7;
-                    col += 6;
-                    int line_num = atoi(line);
-                    int col_num = atoi(col);
-
-                    if (!first) {
-                        p += snprintf(p, result_size - (p - result), ",");
-                    }
-                    first = 0;
-
-                    p += snprintf(p, result_size - (p - result),
-                        "{\"uri\":\"file://%s\",\"range\":{\"start\":{\"line\":%d,\"character\":%d},"
-                        "\"end\":{\"line\":%d,\"character\":%d}}}",
-                        file_str, line_num, col_num, line_num, col_num);
-
-                    free(file_str);
-                }
-            }
-
-            loc = obj_end + 1;
-        }
-
-        p += snprintf(p, result_size - (p - result), "]}");
-        send_ls_response(id, result);
-        free(result);
-    } else {
-        if (!uri || !line_field || !col_field) {
-            return;
-        }
-
-        cut_json_str(&uri, 7);
-        cut_json_int(&line_field, 7);
-        cut_json_int(&col_field, 6);
-
-        const char *fmt =
-            "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
-            "{\"uri\":\"%s\",\"range\":{\"start\":{\"line\":%s,\"character\":%s},"
-            "\"end\":{\"line\":%s,\"character\":%s}}}}";
-
-        size_t len = strlen(uri) + strlen(id) + strlen(line_field) * 2 + strlen(col_field) * 2 + 256;
-        char *res = (char *)malloc(len);
-        snprintf(res, len - 1, fmt, id, uri, line_field, col_field, line_field, col_field);
-        send_ls_response(id, res);
-        free(res);
-    }
+    send_location_result(params);
 }
 
 static void send_implementation_result(const char *params) {
-    Log("[DEBUG C] send_implementation_result called\n");
-    Log("[DEBUG C] Params: %s\n", params);
-
-    // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
-    // because those functions NULL-terminate and modify the params string!
-    char *id = strstr(params, "\"orig_id\":");
-    char *locations = strstr(params, "\"locations\":");
-    char *uri = strstr(params, "\"uri\":\"");
-    char *line_field = strstr(params, "\"line\":");
-    char *col_field = strstr(params, "\"col\":");
-
-    if (!id) {
-        Log("[DEBUG C] No orig_id found in params\n");
-        return;
-    }
-
-    cut_json_int(&id, 10);
-    Log("[DEBUG C] Request ID: %s\n", id);
-
-    if (locations) {
-        Log("[DEBUG C] Multiple locations found\n");
-        // Format: "locations":[{file:"...",line:N,col:N},...]
-        char *arr_start = strchr(locations, '[');
-        char *arr_end = strrchr(locations, ']');
-        if (!arr_start || !arr_end) {
-            send_null(id);
-            return;
-        }
-
-        size_t result_size = 4096;
-        char *result = (char *)malloc(result_size);
-        char *p = result;
-        p += snprintf(p, result_size, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":[", id);
-
-        char *loc = arr_start + 1;
-        int first = 1;
-        while (loc < arr_end) {
-            char *obj_start = strchr(loc, '{');
-            if (!obj_start || obj_start >= arr_end) break;
-
-            char *obj_end = strchr(obj_start, '}');
-            if (!obj_end || obj_end > arr_end) break;
-
-            char *file = strstr(obj_start, "\"file\":\"");
-            char *line = strstr(obj_start, "\"line\":");
-            char *col = strstr(obj_start, "\"col\":");
-
-            if (file && line && col && file < obj_end && line < obj_end && col < obj_end) {
-                file += 8;
-                char *file_end = strchr(file, '"');
-                if (file_end && file_end < obj_end) {
-                    size_t file_len = file_end - file;
-                    char *file_str = (char *)malloc(file_len + 1);
-                    strncpy(file_str, file, file_len);
-                    file_str[file_len] = '\0';
-
-                    line += 7;
-                    col += 6;
-                    int line_num = atoi(line);
-                    int col_num = atoi(col);
-
-                    if (!first) {
-                        p += snprintf(p, result_size - (p - result), ",");
-                    }
-                    first = 0;
-
-                    p += snprintf(p, result_size - (p - result),
-                        "{\"uri\":\"file://%s\",\"range\":{\"start\":{\"line\":%d,\"character\":%d},"
-                        "\"end\":{\"line\":%d,\"character\":%d}}}",
-                        file_str, line_num, col_num, line_num, col_num);
-
-                    free(file_str);
-                }
-            }
-
-            loc = obj_end + 1;
-        }
-
-        p += snprintf(p, result_size - (p - result), "]}");
-        Log("[DEBUG C] Sending implementation LSP response: %s\n", result);
-        send_ls_response(id, result);
-        free(result);
-    } else {
-        Log("[DEBUG C] Single location (not array)\n");
-        if (!uri || !line_field || !col_field) {
-            Log("[DEBUG C] Missing uri, line, or col field\n");
-            return;
-        }
-
-        cut_json_str(&uri, 7);
-        cut_json_int(&line_field, 7);
-        cut_json_int(&col_field, 6);
-
-        const char *fmt =
-            "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
-            "{\"uri\":\"%s\",\"range\":{\"start\":{\"line\":%s,\"character\":%s},"
-            "\"end\":{\"line\":%s,\"character\":%s}}}}";
-
-        size_t len = strlen(uri) + strlen(id) + strlen(line_field) * 2 + strlen(col_field) * 2 + 256;
-        char *res = (char *)malloc(len);
-        snprintf(res, len - 1, fmt, id, uri, line_field, col_field, line_field, col_field);
-        Log("[DEBUG C] Sending single implementation response: %s\n", res);
-        send_ls_response(id, res);
-        free(res);
-    }
+    send_location_result(params);
 }
 
 // --- Main Server Loop ---
@@ -933,7 +706,7 @@ static void lsp_loop(void) {
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {
-                build_objls();
+                load_cached_data();
             } else if (strcmp(method, "$/cancelRequest") == 0) {
                 Log("\x1b[31;1mCANCEL %s", id);
                 rm_active_request(id);

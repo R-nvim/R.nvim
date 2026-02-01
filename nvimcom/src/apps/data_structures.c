@@ -3,22 +3,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "global_vars.h"
 #include "utilities.h"
-#include "../common.h"
 #include "logging.h"
 #include "data_structures.h"
 #include "tcp.h"
 #include "lsp.h"
 
-static int building_objls;     // Flag for building compl lists
-static int more_to_build;      // Flag for more lists to build
-static LibPath *libpaths;      // Pointer to first library path
 static size_t glbnv_buffer_sz; // Global environment buffer size
 static ListStatus *listTree;   // Root node of the list status tree
 static int max_depth = 2;      // Max list depth in nvimcom
 static char *cmp_dir;          // Directory for completion files
+static char *lib_names;        // List of loaded libraries
 
 void set_max_depth(int m) { max_depth = m; }
 
@@ -64,236 +62,30 @@ static void change_all_stt(ListStatus *root, int stt) {
  */
 void change_all(int stt) { change_all_stt(listTree, stt); }
 
-/**
- * @brief Copy a string, skipping consecutive spaces.
- * @param input The input string with potential consecutive spaces.
- * @param output The output buffer where the trimmed string will be stored.
- *               This buffer should be large enough to hold the result.
- */
-static void skip_consecutive_spaces(const char *input, char *output) {
-    int i = 0, j = 0;
-    while (input[i] != '\0') {
-        output[j++] = input[i];
-        if (input[i] == ' ') {
-            // Skip over additional consecutive spaces
-            while (input[i + 1] == ' ') {
-                i++;
-            }
-        }
-        i++;
-    }
-    output[j] = '\0'; // Null-terminate the output string
-}
-
-static int read_field_data(char *s, int i) {
-    while (s[i]) {
-        if (s[i] == '\n' && s[i + 1] == ' ') {
-            s[i] = ' ';
-            i++;
-            while (s[i] == ' ')
-                i++;
-        }
-        if (s[i] == '\n') {
-            s[i] = 0;
-            break;
-        }
-        i++;
-    }
-    return i;
-}
-
-/**
- * @brief Parses the DESCRIPTION file of an R package to extract metadata.
- *
- * @param descr Pointer to a string containing the contents of a DESCRIPTION
- * file.
- * @param fnm The name of the R package whose DESCRIPTION file is being parsed.
- */
-static void parse_descr(char *descr, const char *fnm) {
-    int i = 0;
-    int dlen = strlen(descr);
-    const char *title, *description;
-    title = NULL;
-    description = NULL;
-    InstLibs *lib, *ptr;
-    while (i < dlen) {
-        if ((i == 0 || descr[i - 1] == '\n' || descr[i - 1] == 0) &&
-            str_here(descr + i, "Title: ")) {
-            i += 7;
-            title = descr + i;
-            i = read_field_data(descr, i);
-            descr[i] = 0;
-        }
-        if ((i == 0 || descr[i - 1] == '\n' || descr[i - 1] == 0) &&
-            str_here(descr + i, "Description: ")) {
-            i += 13;
-            description = descr + i;
-            i = read_field_data(descr, i);
-            descr[i] = 0;
-        }
-        i++;
-    }
-    if (title && description) {
-        if (instlibs == NULL) {
-            instlibs = calloc(1, sizeof(InstLibs));
-            lib = instlibs;
-        } else {
-            lib = calloc(1, sizeof(InstLibs));
-            if (ascii_ic_cmp(instlibs->name, fnm) > 0) {
-                lib->next = instlibs;
-                instlibs = lib;
-            } else {
-                InstLibs *prev = NULL;
-                ptr = instlibs;
-                while (ptr && ascii_ic_cmp(fnm, ptr->name) > 0) {
-                    prev = ptr;
-                    ptr = ptr->next;
-                }
-                if (prev)
-                    prev->next = lib;
-                lib->next = ptr;
-            }
-        }
-        lib->name = calloc(strlen(fnm) + 1, sizeof(char));
-        strcpy(lib->name, fnm);
-        lib->title = calloc(strlen(title) + 1, sizeof(char));
-        skip_consecutive_spaces(title, lib->title);
-        lib->descr = calloc(strlen(description) + 1, sizeof(char));
-        lib->si = 1;
-        if (lib->descr != NULL) {
-            skip_consecutive_spaces(description, lib->descr);
-        }
-        replace_char(lib->title, '\'', '\x13');
-        replace_char(lib->descr, '\'', '\x13');
-    } else {
-        if (title)
-            fprintf(stderr, "Failed to get Description from %s. ", fnm);
-        else
-            fprintf(stderr, "Failed to get Title from %s. ", fnm);
-        fflush(stderr);
-    }
-}
-
-/**
- * @brief Update the list of installed libraries.
- * This function is called on rnvimserver startup and before completion of
- * library names.
- */
-void update_inst_libs(void) {
-    Log("update_inst_libs()");
-    DIR *d;
-    const struct dirent *dir;
-    char fname[512];
-    char *descr;
-    InstLibs *il;
-    int r;
-    int n = 0;
-
-    LibPath *lp = libpaths;
-    while (lp) {
-        d = opendir(lp->path);
-        if (d) {
-            while ((dir = readdir(d)) != NULL) {
-#ifdef _DIRENT_HAVE_D_TYPE
-                if (dir->d_name[0] != '.' && dir->d_type == DT_DIR)
-#else
-                if (dir->d_name[0] != '.')
-#endif
-                {
-                    il = instlibs;
-                    r = 0;
-                    while (il) {
-                        if (strcmp(il->name, dir->d_name) == 0) {
-                            il->si = 1;
-                            r = 1; // Repeated library
-                            break;
-                        }
-                        il = il->next;
-                    }
-                    if (r)
-                        continue;
-
-                    snprintf(fname, 511, "%s/%s/DESCRIPTION", lp->path,
-                             dir->d_name);
-                    descr = read_file(fname, 0);
-                    if (descr) {
-                        n++;
-                        parse_descr(descr, dir->d_name);
-                        free(descr);
-                    }
-                }
-            }
-            closedir(d);
-        }
-        lp = lp->next;
-    }
-    Log("%d new libs found", n);
-
-    // New libraries found. Overwrite ~/.cache/R.nvim/inst_libs
-    if (n) {
-        char fnm[1032];
-        snprintf(fnm, 1031, "%s/inst_libs", cmp_dir);
-        FILE *f = fopen(fnm, "w");
-        if (f == NULL) {
-            fprintf(stderr, "Could not write to '%s'\n", fnm);
-            fflush(stderr);
-        } else {
-            il = instlibs;
-            while (il) {
-                if (il->si)
-                    fprintf(f, "%s\006%s\006%s\n", il->name, il->title,
-                            il->descr);
-                il = il->next;
-            }
-            fclose(f);
-        }
-    }
-}
-
-static void pkg_delete(PkgData *pd) {
+static void delete_pkg(PkgData *pd) {
     free(pd->name);
     free(pd->version);
-    free(pd->fname);
-    if (pd->descr)
-        free(pd->descr);
     if (pd->objls)
         free(pd->objls);
     if (pd->args)
         free(pd->args);
-    if (pd->alias)
-        free(pd->alias);
+    if (pd->title) // free title, descr and alias
+        free(pd->title);
     free(pd);
 }
 
 static PkgData *get_pkg(const char *nm) {
-    if (!pkgList)
+    // Log("get_pkg: '%s'", nm);
+    if (!inst_libs)
         return NULL;
 
-    PkgData *pd = pkgList;
+    LibList *lib = inst_libs;
     do {
-        if (strcmp(pd->name, nm) == 0)
-            return pd;
-        pd = pd->next;
-    } while (pd);
+        if (strcmp(lib->pkg->name, nm) == 0)
+            return lib->pkg;
+        lib = lib->next;
+    } while (lib);
 
-    return NULL;
-}
-
-static char *get_pkg_descr(const char *pkgnm, int again) {
-    Log("get_pkg_descr(%s)", pkgnm);
-    InstLibs *il = instlibs;
-    while (il) {
-        if (strcmp(il->name, pkgnm) == 0) {
-            char *s = malloc((strlen(il->title) + 1) * sizeof(char));
-            strcpy(s, il->title);
-            return s;
-        }
-        il = il->next;
-    }
-    if (again) {
-        update_inst_libs();
-        return get_pkg_descr(pkgnm, 0);
-    }
     return NULL;
 }
 
@@ -376,15 +168,26 @@ static char *read_objls_file(const char *fn, int *size) {
     return check_omils_buffer(b, size);
 }
 
-static char *read_alias_file(const char *nm) {
+static void *read_alias_file(PkgData *pd) {
     char fnm[512];
-    snprintf(fnm, 511, "%s/alias_%s", cmp_dir, nm);
+    snprintf(fnm, 511, "%s/alias_%s", cmp_dir, pd->name);
     char *b = read_file(fnm, 1);
     if (!b)
         return NULL;
+    pd->title = b;
     char *p = b;
+    while (*p != '\006')
+        p++;
+    *p = '\0';
+    p++;
+    pd->descr = p;
+    while (*p != '\n')
+        p++;
+    *p = '\0';
+    p++;
+    pd->alias = p;
     while (*p) {
-        if (*p == '\x09')
+        if (*p == '\006')
             *p = 0;
         p++;
     }
@@ -406,16 +209,14 @@ static char *read_args_file(const char *nm) {
     return b;
 }
 
-static void load_pkg_data(PkgData *pd) {
-    Log("load_pkg_data(%s)", pd->name);
+static void load_pkg_data(PkgData *pd, const char *fname) {
+    // Log("load_pkg_data(%s)", pd->name);
     int size;
-    if (!pd->descr)
-        pd->descr = get_pkg_descr(pd->name, 1);
-    pd->alias = read_alias_file(pd->name);
+    read_alias_file(pd);
     pd->args = read_args_file(pd->name);
     if (!pd->objls) {
         pd->nobjs = 0;
-        pd->objls = read_objls_file(pd->fname, &size);
+        pd->objls = read_objls_file(fname, &size);
         if (size > 2)
             for (int i = 0; i < size; i++)
                 if (pd->objls[i] == '\n')
@@ -424,136 +225,183 @@ static void load_pkg_data(PkgData *pd) {
 }
 
 static PkgData *new_pkg_data(const char *nm, const char *vrsn) {
-    char buf[1024];
+    char fname[1024];
 
     PkgData *pd = calloc(1, sizeof(PkgData));
     pd->name = malloc((strlen(nm) + 1) * sizeof(char));
     strcpy(pd->name, nm);
     pd->version = malloc((strlen(vrsn) + 1) * sizeof(char));
     strcpy(pd->version, vrsn);
-    pd->descr = get_pkg_descr(pd->name, 1);
-    pd->loaded = 1;
 
-    snprintf(buf, 1023, "%s/objls_%s_%s", cmp_dir, nm, vrsn);
-    pd->fname = malloc((strlen(buf) + 1) * sizeof(char));
-    strcpy(pd->fname, buf);
+    snprintf(fname, 1023, "%s/objls_%s_%s", cmp_dir, nm, vrsn);
 
     // Check if objls_ exist
-    if (access(buf, F_OK) == 0) {
-        pd->built = 1;
-        load_pkg_data(pd);
+    if (access(fname, F_OK) == 0) {
+        load_pkg_data(pd, fname);
+    } else {
+        fprintf(stderr, "Cache file '%s' not found\n", fname);
+        fflush(stderr);
     }
     return pd;
 }
 
 static void add_pkg(const char *nm, const char *vrsn) {
-    PkgData *tmp = pkgList;
-    pkgList = new_pkg_data(nm, vrsn);
-    pkgList->next = tmp;
+
+    LibList *tmp = calloc(1, sizeof(LibList));
+    tmp->pkg = new_pkg_data(nm, vrsn);
+
+    if (!inst_libs || ascii_ic_cmp(tmp->pkg->name, inst_libs->pkg->name) < 0) {
+        Log("add_pkg: \x1b[32m%s\x1b[0m -> %s", nm,
+            inst_libs ? inst_libs->pkg->name : "\x1b[31mNULL\x1b[0m");
+        tmp->next = inst_libs;
+        inst_libs = tmp;
+        return;
+    }
+
+    LibList *cur = inst_libs;
+    while (cur->next &&
+           ascii_ic_cmp(cur->next->pkg->name, tmp->pkg->name) < 0) {
+        cur = cur->next;
+    }
+
+    Log("add_pkg: %s -> \x1b[35m%s\x1b[0m -> %s", cur->pkg->name, nm,
+        cur->next ? cur->next->pkg->name : "\x1b[31mNULL\x1b[0m");
+    tmp->next = cur->next;
+    cur->next = tmp;
 }
 
-void update_pkg_list(char *libnms) {
-    Log("update_pkg_list(%s)", libnms);
-    char buf[512];
-    char *s, *nm, *vrsn;
-    PkgData *pkg;
+void load_cached_data(void) {
+    DIR *d;
+    const struct dirent *dir;
+    char path[512];
+
+    d = opendir(cmp_dir);
+    if (!d)
+        return;
+
+    while ((dir = readdir(d)) != NULL) {
+        if (strstr(dir->d_name, "objls_")) {
+            strcpy(path, dir->d_name);
+            const char *nm = path + 6;
+            char *vr = path + 6;
+            while (*vr != '_')
+                vr++;
+            *vr = '\0';
+            vr++;
+            PkgData *pkg = get_pkg(nm);
+            if (pkg && strcmp(pkg->version, vr) != 0) {
+                LibList *lib = inst_libs;
+                LibList *prv = NULL;
+                Log("New version of '%s': %s x %s", nm, pkg->version, vr);
+                while (lib) {
+                    if (strcmp(lib->pkg->name, nm) == 0) {
+                        if (prv) {
+                            prv->next = lib->next;
+                        } else {
+                            inst_libs = lib->next;
+                        }
+                        delete_pkg(pkg);
+                        break;
+                    }
+                    prv = lib;
+                    lib = lib->next;
+                }
+                pkg = NULL;
+            }
+            if (!pkg)
+                add_pkg(nm, vr);
+        }
+    }
+    closedir(d);
+}
+
+static void delete_lib_list(LibList *lib) {
+    LibList *next;
+    while (lib) {
+        next = lib->next;
+        free(lib);
+        lib = next;
+    }
+}
+
+void finish_updating_loaded_libs(int has_new_lib) {
+    Log("finish_updating_loaded_libs");
+
+    if (has_new_lib) {
+        load_cached_data();
+    }
 
     // Consider that all packages were unloaded
-    pkg = pkgList;
-    while (pkg) {
-        pkg->loaded = 0;
-        pkg = pkg->next;
+    delete_lib_list(loaded_libs);
+    loaded_libs = NULL;
+
+    char *msg = calloc(128 + strlen(lib_names), sizeof(char));
+    sprintf(msg, "require('r.server').update_Rhelp_list('%s')", lib_names);
+
+    char *p = lib_names;
+    while (*p && *p != '#' && *p != '\n') {
+        const char *nm = p;
+        while (*p && *p != ',' && *p != '#')
+            p++;
+        *p = 0;
+        p++;
+        PkgData *pkg = get_pkg(nm);
+        if (pkg) {
+            LibList *tmp = calloc(1, sizeof(LibList));
+            tmp->pkg = pkg;
+            tmp->next = loaded_libs;
+            loaded_libs = tmp;
+        }
     }
 
-    if (libnms) {
-        // called by nvimcom
-        while (*libnms) {
-            nm = libnms;
-            while (*libnms != '\003')
-                libnms++;
-            *libnms = 0;
+    // Message to Neovim: Update Rhelp_list
+    p = msg;
+    while (*p) {
+        if (*p == '#' || *p == '\n')
+            *p = ' ';
+        p++;
+    }
+    send_cmd_to_nvim(msg);
+    free(msg);
+}
+
+void update_loaded_libs(char *libnms) {
+    Log("update_loaded_libs: '%s'", libnms);
+    if (lib_names)
+        free(lib_names);
+    lib_names = malloc(sizeof(char) * strlen(libnms) + 1);
+    strcpy(lib_names, libnms);
+
+    // Check if we already have the required cache data
+    while (*libnms && *libnms != '#' && *libnms != '\n') {
+        const char *nm = libnms;
+        while (*libnms != ',' && *libnms != '#')
             libnms++;
-            vrsn = libnms;
-            while (*libnms != '\004')
-                libnms++;
-            *libnms = 0;
-            libnms++;
-            if (*libnms == '\n') // this was the last package
-                libnms++;
-
-            if (strstr(nm, " ") || strstr(vrsn, " ")) {
-                break;
-            }
-
-            pkg = get_pkg(nm);
-            if (pkg)
-                pkg->loaded = 1;
-            else
-                add_pkg(nm, vrsn);
-        }
-    } else {
-        // Called during the initialization with libnames_ created by
-        // R/before_rns.R to enable completion for functions loaded with the
-        // `library()` and `require()` commands in the file being edited.
-        char lbnm[128];
-
-        snprintf(buf, 511, "%s/libnames_%s", tmpdir, getenv("RNVIM_ID"));
-        FILE *flib = fopen(buf, "r");
-        if (!flib) {
-            fprintf(stderr, "Failed to open \"%s\"\n", buf);
-            fflush(stderr);
+        *libnms = 0;
+        libnms++;
+        const PkgData *pkg = get_pkg(nm);
+        if (!pkg) {
+            send_cmd_to_nvim("require('r.server').build_cache_files()");
             return;
         }
-
-        while ((s = fgets(lbnm, 127, flib))) {
-            while (*s != '_')
-                s++;
-            *s = 0;
-            s++;
-            vrsn = s;
-            while (*s != '\n')
-                s++;
-            *s = 0;
-
-            pkg = get_pkg(lbnm);
-            if (pkg)
-                pkg->loaded = 1;
-            else
-                add_pkg(lbnm, vrsn);
-        }
-        fclose(flib);
     }
+    finish_updating_loaded_libs(0);
+}
 
-    // No command run yet
-    if (!pkgList)
-        return;
-
-    // Delete data from unloaded packages to ensure that reloaded packages go
-    // to the bottom of the Object Browser list
-
-    // Delete unloaded packages from the beginning of the list
-    while (pkgList && pkgList->loaded == 0) {
-        pkg = pkgList;
-        pkgList = pkgList->next;
-        pkg_delete(pkg);
-    }
-
-    if (!pkgList)
-        return;
-
-    // Delete remaining unloaded packages
-    pkg = pkgList->next;
-    PkgData *prev = pkgList;
-    while (pkg) {
-        if (pkg->loaded == 0) {
-            prev->next = pkg->next;
-            pkg_delete(pkg);
-            pkg = prev->next;
-        } else {
-            prev = pkg;
-            pkg = prev->next;
-        }
-    }
+/**
+ * @brief Prepare to update the list of loaded libraries. If R is not started
+ * yet, the libraries in R_DEFAULT_PACKAGES are considered loaded.
+ *
+ * @param libnms Either the list of loaded libraries send by nvimcom or NULL
+ * (when the function is called by Neovim before R is started)
+ */
+void init_lib_list(void) {
+    Log("init_lib_list()");
+    char buf[512];
+    snprintf(buf, 511, "%s/libnames_%s", tmpdir, getenv("RNVIM_ID"));
+    char *libnms = read_file(buf, 1);
+    update_loaded_libs(libnms);
+    free(libnms);
 }
 
 /**
@@ -661,201 +509,9 @@ void toggle_list_status(char *s) {
     }
 }
 
-// Send to R.nvim the command to read the list of libraries loaded in R
-void build_objls(void) {
-    Log("build_objls()");
-    size_t nsz;
-
-    if (building_objls) {
-        more_to_build = 1;
-        return;
-    }
-    building_objls = 1;
-
-    size_t buf_sz = 4096;
-    char *buf = (char *)calloc(buf_sz, sizeof(char));
-    char *p = buf;
-
-    PkgData *pkg = pkgList;
-
-    // It would be easier to call R once for each library, but we will build
-    // all cache files at once to avoid the cost of starting R many times.
-    int k = 0;
-    while (pkg) {
-        if (pkg->to_build == 0) {
-            nsz = strlen(pkg->name) + 1024 + (p - buf);
-            if (buf_sz < nsz)
-                p = grow_buffer(&buf, &buf_sz, nsz - buf_sz + 1024);
-            p = str_cat(p, pkg->name);
-            p = str_cat(p, " ");
-            pkg->to_build = 1;
-            k++;
-        }
-        pkg = pkg->next;
-    }
-
-    if (k > 0) {
-        // Build all the objls_ files.
-        char *cmd = (char *)malloc((124 + strlen(buf)) * sizeof(char));
-        sprintf(cmd, "require('r.server').build_objls('%s')", buf);
-        send_cmd_to_nvim(cmd);
-        free(cmd);
-
-        free(buf);
-    }
-}
-
-// Called asynchronously and only if an objls_ file was actually built.
-static void finish_bol(void) {
-    Log("finish_bol()");
-
-    char buf[1024];
-
-    // Don't check the return value of run_R_code because some packages might
-    // have been successfully built before R exiting with status > 0.
-
-    // Check if all files were really built before trying to load them.
-    PkgData *pkg = pkgList;
-    while (pkg) {
-        if (pkg->built == 0 && access(pkg->fname, F_OK) == 0)
-            pkg->built = 1;
-        if (pkg->built && !pkg->objls)
-            load_pkg_data(pkg);
-        pkg = pkg->next;
-    }
-
-    // Finally create a list of built objls_ because libnames_ might have
-    // already changed and R.nvim would try to read objls_ files not built yet.
-    snprintf(buf, 511, "%s/libs_in_rns_%s", localtmpdir, getenv("RNVIM_ID"));
-    FILE *f = fopen(buf, "w");
-    if (f) {
-        pkg = pkgList;
-        while (pkg) {
-            if (pkg->loaded && pkg->built && pkg->objls)
-                fprintf(f, "%s_%s\n", pkg->name, pkg->version);
-            pkg = pkg->next;
-        }
-        fclose(f);
-    }
-
-    // Message to Neovim: Update both syntax and Rhelp_list
-    send_cmd_to_nvim("require('r.server').update_Rhelp_list()");
-}
-
-// This function is called by lua/r/server.lua when R finishes building
-// the completion data files.
-void finished_building_objls(void) {
-    finish_bol();
-    building_objls = 0;
-
-    // If this function was called while it was running, build the remaining
-    // cache files before saving the list of libraries whose cache files were
-    // built.
-    if (more_to_build) {
-        more_to_build = 0;
-        build_objls();
-    }
-}
-
-static void fill_inst_libs(void) {
-    Log("fill_inst_libs");
-    InstLibs *il = NULL;
-    char fname[1032];
-    snprintf(fname, 1031, "%s/inst_libs", cmp_dir);
-    char *b = read_file(fname, 0);
-    if (!b)
-        return;
-    char *s = b;
-    while (*s) {
-        const char *n, *t, *d;
-        n = s;
-        t = NULL;
-        d = NULL;
-        while (*s && *s != '\006')
-            s++;
-        if (*s == '\006') {
-            *s = 0;
-            s++;
-            if (*s) {
-                t = s;
-                while (*s && *s != '\006')
-                    s++;
-                if (*s == '\006') {
-                    *s = 0;
-                    s++;
-                    if (*s) {
-                        d = s;
-                        while (*s && *s != '\n')
-                            s++;
-                        if (*s == '\n') {
-                            *s = 0;
-                            s++;
-                        } else
-                            break;
-                    } else
-                        break;
-                } else
-                    break;
-            }
-            if (d) {
-                if (il) {
-                    il->next = calloc(1, sizeof(InstLibs));
-                    il = il->next;
-                } else {
-                    il = calloc(1, sizeof(InstLibs));
-                }
-                if (instlibs == NULL)
-                    instlibs = il;
-                il->name = malloc((strlen(n) + 1) * sizeof(char));
-                strcpy(il->name, n);
-                il->title = malloc((strlen(t) + 1) * sizeof(char));
-                strcpy(il->title, t);
-                il->descr = malloc((strlen(d) + 1) * sizeof(char));
-                strcpy(il->descr, d);
-            }
-        }
-    }
-    free(b);
-}
-
 void init_ds_vars(void) {
-    char fname[512];
-    cmp_dir =
-        (char *)malloc(sizeof(char) * strlen(getenv("RNVIM_COMPLDIR")) + 1);
-    strcpy(cmp_dir, getenv("RNVIM_COMPLDIR"));
-    snprintf(fname, 511, "%s/libPaths", tmpdir);
-    char *b = read_file(fname, 1);
-#ifdef WIN32
-    for (int i = 0; i < strlen(b); i++)
-        if (b[i] == '\\')
-            b[i] = '/';
-#endif
-    if (b) {
-        libpaths = calloc(1, sizeof(LibPath));
-        libpaths->path = b;
-        LibPath *p = libpaths;
-        while (*b) {
-            if (*b == '\n') {
-                while (*b == '\n' || *b == '\r') {
-                    *b = 0;
-                    b++;
-                }
-                if (*b) {
-                    p->next = calloc(1, sizeof(LibPath));
-                    p = p->next;
-                    p->path = b;
-                } else {
-                    break;
-                }
-            }
-            b++;
-        }
-    }
-
-    // Fill immediately the list of installed libraries. Each entry still has
-    // to be confirmed by listing the directories in .libPaths.
-    fill_inst_libs();
-
     // List tree sentinel
     listTree = new_ListStatus("base:", 0);
+    cmp_dir = malloc(sizeof(char) * strlen(getenv("RNVIM_COMPLDIR")) + 1);
+    strcpy(cmp_dir, getenv("RNVIM_COMPLDIR"));
 }

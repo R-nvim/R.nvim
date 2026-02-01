@@ -273,7 +273,7 @@ send_definition <- function(req_id, pkg, symbol) {
                 tryCatch(
                     {
                         # Only check exported functions
-                        ns <- loadNamespace(p)
+                        ns <- suppressPackageStartupMessages(loadNamespace(p))
                         if (is_exported(p, symbol)) {
                             fn <- get(symbol, envir = ns)
                             if (is.function(fn)) {

@@ -27,14 +27,10 @@ local function get_enclosing_scopes(bufnr, row, col)
     local ast = require("r.lsp.ast")
 
     local parser, root = ast.get_parser_and_root(bufnr)
-    if not parser then
-        return {}
-    end
+    if not parser then return {} end
 
     local node = ast.node_at_position(bufnr, row, col)
-    if not node then
-        return {}
-    end
+    if not node then return {} end
 
     local scopes = ast.collect_ancestors(node, "function_definition")
 
@@ -46,67 +42,100 @@ local function get_enclosing_scopes(bufnr, row, col)
             break
         end
     end
-    if not has_root then
-        table.insert(scopes, root)
-    end
+    if not has_root then table.insert(scopes, root) end
 
     return scopes
 end
 
 --- Find a definition within a specific scope node using locals query
+--- Returns the last definition before the cursor position to handle shadowing correctly
 ---@param bufnr number Buffer number
 ---@param scope_node table Tree-sitter node representing a scope
 ---@param symbol string Symbol name to find
 ---@param is_root_scope boolean Whether this is the root/file scope
+---@param cursor_row? number Cursor row for shadowing resolution (0-indexed)
+---@param cursor_col? number Cursor column for shadowing resolution (0-indexed)
 ---@return SymbolDefinition|nil
-local function find_definition_with_locals(bufnr, scope_node, symbol, is_root_scope)
+local function find_definition_with_locals(
+    bufnr,
+    scope_node,
+    symbol,
+    is_root_scope,
+    cursor_row,
+    cursor_col
+)
     local ast = require("r.lsp.ast")
     local query = vim.treesitter.query.get("r", "locals")
     if not query then return nil end
 
     local file = vim.api.nvim_buf_get_name(bufnr)
 
+    -- Collect all matches, then return the last one before cursor (for shadowing)
+    local matches = {}
+
     for id, node in query:iter_captures(scope_node, bufnr) do
         if query.captures[id] == "local.definition" then
             local text = vim.treesitter.get_node_text(node, bufnr)
             if text == symbol then
-                local is_parameter = ast.find_ancestor(node, { "parameter", "argument" }) ~= nil
+                local is_parameter = ast.find_ancestor(node, { "parameter", "argument" })
+                    ~= nil
 
                 if not (is_parameter and is_root_scope) then
                     local start_row, start_col = node:start()
 
-                    local kind = 13
-                    local visibility = "private"
-
-                    if is_parameter then
-                        visibility = "parameter"
+                    -- Only consider definitions before cursor position
+                    local before_cursor = true
+                    if cursor_row then
+                        before_cursor = start_row < cursor_row
+                            or (start_row == cursor_row and start_col <= cursor_col)
                     end
 
-                    local binary_op = ast.find_ancestor(node, "binary_operator")
-                    if binary_op then
-                        local rhs = binary_op:field("rhs")[1]
-                        if rhs and rhs:type() == "function_definition" then
-                            kind = 12
+                    if before_cursor then
+                        local kind = 13
+                        local visibility = "private"
+
+                        if is_parameter then visibility = "parameter" end
+
+                        local binary_op = ast.find_ancestor(node, "binary_operator")
+                        if binary_op then
+                            local rhs = binary_op:field("rhs")[1]
+                            if rhs and rhs:type() == "function_definition" then
+                                kind = 12
+                            end
                         end
-                    end
 
-                    if is_root_scope and not is_parameter then
-                        visibility = "public"
-                    end
+                        if is_root_scope and not is_parameter then
+                            visibility = "public"
+                        end
 
-                    return {
-                        name = symbol,
-                        kind = kind,
-                        location = {
-                            file = file,
-                            line = start_row,
-                            col = start_col,
-                        },
-                        visibility = visibility,
-                    }
+                        table.insert(matches, {
+                            name = symbol,
+                            kind = kind,
+                            location = {
+                                file = file,
+                                line = start_row,
+                                col = start_col,
+                            },
+                            visibility = visibility,
+                            _row = start_row,
+                            _col = start_col,
+                        })
+                    end
                 end
             end
         end
+    end
+
+    -- Return the last match (handles shadowing)
+    if #matches > 0 then
+        table.sort(matches, function(a, b)
+            if a._row ~= b._row then return a._row > b._row end
+            return a._col > b._col
+        end)
+        local result = matches[1]
+        result._row = nil
+        result._col = nil
+        return result
     end
 
     return nil
@@ -151,14 +180,15 @@ local function find_definition_with_custom_query(
             if text == symbol then
                 local start_row, start_col = node:start()
                 -- Only consider assignments before the cursor
-                if start_row < cursor_row or (start_row == cursor_row and start_col <= cursor_col) then
+                if
+                    start_row < cursor_row
+                    or (start_row == cursor_row and start_col <= cursor_col)
+                then
                     local kind = 13
                     local binary_op = ast.find_ancestor(node, "binary_operator")
                     if binary_op then
                         local rhs = binary_op:field("rhs")[1]
-                        if rhs and rhs:type() == "function_definition" then
-                            kind = 12
-                        end
+                        if rhs and rhs:type() == "function_definition" then kind = 12 end
                     end
 
                     table.insert(matches, {
@@ -208,7 +238,14 @@ local function find_definition_in_scope(bufnr, scope_node, symbol, cursor_row, c
     local is_root_scope = (root and scope_node == root)
 
     -- First try the standard locals query
-    local def = find_definition_with_locals(bufnr, scope_node, symbol, is_root_scope)
+    local def = find_definition_with_locals(
+        bufnr,
+        scope_node,
+        symbol,
+        is_root_scope,
+        cursor_row,
+        cursor_col
+    )
     if def then return def end
 
     -- Fall back to custom query for <<- and other edge cases

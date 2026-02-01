@@ -31,10 +31,10 @@ void send_item_doc(const char *req_id, const char *doc) {
     char *fdoc = (char *)calloc(strlen(doc) + 1, sizeof(char));
     format(doc, fdoc, ' ', '\x14');
     char *edoc = esc_json(fdoc);
-    size_t len = sizeof(char) * (strlen(edoc) + 256);
+    size_t len = strlen(edoc) + strlen(last_item.item) + 128;
     char *res = (char *)malloc(len);
 
-    snprintf(res, len - 1, fmt, req_id, last_item.item, edoc);
+    snprintf(res, len, fmt, req_id, last_item.item, edoc);
 
     send_ls_response(req_id, res);
 
@@ -43,35 +43,35 @@ void send_item_doc(const char *req_id, const char *doc) {
     free(res);
 }
 
-static void get_alias(char **pkg, char **fun) {
+static void get_alias(char **pkg, char **fun, char **args) {
     char s[64];
     snprintf(s, 63, "%s\n", *fun);
     char *p;
     char *f;
-    PkgData *pd = pkgList;
-    if (**pkg != '#')
-        while (pd && !str_here(pd->name, *pkg))
-            pd = pd->next;
-    while (pd) {
-        if (pd->alias) {
-            p = pd->alias;
-            while (*p) {
-                f = p;
-                while (*f)
-                    f++;
+    LibList *lib = inst_libs;
+
+    Log("get_alias 1: %s, %s", *pkg, *fun);
+    while (lib && !str_here(lib->pkg->name, *pkg))
+        lib = lib->next;
+    if (lib && lib->pkg->alias) {
+        Log("get_alias 2: %s, %s, %s", *pkg, *fun, lib->pkg->name);
+        p = lib->pkg->alias;
+        while (*p) {
+            f = p;
+            while (*f)
                 f++;
-                if (*f && str_here(f, s)) {
-                    *pkg = pd->name;
-                    *fun = p;
-                    return;
-                }
-                p = f;
-                while (*p && *p != '\n')
-                    p++;
-                p++;
+            f++;
+            if (*f && str_here(f, s)) {
+                *args = lib->pkg->args;
+                *pkg = lib->pkg->name;
+                *fun = p;
+                return;
             }
+            p = f;
+            while (*p && *p != '\n')
+                p++;
+            p++;
         }
-        pd = pd->next;
     }
     *pkg = NULL;
 }
@@ -79,22 +79,19 @@ static void get_alias(char **pkg, char **fun) {
 static void resolve_lib_name(const char *req_id, const char *lbl) {
     Log("resolve_lib_name: %s, %s", req_id, lbl);
 
-    if (!instlibs)
-        return;
-
-    InstLibs *il;
-
-    il = instlibs;
-    while (il) {
-        if (strcmp(il->name, lbl) == 0) {
-            char *b = (char *)malloc(
-                sizeof(char) * (strlen(il->title) + strlen(il->descr) + 32));
-            sprintf(b, "**%s**\x14\x14%s\x14", il->title, il->descr);
+    LibList *lib = inst_libs;
+    while (lib) {
+        if (strcmp(lib->pkg->name, lbl) == 0) {
+            char *b =
+                (char *)malloc(sizeof(char) * (strlen(lib->pkg->title) +
+                                               strlen(lib->pkg->descr) + 32));
+            sprintf(b, "**%s**\x14\x14%s\x14", lib->pkg->title,
+                    lib->pkg->descr);
             send_item_doc(req_id, b);
             free(b);
             break;
         }
-        il = il->next;
+        lib = lib->next;
     }
 }
 
@@ -114,57 +111,49 @@ static void resolve_arg_item(const char *rid, const char *itm, char *pkg,
         a++;
     }
 
-    get_alias(&pkg, &fnm);
+    char *args;
+    get_alias(&pkg, &fnm, &args);
     if (!pkg)
         return;
-    PkgData *p = pkgList;
-    while (p) {
-        if (strcmp(p->name, pkg) == 0) {
-            if (p->args) {
-                char *s = p->args;
-                while (*s) {
-                    if (strcmp(s, fnm) == 0) {
-                        while (*s)
+    char *s = args;
+    while (*s) {
+        if (strcmp(s, fnm) == 0) {
+            while (*s)
+                s++;
+            while (*s != '\n') {
+                if (*s == 0) {
+                    while (*s != '\005') {
+                        // Look for \0 or ' ' because some arguments
+                        // share the same documentation item.
+                        // Example: lm()
+                        if (*s == 0 || *s == ' ') {
                             s++;
-                        while (*s != '\n') {
-                            if (*s == 0) {
-                                while (*s != '\005') {
-                                    // Look for \0 or ' ' because some arguments
-                                    // share the same documentation item.
-                                    // Example: lm()
-                                    if (*s == 0 || *s == ' ') {
+                            if (str_here(s, lbl)) {
+                                s += strlen(lbl);
+                                if (*s == '\005' || *s == ',') {
+                                    while (*s && *s != '\005')
                                         s++;
-                                        if (str_here(s, lbl)) {
-                                            s += strlen(lbl);
-                                            if (*s == '\005' || *s == ',') {
-                                                while (*s && *s != '\005')
-                                                    s++;
-                                                s++;
-                                                char *b = calloc(strlen(s) + 2,
-                                                                 sizeof(char));
-                                                format(s, b, ' ', '\x14');
-                                                send_item_doc(rid, b);
-                                                free(b);
-                                                return;
-                                            }
-                                        }
-                                    }
                                     s++;
+                                    char *b =
+                                        calloc(strlen(s) + 2, sizeof(char));
+                                    format(s, b, ' ', '\x14');
+                                    send_item_doc(rid, b);
+                                    free(b);
+                                    return;
                                 }
                             }
-                            s++;
                         }
-                        return;
-                    } else {
-                        while (*s != '\n')
-                            s++;
                         s++;
                     }
                 }
+                s++;
             }
-            break;
+            return;
+        } else {
+            while (*s != '\n')
+                s++;
+            s++;
         }
-        p = p->next;
     }
 }
 
@@ -183,18 +172,24 @@ static void resolve(const char *rid, const char *wrd, const char *pkg) {
     if (strcmp(pkg, ".GlobalEnv") == 0) {
         s = glbnv_buffer;
     } else {
-        PkgData *pd = pkgList;
-        while (pd) {
-            if (strcmp(pkg, pd->name) == 0)
+        LibList *lib;
+        if (strstr(wrd, "::")) {
+            lib = inst_libs;
+            wrd = strstr(wrd, "::") + 2;
+        } else {
+            lib = loaded_libs;
+        }
+        while (lib) {
+            if (strcmp(pkg, lib->pkg->name) == 0)
                 break;
             else
-                pd = pd->next;
+                lib = lib->next;
         }
 
-        if (pd == NULL)
+        if (!lib)
             return;
 
-        s = pd->objls;
+        s = lib->pkg->objls;
     }
 
     memset(res_buf, 0, res_buf_sz);

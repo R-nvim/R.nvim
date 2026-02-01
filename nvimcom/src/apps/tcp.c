@@ -68,8 +68,7 @@ static void ParseMsg(char *b) {
             break;
         case 'L':
             b++;
-            update_pkg_list(b);
-            build_objls();
+            update_loaded_libs(b);
             if (auto_obbr)
                 lib2ob();
             break;
@@ -389,7 +388,6 @@ static void get_whole_msg(char *b) {
     }
     *p = 0;
 
-    // FIXME: Delete this check when the code proved to be reliable
     if (strlen(finalbuffer) != msg_size) {
         fprintf(stderr, "Divergent TCP message size: %zu x %zu\n", strlen(p),
                 msg_size);

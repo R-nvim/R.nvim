@@ -4,22 +4,8 @@ local test_utils = require("./utils")
 describe("Scope module", function()
     local scope_module
 
-    -- Helper to setup test buffer with cursor position
     local function setup_test(content, cursor_pos)
-        local bufnr = test_utils.create_r_buffer_from_string(content, "r")
-        vim.api.nvim_set_current_buf(bufnr)
-        if cursor_pos then vim.api.nvim_win_set_cursor(0, cursor_pos) end
-
-        -- Ensure treesitter parser is loaded
-        vim.treesitter.language.add("r")
-        local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
-        if not ok or not parser then
-            pending("treesitter parser for R is not available")
-            return nil
-        end
-        parser:parse()
-
-        return bufnr
+        return test_utils.setup_lsp_test(content, cursor_pos)
     end
 
     before_each(function()
@@ -412,4 +398,3 @@ f1 <- function() {
         end)
     end)
 end)
-

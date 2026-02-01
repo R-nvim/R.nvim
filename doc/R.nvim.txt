@@ -2,7 +2,7 @@
 
 Authors: R.nvim team (see: https://github.com/R-nvim)
 
-Version: 0.99.2
+Version: 0.99.3
 For Neovim >= 0.11.4
 
  1. Overview                                    |R.nvim-overview|
@@ -117,6 +117,7 @@ Main dependencies:
       and Rnoweb documents: https://quarto.org/
 
    The R packages:
+      - `parallel`: to generate cache files for auto-completion.
       - `knitr`: to generate final documents from Rnoweb, Rmd or Quarto.
       - `quarto`: to generate final documents from Quarto.
       - `rmarkdown`: to generate final documents from Rmd.
@@ -460,8 +461,11 @@ In any case, the PDF viewer must be started by the R.nvim plugin. See
 ------------------------------------------------------------------------------
 4.3. Language server's completion
 
-R.nvim does not complete the names of all functions of all installed packages
-(see |start_libs|); only of loaded libraries.
+R.nvim completes the names of functions of loaded libraries (when R is not
+running, it completes function names listed in |start_libs|). The names of
+function of other installed packages are autocompleted if prefixed with
+`packagename::` (depending on the completion plugin, you may have to manually
+trigger the completion after the double colon).
 
 For both `library()` and `require()`, when completing the first argument, the
 popup list shows the names of installed packages.
@@ -1496,7 +1500,6 @@ Meaning of options:
   - `signature`: Enable the signature help provider
 
   - `implementation`: Enable the implementation provider
-  
   - `definition`: Enable the definition provider
 
   - `references`: Enable the references provider

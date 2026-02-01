@@ -273,38 +273,34 @@ void lib2ob(void) {
     fprintf(f, "Libraries | .GlobalEnv\n\n");
 
     char lbnmc[512];
-    PkgData *pkg;
     const char *p;
     char *pkg_descr;
-    int stt;
 
-    pkg = pkgList;
-    while (pkg) {
-        if (pkg->loaded) {
-            if (pkg->descr) {
-                pkg_descr =
-                    (char *)malloc(sizeof(char) * (strlen(pkg->descr) + 1));
-                strcpy(pkg_descr, pkg->descr);
-                replace_char(pkg_descr, '\x13', '\'');
-                fprintf(f, "   :#%s\t%s\n", pkg->name, pkg_descr);
-                free(pkg_descr);
-            } else {
-                fprintf(f, "   :#%s\t\n", pkg->name);
-            }
-            snprintf(lbnmc, 511, "%s:", pkg->name);
-            stt = get_list_status(lbnmc, 0);
-            if (pkg->objls && pkg->nobjs > 0 && stt == 1) {
-                p = pkg->objls;
-                nLibObjs = pkg->nobjs - 1;
-                while (*p) {
-                    if (nLibObjs == 0)
-                        p = write_ob_line(p, "", strL, 1, f);
-                    else
-                        p = write_ob_line(p, "", strT, 1, f);
-                }
+    LibList *lib = loaded_libs;
+    while (lib) {
+        if (lib->pkg->descr) {
+            pkg_descr =
+                (char *)malloc(sizeof(char) * (strlen(lib->pkg->descr) + 1));
+            strcpy(pkg_descr, lib->pkg->descr);
+            replace_char(pkg_descr, '\x13', '\'');
+            fprintf(f, "   :#%s\t%s\n", lib->pkg->name, pkg_descr);
+            free(pkg_descr);
+        } else {
+            fprintf(f, "   :#%s\t\n", lib->pkg->name);
+        }
+        snprintf(lbnmc, 511, "%s:", lib->pkg->name);
+        int stt = get_list_status(lbnmc, 0);
+        if (lib->pkg->objls && lib->pkg->nobjs > 0 && stt == 1) {
+            p = lib->pkg->objls;
+            nLibObjs = lib->pkg->nobjs - 1;
+            while (*p) {
+                if (nLibObjs == 0)
+                    p = write_ob_line(p, "", strL, 1, f);
+                else
+                    p = write_ob_line(p, "", strT, 1, f);
             }
         }
-        pkg = pkg->next;
+        lib = lib->next;
     }
 
     fclose(f);

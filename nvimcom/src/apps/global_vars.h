@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include "data_structures.h"
 
-extern InstLibs *instlibs;    // Pointer to first installed library
-extern PkgData *pkgList;      // Pointer to first package data
+extern LibList *inst_libs;    // Pointer to first package data
+extern LibList *loaded_libs;  // Pointer to loaded library
 extern char *glbnv_buffer;    // Global environment buffer
 extern char localtmpdir[256]; // Local temporary directory
 extern char tmpdir[256];      // Temporary directory
