@@ -16,3 +16,4 @@ resources/*.pyc
 resources/tree-sitter-rout/src
 .tests
 deps
+.direnv
