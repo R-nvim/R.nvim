@@ -453,20 +453,29 @@ function M.complete(req_id, lnum, cnum)
                 end
                 msg = msg .. ")"
                 send_to_nvimcom("E", msg)
-            elseif nra.listdf then
-                local df_name
-                if nra.listdf == 1 or nra.listdf == 3 then
-                    df_name = nra.firstobj
+            else
+                if nra.listdf then
+                    local df_name
+                    if nra.listdf == 1 or nra.listdf == 3 then
+                        df_name = nra.firstobj
+                    else
+                        df_name = nra.firstobj2
+                    end
+                    M.send_msg({
+                        code = "5",
+                        orig_id = req_id,
+                        base = wrd,
+                        fnm = nra.fnm,
+                        df = df_name,
+                    })
                 else
-                    df_name = nra.firstobj2
+                    M.send_msg({
+                        code = "5",
+                        orig_id = req_id,
+                        base = wrd,
+                        fnm = nra.fnm,
+                    })
                 end
-                M.send_msg({
-                    code = "5",
-                    orig_id = req_id,
-                    base = wrd,
-                    fnm = nra.fnm,
-                    df = df_name,
-                })
             end
             return
         end
