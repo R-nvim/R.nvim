@@ -469,13 +469,15 @@ M.insert_commented = function()
         end
     end
 
-    -- Collect and clean lines
+    -- Collect and clean lines (join with space — newlines break the transport layer)
     local lines = vim.api.nvim_buf_get_lines(bufnr, first - 1, last, true)
     local cleaned = {}
     for _, l in ipairs(lines) do
-        table.insert(cleaned, (l:gsub("%s*#.*$", "")))
+        local stripped = l:gsub("%s*#.*$", "")
+        stripped = vim.trim(stripped)
+        if stripped ~= "" then table.insert(cleaned, stripped) end
     end
-    local code = table.concat(cleaned, "\n")
+    local code = table.concat(cleaned, " ")
 
     -- Validate: no semicolons
     local check = code:gsub('".-"', "")
