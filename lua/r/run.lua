@@ -433,13 +433,62 @@ M.insert = function(cmd, type)
 end
 
 M.insert_commented = function()
-    local lin = vim.api.nvim_get_current_line()
-    local cleanl = lin:gsub('".-"', "")
-    if cleanl:find(";") then
+    local cur_line = vim.api.nvim_win_get_cursor(0)[1]
+    local bufnr = vim.api.nvim_get_current_buf()
+    local total_lines = vim.api.nvim_buf_line_count(bufnr)
+
+    -- Helper: does this line end with a pipe operator?
+    local ends_with_pipe = function(line)
+        local clean = line:gsub("%s*#.*$", ""):gsub("%s+$", "")
+        return clean:match("%%>%%$")
+            or clean:match("%%<>%%$")
+            or clean:match("%%T>%%$")
+            or clean:match("|>$")
+            or clean:match("%+$")
+    end
+
+    -- Walk up: find the first line of the chain
+    local first = cur_line
+    while first > 1 do
+        local prev = vim.api.nvim_buf_get_lines(bufnr, first - 2, first - 1, true)[1]
+        if ends_with_pipe(prev) then
+            first = first - 1
+        else
+            break
+        end
+    end
+
+    -- Walk down: find the last line of the chain
+    local last = cur_line
+    while last < total_lines do
+        local cur = vim.api.nvim_buf_get_lines(bufnr, last - 1, last, true)[1]
+        if ends_with_pipe(cur) then
+            last = last + 1
+        else
+            break
+        end
+    end
+
+    -- Collect and clean lines
+    local lines = vim.api.nvim_buf_get_lines(bufnr, first - 1, last, true)
+    local cleaned = {}
+    for _, l in ipairs(lines) do
+        table.insert(cleaned, (l:gsub("%s*#.*$", "")))
+    end
+    local code = table.concat(cleaned, "\n")
+
+    -- Validate: no semicolons
+    local check = code:gsub('".-"', "")
+    if check:find(";") then
         warn("`print(line)` works only if `line` is a single command")
     end
-    cleanl = string.gsub(lin, "%s*#.*", "")
-    M.insert("print(" .. cleanl .. ")", "comment")
+
+    -- Move cursor to the last line so output is inserted below the chain
+    if last ~= cur_line then
+        vim.api.nvim_win_set_cursor(0, { last, 0 })
+    end
+
+    M.insert("print(" .. code .. ")", "comment")
 end
 
 ---Call R functions for the word under cursor
