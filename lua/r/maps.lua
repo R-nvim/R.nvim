@@ -9,6 +9,8 @@ local map_desc = {
     RSaveClose          = { m = "", k = "", c = "Start",    d = "Quit R, saving the workspace" },
     RClose              = { m = "", k = "", c = "Start",    d = "Send to R: quit(save = 'no')" },
     RStart              = { m = "", k = "", c = "Start",    d = "Start R with default configuration or reopen terminal window" },
+    RStartHorizontal    = { m = "", k = "", c = "Start",    d = "Start R in a horizontal split (50/50)" },
+    RStartVertical      = { m = "", k = "", c = "Start",    d = "Start R in a vertical split (50/50)" },
     RInsertAssign       = { m = "", k = "", c = "Edit",     d = "Insert ` <- `" },
     RInsertPipe         = { m = "", k = "", c = "Edit",     d = "Insert ` |>` (or ` %>%`)" },
     ROpenPDF            = { m = "", k = "", c = "Edit",     d = "Open the PDF generated from the current document" },
@@ -229,8 +231,10 @@ end
 
 local start = function()
     -- Start
-    create_maps("nvi", "RStart",       "rf", "<Cmd>lua require('r.run').start_R('R')")
-    create_maps("nvi", "RCustomStart", "rc", "<Cmd>lua require('r.run').start_R('custom')")
+    create_maps("nvi", "RStart",           "rf",  "<Cmd>lua require('r.run').start_R('R')")
+    create_maps("nvi", "RCustomStart",     "rc",  "<Cmd>lua require('r.run').start_R('custom')")
+    create_maps("nvi", "RStartHorizontal", "rfh", "<Cmd>lua require('r.run').start_R('R', 'horizontal')")
+    create_maps("nvi", "RStartVertical",   "rfv", "<Cmd>lua require('r.run').start_R('R', 'vertical')")
 
     -- Close
     create_maps("nvi", "RClose",       "rq", "<Cmd>lua require('r.run').quit_R('nosave')")

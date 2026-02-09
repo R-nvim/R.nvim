@@ -7,6 +7,7 @@ local send = require("r.send")
 local cursor = require("r.cursor")
 local hooks = require("r.hooks")
 local what_R = "R"
+local split_override = nil
 local R_pid = 0
 local r_args
 local nseconds
@@ -134,7 +135,8 @@ start_R2 = function()
     end
 
     if config.external_term == "" then
-        require("r.term.builtin").start()
+        require("r.term.builtin").start(split_override)
+        split_override = nil
         return
     end
 
@@ -180,10 +182,10 @@ M.set_rns_port = function(p)
     vim.env.RNVIM_PORT = p
 end
 
-M.start_R = function(whatr)
+M.start_R = function(whatr, split)
     -- R started and nvimcom loaded
     if vim.g.R_Nvim_status == 7 then
-        if config.external_term == "" then require("r.term.builtin").reopen_win() end
+        if config.external_term == "" then require("r.term.builtin").reopen_win(split) end
         return
     end
 
@@ -218,6 +220,7 @@ M.start_R = function(whatr)
         require("r.send").set_send_cmd_fun()
         require("r.lsp").send_msg({ code = "1" })
         what_R = whatr
+        split_override = split
         vim.fn.timer_start(30, start_R2)
         return
     end

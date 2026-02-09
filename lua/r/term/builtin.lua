@@ -68,7 +68,18 @@ M.close_term = function()
     r_bufnr = nil
 end
 
-local split_window = function()
+local split_window = function(direction)
+    if direction == "horizontal" then
+        local height = math.floor(vim.o.lines / 2)
+        vim.cmd("silent exe 'belowright " .. height .. "new'")
+        return
+    elseif direction == "vertical" then
+        local width = math.floor(vim.o.columns / 2)
+        vim.cmd("silent exe 'belowright " .. width .. "vnew'")
+        return
+    end
+
+    -- Original logic when no direction override
     local nw = vim.o.number and vim.o.numberwidth or 0
     local sw = config.rconsole_width + config.min_editor_width + 1 + nw
     if config.rconsole_width > 0 and vim.fn.winwidth(0) > sw then
@@ -92,7 +103,7 @@ local split_window = function()
     end
 end
 
-M.reopen_win = function()
+M.reopen_win = function(direction)
     if not r_bufnr then return end
     local wlist = vim.api.nvim_list_wins()
     for _, wnr in ipairs(wlist) do
@@ -102,18 +113,18 @@ M.reopen_win = function()
         end
     end
     local edbuf = vim.api.nvim_get_current_buf()
-    split_window()
+    split_window(direction)
     vim.api.nvim_win_set_buf(0, r_bufnr)
     vim.cmd.sb(edbuf)
 end
 
-M.start = function()
+M.start = function(direction)
     vim.g.R_Nvim_status = 6
 
     local edbuf = vim.api.nvim_get_current_buf()
     vim.o.switchbuf = "useopen"
 
-    split_window()
+    split_window(direction)
 
     if config.is_windows then require("r.windows").set_R_home() end
     require("r.job").R_term_open(config.R_app .. " " .. require("r.run").get_r_args())
