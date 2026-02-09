@@ -433,13 +433,39 @@ M.insert = function(cmd, type)
 end
 
 M.insert_commented = function()
-    local lin = vim.api.nvim_get_current_line()
-    local cleanl = lin:gsub('".-"', "")
-    if cleanl:find(";") then
+    local bufnr = require("r.buffer").create_r_buffer()
+    local code, end_row
+
+    if bufnr then
+        code, end_row = send.get_pipe_chain(bufnr, true)
+    end
+
+    if code then
+        -- Strip comments and collapse to single line
+        local lines = {}
+        for line in code:gmatch("[^\n]+") do
+            local stripped = line:gsub("%s*#.*", "")
+            if stripped:match("%S") then
+                table.insert(lines, stripped)
+            end
+        end
+        code = table.concat(lines, " ")
+        -- Move cursor to end of chain
+        if end_row then
+            vim.api.nvim_win_set_cursor(0, { end_row, 0 })
+        end
+    else
+        -- Fallback to single line
+        code = vim.api.nvim_get_current_line():gsub("%s*#.*", "")
+    end
+
+    if not code:match("%S") then return end
+
+    local check = code:gsub('".-"', "")
+    if check:find(";") then
         warn("`print(line)` works only if `line` is a single command")
     end
-    cleanl = string.gsub(lin, "%s*#.*", "")
-    M.insert("print(" .. cleanl .. ")", "comment")
+    M.insert("print(" .. code .. ")", "comment")
 end
 
 ---Call R functions for the word under cursor
