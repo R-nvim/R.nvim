@@ -444,25 +444,47 @@ M.insert_commented = function()
             or clean:match("%%<>%%$")
             or clean:match("%%T>%%$")
             or clean:match("|>$")
-            or clean:match("%+$")
+    end
+
+    -- Count occurrences of a pattern in a string
+    local count_pat = function(s, pat)
+        local _, n = s:gsub(pat, "")
+        return n
     end
 
     -- Walk up: find the first line of the chain
+    -- Track paren depth (reversed): `)` needs `(` above
     local first = cur_line
-    while first > 1 do
-        local prev = vim.api.nvim_buf_get_lines(bufnr, first - 2, first - 1, true)[1]
-        if ends_with_pipe(prev) then
+    local paren_depth = 0
+    while first >= 1 do
+        local line = vim.api.nvim_buf_get_lines(bufnr, first - 1, first, true)[1]
+        local clean = line:gsub("%s*#.*$", "")
+        paren_depth = paren_depth + count_pat(clean, "%)") - count_pat(clean, "%(")
+        if first == 1 then break end
+        if paren_depth > 0 then
             first = first - 1
         else
-            break
+            local prev = vim.api.nvim_buf_get_lines(bufnr, first - 2, first - 1, true)[1]
+            if ends_with_pipe(prev) then
+                first = first - 1
+            else
+                break
+            end
         end
     end
 
-    -- Walk down: find the last line of the chain
-    local last = cur_line
-    while last < total_lines do
+    -- Walk down from first: find the last line of the chain
+    -- Track paren depth (forward): `(` opens, `)` closes
+    local last = first
+    paren_depth = 0
+    while last <= total_lines do
         local cur = vim.api.nvim_buf_get_lines(bufnr, last - 1, last, true)[1]
-        if ends_with_pipe(cur) then
+        local clean = cur:gsub("%s*#.*$", "")
+        paren_depth = paren_depth + count_pat(clean, "%(") - count_pat(clean, "%)")
+        if last == total_lines then break end
+        if paren_depth > 0 then
+            last = last + 1
+        elseif ends_with_pipe(cur) then
             last = last + 1
         else
             break
