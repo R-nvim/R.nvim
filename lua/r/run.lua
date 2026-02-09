@@ -482,9 +482,7 @@ M.insert_commented = function()
         local clean = cur:gsub("%s*#.*$", "")
         paren_depth = paren_depth + count_pat(clean, "%(") - count_pat(clean, "%)")
         if last == total_lines then break end
-        if paren_depth > 0 then
-            last = last + 1
-        elseif ends_with_pipe(cur) then
+        if paren_depth > 0 or ends_with_pipe(cur) then
             last = last + 1
         else
             break
