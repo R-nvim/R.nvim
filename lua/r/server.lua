@@ -10,7 +10,7 @@ local o_err = {}
 local rhelp_list = {}
 local lob = {}
 local pkgbuild_attempt = false
-local libs_in_rns = ""
+local new_libs_in_rns = ""
 local building_objls = false
 local check_executable = require("r.utils").check_executable
 
@@ -305,9 +305,9 @@ end
 
 -- Add words to the completion list of :Rhelp
 local fill_Rhelp_list = function()
-    libs_in_rns = string.gsub(libs_in_rns, " *$", "")
-    local libs = vim.split(libs_in_rns, ",", { trimempty = true })
-    libs_in_rns = ""
+    new_libs_in_rns = string.gsub(new_libs_in_rns, " *$", "")
+    local libs = vim.split(new_libs_in_rns, ",", { trimempty = true })
+    new_libs_in_rns = ""
     M.rhelp_list = {}
 
     for _, v in pairs(libs) do
@@ -335,7 +335,7 @@ end
 --- _   number Cursor position in complete command line.
 M.list_objs = function(arg, _, _)
     if arg == "" then return rhelp_list end
-    if libs_in_rns ~= "" then fill_Rhelp_list() end
+    if new_libs_in_rns ~= "" then fill_Rhelp_list() end
     lob = {}
     for _, xx in ipairs(rhelp_list) do
         if xx:find(arg, 1, true) then table.insert(lob, xx) end
@@ -347,7 +347,7 @@ end
 ---support auto completion of default libraries' objects.
 ---@param libnames string
 M.update_Rhelp_list = function(libnames)
-    libs_in_rns = libnames
+    new_libs_in_rns = libnames
     if
         vim.g.R_Nvim_status == 3
         and (
@@ -450,7 +450,7 @@ end
 
 M.echo_rns_info = function()
     local tbl = { { "Loaded libraries", "Title" }, { ":\n" } }
-    local lines = vim.split(libs_in_rns, ",")
+    local lines = vim.split(new_libs_in_rns, ",")
     for _, v in pairs(lines) do
         table.insert(tbl, { "  " .. v .. "\n" })
     end
