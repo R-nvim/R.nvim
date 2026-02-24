@@ -7,9 +7,10 @@ local b_err = {}
 local b_out = {}
 local b_time
 local o_err = {}
-local pkgbuild_attempt = false
-local libs_in_rns = ""
 local rhelp_list = {}
+local lob = {}
+local pkgbuild_attempt = false
+local new_libs_in_rns = ""
 local building_objls = false
 local check_executable = require("r.utils").check_executable
 
@@ -172,7 +173,9 @@ local start_rnvimserver = function()
     if not config.r_ls.hover then table.insert(disable_parts, "hover") end
     if not config.r_ls.definition then table.insert(disable_parts, "definition") end
     if not config.r_ls.references then table.insert(disable_parts, "references") end
-    if not config.r_ls.implementation then table.insert(disable_parts, "implementation") end
+    if not config.r_ls.implementation then
+        table.insert(disable_parts, "implementation")
+    end
     local disable = table.concat(disable_parts)
     rns_env.R_LS_DISABLE = disable
 
@@ -302,13 +305,13 @@ end
 
 -- Add words to the completion list of :Rhelp
 local fill_Rhelp_list = function()
-    libs_in_rns = string.gsub(libs_in_rns, " *$", "")
-    local libs = vim.split(libs_in_rns, "\003", { trimempty = true })
-    libs_in_rns = ""
-    rhelp_list = {}
+    new_libs_in_rns = string.gsub(new_libs_in_rns, " *$", "")
+    local libs = vim.split(new_libs_in_rns, ",", { trimempty = true })
+    new_libs_in_rns = ""
+    M.rhelp_list = {}
 
     for _, v in pairs(libs) do
-        local omf = config.compldir .. "/args_" .. v
+        local omf = config.compldir .. "/alias_" .. v
 
         -- List of objects
         local olist = vim.fn.readfile(omf)
@@ -316,10 +319,10 @@ local fill_Rhelp_list = function()
         -- Some libraries have no functions
         if #olist > 0 then
             -- List of objects for :Rhelp completion
-            for _, xx in ipairs(olist) do
-                local xxx = vim.fn.split(xx, "\006")
-                if #xxx > 0 and not string.match(xxx[1], "%$") then
-                    table.insert(rhelp_list, xxx[1])
+            for k, xx in ipairs(olist) do
+                if k > 1 then
+                    local xxx = vim.fn.split(xx, "\006")
+                    if #xxx == 2 then table.insert(rhelp_list, xxx[2]) end
                 end
             end
         end
@@ -331,10 +334,11 @@ end
 --- _   string The complete command line, including "Rhelp".
 --- _   number Cursor position in complete command line.
 M.list_objs = function(arg, _, _)
-    if libs_in_rns ~= "" then fill_Rhelp_list() end
-    local lob = {}
+    if arg == "" then return rhelp_list end
+    if new_libs_in_rns ~= "" then fill_Rhelp_list() end
+    lob = {}
     for _, xx in ipairs(rhelp_list) do
-        if xx:sub(1, 1) == arg:sub(1, 1) then table.insert(lob, xx) end
+        if xx:find(arg, 1, true) then table.insert(lob, xx) end
     end
     return lob
 end
@@ -343,7 +347,7 @@ end
 ---support auto completion of default libraries' objects.
 ---@param libnames string
 M.update_Rhelp_list = function(libnames)
-    libs_in_rns = libnames
+    new_libs_in_rns = libnames
     if
         vim.g.R_Nvim_status == 3
         and (
@@ -446,7 +450,7 @@ end
 
 M.echo_rns_info = function()
     local tbl = { { "Loaded libraries", "Title" }, { ":\n" } }
-    local lines = vim.split(libs_in_rns, ",")
+    local lines = vim.split(new_libs_in_rns, ",")
     for _, v in pairs(lines) do
         table.insert(tbl, { "  " .. v .. "\n" })
     end
