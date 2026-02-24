@@ -19,6 +19,7 @@ typedef struct pkg_data_ {
     char *alias;   // A copy of the alias_ file
     char *objls;   // A copy of the objls_ file
     char *args;    // A copy of the args_ file
+    char *srcref;  // A copy of the srcref_ file (source references)
     int nobjs;     // Number of objects in objls
 } PkgData;
 

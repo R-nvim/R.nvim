@@ -1,7 +1,7 @@
 CC=gcc
 TARGET=rnvimserver.exe
 CFLAGS = -mwindows -std=gnu99 -O3 -Wall -DWIN32
-SRCS = complete.c resolve.c hover.c signature.c rhelp.c chunk.c data_structures.c logging.c rnvimserver.c obbr.c tcp.c utilities.c ../common.c
+SRCS = complete.c resolve.c hover.c definition.c signature.c rhelp.c chunk.c data_structures.c logging.c rnvimserver.c obbr.c tcp.c utilities.c ../common.c
 LIBS=-lWs2_32
 
 ifeq "$(WIN)" "64"

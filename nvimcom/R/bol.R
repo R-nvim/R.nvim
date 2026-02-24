@@ -531,11 +531,31 @@ nvim.buildargs <- function(afile, pkg) {
     return(invisible(NULL))
 }
 
+#' Build source reference cache for all functions in a package.
+#' @param srcref_file Full path of the `srcref_` file to be built.
+#' @param libname Library name.
+nvim.build.srcref <- function(srcref_file, libname) {
+    packname <- paste0("package:", libname)
+    obj.list <- objects(packname, all.names = TRUE)
+    sink(srcref_file, append = FALSE)
+    for (obj in obj.list) {
+        fn <- try(get(obj, envir = as.environment(packname)), silent = TRUE)
+        if (inherits(fn, "try-error") || !is.function(fn)) next
+        sr <- getSrcref(fn)
+        if (is.null(sr)) next
+        srcfile <- getSrcFilename(sr, full.names = TRUE)
+        if (!nzchar(srcfile) || !file.exists(srcfile)) next
+        cat(obj, "\006", srcfile, "\006", sr[1], "\006", sr[5], "\n", sep = "")
+    }
+    sink()
+}
+
 #' Build data files for auto completion and for the Object Browser in the
 #' cache directory:
 #'   - `alias_` : for finding the appropriate function during auto completion.
 #'   - `objls_` : for auto completion and object browser
 #'   - `args_`  : for describing selected arguments during auto completion.
+#'   - `srcref_`: for source reference of functions (goto definition).
 #' @param cmpllist Full path of `objls_` file to be built.
 #' @param libname Library name.
 nvim.bol <- function(cmpllist, libname) {
@@ -611,6 +631,7 @@ nvim.build.cmplls <- function() {
         unlink(file.path(bdir, paste("objls", u$pkg, u$cvrs, sep = "_")))
         unlink(file.path(bdir, paste("alias", u$pkg, sep = "_")))
         unlink(file.path(bdir, paste("args", u$pkg, sep = "_")))
+        unlink(file.path(bdir, paste("srcref", u$pkg, u$cvrs, sep = "_")))
     }
 
     # Delete outdated cache files
@@ -619,6 +640,7 @@ nvim.build.cmplls <- function() {
         unlink(file.path(bdir, paste("objls", o$pkg, o$cvrs, sep = "_")))
         unlink(file.path(bdir, paste("alias", o$pkg, sep = "_")))
         unlink(file.path(bdir, paste("args", o$pkg, sep = "_")))
+        unlink(file.path(bdir, paste("srcref", o$pkg, o$cvrs, sep = "_")))
     }
 
     # Build missing or outdated cache files
@@ -639,6 +661,7 @@ nvim.build.cmplls <- function() {
         t2 <- Sys.time()
         nvim.buildargs(paste0(bdir, "/args_", p), p)
         t3 <- Sys.time()
+        nvim.build.srcref(paste0(bdir, "/srcref_", p, "_", pvi), p)
         msg <- paste0(
             "INFO: ",
             p,

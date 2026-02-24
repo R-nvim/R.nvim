@@ -9,6 +9,7 @@
 #include "complete.h"
 #include "resolve.h"
 #include "hover.h"
+#include "definition.h"
 #include "signature.h"
 #include "tcp.h"
 #include "obbr.h"
@@ -298,6 +299,9 @@ static void handle_exe_cmd(const char *params) {
         break;
     case 'H':
         hover(params);
+        break;
+    case 'G':
+        definition(params);
         break;
     case 'S':
         signature(params);
