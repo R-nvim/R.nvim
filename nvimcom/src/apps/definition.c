@@ -51,19 +51,17 @@ static int seek_srcref(const char *srcref, const char *symbol,
 
 static void send_definition_location(const char *req_id, const char *filepath,
                                      int line, int col) {
-    const char *fmt =
-        "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
-        "{\"uri\":\"file://%s\",\"range\":{\"start\":"
-        "{\"line\":%d,\"character\":%d},\"end\":"
-        "{\"line\":%d,\"character\":%d}}}}";
+    const char *fmt = "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
+                      "{\"uri\":\"file://%s\",\"range\":{\"start\":"
+                      "{\"line\":%d,\"character\":%d},\"end\":"
+                      "{\"line\":%d,\"character\":%d}}}}";
 
     size_t len = strlen(filepath) + strlen(req_id) + 256;
     char *res = (char *)malloc(len);
     int lsp_line = line - 1;
     if (lsp_line < 0)
         lsp_line = 0;
-    snprintf(res, len - 1, fmt, req_id, filepath, lsp_line, col, lsp_line,
-             col);
+    snprintf(res, len - 1, fmt, req_id, filepath, lsp_line, col, lsp_line, col);
     send_ls_response(req_id, res);
     free(res);
 }
@@ -78,13 +76,12 @@ static void send_definition_location(const char *req_id, const char *filepath,
  *
  * @return 1 if handled (response sent or R fallback dispatched), 0 otherwise.
  */
-static int try_resolve(const char *id, const char *symbol,
-                       const char *pkg_name, PkgData *pkg) {
+static int try_resolve(const char *id, const char *symbol, const char *pkg_name,
+                       PkgData *pkg) {
     const char *file;
     int line, col;
 
-    if (pkg->srcref &&
-        seek_srcref(pkg->srcref, symbol, &file, &line, &col)) {
+    if (pkg->srcref && seek_srcref(pkg->srcref, symbol, &file, &line, &col)) {
         send_definition_location(id, file, line, col);
         return 1;
     }
@@ -127,9 +124,8 @@ void definition(const char *params) {
         }
         if (r_running) {
             char cmd[512];
-            snprintf(cmd, 511,
-                     "nvimcom:::send_definition('%s', '%s', '%s')", id, pkg,
-                     symbol);
+            snprintf(cmd, 511, "nvimcom:::send_definition('%s', '%s', '%s')",
+                     id, pkg, symbol);
             nvimcom_eval(cmd);
             return;
         }
