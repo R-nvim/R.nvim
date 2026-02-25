@@ -540,11 +540,17 @@ nvim.build.srcref <- function(srcref_file, libname) {
     sink(srcref_file, append = FALSE)
     for (obj in obj.list) {
         fn <- try(get(obj, envir = as.environment(packname)), silent = TRUE)
-        if (inherits(fn, "try-error") || !is.function(fn)) next
+        if (inherits(fn, "try-error") || !is.function(fn)) {
+            next
+        }
         sr <- getSrcref(fn)
-        if (is.null(sr)) next
+        if (is.null(sr)) {
+            next
+        }
         srcfile <- getSrcFilename(sr, full.names = TRUE)
-        if (!nzchar(srcfile) || !file.exists(srcfile)) next
+        if (!nzchar(srcfile) || !file.exists(srcfile)) {
+            next
+        }
         cat(obj, "\006", srcfile, "\006", sr[1], "\006", sr[5], "\n", sep = "")
     }
     sink()
