@@ -428,7 +428,7 @@ nvim.interlace.rmd <- function(Rmdfile, outform = NULL, rmddir, ...) {
     } else {
         if (exists("params", envir = .GlobalEnv)) {
             old_params <- get("params", envir = .GlobalEnv)
-            rm(params, envir = .GlobalEnv)
+            rm("params", envir = .GlobalEnv)
         }
         res <- rmarkdown::render(Rmdfile, outform, ...)
         if (exists("old_params", inherits = FALSE)) {

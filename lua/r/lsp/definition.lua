@@ -99,26 +99,6 @@ local function parse_qualified_name_at_cursor(bufnr, row, col)
     return nil, word, false
 end
 
---- Find definition in R package source
---- Communicates with nvimcom to get source location
----@param pkg string Package name
----@param symbol string Function/object name
----@param req_id string Request ID for async response
-function M.find_in_package(pkg, symbol, req_id)
-    if vim.g.R_Nvim_status ~= 7 then
-        -- R is not running, can't query packages; respond immediately
-        utils.send_null(req_id)
-        return "pending"
-    end
-
-    -- Send request to nvimcom to get source reference
-    local cmd =
-        string.format("nvimcom:::send_definition('%s', '%s', '%s')", req_id, pkg, symbol)
-    require("r.run").send_to_nvimcom("E", cmd)
-    -- Response will be sent back asynchronously
-    return "pending"
-end
-
 --- Main entry point for goto definition
 --- Called from rnvimserver via client/exeRnvimCmd
 ---@param req_id string LSP request ID
@@ -167,34 +147,19 @@ function M.goto_definition(req_id)
         return
     end
 
-    -- 3. Try package lookup if R is running
-    if vim.g.R_Nvim_status == 7 then
-        -- If qualified (pkg::fn), use that package
-        -- Otherwise, let nvimcom search loaded packages
+    -- 3. Try rnvimserver lookup
+    if vim.g.R_Nvim_status >= 2 then
         local target_pkg = pkg or ""
-        M.find_in_package(target_pkg, symbol, req_id)
+        require("r.lsp").send_msg({
+            code = "G",
+            orig_id = req_id,
+            symbol = symbol,
+            pkg = target_pkg,
+        })
         return
     end
 
     utils.send_null(req_id)
-end
-
---- Handle definition response from nvimcom
---- Called when nvimcom sends back source location
----@param req_id string Request ID
----@param filepath string? File path or nil
----@param line integer? Line number (1-indexed from R)
----@param col integer? Column number
-function M.handle_definition_response(req_id, filepath, line, col)
-    if filepath and filepath ~= "" then
-        utils.send_response("D", req_id, {
-            uri = "file://" .. filepath,
-            line = (line or 1) - 1, -- Convert to 0-indexed
-            col = (col or 1) - 1,
-        })
-    else
-        utils.send_null(req_id)
-    end
 end
 
 return M

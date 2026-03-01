@@ -138,7 +138,8 @@ static void ParseMsg(char *b) {
                             "{\"line\":%d,\"character\":%d}}}}";
                         size_t len = strlen(def_file) + strlen(def_id) + 256;
                         char *res = (char *)malloc(len);
-                        snprintf(res, len - 1, fmt, def_id, def_file, line, col, line, col);
+                        snprintf(res, len - 1, fmt, def_id, def_file, line, col,
+                                 line, col);
                         send_ls_response(def_id, res);
                         free(res);
                     }
@@ -162,18 +163,21 @@ static void ParseMsg(char *b) {
                     char *result = (char *)malloc(result_size);
                     char *p = result;
                     p += snprintf(p, result_size,
-                        "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":[", multi_id);
+                                  "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":[",
+                                  multi_id);
 
                     for (int i = 0; i < count; i++) {
                         char *m_file = b;
                         b = strstr(b, "|");
-                        if (!b) break;
+                        if (!b)
+                            break;
                         *b = '\0';
                         b++;
 
                         char *m_line_str = b;
                         b = strstr(b, "|");
-                        if (!b) break;
+                        if (!b)
+                            break;
                         *b = '\0';
                         b++;
 
@@ -184,13 +188,15 @@ static void ParseMsg(char *b) {
                             b = next + 1;
                         }
 
-                        int m_line = atoi(m_line_str) - 1; // 1-indexed to 0-indexed
+                        int m_line =
+                            atoi(m_line_str) - 1; // 1-indexed to 0-indexed
                         int m_col = atoi(m_col_str);
 
                         if (i > 0) {
                             p += snprintf(p, result_size - (p - result), ",");
                         }
-                        p += snprintf(p, result_size - (p - result),
+                        p += snprintf(
+                            p, result_size - (p - result),
                             "{\"uri\":\"file://%s\",\"range\":{\"start\":"
                             "{\"line\":%d,\"character\":%d},\"end\":"
                             "{\"line\":%d,\"character\":%d}}}",

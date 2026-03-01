@@ -8,8 +8,8 @@ importFrom("methods", "existsFunction", "isGeneric", "slotNames")
 importFrom("graphics", "boxplot", "hist", "par", "plot")
 importFrom("stats", "runif")
 importFrom("utils", "browseURL", "capture.output", "example", "find",
-           "getAnywhere", "getS3method", "isS3stdGeneric",
-           "installed.packages", "methods", "packageDescription",
-           "read.table", "str", "Sweave", "write.table")
+           "getAnywhere", "getS3method", "getSrcFilename", "getSrcref",
+           "isS3stdGeneric", "installed.packages", "methods",
+           "packageDescription", "read.table", "str", "Sweave", "write.table")
 importFrom("parallel", "detectCores", "mclapply")
 useDynLib(nvimcom, .registration = TRUE)

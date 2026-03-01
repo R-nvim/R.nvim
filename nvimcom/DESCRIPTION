@@ -1,9 +1,12 @@
 Package: nvimcom
-Version: 0.9.86
-Date: 2026-01-31
+Version: 0.9.87
+Date: 2026-03-01
 Title: Intermediate the Communication Between R and Neovim
-Author: Jakson Aquino
-Maintainer: Jakson Alves de Aquino <jalvesaq@gmail.com>
+Authors@R: c(
+    person("Jakson", "Aquino", email = "jalvesaq@gmail.com",
+           role = c("aut", "cre")),
+    person("Philippe", "Massicotte", email = "pmassicotte@hotmail.com",
+           role = "aut"))
 Depends: R (>= 4.1.0)
 Suggests: knitr, rmarkdown, quarto
 Imports: methods, tools

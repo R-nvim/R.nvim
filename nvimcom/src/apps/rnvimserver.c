@@ -9,6 +9,7 @@
 #include "complete.h"
 #include "resolve.h"
 #include "hover.h"
+#include "definition.h"
 #include "signature.h"
 #include "tcp.h"
 #include "obbr.h"
@@ -299,6 +300,9 @@ static void handle_exe_cmd(const char *params) {
     case 'H':
         hover(params);
         break;
+    case 'G':
+        definition(params);
+        break;
     case 'S':
         signature(params);
         break;
@@ -455,7 +459,8 @@ static void handle_implementation(const char *id) {
     send_cmd_to_nvim(i_cmd);
 }
 
-// Generic function to handle location-based LSP responses (definition, references, implementation)
+// Generic function to handle location-based LSP responses (definition,
+// references, implementation)
 static void send_location_result(const char *params) {
     // IMPORTANT: Search for ALL fields BEFORE calling cut_json_* functions,
     // because those functions NULL-terminate and modify the params string!
@@ -482,22 +487,26 @@ static void send_location_result(const char *params) {
         size_t result_size = 4096;
         char *result = (char *)malloc(result_size);
         char *p = result;
-        p += snprintf(p, result_size, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":[", id);
+        p += snprintf(p, result_size,
+                      "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":[", id);
 
         char *loc = arr_start + 1;
         int first = 1;
         while (loc < arr_end) {
             char *obj_start = strchr(loc, '{');
-            if (!obj_start || obj_start >= arr_end) break;
+            if (!obj_start || obj_start >= arr_end)
+                break;
 
             char *obj_end = strchr(obj_start, '}');
-            if (!obj_end || obj_end > arr_end) break;
+            if (!obj_end || obj_end > arr_end)
+                break;
 
             char *file = strstr(obj_start, "\"file\":\"");
             char *line = strstr(obj_start, "\"line\":");
             char *col = strstr(obj_start, "\"col\":");
 
-            if (file && line && col && file < obj_end && line < obj_end && col < obj_end) {
+            if (file && line && col && file < obj_end && line < obj_end &&
+                col < obj_end) {
                 file += 8;
                 char *file_end = strchr(file, '"');
                 if (file_end && file_end < obj_end) {
@@ -517,9 +526,12 @@ static void send_location_result(const char *params) {
                     first = 0;
 
                     p += snprintf(p, result_size - (p - result),
-                        "{\"uri\":\"file://%s\",\"range\":{\"start\":{\"line\":%d,\"character\":%d},"
-                        "\"end\":{\"line\":%d,\"character\":%d}}}",
-                        file_str, line_num, col_num, line_num, col_num);
+                                  "{\"uri\":\"file://"
+                                  "%s\",\"range\":{\"start\":{\"line\":%d,"
+                                  "\"character\":%d},"
+                                  "\"end\":{\"line\":%d,\"character\":%d}}}",
+                                  file_str, line_num, col_num, line_num,
+                                  col_num);
 
                     free(file_str);
                 }
@@ -541,14 +553,16 @@ static void send_location_result(const char *params) {
         cut_json_int(&col_field, 6);
 
         // Build the LSP Location response
-        const char *fmt =
-            "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
-            "{\"uri\":\"%s\",\"range\":{\"start\":{\"line\":%s,\"character\":%s},"
-            "\"end\":{\"line\":%s,\"character\":%s}}}}";
+        const char *fmt = "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":"
+                          "{\"uri\":\"%s\",\"range\":{\"start\":{\"line\":%s,"
+                          "\"character\":%s},"
+                          "\"end\":{\"line\":%s,\"character\":%s}}}}";
 
-        size_t len = strlen(uri) + strlen(id) + strlen(line_field) * 2 + strlen(col_field) * 2 + 256;
+        size_t len = strlen(uri) + strlen(id) + strlen(line_field) * 2 +
+                     strlen(col_field) * 2 + 256;
         char *res = (char *)malloc(len);
-        snprintf(res, len - 1, fmt, id, uri, line_field, col_field, line_field, col_field);
+        snprintf(res, len - 1, fmt, id, uri, line_field, col_field, line_field,
+                 col_field);
         send_ls_response(id, res);
         free(res);
     }
@@ -581,7 +595,8 @@ static void send_document_symbols_result(const char *params) {
         return;
     }
 
-    // Build the result - we'll pass through the symbols array as-is since Lua already formatted it correctly
+    // Build the result - we'll pass through the symbols array as-is since Lua
+    // already formatted it correctly.
     // The Lua code sends DocumentSymbol objects with all required fields
     size_t result_size = (arr_end - arr_start) + 256;
     char *result = (char *)malloc(result_size);
@@ -592,7 +607,9 @@ static void send_document_symbols_result(const char *params) {
     strncpy(array_content, arr_start, array_len);
     array_content[array_len] = '\0';
 
-    snprintf(result, result_size, "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":%s}", id, array_content);
+    snprintf(result, result_size,
+             "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":%s}", id,
+             array_content);
 
     send_ls_response(id, result);
     free(array_content);

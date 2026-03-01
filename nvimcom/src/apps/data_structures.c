@@ -69,6 +69,8 @@ static void delete_pkg(PkgData *pd) {
         free(pd->objls);
     if (pd->args)
         free(pd->args);
+    if (pd->srcref)
+        free(pd->srcref);
     if (pd->title) // free title, descr and alias
         free(pd->title);
     free(pd);
@@ -194,6 +196,52 @@ static void *read_alias_file(PkgData *pd) {
     return b;
 }
 
+static char *read_srcref_file(const char *nm) {
+    char fnm[512];
+    snprintf(fnm, 511, "%s/srcref_%s", cmp_dir, nm);
+    char *b = read_file(fnm, 0);
+    if (!b)
+        return NULL;
+
+    int size = strlen(b);
+    if (size == 0)
+        return b;
+
+    // Validate: expect exactly 3 \006 per line
+    const char *s0 = b;
+    char *s1 = b;
+    int n = 0;
+    while (*s1) {
+        if (*s1 == '\006')
+            n++;
+        if (*s1 == '\n') {
+            if (n == 3) {
+                n = 0;
+                s0 = s1 + 1;
+            } else {
+                char buf[64];
+                strncpy(buf, s0, 63);
+                buf[63] = '\0';
+                fprintf(stderr, "srcref: bad separator count: %d (%s)\n", n,
+                        buf);
+                fflush(stderr);
+                free(b);
+                return NULL;
+            }
+        }
+        s1++;
+    }
+
+    // Convert \006 to \0
+    char *p = b;
+    while (*p) {
+        if (*p == '\006')
+            *p = 0;
+        p++;
+    }
+    return b;
+}
+
 static char *read_args_file(const char *nm) {
     char fnm[512];
     snprintf(fnm, 511, "%s/args_%s", cmp_dir, nm);
@@ -214,6 +262,7 @@ static void load_pkg_data(PkgData *pd, const char *fname) {
     int size;
     read_alias_file(pd);
     pd->args = read_args_file(pd->name);
+    pd->srcref = read_srcref_file(pd->name);
     if (!pd->objls) {
         pd->nobjs = 0;
         pd->objls = read_objls_file(fname, &size);
