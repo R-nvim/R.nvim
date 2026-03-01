@@ -25,9 +25,7 @@ local M = {}
 local function is_top_level(node)
     local current = node:parent()
     while current do
-        if current:type() == "function_definition" then
-            return false
-        end
+        if current:type() == "function_definition" then return false end
         current = current:parent()
     end
     return true
@@ -242,6 +240,37 @@ end
 ---@param max_depth? integer Maximum recursion depth (default 10)
 ---@param current_depth? integer Current depth
 function M.find_r_files(dir, files, max_depth, current_depth)
+    -- On the first call, try git if use_git_files is enabled. This is much
+    -- faster for large projects that contains thousands of files but only a
+    -- few R source files. If it fails (not a git repo or git not available),
+    -- fall back to recursive scan.
+    if not current_depth then
+        local cfg = require("r.config").get_config()
+        if cfg.r_ls.use_git_files then
+            local git_root = vim.fn
+                .system(
+                    "git -C "
+                        .. vim.fn.shellescape(dir)
+                        .. " rev-parse --show-toplevel 2>/dev/null"
+                )
+                :gsub("\n$", "")
+            if vim.v.shell_error == 0 and git_root ~= "" then
+                local output = vim.fn.systemlist(
+                    "git -C "
+                        .. vim.fn.shellescape(dir)
+                        .. " ls-files --cached --others --exclude-standard --full-name"
+                        .. " -- '*.R' '*.r' '*.Rmd' '*.rmd' '*.qmd'"
+                )
+                if vim.v.shell_error == 0 then
+                    for _, rel in ipairs(output) do
+                        if rel ~= "" then table.insert(files, git_root .. "/" .. rel) end
+                    end
+                    return
+                end
+            end
+        end
+    end
+
     max_depth = max_depth or 10
     current_depth = current_depth or 0
 

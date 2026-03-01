@@ -15,6 +15,10 @@ local hooks = require("r.hooks")
 ---Enable the definition provider
 ---@field definition? boolean
 ---
+---Use git to find workspace R files, respecting .gitignore; falls back to
+---recursive scan if git is unavailable or the directory is not a repository
+---@field use_git_files? boolean
+---
 ---Enable the references provider
 ---@field references? boolean
 ---
@@ -459,6 +463,7 @@ local config = {
         hover = true,
         signature = true,
         definition = true,
+        use_git_files = true,
         references = true,
         implementation = true,
         doc_width = 0,
