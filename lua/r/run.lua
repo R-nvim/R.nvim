@@ -427,6 +427,7 @@ end
 ---@param type string
 M.insert = function(cmd, type)
     if vim.g.R_Nvim_status < 7 then return end
+    cmd = cmd:gsub("\\", "\020")
     cmd = cmd:gsub("'", "\018")
     cmd = cmd:gsub('"', "\019")
     M.send_to_nvimcom("E", "nvimcom:::nvim_insert(" .. cmd .. ", '" .. type .. "')")
@@ -445,15 +446,11 @@ M.insert_commented = function()
         local lines = {}
         for line in code:gmatch("[^\n]+") do
             local stripped = line:gsub("%s*#.*", "")
-            if stripped:match("%S") then
-                table.insert(lines, stripped)
-            end
+            if stripped:match("%S") then table.insert(lines, stripped) end
         end
         code = table.concat(lines, " ")
         -- Move cursor to end of chain
-        if end_row then
-            vim.api.nvim_win_set_cursor(0, { end_row, 0 })
-        end
+        if end_row then vim.api.nvim_win_set_cursor(0, { end_row, 0 }) end
     else
         -- Fallback to single line
         code = vim.api.nvim_get_current_line():gsub("%s*#.*", "")
