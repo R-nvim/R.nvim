@@ -637,7 +637,7 @@ nvim.build.cmplls <- function() {
         unlink(file.path(bdir, paste("objls", u$pkg, u$cvrs, sep = "_")))
         unlink(file.path(bdir, paste("alias", u$pkg, sep = "_")))
         unlink(file.path(bdir, paste("args", u$pkg, sep = "_")))
-        unlink(file.path(bdir, paste("srcref", u$pkg, u$cvrs, sep = "_")))
+        unlink(file.path(bdir, paste("srcref", u$pkg, sep = "_")))
     }
 
     # Delete outdated cache files
@@ -646,7 +646,7 @@ nvim.build.cmplls <- function() {
         unlink(file.path(bdir, paste("objls", o$pkg, o$cvrs, sep = "_")))
         unlink(file.path(bdir, paste("alias", o$pkg, sep = "_")))
         unlink(file.path(bdir, paste("args", o$pkg, sep = "_")))
-        unlink(file.path(bdir, paste("srcref", o$pkg, o$cvrs, sep = "_")))
+        unlink(file.path(bdir, paste("srcref", o$pkg, sep = "_")))
     }
 
     # Build missing or outdated cache files
@@ -667,7 +667,7 @@ nvim.build.cmplls <- function() {
         t2 <- Sys.time()
         nvim.buildargs(paste0(bdir, "/args_", p), p)
         t3 <- Sys.time()
-        nvim.build.srcref(paste0(bdir, "/srcref_", p, "_", pvi), p)
+        nvim.build.srcref(paste0(bdir, "/srcref_", p), p)
         msg <- paste0(
             "INFO: ",
             p,

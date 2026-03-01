@@ -196,9 +196,9 @@ static void *read_alias_file(PkgData *pd) {
     return b;
 }
 
-static char *read_srcref_file(const char *nm, const char *vrsn) {
+static char *read_srcref_file(const char *nm) {
     char fnm[512];
-    snprintf(fnm, 511, "%s/srcref_%s_%s", cmp_dir, nm, vrsn);
+    snprintf(fnm, 511, "%s/srcref_%s", cmp_dir, nm);
     char *b = read_file(fnm, 0);
     if (!b)
         return NULL;
@@ -262,7 +262,7 @@ static void load_pkg_data(PkgData *pd, const char *fname) {
     int size;
     read_alias_file(pd);
     pd->args = read_args_file(pd->name);
-    pd->srcref = read_srcref_file(pd->name, pd->version);
+    pd->srcref = read_srcref_file(pd->name);
     if (!pd->objls) {
         pd->nobjs = 0;
         pd->objls = read_objls_file(fname, &size);
