@@ -784,6 +784,13 @@ static char *unscape_str(const char *a) {
                 b[j] = '"';
                 j++;
                 i += 6;
+            } else if (a[i + 5] == '4') {
+                b[j] = '\\';
+                j++;
+                i += 6;
+            } else {
+                // unknown \u001X: skip to avoid infinite loop
+                i += 6;
             }
         } else {
             b[j] = a[i];
