@@ -1,6 +1,6 @@
 Package: nvimcom
-Version: 0.9.87
-Date: 2026-03-01
+Version: 0.9.88
+Date: 2026-03-09
 Title: Intermediate the Communication Between R and Neovim
 Authors@R: c(
     person("Jakson", "Aquino", email = "jalvesaq@gmail.com",

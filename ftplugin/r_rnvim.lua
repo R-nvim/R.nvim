@@ -54,5 +54,14 @@ require("r").show_R_out = function()
     require("r.job").start("R_CMD", rcmd, { on_exit = get_R_output })
 end
 
+local config = require("r.config").get_config()
+if config.roxygen_hl then
+    vim.api.nvim_create_autocmd({ "InsertLeave" }, {
+        buffer = vim.api.nvim_get_current_buf(),
+        callback = require("r.roxygen").hl,
+    })
+    require("r.roxygen").hl()
+end
+
 -- Key bindings
 require("r.maps").create("r")

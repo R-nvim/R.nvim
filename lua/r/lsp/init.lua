@@ -302,6 +302,49 @@ function M.complete(req_id, lnum, cnum)
 
     local wrd = get_word(cline, cnum)
 
+    local in_roxygen_examples = false
+    if
+        vim.bo.filetype == "r"
+        and config.roxygen_hl
+        and cline:find("^%s*#'%s")
+        and cnum > 2
+    then
+        local c_pos = wrd and cnum - #wrd or cnum
+        local c_char = cline:sub(c_pos, c_pos)
+        local cmp_type = "none"
+        if c_char == "\\" then
+            cmp_type = "CH"
+        elseif c_char == "@" then
+            cmp_type = "CO"
+        end
+        if cmp_type == "none" then
+            local rotag_lnum = vim.fn.search("^#' @", "bnW")
+            if rotag_lnum == 0 then
+                M.send_msg({ code = "E" .. req_id })
+                return
+            end
+            local rotag_line =
+                vim.api.nvim_buf_get_lines(0, rotag_lnum - 1, rotag_lnum, true)[1]
+            if
+                rotag_line
+                and rotag_line:find("^#' @examples")
+                and not cline:sub(1, cnum):find("^#' .*#")
+            then
+                in_roxygen_examples = true
+            else
+                M.send_msg({ code = "E" .. req_id })
+                return
+            end
+        else
+            if wrd then
+                M.send_msg({ code = cmp_type, orig_id = req_id, base = wrd })
+            else
+                M.send_msg({ code = cmp_type, orig_id = req_id })
+            end
+            return
+        end
+    end
+
     -- Check if this is Rmd and the cursor is in the chunk header
     if vim.bo.filetype == "rmd" and cline:find("^```{r") then
         if wrd then
@@ -380,7 +423,7 @@ function M.complete(req_id, lnum, cnum)
         for _, v in pairs(c) do
             if v.capture == "string" then
                 snm = "rString"
-            elseif v.capture == "comment" then
+            elseif v.capture == "comment" and not in_roxygen_examples then
                 M.send_msg({ code = "E" .. req_id })
                 return
             end

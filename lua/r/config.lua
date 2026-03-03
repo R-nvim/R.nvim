@@ -309,6 +309,12 @@ local hooks = require("r.hooks")
 ---How to highlight code blocks in Quarto and Rmd documents.
 ---@field quarto_chunk_hl? { highlight: boolean, yaml_hl: boolean, virtual_title: boolean, bg: string, events: string }
 ---
+---Enable ROxygen support.
+---Controls both highlighting of ROxygen comments and ROxygen-specific
+---LSP completion behavior (tag completion, Rhelp keyword completion, and R
+---code completion inside `@examples`).
+---@field roxygen_hl? boolean
+---
 ---The default height for the R console; defaults to `15`.
 ---Do `:help rconsole_height` for more information.
 ---@field rconsole_height? integer
@@ -522,6 +528,7 @@ local config = {
         bg = "",
         events = "",
     },
+    roxygen_hl = false,
     rconsole_height = 15,
     rconsole_width = 80,
     register_treesitter = true,

@@ -16,6 +16,7 @@
 #include "lsp.h"
 #include "utilities.h"
 #include "rhelp.h"
+#include "roxygen.h"
 #include "chunk.h"
 #include "../common.h"
 
@@ -293,6 +294,8 @@ static void handle_exe_cmd(const char *params) {
             complete_rhelp(params);
         } else if (*code == '@') {
             complete_fig_tbl(params);
+        } else if (*code == 'O') {
+            complete_roxygen(params);
         } else {
             complete_chunk_opts(*code, params);
         }
