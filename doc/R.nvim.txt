@@ -338,7 +338,8 @@ marks are not visible, but there are plugins that highlight them.
 Sending a selection of lines is actually a special case of sending a marked
 block with the marks being `'<` and `'>`. That is the reason why the command
 to send selection also works in Normal mode: it will send the lines that
-were selected for the last time.
+were selected for the last time. While the cursor is in an ROxygen line,
+the `#'` prefix will be removed before the selected lines are sent to R.
 
 You can also use the command `:RSend` to type and, then, send a line of code
 to R.
@@ -680,6 +681,10 @@ R.nvim supports the insertion of roxygen2 skeletons in R scripts. To insert a
 new roxygen2 block, you can use the `:ROxygenize` command while the cursor is
 inside a function definition. If a block of roxygen2 is already present, no
 modification will be made.
+
+Set the value of `roxygen_hl` to `true` to enable highlighting of ROxygen
+comments and ROxygen-specific LSP completion behavior (tag completion, Rhelp
+keyword completion, and R code completion inside `@examples`).
 
 
 ==============================================================================
@@ -2126,7 +2131,7 @@ want to know what they are, while editing an R file, do in Normal mode:
 ------------------------------------------------------------------------------
 6.31. Options for accessing Remote R from local Neovim        *remote_compldir*
 
-See https://github.com/R-nvim/R.nvim/wiki/Remote-access
+See remote_access.md
 
 
 ------------------------------------------------------------------------------

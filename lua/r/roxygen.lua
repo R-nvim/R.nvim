@@ -90,4 +90,117 @@ M.insert_roxygen = function(bufnr)
     warn("No function found at the current cursor position.")
 end
 
+-- Temporary highlighting of ROxygen comments while waiting for native
+-- tree-sitter-r support.
+local ons = vim.api.nvim_create_namespace("ROxygenNS")
+M.hl = function()
+    -- From Vim syntax/r.vim
+    local rotags = {
+        "S3method",
+        "aliases",
+        "author",
+        "backref",
+        "concept",
+        "describeIn",
+        "description",
+        "details",
+        "docType",
+        "encoding",
+        "eval",
+        "evalRd",
+        "example",
+        "examples",
+        "export",
+        "exportClass",
+        "exportMethod",
+        "exportPattern",
+        "family",
+        "field",
+        "format",
+        "import",
+        "importClassesFrom",
+        "importFrom",
+        "importMethodsFrom",
+        "include",
+        "includeRmd",
+        "inherit",
+        "inheritDotParams",
+        "inheritParams",
+        "inheritSection",
+        "keywords",
+        "md",
+        "method",
+        "name",
+        "noMd",
+        "noRd",
+        "note",
+        "order",
+        "param",
+        "rawNamespace",
+        "rawRd",
+        "rdname",
+        "references",
+        "return",
+        "section",
+        "seealso",
+        "slot",
+        "source",
+        "template",
+        "templateVar",
+        "title",
+        "usage",
+        "useDynLib",
+    }
+    vim.api.nvim_buf_clear_namespace(0, ons, 0, -1)
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
+    if string.find(lines[1], "^%s*#' ") then
+        local o = { end_row = 0, end_col = string.len(lines[1]), hl_group = "Title" }
+        vim.api.nvim_buf_set_extmark(0, ons, 0, 2, o)
+    end
+
+    local nlines = #lines
+    local k = 1
+    while k <= nlines do
+        local v = lines[k]
+        if v:find("^%s*#'%s+@[a-zA-Z0-9]") then
+            local i, j = v:find("@[a-zA-Z0-9]*")
+            if i then
+                local tag = v:match("^%s*#'%s+@([a-zA-Z0-9]*)")
+                local hlg = "Error"
+                for _, v2 in pairs(rotags) do
+                    if tag == v2 then
+                        hlg = "Operator"
+                        break
+                    end
+                end
+                vim.api.nvim_buf_set_extmark(0, ons, k - 1, i - 1, {
+                    end_row = k - 1,
+                    end_col = j,
+                    hl_group = hlg,
+                })
+                if tag == "examples" then
+                    k = k + 1
+                    while k <= nlines do
+                        v = lines[k]
+                        if v:find("^%s*#'%s+@") or not v:find("^%s*#'") then
+                            k = k - 1
+                            break
+                        end
+                        if string.len(v) > 3 then
+                            local o = {
+                                end_row = k - 1,
+                                end_col = string.len(v),
+                                hl_group = "SpecialComment",
+                            }
+                            vim.api.nvim_buf_set_extmark(0, ons, k - 1, 3, o)
+                        end
+                        k = k + 1
+                    end
+                end
+            end
+        end
+        k = k + 1
+    end
+end
+
 return M
