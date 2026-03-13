@@ -5,7 +5,7 @@
 #include "logging.h"
 #include "global_vars.h"
 #include "utilities.h"
-#include "../common.h"
+#include "../nvimcom/src/common.h"
 #include "complete.h"
 #include "lsp.h"
 

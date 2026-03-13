@@ -4,7 +4,7 @@
 #include "rhelp.h"
 #include "logging.h"
 #include "lsp.h"
-#include "../common.h"
+#include "../nvimcom/src/common.h"
 #include "utilities.h"
 
 // clang-format off

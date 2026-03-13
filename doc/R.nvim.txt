@@ -922,7 +922,9 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |disable_cmds|        List of commands to be disabled
 |tmpdir|              Where temporary files are created
 |compldir|            Where lists for auto completion are stored
-|remote_compldir|     Mount point of remote cache directory
+|remote_compl_dir|    Mount point of remote cache directory
+|remote_R_addr|       Address of remote R host
+|local_nvim_addr|     Address of local Neovim machine
 |view_df|             Options for visualizing a data.frame or matrix
 |R.nvim-SyncTeX|      Options for SyncTeX
 |debug|               Support for debugging functions
@@ -1331,7 +1333,7 @@ object browser to toggle between the two view (i.e., `.Globalenv` and `Libraries
             return
           end
 
-          local temp_file = config.localtmpdir .. '/function_def_' .. vim.env.RNVIM_ID .. '.R'
+          local temp_file = config.tmpdir .. '/function_def_' .. vim.env.RNVIM_ID .. '.R'
 
           -- Send R command to write the function definition to a temp file
           local cmd = string.format('writeLines(deparse(%s), "%s")', object_name, temp_file)
@@ -2129,10 +2131,58 @@ want to know what they are, while editing an R file, do in Normal mode:
 <
 
 ------------------------------------------------------------------------------
-6.31. Options for accessing Remote R from local Neovim        *remote_compldir*
+6.31. Options for accessing Remote R from local Neovim
+							    *remote_compl_dir*
+							       *remote_R_addr*
+							     *local_nvim_addr*
 
-See remote_access.md
+If you want to run R on a remote machine from a local Neovim, you have to
+install on the local machine:
 
+  - `sshfs` (used to mount the remote cache directory).
+  - `ssh` (used to run R).
+  - `make` and a C compiler (required to compile rnvimserver).
+  - `tar` (used to build the `nvimcom` package).
+
+Note: You don't need R installed on the local machine or Neovim installed on
+the remote machine.
+
+Then, you have to setup the remote machine to accept `ssh` login from the
+local machine without a password (search the command `ssh-copy-id` over the
+Internet to discover how to do it). Then you have to set three options in your
+`R.nvim` config:
+
+   `remote_compl_dir`: The absolute path to the remote cache dir to be used by
+   R to save files for R.nvim.
+
+   `remote_R_addr`: The IP address, hostname or alias of the remote machine
+   where R is installed. This is the string that you use when connecting to
+   the remote machine through `ssh`, for example, `login@hostname`,
+   `login@192.168.1.107`. If your login name is the same on both the local and
+   the remote machine, it can be just the hostname or IP address.
+
+   `local_nvim_addr`: The IP address of the local machine where Neovim is
+   istalled. The value of `local_nvim_addr` will be passed as argument to the
+   C function `inet_addr`.
+
+Example:
+>lua
+   {
+     remote_compl_dir = "/home/username/.cache/R.nvim",
+     remote_R_addr = "192.168.1.108",
+     local_nvim_addr = "192.168.1.105",
+   }
+<
+Start Neovim and start R. Nvimcom should be automatically installed on the
+remote machine.
+
+Note: The firewall on your local machine may block the TCP connection between
+R (running on the remote machine) and `rnvimserver` (running on the local
+machine). You can edit your `~/.Rprofile` on the remote machine to know what
+port R is trying to access:
+>r
+   options(nvimcom.verbose = 2)
+<
 
 ------------------------------------------------------------------------------
 6.32. View a data.frame or matrix                                    *view_df*

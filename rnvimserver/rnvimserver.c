@@ -18,7 +18,7 @@
 #include "rhelp.h"
 #include "roxygen.h"
 #include "chunk.h"
-#include "../common.h"
+#include "../nvimcom/src/common.h"
 
 #ifdef WIN32
 // Include for _setmode and _O_BINARY
@@ -30,13 +30,12 @@
  * Global variables (declared in global_vars.h)
  */
 
-LibList *inst_libs;    // Pointer to first package data
-LibList *loaded_libs;  // Pointer to loaded library
-char *glbnv_buffer;    // Global environment buffer
-char tmpdir[256];      // Temporary directory
-int auto_obbr;         // Auto object browser flag
-char localtmpdir[256]; // Local temporary directory
-int r_running;         // Indicates whether R is running
+LibList *inst_libs;   // Pointer to first package data
+LibList *loaded_libs; // Pointer to loaded library
+char *glbnv_buffer;   // Global environment buffer
+char tmpdir[256];     // Temporary directory
+int auto_obbr;        // Auto object browser flag
+int r_running;        // Indicates whether R is running
 
 typedef struct active_request_ {
     char id[16];
@@ -205,11 +204,6 @@ static void handle_initialize(const char *request_id) {
     // initialize global variables;
     strncpy(tmpdir, getenv("RNVIM_TMPDIR"), 255);
     set_doc_width(getenv("R_LS_DOC_WIDTH"));
-    if (getenv("RNVIM_LOCAL_TMPDIR")) {
-        strncpy(localtmpdir, getenv("RNVIM_LOCAL_TMPDIR"), 255);
-    } else {
-        strncpy(localtmpdir, getenv("RNVIM_TMPDIR"), 255);
-    }
     set_max_depth(atoi(getenv("RNVIM_MAX_DEPTH")));
 
     init_cmp();

@@ -1,0 +1,12 @@
+CC ?= gcc
+CFLAGS = -pthread -O2 -Wall
+TARGET = rnvimserver
+SRCS = complete.c resolve.c hover.c definition.c signature.c rhelp.c chunk.c roxygen.c data_structures.c logging.c rnvimserver.c obbr.c tcp.c utilities.c ../nvimcom/src/common.c
+
+all: $(TARGET)
+
+$(TARGET): $(SRCS)
+	$(CC) $(CFLAGS) $(SRCS) -o $(TARGET)
+
+clean:
+

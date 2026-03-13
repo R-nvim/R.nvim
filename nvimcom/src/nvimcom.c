@@ -1292,9 +1292,7 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP szl, SEXP tml,
     if (verbose > 0)
         REprintf("nvimcom %s loaded\n", CHAR(STRING_ELT(nvv, 0)));
     if (verbose > 1) {
-        if (getenv("NVIM_IP_ADDRESS")) {
-            REprintf("  NVIM_IP_ADDRESS: %s\n", getenv("NVIM_IP_ADDRESS"));
-        }
+        REprintf("  NVIM_IP_ADDRESS: %s\n", getenv("NVIM_IP_ADDRESS"));
         REprintf("  R_LS_DOC_WIDTH: %s\n", getenv("R_LS_DOC_WIDTH"));
         REprintf("  RNVIM_PORT: %s\n", rns_port);
         REprintf("  RNVIM_ID: %s\n", getenv("RNVIM_ID"));
@@ -1341,10 +1339,7 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP szl, SEXP tml,
 
             // assign IP, PORT
             servaddr.sin_family = AF_INET;
-            if (getenv("NVIM_IP_ADDRESS"))
-                servaddr.sin_addr.s_addr = inet_addr(getenv("NVIM_IP_ADDRESS"));
-            else
-                servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+            servaddr.sin_addr.s_addr = inet_addr(getenv("NVIM_IP_ADDRESS"));
             servaddr.sin_port = htons(atoi(rns_port));
 
             // connect the client socket to server socket

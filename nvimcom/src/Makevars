@@ -1,10 +1,6 @@
 
-.PHONY: all nvimapps
+.PHONY: all
 
-all: $(SHLIB) nvimapps
+all: $(SHLIB)
 
 $(SHLIB):
-
-nvimapps:
-	(cd apps; make)
-

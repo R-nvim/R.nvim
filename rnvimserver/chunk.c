@@ -6,7 +6,7 @@
 #include "logging.h"
 #include "lsp.h"
 #include "utilities.h"
-#include "../common.h"
+#include "../nvimcom/src/common.h"
 
 typedef struct chunkitem_ {
     char *label;
