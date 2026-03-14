@@ -425,7 +425,7 @@ M.check_nvimcom_version = function()
     }
 
     b_time = uv.hrtime()
-    local cmd =
+    cmd =
         { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm }
     if config.remote_R_addr ~= "" then
         table.insert(cmd, 1, config.remote_R_addr)
