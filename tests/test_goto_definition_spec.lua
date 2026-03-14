@@ -114,6 +114,71 @@ outer <- function() {
         end)
     end)
 
+    describe("targets pipeline", function()
+        it("extracts tar_target symbol via find_in_current_buffer", function()
+            local content = "tar_target(my_data, read.csv('file.csv'))"
+            setup_test(content, { 1, 11 })
+            local matches = definition_module.find_in_current_buffer("my_data")
+            assert.equals(1, #matches)
+            assert.equals(0, matches[1].line)
+            assert.equals(11, matches[1].col)
+        end)
+
+        it("finds each tar_target in a typical pipeline list", function()
+            local content = [[
+list(
+    tar_target(raw, get_data()),
+    tar_target(clean, process(raw)),
+    tar_target(result, analyze(clean))
+)]]
+            setup_test(content, { 1, 0 })
+            local raw = definition_module.find_in_current_buffer("raw")
+            assert.equals(1, #raw)
+            assert.equals(1, raw[1].line)
+            assert.equals(15, raw[1].col)
+
+            local clean = definition_module.find_in_current_buffer("clean")
+            assert.equals(1, #clean)
+            assert.equals(2, clean[1].line)
+            assert.equals(15, clean[1].col)
+
+            local result = definition_module.find_in_current_buffer("result")
+            assert.equals(1, #result)
+            assert.equals(3, result[1].line)
+            assert.equals(15, result[1].col)
+        end)
+
+        it("does not treat non-tar_target calls as target definitions", function()
+            local content = "some_func(my_data, 42)"
+            setup_test(content, { 1, 0 })
+            local matches = definition_module.find_in_current_buffer("my_data")
+            assert.equals(0, #matches)
+        end)
+
+        it("finds tar_file symbol", function()
+            local content = "tar_file(report, generate_report(data))"
+            setup_test(content, { 1, 0 })
+            local matches = definition_module.find_in_current_buffer("report")
+            assert.equals(1, #matches)
+            assert.equals(0, matches[1].line)
+            assert.equals(9, matches[1].col)
+        end)
+
+        it("jumps from target reference to tar_target definition", function()
+            local content = "list(\n    tar_target(raw, get_data()),\n    tar_target(clean, process(raw)),\n    tar_target(result, analyze(clean))\n)\nprocess(raw)"
+            setup_test(content, { 6, 9 })
+            definition_module.goto_definition("req_targets_goto")
+            assert_location_response("req_targets_goto", 1, 15)
+        end)
+
+        it("does not treat tar_read as a definition", function()
+            local content = "tar_read(my_data)"
+            setup_test(content, { 1, 0 })
+            local matches = definition_module.find_in_current_buffer("my_data")
+            assert.equals(0, #matches)
+        end)
+    end)
+
     describe("edge cases", function()
         it("handles empty buffer", function()
             setup_test("", { 1, 0 })

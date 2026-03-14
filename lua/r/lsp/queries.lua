@@ -9,7 +9,6 @@ local M = {}
 local query_cache = {}
 
 --- Query string definitions (copied from original utils.lua)
--- TODO: Maybe add targets nodes so we can search in target pipeline? Maybe use a config option?
 local query_strings = {
     definitions = [[
         ; Function assignments with <- operator
@@ -47,6 +46,19 @@ local query_strings = {
             lhs: (identifier) @var_name
             operator: "="
             rhs: (_) @var_value) @var_definition
+
+        ; Target pipeline definitions: tar_target(name, ...), tar_file(name, ...), etc.
+        ; First positional argument is the target name (unquoted identifier).
+        ; Uses a broad ^tar_ match to support extension packages (tarchetypes, etc.).
+        ; Excludes known consumer functions (tar_read*, tar_load*) which reference existing targets.
+        (call
+            function: (identifier) @_tar_fn
+            (#match? @_tar_fn "^tar_")
+            (#not-match? @_tar_fn "^tar_read")
+            (#not-match? @_tar_fn "^tar_load")
+            arguments: (arguments
+                . (argument
+                    value: (identifier) @target_name))) @target_definition
     ]],
 
     references = [[
