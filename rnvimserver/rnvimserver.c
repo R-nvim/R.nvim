@@ -432,10 +432,53 @@ static void handle_signature(const char *id) {
     send_cmd_to_nvim(h_cmd);
 }
 
-static void handle_definition(const char *id) {
-    char d_cmd[128];
-    snprintf(d_cmd, 127, "require('r.lsp').definition(%s)", id);
-    send_cmd_to_nvim(d_cmd);
+/* Extract the textDocument URI from LSP params into buf (null-terminated).
+ * URI chars are all percent-encoded so no single quotes can appear — safe
+ * to embed directly in a single-quoted Lua string literal. */
+static void extract_doc_uri(const char *params, char *buf, int buf_size) {
+    buf[0] = '\0';
+    char *p = strstr(params, "\"uri\":\"");
+    if (!p)
+        return;
+    p += 7;
+    char *end = strchr(p, '"');
+    if (!end)
+        return;
+    int len = (int)(end - p);
+    if (len >= buf_size)
+        len = buf_size - 1;
+    strncpy(buf, p, len);
+    buf[len] = '\0';
+}
+
+/* Shared handler for LSP requests that carry a textDocument position.
+ * Extracts line/character and URI from params, then calls the named
+ * Lua function as: require('r.lsp').<lua_fn>(id, line, col, bufnr) */
+static void handle_location_request(const char *id, const char *params,
+                                    const char *lua_fn) {
+    char *position = strstr(params, "\"position\":{");
+    if (!position) {
+        fprintf(stderr, "Error in textDocument/%s: missing `position` field\n",
+                lua_fn);
+        fflush(stderr);
+        return;
+    }
+    position += 11;
+    char *line = strstr(position, "\"line\":");
+    char *col = strstr(position, "\"character\":");
+    cut_json_int(&line, 7);
+    cut_json_int(&col, 12);
+    char uri[2048];
+    extract_doc_uri(params, uri, sizeof(uri));
+    char cmd[4096];
+    snprintf(cmd, sizeof(cmd) - 1,
+             "require('r.lsp').%s(%s, %s, %s, vim.uri_to_bufnr('%s'))", lua_fn,
+             id, line, col, uri);
+    send_cmd_to_nvim(cmd);
+}
+
+static void handle_definition(const char *id, const char *params) {
+    handle_location_request(id, params, "definition");
 }
 
 static void handle_document_symbols(const char *id) {
@@ -444,16 +487,12 @@ static void handle_document_symbols(const char *id) {
     send_cmd_to_nvim(s_cmd);
 }
 
-static void handle_references(const char *id) {
-    char r_cmd[128];
-    snprintf(r_cmd, 127, "require('r.lsp').references(%s)", id);
-    send_cmd_to_nvim(r_cmd);
+static void handle_references(const char *id, const char *params) {
+    handle_location_request(id, params, "references");
 }
 
-static void handle_implementation(const char *id) {
-    char i_cmd[128];
-    snprintf(i_cmd, 127, "require('r.lsp').implementation(%s)", id);
-    send_cmd_to_nvim(i_cmd);
+static void handle_implementation(const char *id, const char *params) {
+    handle_location_request(id, params, "implementation");
 }
 
 // Generic function to handle location-based LSP responses (definition,
@@ -501,6 +540,7 @@ static void send_location_result(const char *params) {
             char *file = strstr(obj_start, "\"file\":\"");
             char *line = strstr(obj_start, "\"line\":");
             char *col = strstr(obj_start, "\"col\":");
+            char *end_col_field = strstr(obj_start, "\"end_col\":");
 
             if (file && line && col && file < obj_end && line < obj_end &&
                 col < obj_end) {
@@ -516,6 +556,9 @@ static void send_location_result(const char *params) {
                     col += 6;
                     int line_num = atoi(line);
                     int col_num = atoi(col);
+                    int end_col_num = (end_col_field && end_col_field < obj_end)
+                                          ? atoi(end_col_field + 10)
+                                          : col_num;
 
                     if (!first) {
                         p += snprintf(p, result_size - (p - result), ",");
@@ -528,7 +571,7 @@ static void send_location_result(const char *params) {
                                   "\"character\":%d},"
                                   "\"end\":{\"line\":%d,\"character\":%d}}}",
                                   file_str, line_num, col_num, line_num,
-                                  col_num);
+                                  end_col_num);
 
                     free(file_str);
                 }
@@ -710,13 +753,13 @@ static void lsp_loop(void) {
             } else if (strcmp(method, "textDocument/signatureHelp") == 0) {
                 handle_signature(id);
             } else if (strcmp(method, "textDocument/definition") == 0) {
-                handle_definition(id);
+                handle_definition(id, params);
             } else if (strcmp(method, "textDocument/documentSymbol") == 0) {
                 handle_document_symbols(id);
             } else if (strcmp(method, "textDocument/references") == 0) {
-                handle_references(id);
+                handle_references(id, params);
             } else if (strcmp(method, "textDocument/implementation") == 0) {
-                handle_implementation(id);
+                handle_implementation(id, params);
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {

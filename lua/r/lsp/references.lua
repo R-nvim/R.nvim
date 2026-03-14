@@ -10,7 +10,8 @@ local scope = require("r.lsp.scope")
 --- Find all workspace references without scope filtering (fallback)
 ---@param symbol string Symbol name
 ---@param req_id string LSP request ID
-local function find_all_workspace_references(symbol, req_id)
+---@param bufnr integer Source buffer number
+local function find_all_workspace_references(symbol, req_id, bufnr)
     local ast = require("r.lsp.ast")
 
     -- Prepare workspace
@@ -19,11 +20,17 @@ local function find_all_workspace_references(symbol, req_id)
     local all_refs = {}
 
     local workspace_locations = workspace.get_definitions(symbol)
-    vim.list_extend(all_refs, workspace_locations)
+    for _, loc in ipairs(workspace_locations) do
+        table.insert(all_refs, {
+            file = loc.file,
+            line = loc.line,
+            col = loc.col,
+            end_col = loc.col + #symbol,
+        })
+    end
 
     local query = require("r.lsp.queries").get("references")
     if query then
-        local bufnr = vim.api.nvim_get_current_buf()
         local parser, root = ast.get_parser_and_root(bufnr)
 
         if parser and root then
@@ -33,10 +40,12 @@ local function find_all_workspace_references(symbol, req_id)
                 local text = vim.treesitter.get_node_text(node, bufnr)
                 if text == symbol then
                     local start_row, start_col = node:start()
+                    local _, end_col = node:end_()
                     table.insert(all_refs, {
                         file = file,
                         line = start_row,
                         col = start_col,
+                        end_col = end_col,
                     })
                 end
             end
@@ -54,23 +63,24 @@ end
 
 --- Find all references to a symbol across workspace (scope-aware)
 ---@param req_id string LSP request ID
-function M.find_references(req_id)
-    -- Get keyword safely
-    local word, err = utils.get_keyword_safe()
+---@param line integer 0-indexed row from LSP params
+---@param col integer 0-indexed column from LSP params
+---@param bufnr integer Source buffer number
+function M.find_references(req_id, line, col, bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+    local row = line
+
+    -- Get keyword from LSP position params
+    local word, err = utils.get_word_at_bufpos(bufnr, row, col)
     if err then
         utils.send_null(req_id)
         return
     end
 
-    local cursor_pos = vim.api.nvim_win_get_cursor(0)
-    local row = cursor_pos[1] - 1
-    local col = cursor_pos[2]
-    local bufnr = vim.api.nvim_get_current_buf()
-
     local current_scope = scope.get_scope_at_position(bufnr, row, col)
     if not current_scope then
         -- No scope found, fallback to workspace search
-        find_all_workspace_references(word, req_id)
+        find_all_workspace_references(word, req_id, bufnr)
         return
     end
 
@@ -78,7 +88,7 @@ function M.find_references(req_id)
     if not target_definition then
         -- Symbol not resolved in scope, fallback to workspace search
         -- This handles cases like add(2,3) where add is defined in other files
-        find_all_workspace_references(word, req_id)
+        find_all_workspace_references(word, req_id, bufnr)
         return
     end
 
@@ -112,6 +122,7 @@ function M.find_references(req_id)
             local text = vim.treesitter.get_node_text(node, bufnr)
             if text == word then
                 local start_row, start_col = node:start()
+                local _, end_col = node:end_()
 
                 local usage_scope =
                     scope.get_scope_at_position(bufnr, start_row, start_col)
@@ -122,6 +133,7 @@ function M.find_references(req_id)
                             file = file,
                             line = start_row,
                             col = start_col,
+                            end_col = end_col,
                         })
                     end
                 end
@@ -143,7 +155,12 @@ function M.find_references(req_id)
                     if node then
                         local in_function = ast.find_ancestor(node, "function_definition")
                         if not in_function then
-                            table.insert(all_refs, loc)
+                            table.insert(all_refs, {
+                                file = loc.file,
+                                line = loc.line,
+                                col = loc.col,
+                                end_col = loc.col + #word,
+                            })
                         end
                     end
                     if cleanup then cleanup() end
@@ -167,16 +184,16 @@ function M.find_references(req_id)
                         for _, node in query:iter_captures(temp_root, temp_bufnr) do
                             local text = vim.treesitter.get_node_text(node, temp_bufnr)
                             if text == word then
-                                local in_function = ast.find_ancestor(
-                                    node,
-                                    "function_definition"
-                                )
+                                local in_function =
+                                    ast.find_ancestor(node, "function_definition")
                                 if not in_function then
                                     local start_row, start_col = node:start()
+                                    local _, end_col = node:end_()
                                     table.insert(all_refs, {
                                         file = filepath,
                                         line = start_row,
                                         col = start_col,
+                                        end_col = end_col,
                                     })
                                 end
                             end

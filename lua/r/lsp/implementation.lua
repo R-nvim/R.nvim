@@ -17,9 +17,9 @@ end
 
 --- Find implementations of a generic function (S3/S4 methods)
 ---@param req_id string LSP request ID
-function M.find_implementations(req_id)
-    local word, err = utils.get_keyword_safe()
-    if err or not word then
+---@param word string The generic function name
+function M.find_implementations(req_id, word)
+    if not word or word == "" then
         utils.send_null(req_id)
         return
     end

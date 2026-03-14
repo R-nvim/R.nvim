@@ -605,18 +605,41 @@ M.signature = function(req_id)
     end
 end
 
+local r_filetypes = { r = true, rmd = true, quarto = true, rnoweb = true, rhelp = true }
+
+--- Return the source R buffer for an LSP request.
+--- Prefers the bufnr passed from C (via vim.uri_to_bufnr). Falls back to
+--- searching buffers attached to the r_ls client.
+---@param bufnr? integer
+---@return integer
+local function get_r_bufnr(bufnr)
+    if
+        bufnr
+        and bufnr > 0
+        and vim.api.nvim_buf_is_valid(bufnr)
+        and r_filetypes[vim.bo[bufnr].filetype]
+    then
+        return bufnr
+    end
+    if client_id then
+        for _, b in ipairs(vim.lsp.get_buffers_by_client_id(client_id)) do
+            if r_filetypes[vim.bo[b].filetype] then return b end
+        end
+    end
+    return vim.api.nvim_get_current_buf()
+end
+
 ---Go to definition of the symbol under cursor
 ---@param req_id string
-M.definition = function(req_id)
+---@param line integer LSP line (0-indexed)
+---@param col integer LSP character (0-indexed)
+---@param bufnr integer Source buffer (resolved from textDocument URI)
+M.definition = function(req_id, line, col, bufnr)
+    bufnr = get_r_bufnr(bufnr)
     -- Check if we're in R code for non-R filetypes
-    if vim.bo.filetype ~= "r" then
-        local cpos = vim.api.nvim_win_get_cursor(0)
-        if not cpos then
-            M.send_msg({ code = "N" .. req_id })
-            return
-        end
-        local lnum = cpos[1] - 1
-        local lang = get_lang(lnum)
+    if vim.bo[bufnr].filetype ~= "r" then
+        local lang = "other"
+        vim.api.nvim_buf_call(bufnr, function() lang = get_lang(line) end)
         if lang ~= "r" then
             M.send_msg({ code = "N" .. req_id })
             return
@@ -624,7 +647,7 @@ M.definition = function(req_id)
     end
 
     -- Delegate to the definition module
-    require("r.lsp.definition").goto_definition(req_id)
+    require("r.lsp.definition").goto_definition(req_id, line, col, bufnr)
 end
 
 ---Get document symbols for the current buffer
@@ -650,44 +673,43 @@ end
 
 ---Find all references to the symbol under cursor
 ---@param req_id string
-M.references = function(req_id)
+---@param line integer LSP line (0-indexed)
+---@param col integer LSP character (0-indexed)
+---@param bufnr integer Source buffer (resolved from textDocument URI)
+M.references = function(req_id, line, col, bufnr)
+    bufnr = get_r_bufnr(bufnr)
     -- Check if we're in R code for non-R filetypes
-    if vim.bo.filetype ~= "r" then
-        local cpos = vim.api.nvim_win_get_cursor(0)
-        if not cpos then
-            M.send_msg({ code = "N" .. req_id })
-            return
-        end
-        local lnum = cpos[1] - 1
-        local lang = get_lang(lnum)
+    if vim.bo[bufnr].filetype ~= "r" then
+        local lang = "other"
+        vim.api.nvim_buf_call(bufnr, function() lang = get_lang(line) end)
         if lang ~= "r" then
             M.send_msg({ code = "N" .. req_id })
             return
         end
     end
 
-    require("r.lsp.references").find_references(req_id)
+    require("r.lsp.references").find_references(req_id, line, col, bufnr)
 end
 
 ---Find implementations of the symbol under cursor
 ---@param req_id string
-M.implementation = function(req_id)
+---@param line integer LSP line (0-indexed)
+---@param col integer LSP character (0-indexed)
+---@param bufnr integer Source buffer (resolved from textDocument URI)
+M.implementation = function(req_id, line, col, bufnr)
+    bufnr = get_r_bufnr(bufnr)
     -- Check if we're in R code for non-R filetypes
-    if vim.bo.filetype ~= "r" then
-        local cpos = vim.api.nvim_win_get_cursor(0)
-        if not cpos then
-            M.send_msg({ code = "N" .. req_id })
-            return
-        end
-        local lnum = cpos[1] - 1
-        local lang = get_lang(lnum)
+    if vim.bo[bufnr].filetype ~= "r" then
+        local lang = "other"
+        vim.api.nvim_buf_call(bufnr, function() lang = get_lang(line) end)
         if lang ~= "r" then
             M.send_msg({ code = "N" .. req_id })
             return
         end
     end
 
-    require("r.lsp.implementation").find_implementations(req_id)
+    local word = require("r.lsp.utils").get_word_at_bufpos(bufnr, line, col)
+    require("r.lsp.implementation").find_implementations(req_id, word)
 end
 
 --- Execute lua command sent by rnvimserver

@@ -111,14 +111,19 @@ end
 
 --- Find all symbols matching a pattern
 ---@param pattern string Lua pattern to match against symbol names
----@return table[] List of locations {file, line, col}
+---@return table[] List of locations {file, line, col, end_col}
 function M.find_symbols_matching(pattern)
     M.index_workspace()
     local results = {}
     for symbol, locations in pairs(workspace_index) do
         if symbol:match(pattern) then
             for _, loc in ipairs(locations) do
-                table.insert(results, loc)
+                table.insert(results, {
+                    file = loc.file,
+                    line = loc.line,
+                    col = loc.col,
+                    end_col = loc.col + #symbol,
+                })
             end
         end
     end

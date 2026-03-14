@@ -430,6 +430,35 @@ function M.get_keyword_safe()
     return word, nil
 end
 
+--- Get the R identifier at a specific buffer position (row/col from LSP params).
+---@param bufnr integer Buffer number
+---@param row integer 0-indexed row
+---@param col integer 0-indexed column (UTF-16 code units)
+---@return string? word, string? error
+function M.get_word_at_bufpos(bufnr, row, col)
+    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "r")
+    if not ok or not parser then return nil, "No treesitter parser" end
+    parser:parse()
+
+    local node = vim.treesitter.get_node({ bufnr = bufnr, pos = { row, col } })
+
+    if node and node:type() == "identifier" then
+        return vim.treesitter.get_node_text(node, bufnr), nil
+    end
+
+    -- Handle edge case where cursor is at 0,0 in the buffer, r parser reports
+    -- it as "program" node. Try shifting right by one character to find
+    -- identifier.
+    if node and node:type() == "program" then
+        local shifted = vim.treesitter.get_node({ bufnr = bufnr, pos = { row, col + 1 } })
+        if shifted and shifted:type() == "identifier" then
+            return vim.treesitter.get_node_text(shifted, bufnr), nil
+        end
+    end
+
+    return nil, nil
+end
+
 --- Prepare workspace (consolidated pattern)
 ---@param update_buffer? boolean Update modified buffer (default true)
 function M.prepare_workspace(update_buffer)
