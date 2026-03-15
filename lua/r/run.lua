@@ -76,7 +76,7 @@ start_R2 = function()
     }
     local cmpd
     if config.remote_R_host == "" then
-        cmpd = config.compldir:gsub(" ", "\\ ")
+        cmpd = config.compldir:gsub("\\", "\\\\"):gsub('"', '\\"')
         local rsd = get_R_start_dir()
         if rsd then
             if vim.fn.isdirectory(rsd) == 1 then
@@ -84,7 +84,7 @@ start_R2 = function()
             end
         end
     else
-        cmpd = config.remote_compl_dir:gsub(" ", "\\ ")
+        cmpd = config.remote_compl_dir:gsub("\\", "\\\\"):gsub('"', '\\"')
         table.insert(start_options, 'Sys.setenv(RNVIM_REMOTE_R = "TRUE")')
     end
     table.insert(start_options, 'Sys.setenv(RNVIM_COMPLDIR = "' .. cmpd .. '")')
