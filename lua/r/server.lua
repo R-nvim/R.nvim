@@ -369,7 +369,7 @@ M.check_nvimcom_version = function()
 
     if vim.fn.filereadable(nvc_fn) == 0 then
         local oldf = vim.fn.glob("~/.cache/R.nvim/nvimcom_*.tar.gz", true, true)
-        for o in pairs(oldf) do
+        for _, o in ipairs(oldf) do
             vim.uv.fs_unlink(o)
         end
         local obj = vim.system(
