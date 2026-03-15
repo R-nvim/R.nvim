@@ -337,7 +337,7 @@ local hooks = require("r.hooks")
 ---from a local Neovim.
 ---@field remote_R_host? string
 ---
----IP address, hostname or alias of local machine (this machine) where Neovim is istalled.
+---IP address, hostname or alias of local machine (this machine) where Neovim is installed.
 ---This option should be set only if you are running R in a remote machine
 ---from a local Neovim.
 ---@field local_nvim_addr? string
