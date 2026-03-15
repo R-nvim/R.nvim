@@ -852,7 +852,7 @@ Windows.
 6. Options                                                    *R.nvim-options*
 
 As usual with Lua plugins, the options might be set in your Neovim `init.lua`
-or other Lua script sourced ruing Neovim startup. Example:
+or other Lua script sourced during Neovim startup. Example:
 >lua
    require("r").setup({
      -- your options here
