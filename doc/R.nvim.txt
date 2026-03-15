@@ -1515,6 +1515,14 @@ Meaning of options:
 
   - `references`: Enable the references provider
 
+Note: The definition and references providers also recognize symbols defined
+in `{targets}` pipelines. Target-defining calls (e.g., `tar_target()`,
+`tar_file()`) where the first argument is an unquoted identifier are indexed
+as symbol definitions. Consumer calls such as `tar_read()` and `tar_load()`
+are treated as references, not definitions. This means you can use
+goto-definition and find-references to navigate between targets in your
+pipeline.
+
   - `doc_width`: The expected maximum width of the floating documentation
     window. The default value will be between 30 and 80 columns, depending
     on the screen width.

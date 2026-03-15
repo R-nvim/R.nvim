@@ -204,6 +204,70 @@ function M.extract_symbols(bufnr, options)
                 end
             end
         end
+
+        -- Handle targets pipeline definitions (tar_target, etc.)
+        if capture_name == "target_definition" then
+            local call_node = node
+            if call_node and call_node:type() == "call" then
+                local args_node = call_node:field("arguments")[1]
+                if args_node then
+                    -- Get first argument (the target name)
+                    local first_arg
+                    for child in args_node:iter_children() do
+                        if child:type() == "argument" then
+                            first_arg = child
+                            break
+                        end
+                    end
+
+                    if first_arg then
+                        local value_node = first_arg:field("value")[1]
+                        if value_node and value_node:type() == "identifier" then
+                            local name = vim.treesitter.get_node_text(value_node, bufnr)
+
+                            if
+                                (not options.symbol_name or name == options.symbol_name)
+                                and (
+                                    not options.top_level_only or is_top_level(call_node)
+                                )
+                            then
+                                local name_start_row, name_start_col = value_node:start()
+                                local name_end_row, name_end_col = value_node:end_()
+                                local def_start_row, def_start_col = call_node:start()
+                                local def_end_row, def_end_col = call_node:end_()
+
+                                local key = string.format(
+                                    "%s:%d:%d",
+                                    name,
+                                    name_start_row,
+                                    name_start_col
+                                )
+                                if not seen[key] then
+                                    seen[key] = true
+                                    table.insert(
+                                        symbols,
+                                        create_symbol_info(
+                                            name,
+                                            13, -- Variable
+                                            file,
+                                            name_start_row,
+                                            name_start_col,
+                                            name_end_row,
+                                            name_end_col,
+                                            def_start_row,
+                                            def_start_col,
+                                            def_end_row,
+                                            def_end_col,
+                                            "target"
+                                        )
+                                    )
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
     end
 
     return symbols

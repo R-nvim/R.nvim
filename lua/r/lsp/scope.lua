@@ -175,7 +175,7 @@ local function find_definition_with_custom_query(
     local matches = {}
     for id, node in query:iter_captures(search_node, bufnr) do
         local capture_name = query.captures[id]
-        if capture_name == "name" or capture_name == "var_name" then
+        if capture_name == "name" or capture_name == "var_name" or capture_name == "target_name" then
             local text = vim.treesitter.get_node_text(node, bufnr)
             if text == symbol then
                 local start_row, start_col = node:start()
