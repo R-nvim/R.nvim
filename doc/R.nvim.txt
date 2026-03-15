@@ -2205,7 +2205,7 @@ port R is trying to access:
    options(nvimcom.verbose = 2)
 <
 If R is installed in a directory that is not in the PATH environment variable
-of your SSH session, you can set the absoute path of `R_app` and `R_cmd`.
+of your SSH session, you can set the absolute path of `R_app` and `R_cmd`.
 Example:
 >lua
    {
