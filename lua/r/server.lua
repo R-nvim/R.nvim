@@ -442,7 +442,7 @@ M.build_cache_files = function()
         "  verbose = FALSE, quietly = TRUE, mask.ok = 'vi')",
         "nvimcom:::nvim.build.cmplls()",
     }
-    if config.remote_R_host then
+    if config.remote_R_host ~= "" then
         table.insert(
             Rcode,
             1,
