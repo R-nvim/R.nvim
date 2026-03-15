@@ -851,6 +851,24 @@ Windows.
 ==============================================================================
 6. Options                                                    *R.nvim-options*
 
+As usual with Lua plugins, the options might be set in your Neovim `init.lua`
+or other Lua script sourced ruing Neovim startup. Example:
+>lua
+   require("r").setup({
+     -- your options here
+   })
+<
+You can also set directory-specific options in an `rnvim_config.lua` script,
+returning a Lua table which will override the `init.lua` options. The
+`rnvim_config.lua` script will be sourced when the first R file (`.R`, `.Rmd`,
+`.qmd`, `.Rnw` or `.Rd`) from its directory is read. Example of
+`rnvim_config.lua`:
+>lua
+   return {
+     objbr_place = "console,right",
+     rconsole_width = 100,
+   }
+<
 The complete list of options and their defined values can be seen with the
 command:
 >vim
@@ -2135,7 +2153,7 @@ want to know what they are, while editing an R file, do in Normal mode:
 							       *remote_R_host*
 
 If you want to run R on a remote machine from a local Neovim, you have to
-install on the local machine:
+install it on the local machine:
 
   - `sshfs` (used to mount the remote cache directory).
   - `ssh` (used to run R).
@@ -2145,27 +2163,33 @@ install on the local machine:
 Note: You don't need R installed on the local machine or Neovim installed on
 the remote machine.
 
-Then, you have to setup the remote machine to accept `ssh` login from the
+Then, you have to set up the remote machine to accept `ssh` login from the
 local machine without a password (search the command `ssh-copy-id` over the
 Internet to discover how to do it). Then you have to set three options in your
 `R.nvim` config:
 
    `remote_compl_dir`: The absolute path to the remote cache dir to be used by
-   R to save files for R.nvim. Not required if the local and the
-   remote machines have the same operating system and your login name is the
-   same in both.
+   R to save files for R.nvim (not required if the local and the remote
+   machines have the same operating system and your login name is the same in
+   both).
 
-   `remote_R_host`: The IP address, hostname or alias of the remote machine
+   `remote_R_host`: The IP address, hostname, or alias of the remote machine
    where R is installed. This is the string that you use when connecting to
-   the remote machine through `ssh`, for example, `login@hostname`,
-   `login@192.168.1.107`. If your login name is the same on both the local and
-   the remote machine, it can be just the hostname or IP address.
+   the remote machine through `ssh`, for example, `login@192.168.1.107`, or
+   `login@hostname`. If your login name is the same on both the local and the
+   remote machine, it can be just the hostname or IP address.
 
 Example:
 >lua
    {
      remote_compl_dir = "/home/username/.cache/R.nvim",
      remote_R_host = "192.168.1.108",
+   }
+<
+Example using an environment variable:
+>lua
+   {
+     remote_R_host = vim.env.PROJ_XYZ_HOST and vim.env.PROJ_XYZ_HOST or "",
    }
 <
 Start Neovim and start R. Nvimcom should be automatically installed on the

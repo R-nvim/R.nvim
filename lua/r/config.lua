@@ -627,7 +627,8 @@ end
 --- The key names, types and values of user options are all checked before
 --- being applied. If a check fails, a warning is show, and the default option
 --- is used instead.
-local apply_user_opts = function()
+---@param opts any An option or table of options supplied by the user
+local apply_user_opts = function(opts)
     -- Ensure that some config options will be in lower case
     for _, v in pairs({
         "auto_start",
@@ -638,7 +639,7 @@ local apply_user_opts = function()
         "setwd",
         "set_params",
     }) do
-        if user_opts[v] then user_opts[v] = string.lower(user_opts[v]) end
+        if opts[v] then opts[v] = string.lower(opts[v]) end
     end
 
     -- stylua: ignore start
@@ -741,7 +742,7 @@ local apply_user_opts = function()
         config_chunk[key[#key]] = user_opt
     end
 
-    apply(user_opts, {})
+    apply(opts, {})
 end
 
 local set_directories = function()
@@ -1067,7 +1068,7 @@ local global_setup = function()
         vim.g.R_Nvim_status = 1
     end
 
-    apply_user_opts()
+    apply_user_opts(user_opts)
 
     -- Config values that depend on either system features or other config
     -- values.
@@ -1185,6 +1186,12 @@ M.real_setup = function()
     hooks.run(config, "on_filetype", false)
 
     require("r.rproj").apply_settings(config)
+
+    local rnc = vim.api.nvim_buf_get_name(0):match("(.*/).*") .. "rnvim_config.lua"
+    if vim.uv.fs_access(rnc, "R") then
+        local opts = dofile(rnc)
+        apply_user_opts(opts)
+    end
 
     local no_ts = { "rhelp" }
     if config.register_treesitter then
