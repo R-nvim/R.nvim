@@ -1293,7 +1293,7 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP szl, SEXP tml,
     if (verbose > 0)
         REprintf("nvimcom %s loaded\n", CHAR(STRING_ELT(nvv, 0)));
 
-    if (getenv("SSH_CONNECTION")) {
+    if (getenv("RNVIM_REMOTE_R") && getenv("SSH_CONNECTION")) {
         strncpy(rns_addr, getenv("SSH_CONNECTION"), 31);
         for (int i = 1; i < 31; i++) {
             if (rns_addr[i] == ' ') {

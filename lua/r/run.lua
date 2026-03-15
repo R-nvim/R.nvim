@@ -15,7 +15,8 @@ local uv = vim.uv
 ---Get the directory where R should start
 ---@return string | nil
 local get_R_start_dir = function()
-    if not config.remote_R_host == "" then return nil end
+    -- `rsd` will not be a real directory if editing a file on the internet
+    -- with netrw plugin
     local rsd
     if config.setwd == "file" then
         rsd = M.get_buf_dir()
@@ -65,7 +66,6 @@ start_R2 = function()
 
     local start_options = {
         'Sys.setenv(R_DEFAULT_PACKAGES = "' .. rdp:gsub(",nvimcom", "") .. '")',
-        'Sys.setenv(RNVIM_COMPLDIR = "' .. config.compldir:gsub(" ", "\\ ") .. '")',
         'Sys.setenv(RNVIM_ID= "' .. vim.env.RNVIM_ID .. '")',
         'Sys.setenv(RNVIM_SECRET = "' .. vim.env.RNVIM_SECRET .. '")',
         'Sys.setenv(RNVIM_PORT = "' .. vim.env.RNVIM_PORT .. '")',
@@ -74,6 +74,20 @@ start_R2 = function()
         "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")",
         'options(nvimcom.set_params = "' .. config.set_params .. '")',
     }
+    local cmpd
+    if config.remote_R_host == "" then
+        cmpd = config.compldir:gsub(" ", "\\ ")
+        local rsd = get_R_start_dir()
+        if rsd then
+            if vim.fn.isdirectory(rsd) == 1 then
+                table.insert(start_options, 'setwd("' .. rsd .. '")')
+            end
+        end
+    else
+        cmpd = config.remote_compl_dir:gsub(" ", "\\ ")
+        table.insert(start_options, 'Sys.setenv(RNVIM_REMOTE_R = "TRUE")')
+    end
+    table.insert(start_options, 'Sys.setenv(RNVIM_COMPLDIR = "' .. cmpd .. '")')
     if config.debug then
         table.insert(start_options, "options(nvimcom.debug_r = TRUE)")
     else
@@ -115,15 +129,6 @@ start_R2 = function()
         start_options,
         'options(nvimcom.source.path = "' .. config.source_file .. '")'
     )
-
-    local rsd = get_R_start_dir()
-    if rsd then
-        -- `rwd` will not be a real directory if editing a file on the internet
-        -- with netrw plugin
-        if vim.fn.isdirectory(rsd) == 1 and config.remote_R_host == "" then
-            table.insert(start_options, 'setwd("' .. rsd .. '")')
-        end
-    end
 
     if vim.o.encoding == "utf-8" then
         vim.fn.writefile(start_options, config.tmpdir .. "/start_options_utf8.R")
