@@ -5,7 +5,7 @@
 
 #include "global_vars.h"
 #include "logging.h"
-#include "../common.h"
+#include "../nvimcom/src/common.h"
 #include "obbr.h"
 #include "utilities.h"
 #include "lsp.h"
@@ -53,8 +53,8 @@ void init_obbr_vars(void) {
     else
         OpenLS = 0;
 
-    snprintf(liblist, 575, "%s/liblist_%s", localtmpdir, getenv("RNVIM_ID"));
-    snprintf(globenv, 575, "%s/globenv_%s", localtmpdir, getenv("RNVIM_ID"));
+    snprintf(liblist, 575, "%s/liblist_%s", tmpdir, getenv("RNVIM_ID"));
+    snprintf(globenv, 575, "%s/globenv_%s", tmpdir, getenv("RNVIM_ID"));
 
     if (getenv("RNVIM_OBJBR_ALLNAMES"))
         allnames = 1;

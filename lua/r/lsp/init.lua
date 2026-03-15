@@ -737,9 +737,8 @@ M.attach_to_buffer = function(bufnr)
 end
 
 --- Start rnvimserver
----@param rns_path string Full rnvimserver path
 ---@param rns_env table Environment variables
-function M.start(rns_path, rns_env)
+function M.start(rns_env)
     vim.lsp.config("r_ls", {})
     require("r.lsp.workspace").setup()
 
@@ -751,12 +750,12 @@ function M.start(rns_path, rns_env)
 
     client_id = vim.lsp.start({
         name = "r_ls",
-        cmd = { rns_path },
+        cmd = { "rnvimserver" },
         -- cmd = {
         --     "valgrind",
         --     "--leak-check=full",
         --     "--log-file=/tmp/rnvimserver_valgrind_log",
-        --     rns_path,
+        --     "rnvimserver",
         -- },
         cmd_env = rns_env,
         on_exit = on_exit,

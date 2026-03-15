@@ -98,59 +98,11 @@ local init_stderr = function(_, data, _)
     end
 end
 
----Find the path to the rnvimserver executable in the specified library directory.
----@param libdir string
----@return string
-local find_rns_path = function(libdir)
-    local rns
-    if config.is_windows then
-        rns = "rnvimserver.exe"
-    else
-        rns = "rnvimserver"
-    end
-    local paths = {
-        libdir .. "/bin/" .. rns,
-        libdir .. "/bin/x64/" .. rns,
-        libdir .. "/bin/i386/" .. rns,
-    }
-    for _, path in ipairs(paths) do
-        if vim.fn.filereadable(path) == 1 then return path end
-    end
-    warn('Application "' .. rns .. '" not found at "' .. libdir .. '"')
-    return ""
-end
-
 -- Check and set some variables and, finally, start the rnvimserver
 local start_rnvimserver = function()
     if vim.g.R_Nvim_status > 1 then return end
 
-    local rns_path
-
-    if config.local_R_library_dir ~= "" then
-        rns_path = find_rns_path(config.local_R_library_dir .. "/nvimcom")
-    else
-        local info_path = config.compldir .. "/nvimcom_info"
-        if vim.fn.filereadable(info_path) == 1 then
-            local info = vim.fn.readfile(info_path)
-            if #info == 3 then
-                -- Update nvimcom information
-                edit.add_to_debug_info(
-                    "nvimcom info",
-                    { version = info[1], home = info[2], Rversion = info[3] }
-                )
-                rns_path = find_rns_path(info[2])
-            else
-                vim.fn.delete(info_path)
-                warn("ERROR in nvimcom_info! Please, do :RDebugInfo for details.")
-                return
-            end
-        else
-            warn("ERROR: nvimcom_info not found. Please, run :RDebugInfo for details.")
-            return
-        end
-    end
-
-    local rns_dir = rns_path:gsub("/rnvimserver.*", "")
+    local rns_dir = config.rnvim_home .. "/rnvimserver"
 
     -- Some pdf viewers run rnvimserver to send SyncTeX messages back to Neovim
     if config.is_windows then
@@ -165,7 +117,6 @@ local start_rnvimserver = function()
     if config.objbr_openlist then rns_env.RNVIM_OPENLS = "TRUE" end
     if config.objbr_allnames then rns_env.RNVIM_OBJBR_ALLNAMES = "TRUE" end
     rns_env.RNVIM_RPATH = config.R_cmd
-    rns_env.RNVIM_LOCAL_TMPDIR = config.localtmpdir
     rns_env.RNVIM_MAX_DEPTH = tostring(config.compl_data.max_depth)
     local disable_parts = {}
     if not config.r_ls.completion then table.insert(disable_parts, "completion") end
@@ -184,7 +135,7 @@ local start_rnvimserver = function()
     if config.is_windows then require("r.windows").set_R_home() end
 
     vim.g.R_Nvim_status = 2
-    require("r.lsp").start(rns_path:match(".*/(.*)"), rns_env)
+    require("r.lsp").start(rns_env)
 
     if config.is_windows then require("r.windows").unset_R_home() end
 
@@ -217,7 +168,6 @@ local function build_package()
 end
 
 -- Check if the exit code of the script that built nvimcom was zero
--- and if the file nvimcom_info seems to be OK (has three lines).
 local init_exit = function(_, data, _)
     local cnv_again = 0
 
@@ -360,20 +310,100 @@ M.update_Rhelp_list = function(libnames)
 end
 
 M.check_nvimcom_version = function()
-    list_libs_from_buffer()
-
     local flines
     local nvimcom_desc_path = config.rnvim_home .. "/nvimcom/DESCRIPTION"
+    local current = "0.0.0"
+    local nvc_fn
 
     if vim.fn.filereadable(nvimcom_desc_path) == 1 then
         local ndesc = vim.fn.readfile(nvimcom_desc_path)
-        local current = string.gsub(ndesc[2], "Version: ", "")
+        current = string.gsub(ndesc[2], "Version: ", "")
         flines = { 'needed_nvc_version <- "' .. current .. '"' }
     else
         flines = { "needed_nvc_version <- NULL" }
     end
+    if config.remote_R_host ~= "" then
+        local obj
+        obj = vim.system({ "df" }, { text = true }):wait()
+        if not obj.stdout:find(".cache/R.nvim") then
+            local _, err =
+                vim.uv.fs_mkdir(config.compldir .. "/remote", tonumber("755", 8))
+            if err and not err:find("EEXIST") then
+                warn(err)
+                return
+            end
+            obj = vim.system({
+                "sshfs",
+                "-o",
+                "sync_readdir",
+                "-o",
+                "sshfs_sync",
+                config.remote_R_host .. ":" .. config.remote_compl_dir,
+                config.compldir .. "/remote",
+            }, { text = true }):wait()
+            if obj.code ~= 0 then
+                warn(obj.stderr)
+                return
+            end
+            _, err = vim.uv.fs_mkdir(config.compldir .. "/remote/tmp", tonumber("755", 8))
+            if err and not err:find("EEXIST") then
+                warn(err)
+                return
+            end
+        end
 
-    table.insert(flines, 'nvim_r_home <- "' .. config.rnvim_home .. '"')
+        table.insert(
+            flines,
+            "Sys.setenv(RNVIM_COMPLDIR = '" .. config.remote_compl_dir .. "')"
+        )
+        table.insert(
+            flines,
+            "Sys.setenv(RNVIM_TMPDIR = '" .. config.remote_compl_dir .. "/tmp')"
+        )
+        table.insert(flines, 'nvim_r_home <- "not needed"')
+        nvc_fn = config.compldir .. "/remote/nvimcom_" .. current .. ".tar.gz"
+    else
+        table.insert(flines, 'nvim_r_home <- "' .. config.rnvim_home .. '"')
+        nvc_fn = config.compldir .. "/nvimcom_" .. current .. ".tar.gz"
+    end
+
+    if vim.fn.filereadable(nvc_fn) == 0 then
+        local oldf = vim.fn.glob("~/.cache/R.nvim/nvimcom_*.tar.gz", true, true)
+        for _, o in ipairs(oldf) do
+            vim.uv.fs_unlink(o)
+        end
+        local obj = vim.system(
+            { "tar", "czf", nvc_fn, "nvimcom" },
+            { text = true, cwd = config.rnvim_home }
+        ):wait()
+        if obj.code ~= 0 then warn(obj.stderr) end
+    end
+
+    local t1 = vim.uv.hrtime()
+    local cmd
+    if config.is_windows then
+        cmd = { "make", "-f", "Makefile.win" }
+    else
+        cmd = { "make" }
+    end
+    local obj =
+        vim.system(cmd, { text = true, cwd = config.rnvim_home .. "/rnvimserver" }):wait()
+    if obj.code ~= 0 then
+        warn(
+            string.format(
+                "Error making rnvimserver [%d].\nstdout:\n%s\nstderr:\n%s",
+                obj.code,
+                obj.stdout,
+                obj.stderr
+            )
+        )
+    end
+    local t2 = vim.uv.hrtime()
+    local mktm = (t2 - t1) / 1000000000
+    require("r.edit").add_to_debug_info("make rnvimserver", mktm, "Time")
+
+    list_libs_from_buffer()
+
     vim.list_extend(
         flines,
         vim.fn.readfile(config.rnvim_home .. "/resources/before_rns.R")
@@ -382,6 +412,9 @@ M.check_nvimcom_version = function()
     local scrptnm = config.tmpdir .. "/before_rns.R"
     vim.fn.writefile(flines, scrptnm)
     edit.add_for_deletion(config.tmpdir .. "/before_rns.R")
+    if config.remote_R_host ~= "" then
+        scrptnm = config.remote_tmpdir .. "/before_rns.R"
+    end
 
     -- Run the script as a job, setting callback functions to receive its
     -- stdout, stderr, and exit code.
@@ -391,17 +424,14 @@ M.check_nvimcom_version = function()
         on_exit = init_exit,
     }
 
-    local remote_compldir = config.remote_compldir
-    if config.remote_compldir ~= "" then
-        scrptnm = remote_compldir .. "/tmp/before_rns.R"
-    end
-
     b_time = uv.hrtime()
-    require("r.job").start(
-        "Init R",
-        { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm },
-        jobh
-    )
+    cmd =
+        { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm }
+    if config.remote_R_host ~= "" then
+        table.insert(cmd, 1, config.remote_R_host)
+        table.insert(cmd, 1, "ssh")
+    end
+    require("r.job").start("Init R", cmd, jobh)
 end
 
 --- Build objls_ files
@@ -412,8 +442,23 @@ M.build_cache_files = function()
         "  verbose = FALSE, quietly = TRUE, mask.ok = 'vi')",
         "nvimcom:::nvim.build.cmplls()",
     }
+    if config.remote_R_host ~= "" then
+        table.insert(
+            Rcode,
+            1,
+            "Sys.setenv(RNVIM_COMPLDIR = '" .. config.remote_compl_dir .. "')"
+        )
+        table.insert(
+            Rcode,
+            1,
+            "Sys.setenv(RNVIM_TMPDIR = '" .. config.remote_compl_dir .. "/tmp')"
+        )
+    end
     local scrptnm = config.tmpdir .. "/bo_code.R"
     vim.fn.writefile(Rcode, scrptnm)
+    if config.remote_R_host ~= "" then
+        scrptnm = config.remote_compl_dir .. "/tmp/bo_code.R"
+    end
     local opts = {
         on_stdout = init_stdout,
         on_stderr = init_stderr,
@@ -421,11 +466,13 @@ M.build_cache_files = function()
     }
 
     building_objls = true
-    require("r.job").start(
-        "Build completion data",
-        { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm },
-        opts
-    )
+    local cmd =
+        { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm }
+    if config.remote_R_host ~= "" then
+        table.insert(cmd, 1, config.remote_R_host)
+        table.insert(cmd, 1, "ssh")
+    end
+    require("r.job").start("Build completion data", cmd, opts)
 end
 
 -- Called by rnvimserver when it gets an error running R code
@@ -437,7 +484,6 @@ M.show_bol_error = function(stt)
             ferr:find("Error in library..nvimcom...*there is no package called .*nvimcom")
         then
             -- This will happen if the user manually changes .libPaths
-            vim.fn.delete(config.compldir .. "/nvimcom_info")
             errmsg = errmsg .. "\nPlease, restart " .. vim.v.progname
         end
         edit.add_to_debug_info("Error running R code", errmsg)

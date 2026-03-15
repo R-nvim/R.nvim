@@ -8,7 +8,7 @@
 #include "lsp.h"
 #include "tcp.h"
 #include "utilities.h"
-#include "../common.h"
+#include "../nvimcom/src/common.h"
 
 static char *sig_buf;
 static size_t sig_buf_sz = 1024;

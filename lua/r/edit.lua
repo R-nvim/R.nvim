@@ -139,11 +139,14 @@ M.vim_leave = function()
         vim.fn.delete(fn)
     end
 
-    -- There is no need to check if `rmdir` is executable because it's
-    -- available in every system: https://en.wikipedia.org/wiki/Rmdir
-    vim.fn.jobstart("rmdir '" .. config.tmpdir .. "'", { detach = true })
-    if config.localtmpdir ~= config.tmpdir then
-        vim.fn.jobstart("rmdir '" .. config.localtmpdir .. "'", { detach = true })
+    if config.remote_R_host == "" then
+        -- There is no need to check if `rmdir` is executable because it's
+        -- available in every system: https://en.wikipedia.org/wiki/Rmdir
+        vim.fn.jobstart("rmdir '" .. config.tmpdir .. "'", { detach = true })
+    else
+        local cmd = { "umount", config.compldir .. "/remote" }
+        local obj = vim.system(cmd, { text = true }):wait()
+        if obj.code ~= 0 then warn(obj.stderr) end
     end
 end
 

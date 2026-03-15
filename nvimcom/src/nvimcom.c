@@ -68,6 +68,7 @@ static int allnames = 0; // Show hidden objects in auto completion and
 static int fun_args = 1; // Complete arguments of .GlovalEnv functions?
 static int nlibs = 0;    // Number of loaded libraries.
 
+static char rns_addr[32]; // rnvimserver ip address.
 static char rns_port[16]; // rnvimserver port.
 static char nvimsecr[32]; // Random string used to increase the safety of TCP
                           // communication.
@@ -1291,10 +1292,21 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP szl, SEXP tml,
 
     if (verbose > 0)
         REprintf("nvimcom %s loaded\n", CHAR(STRING_ELT(nvv, 0)));
-    if (verbose > 1) {
-        if (getenv("NVIM_IP_ADDRESS")) {
-            REprintf("  NVIM_IP_ADDRESS: %s\n", getenv("NVIM_IP_ADDRESS"));
+
+    if (getenv("RNVIM_REMOTE_R") && getenv("SSH_CONNECTION")) {
+        strncpy(rns_addr, getenv("SSH_CONNECTION"), 31);
+        for (int i = 1; i < 31; i++) {
+            if (rns_addr[i] == ' ') {
+                rns_addr[i] = '\0';
+                break;
+            }
         }
+    } else {
+        strcpy(rns_addr, "127.0.0.1");
+    }
+
+    if (verbose > 1) {
+        REprintf("  NVIM_IP_ADDRESS: %s\n", rns_addr);
         REprintf("  R_LS_DOC_WIDTH: %s\n", getenv("R_LS_DOC_WIDTH"));
         REprintf("  RNVIM_PORT: %s\n", rns_port);
         REprintf("  RNVIM_ID: %s\n", getenv("RNVIM_ID"));
@@ -1341,10 +1353,7 @@ SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP szl, SEXP tml,
 
             // assign IP, PORT
             servaddr.sin_family = AF_INET;
-            if (getenv("NVIM_IP_ADDRESS"))
-                servaddr.sin_addr.s_addr = inet_addr(getenv("NVIM_IP_ADDRESS"));
-            else
-                servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+            servaddr.sin_addr.s_addr = inet_addr(rns_addr);
             servaddr.sin_port = htons(atoi(rns_port));
 
             // connect the client socket to server socket

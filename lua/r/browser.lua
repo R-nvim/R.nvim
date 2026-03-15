@@ -411,9 +411,9 @@ function M.update_OB(what)
     -- Read the data from temporary files created by R
     local lines
     if wht == "GlobalEnv" then
-        lines = vim.fn.readfile(config.localtmpdir .. "/globenv_" .. vim.env.RNVIM_ID)
+        lines = vim.fn.readfile(config.tmpdir .. "/globenv_" .. vim.env.RNVIM_ID)
     else
-        lines = vim.fn.readfile(config.localtmpdir .. "/liblist_" .. vim.env.RNVIM_ID)
+        lines = vim.fn.readfile(config.tmpdir .. "/liblist_" .. vim.env.RNVIM_ID)
     end
     if not lines then lines = { "Error loading data" } end
 
