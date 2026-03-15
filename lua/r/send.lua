@@ -205,7 +205,7 @@ end
 ---@param what string|nil Additional operation to perform
 ---@return boolean
 M.source_lines = function(lines, what)
-    require("r.edit").add_for_deletion(config.source_write)
+    require("r.edit").add_for_deletion(config.source_file)
 
     local rcmd
 
@@ -215,11 +215,11 @@ M.source_lines = function(lines, what)
             rcmd = 'reticulate::py_run_string(r"---(' .. rcmd .. ')---")'
         end
     else
-        vim.fn.writefile(lines, config.source_write)
+        vim.fn.writefile(lines, config.source_file)
         local sargs = string.gsub(M.get_source_args(), "^, ", "")
         if what then
             if what == "PythonCode" then
-                rcmd = 'reticulate::py_run_file("' .. config.source_read .. '")'
+                rcmd = 'reticulate::py_run_file("' .. config.source_file .. '")'
             else
                 rcmd = "Rnvim." .. what .. "(" .. sargs .. ")"
             end
@@ -704,9 +704,7 @@ M.get_pipe_chain = function(bufnr, include_assignment)
             local op = parent:field("operator")[1]
             if op then
                 local op_text = vim.treesitter.get_node_text(op, bufnr)
-                if op_text == "<-" or op_text == "=" then
-                    node = parent
-                end
+                if op_text == "<-" or op_text == "=" then node = parent end
             end
         end
     end
@@ -741,7 +739,8 @@ M.chain = function()
     local pipe_start_row, _, pipe_end_row = pipe_node:range()
 
     -- Check if cursor is on a comment line
-    local cur_line = vim.api.nvim_buf_get_lines(bufnr, cursor_row, cursor_row + 1, false)[1] or ""
+    local cur_line = vim.api.nvim_buf_get_lines(bufnr, cursor_row, cursor_row + 1, false)[1]
+        or ""
     local on_comment = cur_line:match("^%s*#") ~= nil
 
     for id, node, _ in call_query:iter_captures(root, bufnr, pipe_start_row, pipe_end_row) do
