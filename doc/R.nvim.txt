@@ -2153,7 +2153,7 @@ want to know what they are, while editing an R file, do in Normal mode:
 							       *remote_R_host*
 
 If you want to run R on a remote machine from a local Neovim, you have to
-install it on the local machine:
+install the following tools on the local machine:
 
   - `sshfs` (used to mount the remote cache directory).
   - `ssh` (used to run R).
