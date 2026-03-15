@@ -335,7 +335,7 @@ local hooks = require("r.hooks")
 ---IP address, hostname or alias of remote machine where R installed.
 ---This option should be set only if you are running R in a remote machine
 ---from a local Neovim.
----@field remote_R_addr? string
+---@field remote_R_host? string
 ---
 ---IP address, hostname or alias of local machine (this machine) where Neovim is istalled.
 ---This option should be set only if you are running R in a remote machine
@@ -543,8 +543,7 @@ local config = {
     rconsole_width = 80,
     register_treesitter = true,
     remote_compl_dir = "",
-    remote_R_addr = "",
-    local_nvim_addr = "127.0.0.1",
+    remote_R_host = "",
     rm_knit_cache = false,
     rmarkdown_args = "",
     rmd_environment = ".GlobalEnv",
@@ -843,8 +842,11 @@ local set_directories = function()
     end
 
     -- Adjust options when accessing R remotely
-    if config.remote_R_addr ~= "" then
+    if config.remote_R_host ~= "" then
         config.tmpdir = config.compldir .. "/remote/tmp"
+        if config.remote_compl_dir == "" then
+            config.remote_compl_dir = config.compldir
+        end
         config.remote_tmpdir = config.remote_compl_dir .. "/tmp"
     end
 
@@ -1100,9 +1102,9 @@ local global_setup = function()
 
     require("r.commands").create_user_commands()
 
-    if config.remote_R_addr ~= "" then
+    if config.remote_R_host ~= "" then
         config.R_args = {
-            config.remote_R_addr,
+            config.remote_R_host,
             "-t",
             " R_DEFAULT_PACKAGES=datasets,utils,grDevices,graphics,stats,methods,nvimcom RNVIM_TMPDIR="
                 .. config.remote_tmpdir

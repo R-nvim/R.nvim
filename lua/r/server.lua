@@ -322,7 +322,7 @@ M.check_nvimcom_version = function()
     else
         flines = { "needed_nvc_version <- NULL" }
     end
-    if config.remote_R_addr ~= "" then
+    if config.remote_R_host ~= "" then
         local obj
         obj = vim.system({ "df" }, { text = true }):wait()
         if not obj.stdout:find(".cache/R.nvim") then
@@ -338,7 +338,7 @@ M.check_nvimcom_version = function()
                 "sync_readdir",
                 "-o",
                 "sshfs_sync",
-                config.remote_R_addr .. ":" .. config.remote_compl_dir,
+                config.remote_R_host .. ":" .. config.remote_compl_dir,
                 config.compldir .. "/remote",
             }, { text = true }):wait()
             if obj.code ~= 0 then
@@ -412,7 +412,7 @@ M.check_nvimcom_version = function()
     local scrptnm = config.tmpdir .. "/before_rns.R"
     vim.fn.writefile(flines, scrptnm)
     edit.add_for_deletion(config.tmpdir .. "/before_rns.R")
-    if config.remote_R_addr ~= "" then
+    if config.remote_R_host ~= "" then
         scrptnm = config.remote_tmpdir .. "/before_rns.R"
     end
 
@@ -427,8 +427,8 @@ M.check_nvimcom_version = function()
     b_time = uv.hrtime()
     local cmd =
         { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm }
-    if config.remote_R_addr ~= "" then
-        table.insert(cmd, 1, config.remote_R_addr)
+    if config.remote_R_host ~= "" then
+        table.insert(cmd, 1, config.remote_R_host)
         table.insert(cmd, 1, "ssh")
     end
     require("r.job").start("Init R", cmd, jobh)
@@ -442,7 +442,7 @@ M.build_cache_files = function()
         "  verbose = FALSE, quietly = TRUE, mask.ok = 'vi')",
         "nvimcom:::nvim.build.cmplls()",
     }
-    if config.remote_R_addr then
+    if config.remote_R_host then
         table.insert(
             Rcode,
             1,
@@ -456,7 +456,7 @@ M.build_cache_files = function()
     end
     local scrptnm = config.tmpdir .. "/bo_code.R"
     vim.fn.writefile(Rcode, scrptnm)
-    if config.remote_R_addr ~= "" then
+    if config.remote_R_host ~= "" then
         scrptnm = config.remote_compl_dir .. "/tmp/bo_code.R"
     end
     local opts = {
@@ -468,8 +468,8 @@ M.build_cache_files = function()
     building_objls = true
     local cmd =
         { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm }
-    if config.remote_R_addr ~= "" then
-        table.insert(cmd, 1, config.remote_R_addr)
+    if config.remote_R_host ~= "" then
+        table.insert(cmd, 1, config.remote_R_host)
         table.insert(cmd, 1, "ssh")
     end
     require("r.job").start("Build completion data", cmd, opts)
