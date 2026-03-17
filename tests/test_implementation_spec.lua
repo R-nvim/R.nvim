@@ -61,7 +61,7 @@ describe("LSP find-implementations", function()
             end
         )
 
-        impl_module.find_implementations("req1")
+        impl_module.find_implementations("req1", "print")
 
         local msg = get_last_message()
         assert.is_not_nil(msg)
@@ -83,7 +83,7 @@ describe("LSP find-implementations", function()
             end
         )
 
-        impl_module.find_implementations("req2")
+        impl_module.find_implementations("req2", "summary")
 
         assert.is_not_nil(captured_pattern)
         -- Pattern should match "summary.foo" but not "summary_foo" or "xsummary.foo"
@@ -102,7 +102,7 @@ describe("LSP find-implementations", function()
             function() return {} end
         )
 
-        impl_module.find_implementations("req3")
+        impl_module.find_implementations("req3", "myfunc")
 
         local msg = get_last_message()
         assert.is_not_nil(msg)
@@ -111,11 +111,10 @@ describe("LSP find-implementations", function()
 
     it("sends null on empty cursor", function()
         setup_test("", { 1, 0 })
-        impl_module.find_implementations("req4")
+        impl_module.find_implementations("req4", nil)
 
         local msg = get_last_message()
         assert.is_not_nil(msg)
         assert.equals("Nreq4", msg.code)
     end)
 end)
-

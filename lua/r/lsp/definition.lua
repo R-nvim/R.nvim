@@ -52,8 +52,8 @@ end
 --- Parse a potentially qualified symbol using tree-sitter
 --- Handles pkg::fn (public) and pkg:::fn (internal) namespace operators
 ---@param bufnr integer Buffer number
----@param row integer Cursor row (0-indexed)
----@param col integer Cursor column (0-indexed)
+---@param row integer Row (0-indexed)
+---@param col integer Column (0-indexed)
 ---@return string? pkg Package name or nil
 ---@return string symbol Function/symbol name
 ---@return boolean internal Whether it's an internal symbol (:::)
@@ -62,7 +62,7 @@ local function parse_qualified_name_at_cursor(bufnr, row, col)
 
     local node = ast.node_at_position(bufnr, row, col)
     if not node then
-        local word = require("r.cursor").get_keyword()
+        local word = utils.get_word_at_bufpos(bufnr, row, col) or ""
         return nil, word, false
     end
 
@@ -90,11 +90,11 @@ local function parse_qualified_name_at_cursor(bufnr, row, col)
         current = current:parent()
     end
 
-    -- Not a qualified name, return the symbol under cursor
+    -- Not a qualified name, return the symbol under position
     local word = vim.treesitter.get_node_text(node, bufnr)
-    -- If the node is too large (e.g., we're on whitespace), fall back to get_keyword
+    -- If the node is too large (e.g., we're on whitespace), fall back to position-based lookup
     if #word > 100 or word:match("%s") then
-        word = require("r.cursor").get_keyword()
+        word = utils.get_word_at_bufpos(bufnr, row, col) or ""
     end
     return nil, word, false
 end
@@ -102,11 +102,17 @@ end
 --- Main entry point for goto definition
 --- Called from rnvimserver via client/exeRnvimCmd
 ---@param req_id string LSP request ID
-function M.goto_definition(req_id)
-    local cursor_pos = vim.api.nvim_win_get_cursor(0)
-    local row = cursor_pos[1] - 1 -- Convert to 0-indexed
-    local col = cursor_pos[2]
-    local bufnr = vim.api.nvim_get_current_buf()
+---@param line integer 0-indexed row from LSP params
+---@param col integer 0-indexed column from LSP params
+---@param bufnr integer Source buffer number
+function M.goto_definition(req_id, line, col, bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+    if line == nil or col == nil then
+        local cursor = vim.api.nvim_win_get_cursor(0)
+        line = cursor[1] - 1
+        col = cursor[2]
+    end
+    local row = line
 
     -- Parse qualified name using tree-sitter
     local pkg, symbol, _ = parse_qualified_name_at_cursor(bufnr, row, col)
