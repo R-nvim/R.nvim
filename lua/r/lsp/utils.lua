@@ -421,15 +421,6 @@ function M.deduplicate_locations(locations)
     return unique_locs
 end
 
---- Validate and get keyword at cursor with error handling
----@return string? keyword, string? error
-function M.get_keyword_safe()
-    local ok, word = pcall(require("r.cursor").get_keyword)
-    if not ok then return nil, "Failed to get keyword" end
-    if word == "" then return nil, "No keyword at cursor" end
-    return word, nil
-end
-
 --- Get the R identifier at a specific buffer position (row/col from LSP params).
 ---@param bufnr integer Buffer number
 ---@param row integer 0-indexed row
