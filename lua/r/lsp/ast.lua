@@ -61,6 +61,29 @@ function M.find_ancestor(node, node_types)
     return nil
 end
 
+--- Walk up tree to find ancestor of type, stopping at a boundary node
+---@param node TSNode Starting node
+---@param node_types string|string[] Single type or array of types
+---@param boundary TSNode Stop walking when this node is reached (exclusive)
+---@return TSNode?
+function M.find_ancestor_until(node, node_types, boundary)
+    if type(node_types) == "string" then
+        node_types = { node_types }
+    end
+
+    local current = node:parent()
+    while current and current ~= boundary do
+        for _, node_type in ipairs(node_types) do
+            if current:type() == node_type then
+                return current
+            end
+        end
+        current = current:parent()
+    end
+
+    return nil
+end
+
 --- Walk up tree collecting all ancestors of type
 ---@param node TSNode Starting node
 ---@param node_type string Node type to collect
