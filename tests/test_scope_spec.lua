@@ -176,6 +176,100 @@ outer <- function() {
             assert.equals(4, def.location.line)
         end)
 
+        it("does not leak nested function definitions into outer scope", function()
+            local content = [[
+x <- 100
+outer <- function() {
+    x <- 200
+    inner <- function() {
+        x <- 300
+        result <- x
+    }
+    print(x)
+}
+]]
+            local bufnr = setup_test(content, { 8, 10 })
+            local scope = scope_module.get_scope_at_position(bufnr, 7, 10) -- print(x) line
+            local def = scope_module.resolve_symbol("x", scope)
+
+            assert.is_not_nil(def)
+            assert.equals("x", def.name)
+            -- Should resolve to x <- 200 (line 2, 0-indexed), NOT x <- 300 inside inner
+            assert.equals(2, def.location.line)
+        end)
+
+        it("does not leak variables between sibling functions", function()
+            local content = [[
+func_a <- function() {
+    x <- 10
+}
+func_b <- function() {
+    print(x)
+}
+]]
+            local bufnr = setup_test(content, { 7, 10 })
+            local scope = scope_module.get_scope_at_position(bufnr, 6, 10) -- print(x) in func_b
+            local def = scope_module.resolve_symbol("x", scope)
+
+            -- x from func_a should NOT be visible in func_b
+            assert.is_nil(def)
+        end)
+
+        it("does not resolve forward references", function()
+            local content = [[
+my_func <- function() {
+    print(x)
+    x <- 42
+}
+]]
+            local bufnr = setup_test(content, { 2, 10 })
+            local scope = scope_module.get_scope_at_position(bufnr, 1, 10) -- print(x) line
+            local def = scope_module.resolve_symbol("x", scope)
+
+            -- x is defined AFTER cursor, should not resolve
+            assert.is_nil(def)
+        end)
+
+        it("resolves to middle scope in triple nesting", function()
+            local content = [[
+x <- 1
+outer <- function() {
+    x <- 2
+    middle <- function() {
+        x <- 3
+        inner <- function() {
+            x <- 4
+        }
+        print(x)
+    }
+}
+]]
+            local bufnr = setup_test(content, { 9, 14 })
+            local scope = scope_module.get_scope_at_position(bufnr, 8, 14) -- print(x) in middle
+            local def = scope_module.resolve_symbol("x", scope)
+
+            assert.is_not_nil(def)
+            assert.equals("x", def.name)
+            -- Should resolve to x <- 3 (line 4), not x <- 4 inside inner
+            assert.equals(4, def.location.line)
+        end)
+
+        it("resolves <<- super-assignment in scope", function()
+            local content = [[
+my_func <- function() {
+    x <<- 100
+    print(x)
+}
+]]
+            local bufnr = setup_test(content, { 3, 10 })
+            local scope = scope_module.get_scope_at_position(bufnr, 2, 10) -- print(x) line
+            local def = scope_module.resolve_symbol("x", scope)
+
+            assert.is_not_nil(def)
+            assert.equals("x", def.name)
+            assert.equals(1, def.location.line)
+        end)
+
         it("returns nil for undefined symbol", function()
             local content = [[
 x <- 42

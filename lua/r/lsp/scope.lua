@@ -76,7 +76,9 @@ local function find_definition_with_locals(
     for id, node in query:iter_captures(scope_node, bufnr) do
         if query.captures[id] == "local.definition" then
             local text = vim.treesitter.get_node_text(node, bufnr)
-            if text == symbol then
+            if text == symbol
+                and not ast.find_ancestor_until(node, "function_definition", scope_node)
+            then
                 local is_parameter = ast.find_ancestor(node, { "parameter", "argument" })
                     ~= nil
 
@@ -177,7 +179,9 @@ local function find_definition_with_custom_query(
         local capture_name = query.captures[id]
         if capture_name == "name" or capture_name == "var_name" or capture_name == "target_name" then
             local text = vim.treesitter.get_node_text(node, bufnr)
-            if text == symbol then
+            if text == symbol
+                and not ast.find_ancestor_until(node, "function_definition", search_node)
+            then
                 local start_row, start_col = node:start()
                 -- Only consider assignments before the cursor
                 if
