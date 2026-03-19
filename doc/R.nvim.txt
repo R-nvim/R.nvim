@@ -677,14 +677,19 @@ defined by your colorscheme.
 ------------------------------------------------------------------------------
 4.7 roxygen2 support                                         *R.nvim-roxygen2*
 
-R.nvim supports the insertion of roxygen2 skeletons in R scripts. To insert a
-new roxygen2 block, you can use the `:ROxygenize` command while the cursor is
+R.nvim supports the insertion of ROxygen2 skeletons in R scripts. To insert a
+new ROxygen2 block, you can use the `:ROxygenize` command while the cursor is
 inside a function definition. If a block of roxygen2 is already present, no
 modification will be made.
 
 Set the value of `roxygen_hl` to `true` to enable highlighting of ROxygen
 comments and ROxygen-specific LSP completion behavior (tag completion, Rhelp
-keyword completion, and R code completion inside `@examples`).
+keyword completion, and R code completion inside `@examples`). The
+highlighting is updated when leaving Insert mode.
+
+Code from ROxygen examples can be sent only as a selection of lines because
+the other sending commands rely on tree-sitter-r, which currently doesn't
+support ROxygen.
 
 
 ==============================================================================

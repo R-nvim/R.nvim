@@ -102,7 +102,9 @@ A longer example adding some custom behaviour:
 ```
 
 See the plugin [documentation](doc/R.nvim.txt) for a complete list of
-possible options. You can also consult the [Wiki](https://github.com/R-nvim/R.nvim/wiki).
+possible options.
+You can also consult the [Wiki](https://github.com/R-nvim/R.nvim/wiki) and
+[R.nvim-config-examples](https://github.com/R-nvim/R.nvim-config-examples).
 
 ### Autocompletion
 
@@ -114,7 +116,14 @@ sources simultaneously is not advised.
 
 ### Tree-sitter
 
-Tree-sitter is required to enable much of the functionality of R.nvim. Note that nvim-treesitter has been completely rewritten on the [main branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/main) and the configuration used in the [master branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/master) is not compatible with the new version. In the example below, we provide minimal configurations for both branches. Please choose the one that matches your installation.
+Tree-sitter is required to enable much of the functionality of R.nvim. Note
+that nvim-treesitter has been completely rewritten on
+the [main branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/main)
+and the configuration used in
+the [master branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/master)
+is not compatible with the new version. In the example below, we provide
+minimal configurations for both branches. Please choose the one that matches
+your installation.
 
 If you are using [nvim-treesitter master branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/master):
 
