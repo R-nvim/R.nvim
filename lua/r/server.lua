@@ -380,14 +380,11 @@ M.check_nvimcom_version = function()
     end
 
     local t1 = vim.uv.hrtime()
-    local cmd
-    if config.is_windows then
-        cmd = { "make", "-f", "Makefile.win" }
-    else
-        cmd = { "make" }
-    end
-    local obj =
-        vim.system(cmd, { text = true, cwd = config.rnvim_home .. "/rnvimserver" }):wait()
+    local obj = vim.system(
+        { "make" },
+        { text = true, cwd = config.rnvim_home .. "/rnvimserver" }
+    )
+        :wait()
     if obj.code ~= 0 then
         warn(
             string.format(
@@ -425,7 +422,7 @@ M.check_nvimcom_version = function()
     }
 
     b_time = uv.hrtime()
-    cmd =
+    local cmd =
         { config.R_cmd, "--quiet", "--no-save", "--no-restore", "--slave", "-f", scrptnm }
     if config.remote_R_host ~= "" then
         table.insert(cmd, 1, config.remote_R_host)
