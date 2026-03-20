@@ -153,15 +153,22 @@ M.hl = function()
     }
     vim.api.nvim_buf_clear_namespace(0, ons, 0, -1)
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
-    if string.find(lines[1], "^%s*#' ") then
-        local o = { end_row = 0, end_col = string.len(lines[1]), hl_group = "Title" }
-        vim.api.nvim_buf_set_extmark(0, ons, 0, 2, o)
-    end
+    local empty_prv_line = true
 
     local nlines = #lines
     local k = 1
     while k <= nlines do
         local v = lines[k]
+        if
+            empty_prv_line
+            and v:find("^%s*#' ")
+            and not v:find("^%s*#'%s+@[a-zA-Z0-9]")
+        then
+            local o = { end_row = k - 1, end_col = string.len(v), hl_group = "Title" }
+            vim.api.nvim_buf_set_extmark(0, ons, k - 1, 2, o)
+        end
+        empty_prv_line = v:find("^%s*$") and true or false
+
         if v:find("^%s*#'%s+@[a-zA-Z0-9]") then
             local i, j = v:find("@[a-zA-Z0-9]*")
             if i then
@@ -169,7 +176,17 @@ M.hl = function()
                 local hlg = "Error"
                 for _, v2 in pairs(rotags) do
                     if tag == v2 then
-                        hlg = "Operator"
+                        hlg = "Keyword"
+                        if tag == "param" or tag == "importFrom" then
+                            local m, n = v:find("[a-zA-Z0-9\\]+", j + 1)
+                            if m and n then
+                                vim.api.nvim_buf_set_extmark(0, ons, k - 1, m - 1, {
+                                    end_row = k - 1,
+                                    end_col = n,
+                                    hl_group = "Variable",
+                                })
+                            end
+                        end
                         break
                     end
                 end
