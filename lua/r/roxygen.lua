@@ -165,7 +165,8 @@ M.hl = function()
             and not v:find("^%s*#'%s+@[a-zA-Z0-9]")
         then
             local o = { end_row = k - 1, end_col = string.len(v), hl_group = "Title" }
-            vim.api.nvim_buf_set_extmark(0, ons, k - 1, 2, o)
+            local i = v:find("'")
+            vim.api.nvim_buf_set_extmark(0, ons, k - 1, i + 1, o)
         end
         empty_prv_line = v:find("^%s*$") and true or false
 
@@ -178,7 +179,7 @@ M.hl = function()
                     if tag == v2 then
                         hlg = "Keyword"
                         if tag == "param" or tag == "importFrom" then
-                            local m, n = v:find("[a-zA-Z0-9\\]+", j + 1)
+                            local m, n = v:find("[a-zA-Z0-9_%.\\]+", j + 1)
                             if m and n then
                                 vim.api.nvim_buf_set_extmark(0, ons, k - 1, m - 1, {
                                     end_row = k - 1,
