@@ -657,6 +657,13 @@ M.definition = function(req_id, line, col, bufnr)
     require("r.lsp.definition").goto_definition(req_id, line, col, bufnr)
 end
 
+---Find workspace symbols matching a query
+---@param req_id string
+---@param query string
+M.workspace_symbols = function(req_id, query)
+    require("r.lsp.symbols").workspace_symbols(req_id, query)
+end
+
 ---Get document symbols for the current buffer
 ---@param req_id string
 M.document_symbols = function(req_id)

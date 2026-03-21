@@ -148,12 +148,10 @@ void send_cmd_to_nvim(const char *cmd) {
 
     size_t j = 0;
     for (size_t i = 0; i < len; i++) {
-        if (cmd[i] == '"') {
-            esccmd[j] = '\\';
-            j++;
+        if (cmd[i] == '"' || cmd[i] == '\\') {
+            esccmd[j++] = '\\';
         }
-        esccmd[j] = cmd[i];
-        j++;
+        esccmd[j++] = cmd[i];
     }
     esccmd[j] = 0;
     char *exeCmd = (char *)malloc(sizeof(char) * (124 + strlen(esccmd)));
@@ -268,6 +266,12 @@ static void handle_initialize(const char *request_id) {
         p = str_cat(p, "\"documentHighlightProvider\":true");
         has_cpblt = 1;
     }
+    if (!disable || strstr(disable, "workspaceSymbol") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"workspaceSymbolProvider\":true");
+        has_cpblt = 1;
+    }
 
     str_cat(p, "}}}");
 
@@ -280,6 +284,7 @@ static void handle_initialize(const char *request_id) {
 static void send_location_result(const char *params);
 static void send_definition_result(const char *params);
 static void send_document_symbols_result(const char *params);
+static void send_workspace_symbols_result(const char *params);
 static void send_references_result(const char *params);
 static void send_implementation_result(const char *params);
 static void send_document_highlight_result(const char *params);
@@ -323,6 +328,9 @@ static void handle_exe_cmd(const char *params) {
         break;
     case 'Y': // Document symbols result from Lua
         send_document_symbols_result(params);
+        break;
+    case 'W': // Workspace symbols result from Lua
+        send_workspace_symbols_result(params);
         break;
     case 'R': // References result from Lua
         send_references_result(params);
@@ -629,48 +637,69 @@ static void send_definition_result(const char *params) {
     send_location_result(params);
 }
 
-static void send_document_symbols_result(const char *params) {
+static void send_symbols_result(const char *params) {
     char *id = strstr(params, "\"orig_id\":");
     char *symbols = strstr(params, "\"symbols\":");
-
-    if (!id) {
+    if (!id)
         return;
-    }
-
     cut_json_int(&id, 10);
-
     if (!symbols) {
         send_null(id);
         return;
     }
-
-    // Find the symbols array
     char *arr_start = strchr(symbols, '[');
     char *arr_end = strrchr(symbols, ']');
     if (!arr_start || !arr_end) {
         send_null(id);
         return;
     }
-
-    // Build the result - we'll pass through the symbols array as-is since Lua
-    // already formatted it correctly.
-    // The Lua code sends DocumentSymbol objects with all required fields
-    size_t result_size = (arr_end - arr_start) + 256;
-    char *result = (char *)malloc(result_size);
-
-    // Extract just the array content
     size_t array_len = arr_end - arr_start + 1;
-    char *array_content = (char *)malloc(array_len + 1);
-    strncpy(array_content, arr_start, array_len);
-    array_content[array_len] = '\0';
-
+    size_t result_size = array_len + 256;
+    char *result = (char *)malloc(result_size);
     snprintf(result, result_size,
-             "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":%s}", id,
-             array_content);
-
+             "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":%.*s}", id,
+             (int)array_len, arr_start);
     send_ls_response(id, result);
-    free(array_content);
     free(result);
+}
+
+static void send_document_symbols_result(const char *params) {
+    send_symbols_result(params);
+}
+
+static void handle_workspace_symbols(const char *id, const char *params) {
+    char *q = strstr(params, "\"query\":\"");
+    char query[1024] = "";
+    if (q) {
+        q += 9;
+        char *end = strchr(q, '"');
+        if (end) {
+            size_t n = end - q;
+            if (n < sizeof(query))
+                memcpy(query, q, n);
+            query[n < sizeof(query) ? n : sizeof(query) - 1] = '\0';
+        }
+    }
+
+    /* Escape backslashes and single quotes so the query is safe inside a Lua
+     * single-quoted string literal. */
+    char escaped[2048] = "";
+    size_t ei = 0;
+    for (size_t qi = 0; query[qi] && ei + 2 < sizeof(escaped); qi++) {
+        if (query[qi] == '\'' || query[qi] == '\\')
+            escaped[ei++] = '\\';
+        escaped[ei++] = query[qi];
+    }
+    escaped[ei] = '\0';
+
+    char cmd[4096];
+    snprintf(cmd, sizeof(cmd) - 1,
+             "require('r.lsp').workspace_symbols(%s, '%s')", id, escaped);
+    send_cmd_to_nvim(cmd);
+}
+
+static void send_workspace_symbols_result(const char *params) {
+    send_symbols_result(params);
 }
 
 static void send_references_result(const char *params) {
@@ -801,6 +830,8 @@ static void lsp_loop(void) {
                 handle_definition(id, params);
             } else if (strcmp(method, "textDocument/documentSymbol") == 0) {
                 handle_document_symbols(id);
+            } else if (strcmp(method, "workspace/symbol") == 0) {
+                handle_workspace_symbols(id, params);
             } else if (strcmp(method, "textDocument/references") == 0) {
                 handle_references(id, params);
             } else if (strcmp(method, "textDocument/implementation") == 0) {

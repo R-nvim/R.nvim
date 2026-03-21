@@ -97,6 +97,7 @@ function M.update_modified_buffer()
             file = normalized_file,
             line = sym.name_start_row,
             col = sym.name_start_col,
+            kind = sym.kind,
         })
     end
 end
@@ -122,6 +123,31 @@ function M.find_symbols_matching(pattern)
                     file = loc.file,
                     line = loc.line,
                     col = loc.col,
+                    end_col = loc.col + #symbol,
+                })
+            end
+        end
+    end
+    return results
+end
+
+--- Find workspace symbols matching a query string (case-insensitive substring)
+---@param query string
+---@return table[] List of {name, kind, file, line, col, end_col}
+function M.find_workspace_symbols(query)
+    M.index_workspace()
+    local results = {}
+    -- Strip leading ' used by pickers (telescope/fzf) as an exact-match modifier
+    local q = query:gsub("^'+", ""):lower()
+    for symbol, locations in pairs(workspace_index) do
+        if symbol:lower():find(q, 1, true) then
+            for _, loc in ipairs(locations) do
+                table.insert(results, {
+                    name = symbol,
+                    kind = loc.kind or 13,
+                    file = loc.file,
+                    line = loc.line,
+                    col  = loc.col,
                     end_col = loc.col + #symbol,
                 })
             end

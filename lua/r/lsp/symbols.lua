@@ -115,4 +115,27 @@ function M.document_symbols(req_id)
     end
 end
 
+--- Handle workspace/symbol request
+---@param req_id string LSP request ID
+---@param query string Search query string
+function M.workspace_symbols(req_id, query)
+    local workspace = require("r.lsp.workspace")
+    local results = workspace.find_workspace_symbols(query or "")
+    local symbols = {}
+    for _, r in ipairs(results) do
+        table.insert(symbols, {
+            name = r.name,
+            kind = r.kind,
+            location = {
+                uri = vim.uri_from_fname(r.file),
+                range = {
+                    start = { line = r.line, character = r.col },
+                    ["end"] = { line = r.line, character = r.end_col },
+                },
+            },
+        })
+    end
+    utils.send_response("W", req_id, { symbols = symbols })
+end
+
 return M

@@ -3,6 +3,16 @@
 
 local M = {}
 
+--- Directories excluded from R file scanning (top-level only for git path, all levels for recursive)
+local excluded_dirs = {
+    renv = true,
+    packrat = true,
+    node_modules = true,
+    [".Rproj.user"] = true,
+    build = true,
+    dist = true,
+}
+
 --- Common symbol information structure
 ---@class SymbolInfo
 ---@field name string Symbol name
@@ -291,6 +301,7 @@ function M.parse_file_definitions(filepath)
             file = filepath, -- Use provided filepath, not the temp buffer name
             line = sym.name_start_row,
             col = sym.name_start_col,
+            kind = sym.kind,
         })
     end
 
@@ -327,7 +338,12 @@ function M.find_r_files(dir, files, max_depth, current_depth)
                 )
                 if vim.v.shell_error == 0 then
                     for _, rel in ipairs(output) do
-                        if rel ~= "" then table.insert(files, git_root .. "/" .. rel) end
+                        if rel ~= "" then
+                            local first_dir = rel:match("^([^/]+)/")
+                            if not first_dir or not excluded_dirs[first_dir] then
+                                table.insert(files, git_root .. "/" .. rel)
+                            end
+                        end
                     end
                     return
                 end
@@ -351,15 +367,7 @@ function M.find_r_files(dir, files, max_depth, current_depth)
 
         if type == "directory" then
             -- Skip hidden directories and common non-source/dependency/build directories
-            if
-                not name:match("^%.")
-                and name ~= "node_modules"
-                and name ~= "renv"
-                and name ~= "packrat"
-                and name ~= ".Rproj.user"
-                and name ~= "build"
-                and name ~= "dist"
-            then
+            if not name:match("^%.") and not excluded_dirs[name] then
                 M.find_r_files(full_path, files, max_depth, current_depth + 1)
             end
         elseif type == "file" then
