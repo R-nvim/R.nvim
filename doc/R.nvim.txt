@@ -1537,13 +1537,14 @@ Alternatively, you can disable or change R.nvim's built-in language server
 features in your R.nvim config. Below are the default values:
 >lua
  r_ls = {
-    completion = true,        -- enable the completion provider
-    hover = true,             -- enable the hover provider
-    signature = true,         -- enable the signature help provider
-    implementation = true,    -- enable the implementation provider
-    definition = true,        -- enable the definition provider
-    use_git_files = true,     -- use git to find R files, skipping gitignored files
-    references = true,        -- enable the references provider
+    completion = true,          -- enable the completion provider
+    hover = true,               -- enable the hover provider
+    signature = true,           -- enable the signature help provider
+    implementation = true,      -- enable the implementation provider
+    definition = true,          -- enable the definition provider
+    use_git_files = true,       -- use git to find R files, skipping gitignored files
+    references = true,          -- enable the references provider
+    document_highlight = true,  -- enable the document highlight provider
     doc_width = 0,
     fun_data_1 = { "select", "rename", "mutate", "filter" },
     fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
@@ -1569,6 +1570,9 @@ Meaning of options:
     directory scan if git is unavailable. Default: `true`.
 
   - `references`: Enable the references provider
+
+  - `document_highlight`: Enable the document highlight provider (see
+    |R.nvim-doc-highlight|)
 
 Note: The definition and references providers also recognize symbols defined
 in `{targets}` pipelines. Target-defining calls (e.g., `tar_target()`,
