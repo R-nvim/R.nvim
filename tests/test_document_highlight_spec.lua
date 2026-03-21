@@ -48,47 +48,41 @@ describe("LSP textDocument/documentHighlight", function()
 
     describe("basic highlights", function()
         it("highlights all occurrences of a variable", function()
-            local bufnr = setup_test("x <- 1\ny <- x + x", { 1, 0 })
+            -- cursor on x in "y <- x + x" (row=1, col=5); avoids (row=0,col=0) edge case
+            local bufnr = setup_test("x <- 1\ny <- x + x", { 2, 5 })
             if not bufnr then return end
-            highlight_module.document_highlight("req1", 0, 0, bufnr)
+            highlight_module.document_highlight("req1", 1, 5, bufnr)
             local msg = assert_highlight_response("req1")
-            -- x appears 3 times: definition + 2 uses
+            -- x: definition on line 0, two uses on line 1
             assert.equals(3, #msg.highlights)
         end)
 
-        it("returns null when cursor is not on an identifier", function()
-            local bufnr = setup_test("x <- 1\n", { 1, 0 })
+        it("returns null when cursor is on a number literal", function()
+            -- col 5 is the '4' in '42', not an identifier
+            local bufnr = setup_test("x <- 42", { 1, 5 })
             if not bufnr then return end
-            -- Position 0,5 is on the number literal '1', not an identifier
             highlight_module.document_highlight("req2", 0, 5, bufnr)
             assert_null_response("req2")
-        end)
-
-        it("returns null when cursor is on a number literal (not an identifier)", function()
-            local bufnr = setup_test("x <- 42", { 1, 0 })
-            if not bufnr then return end
-            -- Position 0,5 is on '4' in '42', a number literal, not an identifier
-            highlight_module.document_highlight("req3", 0, 5, bufnr)
-            assert_null_response("req3")
         end)
     end)
 
     describe("read/write kind classification", function()
-        it("classifies assignment target as write (kind=3)", function()
-            local bufnr = setup_test("x <- 1", { 1, 0 })
+        it("classifies assignment target as Write (kind=3)", function()
+            -- x on row 1 (0-indexed) avoids the (row=0,col=0) program-node edge case
+            local bufnr = setup_test("y <- 0\nx <- 1", { 2, 0 })
             if not bufnr then return end
-            highlight_module.document_highlight("req4", 0, 0, bufnr)
-            local msg = assert_highlight_response("req4")
+            highlight_module.document_highlight("req3", 1, 0, bufnr)
+            local msg = assert_highlight_response("req3")
             assert.equals(1, #msg.highlights)
             assert.equals(3, msg.highlights[1].kind) -- Write
         end)
 
-        it("classifies variable use as read (kind=2)", function()
-            local bufnr = setup_test("x <- 1\nprint(x)", { 1, 0 })
+        it("classifies variable use as Read (kind=2)", function()
+            -- cursor on x in print(x): "print(" is 6 chars so x is at col 6
+            local bufnr = setup_test("x <- 1\nprint(x)", { 2, 6 })
             if not bufnr then return end
-            highlight_module.document_highlight("req5", 0, 0, bufnr)
-            local msg = assert_highlight_response("req5")
-            -- Find the read occurrence (line 1, the use in print(x))
+            highlight_module.document_highlight("req4", 1, 6, bufnr)
+            local msg = assert_highlight_response("req4")
             local found_read = false
             for _, h in ipairs(msg.highlights) do
                 if h.range.start.line == 1 then
@@ -96,117 +90,112 @@ describe("LSP textDocument/documentHighlight", function()
                     found_read = true
                 end
             end
-            assert.is_true(found_read, "Expected a read highlight on the second line")
+            assert.is_true(found_read, "Expected a Read highlight on line 1")
         end)
 
-        it("classifies right-arrow assignment target as write (kind=3)", function()
-            local bufnr = setup_test("1 -> x", { 1, 0 })
+        it("classifies right-arrow assignment target as Write (kind=3)", function()
+            -- x is at col 5 in "1 -> x", safely away from (row=0,col=0)
+            local bufnr = setup_test("1 -> x", { 1, 5 })
             if not bufnr then return end
-            -- Position on 'x' (the assignment target for ->)
-            highlight_module.document_highlight("req6", 0, 5, bufnr)
-            local msg = assert_highlight_response("req6")
+            highlight_module.document_highlight("req5", 0, 5, bufnr)
+            local msg = assert_highlight_response("req5")
             assert.equals(1, #msg.highlights)
             assert.equals(3, msg.highlights[1].kind) -- Write
         end)
 
-        it("classifies super-assignment target as write (kind=3)", function()
-            local bufnr = setup_test("f <- function() { x <<- 10 }", { 1, 0 })
+        it("classifies super-assignment (<<-) target as Write (kind=3)", function()
+            -- x is at col 18 in "f <- function() { x <<- 10 }"
+            local bufnr = setup_test("f <- function() { x <<- 10 }", { 1, 18 })
             if not bufnr then return end
-            -- Position on 'x' inside the function (the <<- target)
-            highlight_module.document_highlight("req7", 0, 18, bufnr)
-            local msg = assert_highlight_response("req7")
+            highlight_module.document_highlight("req6", 0, 18, bufnr)
+            local msg = assert_highlight_response("req6")
             assert.equals(1, #msg.highlights)
             assert.equals(3, msg.highlights[1].kind) -- Write
         end)
     end)
 
-    describe("compound assignment targets (edge cases)", function()
-        it("classifies index assignment target as write (x[1] <- value)", function()
-            local bufnr = setup_test("x <- c(1,2,3)\nx[1] <- 99", { 1, 0 })
+    describe("compound assignment targets", function()
+        it("classifies index assignment x[1] <- val as Write (kind=3)", function()
+            -- cursor on x in "x[1] <- 99" on row 1 (0-indexed)
+            local bufnr = setup_test("x <- c(1,2,3)\nx[1] <- 99", { 2, 0 })
             if not bufnr then return end
-            highlight_module.document_highlight("req8", 0, 0, bufnr)
-            local msg = assert_highlight_response("req8")
-            -- Both occurrences of x should be found; the one on line 1 (x[1] <-) is a write
+            highlight_module.document_highlight("req7", 1, 0, bufnr)
+            local msg = assert_highlight_response("req7")
             local write_count = 0
             for _, h in ipairs(msg.highlights) do
                 if h.kind == 3 then write_count = write_count + 1 end
             end
-            assert.is_true(write_count >= 1, "Expected at least one write highlight")
+            assert.is_true(write_count >= 1, "Expected at least one Write highlight")
         end)
 
-        it("classifies dollar-sign assignment target as write (x$y <- value)", function()
-            local bufnr = setup_test("x <- list()\nx$y <- 5", { 1, 0 })
+        it("classifies dollar assignment x$y <- val as Write (kind=3)", function()
+            local bufnr = setup_test("x <- list()\nx$y <- 5", { 2, 0 })
             if not bufnr then return end
-            highlight_module.document_highlight("req9", 0, 0, bufnr)
+            highlight_module.document_highlight("req8", 1, 0, bufnr)
+            local msg = assert_highlight_response("req8")
+            local write_count = 0
+            for _, h in ipairs(msg.highlights) do
+                if h.kind == 3 then write_count = write_count + 1 end
+            end
+            assert.is_true(write_count >= 1, "Expected at least one Write highlight")
+        end)
+
+        it("classifies replacement function names(x) <- val as Write (kind=3)", function()
+            -- x inside names(x) is at col 6 on row 1
+            local bufnr = setup_test("x <- c(1,2)\nnames(x) <- c('a','b')", { 2, 6 })
+            if not bufnr then return end
+            highlight_module.document_highlight("req9", 1, 6, bufnr)
             local msg = assert_highlight_response("req9")
             local write_count = 0
             for _, h in ipairs(msg.highlights) do
                 if h.kind == 3 then write_count = write_count + 1 end
             end
-            assert.is_true(write_count >= 1, "Expected at least one write highlight")
-        end)
-
-        it("classifies replacement function target as write (names(x) <- value)", function()
-            local bufnr = setup_test("x <- c(1,2)\nnames(x) <- c('a','b')", { 1, 0 })
-            if not bufnr then return end
-            -- Cursor on 'x' in the first line
-            highlight_module.document_highlight("req10", 0, 0, bufnr)
-            local msg = assert_highlight_response("req10")
-            -- x inside names(x) <- is inside the lhs, so it is a write
-            local write_count = 0
-            for _, h in ipairs(msg.highlights) do
-                if h.kind == 3 then write_count = write_count + 1 end
-            end
-            assert.is_true(write_count >= 1, "Expected at least one write highlight")
+            assert.is_true(write_count >= 1, "Expected at least one Write highlight")
         end)
     end)
 
     describe("scope-aware filtering", function()
-        it("highlights only the in-scope definition when variable is shadowed", function()
+        it("highlights only in-scope definition when variable is shadowed", function()
             local content = [[
 x <- 100
 f <- function() {
     x <- 200
     print(x)
 }]]
+            -- cursor on inner x in "    x <- 200" (row=3 1-indexed = row=2 0-indexed, col=4)
             local bufnr = setup_test(content, { 3, 4 })
             if not bufnr then return end
-            -- Cursor on 'x <- 200' inside f; should only highlight inner x
-            highlight_module.document_highlight("req11", 2, 4, bufnr)
-            local msg = assert_highlight_response("req11")
+            highlight_module.document_highlight("req10", 2, 4, bufnr)
+            local msg = assert_highlight_response("req10")
             for _, h in ipairs(msg.highlights) do
-                -- None of the highlights should be on line 0 (outer x <- 100)
                 assert.not_equals(0, h.range.start.line)
             end
         end)
 
-        it("highlights outer variable from inner scope when not shadowed", function()
+        it("highlights outer variable when referenced from inner scope", function()
             local content = [[
 x <- 100
 f <- function() {
     print(x)
 }]]
+            -- cursor on x in "    print(x)" (row=3 1-indexed = row=2 0-indexed, col=10)
             local bufnr = setup_test(content, { 3, 10 })
             if not bufnr then return end
-            -- Cursor on 'x' inside print(x); resolves to outer x <- 100
-            highlight_module.document_highlight("req12", 2, 10, bufnr)
-            local msg = assert_highlight_response("req12")
-            -- Outer definition on line 0 should be included
+            highlight_module.document_highlight("req11", 2, 10, bufnr)
+            local msg = assert_highlight_response("req11")
             local has_outer = false
             for _, h in ipairs(msg.highlights) do
                 if h.range.start.line == 0 then has_outer = true end
             end
-            assert.is_true(has_outer, "Expected outer x to be highlighted")
+            assert.is_true(has_outer, "Expected outer x on line 0 to be highlighted")
         end)
 
-        it("highlights all occurrences when symbol is unresolvable", function()
-            -- 'z' is used but never defined locally – scope resolution returns nil,
-            -- so all buffer occurrences should be highlighted.
-            local content = "print(z)\ncat(z)"
-            local bufnr = setup_test(content, { 1, 6 })
+        it("highlights all occurrences when symbol has no definition in scope", function()
+            -- z is never defined; scope resolution returns nil so all occurrences are highlighted
+            local bufnr = setup_test("print(z)\ncat(z)", { 1, 6 })
             if not bufnr then return end
-            highlight_module.document_highlight("req13", 0, 6, bufnr)
-            local msg = assert_highlight_response("req13")
+            highlight_module.document_highlight("req12", 0, 6, bufnr)
+            local msg = assert_highlight_response("req12")
             assert.equals(2, #msg.highlights)
         end)
     end)
