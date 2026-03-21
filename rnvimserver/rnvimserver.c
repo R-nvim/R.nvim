@@ -262,6 +262,12 @@ static void handle_initialize(const char *request_id) {
         p = str_cat(p, "\"implementationProvider\":true");
         has_cpblt = 1;
     }
+    if (!disable || strstr(disable, "documentHighlight") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"documentHighlightProvider\":true");
+        has_cpblt = 1;
+    }
 
     str_cat(p, "}}}");
 
@@ -276,6 +282,7 @@ static void send_definition_result(const char *params);
 static void send_document_symbols_result(const char *params);
 static void send_references_result(const char *params);
 static void send_implementation_result(const char *params);
+static void send_document_highlight_result(const char *params);
 
 static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
@@ -322,6 +329,9 @@ static void handle_exe_cmd(const char *params) {
         break;
     case 'I': // Implementation result from Lua
         send_implementation_result(params);
+        break;
+    case 'L': // Document highlight result from Lua
+        send_document_highlight_result(params);
         break;
     case '1': // Start TCP server and wait nvimcom connection
         start_server();
@@ -466,10 +476,12 @@ static void handle_location_request(const char *id, const char *params,
     position += 11;
     char *line = strstr(position, "\"line\":");
     char *col = strstr(position, "\"character\":");
-    cut_json_int(&line, 7);
-    cut_json_int(&col, 12);
+    // Extract URI BEFORE cut_json_int calls, which insert \0 bytes that can
+    // truncate the buffer and hide fields that appear later in the JSON.
     char uri[2048];
     extract_doc_uri(params, uri, sizeof(uri));
+    cut_json_int(&line, 7);
+    cut_json_int(&col, 12);
     char cmd[4096];
     snprintf(cmd, sizeof(cmd) - 1,
              "require('r.lsp').%s(%s, %s, %s, vim.uri_to_bufnr('%s'))", lua_fn,
@@ -493,6 +505,10 @@ static void handle_references(const char *id, const char *params) {
 
 static void handle_implementation(const char *id, const char *params) {
     handle_location_request(id, params, "implementation");
+}
+
+static void handle_document_highlight(const char *id, const char *params) {
+    handle_location_request(id, params, "document_highlight");
 }
 
 // Generic function to handle location-based LSP responses (definition,
@@ -520,7 +536,8 @@ static void send_location_result(const char *params) {
             return;
         }
 
-        size_t result_size = 4096;
+        size_t arr_len = (size_t)(arr_end - arr_start);
+        size_t result_size = arr_len * 4 + 256;
         char *result = (char *)malloc(result_size);
         char *p = result;
         p += snprintf(p, result_size,
@@ -664,6 +681,34 @@ static void send_implementation_result(const char *params) {
     send_location_result(params);
 }
 
+static void send_document_highlight_result(const char *params) {
+    char *id = strstr(params, "\"orig_id\":");
+    char *highlights = strstr(params, "\"highlights\":");
+    if (!id)
+        return;
+    cut_json_int(&id, 10);
+    if (!highlights) {
+        send_null(id);
+        return;
+    }
+
+    char *arr_start = strchr(highlights, '[');
+    char *arr_end = strrchr(highlights, ']');
+    if (!arr_start || !arr_end) {
+        send_null(id);
+        return;
+    }
+
+    size_t array_len = arr_end - arr_start + 1;
+    size_t result_size = array_len + 256;
+    char *result = (char *)malloc(result_size);
+    snprintf(result, result_size,
+             "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":%.*s}", id,
+             (int)array_len, arr_start);
+    send_ls_response(id, result);
+    free(result);
+}
+
 // --- Main Server Loop ---
 
 static void lsp_loop(void) {
@@ -760,6 +805,8 @@ static void lsp_loop(void) {
                 handle_references(id, params);
             } else if (strcmp(method, "textDocument/implementation") == 0) {
                 handle_implementation(id, params);
+            } else if (strcmp(method, "textDocument/documentHighlight") == 0) {
+                handle_document_highlight(id, params);
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {
