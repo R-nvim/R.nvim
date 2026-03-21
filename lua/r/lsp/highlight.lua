@@ -6,18 +6,27 @@ local scope = require("r.lsp.scope")
 
 -- kind: 3=Write if assignment target, else 2=Read
 -- R grammar: all assignments are binary_operator with named fields lhs/rhs
+-- Walk up to the nearest assignment ancestor so that compound targets like
+-- x[1] <- 1, x$y <- 1, or names(x) <- ... are correctly classified as writes.
+local assign_target = { ["<-"] = "lhs", ["<<-"] = "lhs", ["="] = "lhs", ["->"] = "rhs", ["->>"] = "rhs" }
 local function highlight_kind(node, bufnr)
-    local parent = node:parent()
-    if not parent or parent:type() ~= "binary_operator" then return 2 end
-    local op_node = parent:field("operator")[1]
-    if not op_node then return 2 end
-    local op = vim.treesitter.get_node_text(op_node, bufnr)
-    if op == "<-" or op == "<<-" or op == "=" then
-        return (parent:field("lhs")[1] == node) and 3 or 2
-    elseif op == "->" or op == "->>" then
-        return (parent:field("rhs")[1] == node) and 3 or 2
+    local cur = node
+    while true do
+        local parent = cur:parent()
+        if not parent then return 2 end
+        if parent:type() == "binary_operator" then
+            local op_node = parent:field("operator")[1]
+            if op_node then
+                local op = vim.treesitter.get_node_text(op_node, bufnr)
+                local target_field = assign_target[op]
+                if target_field then
+                    local target = parent:field(target_field)[1]
+                    return (target ~= nil and target == cur) and 3 or 2
+                end
+            end
+        end
+        cur = parent
     end
-    return 2
 end
 
 function M.document_highlight(req_id, line, col, bufnr)
