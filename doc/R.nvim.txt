@@ -513,11 +513,11 @@ if `vim.lsp.config` is available (Neovim 0.11+).
 ------------------------------------------------------------------------------
 4.3.2. Document highlight                               *R.nvim-doc-highlight*
 
-When the cursor rests on a symbol, R.nvim highlights all references to that
-symbol in the current buffer using Neovim's `textDocument/documentHighlight`
-LSP request. The feature is scope-aware: it only highlights occurrences that
-refer to the same binding, so symbols with the same name in different scopes
-are not confused.
+R.nvim supports the `textDocument/documentHighlight` LSP request. When
+triggered, it highlights all references to the symbol under the cursor in the
+current buffer. The feature is scope-aware: it only highlights occurrences
+that refer to the same binding, so symbols with the same name in different
+scopes are not confused.
 
 Occurrences are classified into two kinds:
 
@@ -532,8 +532,9 @@ Neovim applies the built-in `LspReferenceText`, `LspReferenceRead`, and
    vim.api.nvim_set_hl(0, "LspReferenceRead",  { link = "LspReferenceText" })
    vim.api.nvim_set_hl(0, "LspReferenceWrite", { bg = "#3a5a7a", fg = "white" })
 <
-Highlights are cleared automatically when the cursor moves away.
-
+Whether highlights are triggered automatically on `CursorHold` or manually
+via a keymap depends entirely on your Neovim configuration, R.nvim only
+provides the server-side response.
 Note: This feature requires Neovim's built-in LSP client and will only work
 if `vim.lsp.config` is available (Neovim 0.11+).
 
