@@ -25,6 +25,9 @@ local hooks = require("r.hooks")
 ---Enable the implementation provider
 ---@field implementation? boolean
 ---
+---Enable the document highlight provider
+---@field document_highlight? boolean
+---
 ---Text width of documentation window displayed when
 ---an item is selected
 ---@field doc_width? integer
@@ -478,6 +481,7 @@ local config = {
         use_git_files = true,
         references = true,
         implementation = true,
+        document_highlight = true,
         doc_width = 0,
         fun_data_1 = { "select", "rename", "mutate", "filter" },
         fun_data_2 = { ggplot = { "aes" }, with = { "*" } },

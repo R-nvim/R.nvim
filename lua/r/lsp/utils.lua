@@ -450,6 +450,16 @@ function M.get_word_at_bufpos(bufnr, row, col)
     return nil, nil
 end
 
+--- Check whether two symbol definitions refer to the same declaration site.
+---@param def1 SymbolDefinition
+---@param def2 SymbolDefinition
+---@return boolean
+function M.is_same_definition(def1, def2)
+    return M.normalize_path(def1.location.file) == M.normalize_path(def2.location.file)
+        and def1.location.line == def2.location.line
+        and def1.location.col == def2.location.col
+end
+
 --- Prepare workspace (consolidated pattern)
 ---@param update_buffer? boolean Update modified buffer (default true)
 function M.prepare_workspace(update_buffer)

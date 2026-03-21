@@ -127,6 +127,10 @@ local start_rnvimserver = function()
     if not config.r_ls.implementation then
         table.insert(disable_parts, "implementation")
     end
+    if not config.r_ls.document_highlight then
+        table.insert(disable_parts, "documentHighlight")
+    end
+
     local disable = table.concat(disable_parts)
     rns_env.R_LS_DISABLE = disable
 
