@@ -342,7 +342,7 @@ M.check_nvimcom_version = function()
         end
         local obj = vim.system(
             { "tar", "czf", nvc_fn, "nvimcom" },
-            { text = true, cwd = config.rnvim_home }
+            { text = true, cwd = config.rnvim_home, env = { COPYFILE_DISABLE = "1" } }
         ):wait()
         if obj.code ~= 0 then warn(obj.stderr) end
     end
