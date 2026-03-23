@@ -1,5 +1,5 @@
 Package: nvimcom
-Version: 0.9.89
+Version: 0.9.90
 Date: 2026-03-15
 Title: Intermediate the Communication Between R and Neovim
 Authors@R: c(
@@ -7,9 +7,12 @@ Authors@R: c(
            role = c("aut", "cre")),
     person("Philippe", "Massicotte", email = "pmassicotte@hotmail.com",
            role = "aut"))
+Author: Jakson Aquino [aut, cre], Philippe Massicotte [aut]
+Maintainer: Jakson Aquino <jalvesaq@gmail.com>
 Depends: R (>= 4.1.0)
 Suggests: knitr, rmarkdown, quarto
 Imports: methods, tools
 Encoding: UTF-8
 Description: Provide a service to intermediate the communication between R and Neovim.
 License: GPL (>= 2)
+NeedsCompilation: yes
