@@ -9,10 +9,8 @@ local b_time
 local o_err = {}
 local rhelp_list = {}
 local lob = {}
-local pkgbuild_attempt = false
 local new_libs_in_rns = ""
 local building_objls = false
-local check_executable = require("r.utils").check_executable
 
 local M = {}
 
@@ -130,6 +128,9 @@ local start_rnvimserver = function()
     if not config.r_ls.document_highlight then
         table.insert(disable_parts, "documentHighlight")
     end
+    if not config.r_ls.document_symbol then
+        table.insert(disable_parts, "documentSymbol")
+    end
 
     local disable = table.concat(disable_parts)
     rns_env.R_LS_DISABLE = disable
@@ -149,28 +150,6 @@ local start_rnvimserver = function()
     vim.api.nvim_create_user_command("RGetNRSInfo", require("r.server").echo_rns_info, {})
 end
 
--- Function to build the package
-local function build_package()
-    -- Change directory to config.tmpdir
-    local cmd = "cd "
-        .. vim.fn.shellescape(config.tmpdir)
-        .. " && "
-        .. vim.fn.shellescape("R")
-        .. " CMD build "
-        .. vim.fn.shellescape(config.rnvim_home .. "/nvimcom")
-
-    uv.spawn("sh", {
-        args = { "-c", cmd },
-        stdio = nil,
-    }, function(code)
-        if code == 0 then
-            M.check_nvimcom_version()
-        else
-            warn("Failed to build the package.")
-        end
-    end)
-end
-
 -- Check if the exit code of the script that built nvimcom was zero
 local init_exit = function(_, data, _)
     local cnv_again = 0
@@ -182,29 +161,14 @@ local init_exit = function(_, data, _)
         -- Avoid redraw of status line while waiting user input in MkRdir()
         b_err = vim.list_extend(b_err, b_warn)
         b_warn = {}
-    elseif data == 72 and not config.is_windows and not pkgbuild_attempt then
-        -- R.nvim/nvimcom directory not found. Perhaps R running in remote machine...
-        -- Try to use local R to build the nvimcom package.
-        pkgbuild_attempt = true
-        check_executable("R", function(exists)
-            if exists then
-                build_package()
-            else
-                warn('"R" executable not found.')
-            end
-        end)
     else
+        local msg = "ERROR! Exit code = "
+            .. tostring(data)
+            .. ". Please, run :RDebugInfo for details."
         if vim.fn.filereadable(vim.fn.expand("~/.R/Makevars")) == 1 then
-            warn(
-                "ERROR! Please, run :RDebugInfo for details, and check your '~/.R/Makevars'."
-            )
-        else
-            warn(
-                "ERROR: R exit code = "
-                    .. tostring(data)
-                    .. "! Please, run :RDebugInfo for details."
-            )
+            msg = msg .. " And check your '~/.R/Makevars'."
         end
+        warn(msg)
     end
 
     edit.add_to_debug_info("before_rns.R stderr", table.concat(b_err, "\n"))

@@ -25,6 +25,9 @@ local hooks = require("r.hooks")
 ---Enable the implementation provider
 ---@field implementation? boolean
 ---
+---Enable the document symbol provider
+---@field document_symbol? boolean
+---
 ---Enable the document highlight provider
 ---@field document_highlight? boolean
 ---
@@ -481,6 +484,7 @@ local config = {
         use_git_files = true,
         references = true,
         implementation = true,
+        document_symbol = true,
         document_highlight = true,
         doc_width = 0,
         fun_data_1 = { "select", "rename", "mutate", "filter" },
