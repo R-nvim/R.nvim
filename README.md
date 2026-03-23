@@ -1,6 +1,9 @@
 ![GitHub Release](https://img.shields.io/github/v/release/R-nvim/R.nvim)
 ![Selene linter check](https://github.com/R-Nvim/R.nvim/actions/workflows/selene.yml/badge.svg)
-[![CI](https://github.com/R-nvim/R.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/R-nvim/R.nvim/actions/workflows/ci.yml)
+[![Test Linux](https://github.com/R-nvim/R.nvim/actions/workflows/test-linux.yml/badge.svg)](https://github.com/R-nvim/R.nvim/actions/workflows/test-linux.yml)
+[![Build Linux](https://github.com/R-nvim/R.nvim/actions/workflows/build-linux.yml/badge.svg)](https://github.com/R-nvim/R.nvim/actions/workflows/build-linux.yml)
+[![Build macOS](https://github.com/R-nvim/R.nvim/actions/workflows/build-macos.yml/badge.svg)](https://github.com/R-nvim/R.nvim/actions/workflows/build-macos.yml)
+[![Build Windows](https://github.com/R-nvim/R.nvim/actions/workflows/build-windows.yml/badge.svg)](https://github.com/R-nvim/R.nvim/actions/workflows/build-windows.yml)
 
 # R.nvim
 
