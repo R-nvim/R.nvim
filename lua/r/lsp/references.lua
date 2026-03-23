@@ -72,7 +72,7 @@ function M.find_references(req_id, line, col, bufnr)
 
     -- Get keyword from LSP position params
     local word, err = utils.get_word_at_bufpos(bufnr, row, col)
-    if err then
+    if err or not word then
         utils.send_null(req_id)
         return
     end
@@ -90,17 +90,6 @@ function M.find_references(req_id, line, col, bufnr)
         -- This handles cases like add(2,3) where add is defined in other files
         find_all_workspace_references(word, req_id, bufnr)
         return
-    end
-
-    -- Helper to check if two definitions are the same
-    ---@param def1 SymbolDefinition
-    ---@param def2 SymbolDefinition
-    ---@return boolean
-    local function is_same_definition(def1, def2)
-        return utils.normalize_path(def1.location.file)
-                == utils.normalize_path(def2.location.file)
-            and def1.location.line == def2.location.line
-            and def1.location.col == def2.location.col
     end
 
     utils.prepare_workspace()
@@ -128,7 +117,9 @@ function M.find_references(req_id, line, col, bufnr)
                     scope.get_scope_at_position(bufnr, start_row, start_col)
                 if usage_scope then
                     local resolved = scope.resolve_symbol(word, usage_scope)
-                    if resolved and is_same_definition(resolved, target_definition) then
+                    if
+                        resolved and utils.is_same_definition(resolved, target_definition)
+                    then
                         table.insert(all_refs, {
                             file = file,
                             line = start_row,

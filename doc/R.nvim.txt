@@ -41,13 +41,15 @@ Git pull requests are welcome.
       - Send commands with the object under cursor as argument: help, args,
         plot, print, str, summary, example, names.
       - Send to R the Sweave, knit and LaTeX commands.
-  * Built-in language server with hover, signature and completion
-    capabilities. The completion works for:
+  * Built-in language server with hover, signature, completion, and
+    document highlight capabilities. The completion works for:
       - R objects (.GlobalEnv and loaded packages).
       - function arguments.
       - knitr chunk options.
       - Quarto cell options.
       - Quarto YAML frontmatter and project configuration (via yamlls).
+    Document highlight marks all references to the symbol under the cursor,
+    distinguishing read and write (assignment) occurrences.
   * Ability to see R's documentation in an editor buffer:
       - Automatic formatting of the text to fit the panel width.
       - Send code and commands to R (useful to run examples).
@@ -509,6 +511,35 @@ if `vim.lsp.config` is available (Neovim 0.11+).
 
 
 ------------------------------------------------------------------------------
+4.3.2. Document highlight                               *R.nvim-doc-highlight*
+
+R.nvim supports the `textDocument/documentHighlight` LSP request. When
+triggered, it highlights all references to the symbol under the cursor in the
+current buffer. The feature is scope-aware: it only highlights occurrences
+that refer to the same binding, so symbols with the same name in different
+scopes are not confused.
+
+Occurrences are classified into two kinds:
+
+  - Read  — symbol is read                 → `LspReferenceRead`
+  - Write — symbol is the assignment target → `LspReferenceWrite`
+
+Neovim applies the built-in `LspReferenceText`, `LspReferenceRead`, and
+`LspReferenceWrite` highlight groups. You can customise them in your
+`init.lua`. For example:
+>lua
+   vim.api.nvim_set_hl(0, "LspReferenceText",  { bg = "#3F5865", fg = "white" })
+   vim.api.nvim_set_hl(0, "LspReferenceRead",  { link = "LspReferenceText" })
+   vim.api.nvim_set_hl(0, "LspReferenceWrite", { bg = "#3a5a7a", fg = "white" })
+<
+Whether highlights are triggered automatically on `CursorHold` or manually
+via a keymap depends entirely on your Neovim configuration, R.nvim only
+provides the server-side response.
+Note: This feature requires Neovim's built-in LSP client and will only work
+if `vim.lsp.config` is available (Neovim 0.11+).
+
+
+------------------------------------------------------------------------------
 4.4. The Object Browser
 
 You have to use <LocalLeader>ro to either open or close the Object Browser on
@@ -675,16 +706,21 @@ defined by your colorscheme.
 
 
 ------------------------------------------------------------------------------
-4.7 roxygen2 support                                         *R.nvim-roxygen2*
+4.7 ROxygen2 support                                         *R.nvim-roxygen2*
 
-R.nvim supports the insertion of roxygen2 skeletons in R scripts. To insert a
-new roxygen2 block, you can use the `:ROxygenize` command while the cursor is
-inside a function definition. If a block of roxygen2 is already present, no
+R.nvim supports the insertion of ROxygen2 skeletons in R scripts. To insert a
+new ROxygen2 block, you can use the `:ROxygenize` command while the cursor is
+inside a function definition. If a block of ROxygen2 is already present, no
 modification will be made.
 
 Set the value of `roxygen_hl` to `true` to enable highlighting of ROxygen
 comments and ROxygen-specific LSP completion behavior (tag completion, Rhelp
-keyword completion, and R code completion inside `@examples`).
+keyword completion, and R code completion inside `@examples`). The
+highlighting is updated when leaving Insert mode.
+
+Code from ROxygen examples can be sent only as a selection of lines because
+the other sending commands rely on tree-sitter-r, which currently doesn't
+support ROxygen.
 
 
 ==============================================================================
@@ -1493,7 +1529,9 @@ your `~/.Rprofile` the features that overlap with R.nvim's ones:
             completionItemResolve = FALSE,
             definitionProvider = FALSE,
             referencesProvider = FALSE,
-            implementationProvider = FALSE
+            implementationProvider = FALSE,
+            documentHighlightProvider = FALSE,
+            documentSymbolProvider = FALSE
         )
     )
 <
@@ -1501,13 +1539,15 @@ Alternatively, you can disable or change R.nvim's built-in language server
 features in your R.nvim config. Below are the default values:
 >lua
  r_ls = {
-    completion = true,        -- enable the completion provider
-    hover = true,             -- enable the hover provider
-    signature = true,         -- enable the signature help provider
-    implementation = true,    -- enable the implementation provider
-    definition = true,        -- enable the definition provider
-    use_git_files = true,     -- use git to find R files, skipping gitignored files
-    references = true,        -- enable the references provider
+    completion = true,          -- enable the completion provider
+    hover = true,               -- enable the hover provider
+    signature = true,           -- enable the signature help provider
+    implementation = true,      -- enable the implementation provider
+    definition = true,          -- enable the definition provider
+    use_git_files = true,       -- use git to find R files, skipping gitignored files
+    references = true,          -- enable the references provider
+    document_highlight = true,  -- enable the document highlight provider
+    document_symbol = true,     -- enable the document symbol provider
     doc_width = 0,
     fun_data_1 = { "select", "rename", "mutate", "filter" },
     fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
@@ -1533,6 +1573,9 @@ Meaning of options:
     directory scan if git is unavailable. Default: `true`.
 
   - `references`: Enable the references provider
+
+  - `document_highlight`: Enable the document highlight provider (see
+    |R.nvim-doc-highlight|)
 
 Note: The definition and references providers also recognize symbols defined
 in `{targets}` pipelines. Target-defining calls (e.g., `tar_target()`,

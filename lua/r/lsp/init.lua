@@ -712,6 +712,24 @@ M.implementation = function(req_id, line, col, bufnr)
     require("r.lsp.implementation").find_implementations(req_id, word)
 end
 
+---Find all highlights for the symbol under cursor (current buffer only)
+---@param req_id string
+---@param line integer LSP line (0-indexed)
+---@param col integer LSP character (0-indexed)
+---@param bufnr integer Source buffer (resolved from textDocument URI)
+M.document_highlight = function(req_id, line, col, bufnr)
+    bufnr = get_r_bufnr(bufnr)
+    if vim.bo[bufnr].filetype ~= "r" then
+        local lang = "other"
+        vim.api.nvim_buf_call(bufnr, function() lang = get_lang(line) end)
+        if lang ~= "r" then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+    end
+    require("r.lsp.highlight").document_highlight(req_id, line, col, bufnr)
+end
+
 --- Execute lua command sent by rnvimserver
 local function exe_cmd(_, result, _)
     local res = result.command
