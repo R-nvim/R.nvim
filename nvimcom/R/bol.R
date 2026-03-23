@@ -628,9 +628,11 @@ nvim.build.cmplls <- function() {
 
     instp <- installed.packages()
 
-    ip_all <- data.frame(pkg = instp[, "Package"], 
-                     ivrs = instp[, "Version"],
-                     ipth = instp[, "LibPath"])
+    ip_all <- data.frame(
+        pkg = instp[, "Package"],
+        ivrs = instp[, "Version"],
+        ipth = instp[, "LibPath"]
+    )
     ip_all$rank <- match(ip_all$ipth, .libPaths())
     ip_all_ordered <- ip_all[order(ip_all$pkg, ip_all$rank), ]
     ip <- ip_all_ordered[!duplicated(ip_all_ordered$pkg), c("pkg", "ivrs")]
