@@ -1529,7 +1529,9 @@ your `~/.Rprofile` the features that overlap with R.nvim's ones:
             completionItemResolve = FALSE,
             definitionProvider = FALSE,
             referencesProvider = FALSE,
-            implementationProvider = FALSE
+            implementationProvider = FALSE,
+            documentHighlightProvider = FALSE,
+            documentSymbolProvider = FALSE
         )
     )
 <
@@ -1545,6 +1547,7 @@ features in your R.nvim config. Below are the default values:
     use_git_files = true,       -- use git to find R files, skipping gitignored files
     references = true,          -- enable the references provider
     document_highlight = true,  -- enable the document highlight provider
+    document_symbol = true,     -- enable the document symbol provider
     doc_width = 0,
     fun_data_1 = { "select", "rename", "mutate", "filter" },
     fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
