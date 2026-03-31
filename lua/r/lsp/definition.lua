@@ -109,6 +109,10 @@ function M.goto_definition(req_id, line, col, bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
     if line == nil or col == nil then
         local cursor = vim.api.nvim_win_get_cursor(0)
+        if not cursor then
+            utils.send_null(req_id)
+            return
+        end
         line = cursor[1] - 1
         col = cursor[2]
     end

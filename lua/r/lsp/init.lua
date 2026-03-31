@@ -554,7 +554,7 @@ end
 M.hover = function(req_id)
     local word = require("r.cursor").get_keyword()
 
-    if word == "" then
+    if word == "" or require("r.utils").get_lang() ~= "r" then
         M.send_msg({ code = "N" .. req_id })
         return
     end
@@ -563,6 +563,10 @@ M.hover = function(req_id)
 
     local bufnr = vim.api.nvim_get_current_buf()
     local cursor = vim.api.nvim_win_get_cursor(0)
+    if not cursor then
+        M.send_msg({ code = "N" .. req_id })
+        return
+    end
     local row, col = cursor[1] - 1, cursor[2]
 
     local ok, captures = pcall(vim.treesitter.get_captures_at_pos, bufnr, row, col)
@@ -622,8 +626,13 @@ local function get_r_bufnr(bufnr)
         return bufnr
     end
     if client_id then
-        for _, b in ipairs(vim.lsp.get_buffers_by_client_id(client_id)) do
-            if r_filetypes[vim.bo[b].filetype] then return b end
+        local client = vim.lsp.get_client_by_id(client_id)
+        if client then
+            local blist = client.attached_buffers
+            for _, b in ipairs(blist) do
+                vim.notify("b = " .. vim.inspect(b))
+                if r_filetypes[vim.bo[b[1]].filetype] then return b[1] end
+            end
         end
     end
     return vim.api.nvim_get_current_buf()
@@ -709,7 +718,7 @@ M.implementation = function(req_id, line, col, bufnr)
     end
 
     local word = require("r.lsp.utils").get_word_at_bufpos(bufnr, line, col)
-    require("r.lsp.implementation").find_implementations(req_id, word)
+    if word then require("r.lsp.implementation").find_implementations(req_id, word) end
 end
 
 ---Find all highlights for the symbol under cursor (current buffer only)
