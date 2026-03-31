@@ -628,9 +628,7 @@ local function get_r_bufnr(bufnr)
     if client_id then
         local client = vim.lsp.get_client_by_id(client_id)
         if client then
-            local blist = client.attached_buffers
-            for _, b in ipairs(blist) do
-                vim.notify("b = " .. vim.inspect(b))
+            for _, b in pairs(client.attached_buffers) do
                 if r_filetypes[vim.bo[b[1]].filetype] then return b[1] end
             end
         end
