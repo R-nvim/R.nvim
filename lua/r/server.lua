@@ -131,6 +131,9 @@ local start_rnvimserver = function()
     if not config.r_ls.document_symbol then
         table.insert(disable_parts, "documentSymbol")
     end
+    if not config.r_ls.workspace_symbols then
+        table.insert(disable_parts, "workspaceSymbol")
+    end
 
     local disable = table.concat(disable_parts)
     rns_env.R_LS_DISABLE = disable
