@@ -29,7 +29,7 @@ local hooks = require("r.hooks")
 ---@field document_symbol? boolean
 ---
 ---Enable the workspace symbol provider
----@field workspace_symbols? boolean
+---@field workspace_symbol? boolean
 ---
 ---Enable the document highlight provider
 ---@field document_highlight? boolean
@@ -506,7 +506,7 @@ local config = {
         references = true,
         implementation = true,
         document_symbol = true,
-        workspace_symbols = true,
+        workspace_symbol = true,
         document_highlight = true,
         doc_width = 0,
         fun_data_1 = { "select", "rename", "mutate", "filter" },

@@ -1548,7 +1548,7 @@ features in your R.nvim config. Below are the default values:
     references = true,          -- enable the references provider
     document_highlight = true,  -- enable the document highlight provider
     document_symbol = true,     -- enable the document symbol provider
-    workspace_symbols = true,   -- enable the workspace symbol provider
+    workspace_symbol = true,    -- enable the workspace symbol provider
     doc_width = 0,
     fun_data_1 = { "select", "rename", "mutate", "filter" },
     fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
@@ -1580,7 +1580,7 @@ Meaning of options:
 
   - `document_symbol`: Enable the document symbol provider
 
-  - `workspace_symbols`: Enable the workspace symbol provider
+  - `workspace_symbol`: Enable the workspace symbol provider
 
 Note: The definition and references providers also recognize symbols defined
 in `{targets}` pipelines. Target-defining calls (e.g., `tar_target()`,
