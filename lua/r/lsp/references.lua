@@ -62,7 +62,7 @@ end
 ---@param line integer 0-indexed row from LSP params
 ---@param col integer 0-indexed column from LSP params
 ---@param bufnr integer Source buffer number
----@return {locations: table[], word: string}|nil
+---@return { locations: table[], word: string, resolved: boolean } | nil
 function M.find_locations(line, col, bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
     local row = line

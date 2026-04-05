@@ -2,7 +2,7 @@
 
 Authors: R.nvim team (see: https://github.com/R-nvim)
 
-Version: 0.99.3
+Version: 0.99.4
 For Neovim >= 0.11.4
 
  1. Overview                                    |R.nvim-overview|
@@ -1584,8 +1584,8 @@ Meaning of options:
 
   - `workspace_symbol`: Enable the workspace symbol provider
 
-  - `rename`: Enable the rename provider. This allows you to rename variables and
-    functions across your R project (see |R.nvim-rename|). 
+  - `rename`: Enable the rename provider. This allows you to rename variables
+    and functions across your R project (see |R.nvim-rename|).
 
 Note: The definition and references providers also recognize symbols defined
 in `{targets}` pipelines. Target-defining calls (e.g., `tar_target()`,

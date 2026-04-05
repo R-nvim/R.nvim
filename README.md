@@ -228,6 +228,8 @@ firm commitment to backwards compatibility.
 - `:RFormat` now requires {styler} to be installed; {formatR} is no longer
   supported.
 
+- `Rout_options` replaces `Rout_more_colors`.
+
 - `view_df` is a table replacing the options `csv_app`,
   `csv_delim`, and `df_viewer`. The commands to see a `data.frame`
   or `matrix` in a split window were eliminated. See the documentation
@@ -273,7 +275,12 @@ firm commitment to backwards compatibility.
 
 #### New options
 
+- `remote_compl_dir` and `remote_R_host` control how to access a remote R from
+  a local Neovim.
+
 - `auto_quit` can be configured to automatically quit R when you quit Neovim.
+
+- `hook` replaces `R_after_start` and `R_after_ob_open`.
 
 - `rproj_prioritise` can be configured to control how `.Rproj` files change the
   behaviour of R.nvim. Amongst other things, this may affect whether
@@ -282,11 +289,25 @@ firm commitment to backwards compatibility.
 - `objbr_mappings` can be configured to run R commands on objects in the
   current session.
 
+- `pipe_version` allow you to choose between "native" or "magrittr".
+
 - `external_term` now accepts as valid values `"wezterm_split"` and
   `"kitty_split"`, not requiring Tmux to split the terminal window.
   It's possible to [WezTerm](https://wezterm.org/) to run R in an external
   terminal emulator on Windows. Hence, the values `"wezterm"` and
   `"wezterm_split"` are valid on Linux, macOS and Windows.
+
+- `objbr_mappings` adds custom keymap to the Object Browser.
+
+- `objbr_placeholder` defines the string to substitute for with objects.
+
+- `R-language-server` sets options for R.nvim's built-in language server.
+
+- `max_paste_lines` sets the maximum number of lines to be pasted into R Console.
+
+- `debug` enables support for debugging functions.
+
+- `chunk_langs` changes configuration for code chunk languages.
 
 ## Screenshots and videos
 
