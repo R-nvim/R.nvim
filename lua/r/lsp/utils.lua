@@ -458,6 +458,17 @@ function M.get_word_at_bufpos(bufnr, row, col)
     return nil, nil
 end
 
+--- Returns true when node is a named argument key, e.g. `filename` in `f(filename = x)`.
+--- Those identifiers are parameter names of the callee, not references to local symbols.
+---@param node TSNode
+---@return boolean
+function M.is_argument_name_node(node)
+    local parent = node:parent()
+    if not parent or parent:type() ~= "argument" then return false end
+    local name_nodes = parent:field("name")
+    return #name_nodes > 0 and name_nodes[1]:id() == node:id()
+end
+
 --- Check whether two symbol definitions refer to the same declaration site.
 ---@param def1 SymbolDefinition
 ---@param def2 SymbolDefinition

@@ -7,14 +7,13 @@ local workspace = require("r.lsp.workspace")
 local utils = require("r.lsp.utils")
 local scope = require("r.lsp.scope")
 
---- Find all workspace references without scope filtering (fallback)
+--- Collect all workspace references without scope filtering (fallback)
 ---@param symbol string Symbol name
----@param req_id string LSP request ID
 ---@param bufnr integer Source buffer number
-local function find_all_workspace_references(symbol, req_id, bufnr)
+---@return table[] locations List of {file, line, col, end_col}
+local function collect_workspace_references(symbol, bufnr)
     local ast = require("r.lsp.ast")
 
-    -- Prepare workspace
     utils.prepare_workspace()
 
     local all_refs = {}
@@ -37,89 +36,11 @@ local function find_all_workspace_references(symbol, req_id, bufnr)
             local file = vim.api.nvim_buf_get_name(bufnr)
 
             for _, node in query:iter_captures(root, bufnr) do
-                local text = vim.treesitter.get_node_text(node, bufnr)
-                if text == symbol then
-                    local start_row, start_col = node:start()
-                    local _, end_col = node:end_()
-                    table.insert(all_refs, {
-                        file = file,
-                        line = start_row,
-                        col = start_col,
-                        end_col = end_col,
-                    })
-                end
-            end
-        end
-    end
-
-    all_refs = utils.deduplicate_locations(all_refs)
-
-    if #all_refs > 0 then
-        utils.send_response("R", req_id, { locations = all_refs })
-    else
-        utils.send_null(req_id)
-    end
-end
-
---- Find all references to a symbol across workspace (scope-aware)
----@param req_id string LSP request ID
----@param line integer 0-indexed row from LSP params
----@param col integer 0-indexed column from LSP params
----@param bufnr integer Source buffer number
-function M.find_references(req_id, line, col, bufnr)
-    bufnr = bufnr or vim.api.nvim_get_current_buf()
-    local row = line
-
-    -- Get keyword from LSP position params
-    local word, err = utils.get_word_at_bufpos(bufnr, row, col)
-    if err or not word then
-        utils.send_null(req_id)
-        return
-    end
-
-    local current_scope = scope.get_scope_at_position(bufnr, row, col)
-    if not current_scope then
-        -- No scope found, fallback to workspace search
-        find_all_workspace_references(word, req_id, bufnr)
-        return
-    end
-
-    local target_definition = scope.resolve_symbol(word, current_scope)
-    if not target_definition then
-        -- Symbol not resolved in scope, fallback to workspace search
-        -- This handles cases like add(2,3) where add is defined in other files
-        find_all_workspace_references(word, req_id, bufnr)
-        return
-    end
-
-    utils.prepare_workspace()
-
-    local all_refs = {}
-
-    local query = require("r.lsp.queries").get("references")
-    if not query then
-        utils.send_null(req_id)
-        return
-    end
-
-    local ast = require("r.lsp.ast")
-    local parser, root = ast.get_parser_and_root(bufnr)
-    local file = vim.api.nvim_buf_get_name(bufnr)
-
-    if parser and root then
-        for _, node in query:iter_captures(root, bufnr) do
-            local text = vim.treesitter.get_node_text(node, bufnr)
-            if text == word then
-                local start_row, start_col = node:start()
-                local _, end_col = node:end_()
-
-                local usage_scope =
-                    scope.get_scope_at_position(bufnr, start_row, start_col)
-                if usage_scope then
-                    local resolved = scope.resolve_symbol(word, usage_scope)
-                    if
-                        resolved and utils.is_same_definition(resolved, target_definition)
-                    then
+                if not utils.is_argument_name_node(node) then
+                    local text = vim.treesitter.get_node_text(node, bufnr)
+                    if text == symbol then
+                        local start_row, start_col = node:start()
+                        local _, end_col = node:end_()
                         table.insert(all_refs, {
                             file = file,
                             line = start_row,
@@ -132,8 +53,76 @@ function M.find_references(req_id, line, col, bufnr)
         end
     end
 
+    return utils.deduplicate_locations(all_refs)
+end
+
+--- Find all locations for a symbol across workspace (scope-aware).
+--- Returns the location list and the word, so callers (references, rename)
+--- can reuse the result without duplicating the search logic.
+---@param line integer 0-indexed row from LSP params
+---@param col integer 0-indexed column from LSP params
+---@param bufnr integer Source buffer number
+---@return {locations: table[], word: string}|nil
+function M.find_locations(line, col, bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+    local row = line
+
+    local word, err = utils.get_word_at_bufpos(bufnr, row, col)
+    if err or not word then return nil end
+
+    local current_scope = scope.get_scope_at_position(bufnr, row, col)
+    if not current_scope then
+        local locs = collect_workspace_references(word, bufnr)
+        return { locations = locs, word = word, resolved = false }
+    end
+
+    local target_definition = scope.resolve_symbol(word, current_scope)
+    if not target_definition then
+        local locs = collect_workspace_references(word, bufnr)
+        return { locations = locs, word = word, resolved = false }
+    end
+
+    utils.prepare_workspace()
+
+    local all_refs = {}
+
+    local query = require("r.lsp.queries").get("references")
+    if not query then return { locations = {}, word = word } end
+
+    local ast = require("r.lsp.ast")
+    local parser, root = ast.get_parser_and_root(bufnr)
+    local file = vim.api.nvim_buf_get_name(bufnr)
+
+    if parser and root then
+        for _, node in query:iter_captures(root, bufnr) do
+            if not utils.is_argument_name_node(node) then
+                local text = vim.treesitter.get_node_text(node, bufnr)
+                if text == word then
+                    local start_row, start_col = node:start()
+                    local _, end_col = node:end_()
+
+                    local usage_scope =
+                        scope.get_scope_at_position(bufnr, start_row, start_col)
+                    if usage_scope then
+                        local resolved = scope.resolve_symbol(word, usage_scope)
+                        if
+                            resolved
+                            and utils.is_same_definition(resolved, target_definition)
+                        then
+                            table.insert(all_refs, {
+                                file = file,
+                                line = start_row,
+                                col = start_col,
+                                end_col = end_col,
+                            })
+                        end
+                    end
+                end
+            end
+        end
+    end
+
     -- For public (file-level) symbols, also search workspace files for usages
-    -- Cross-file references can only see public symbols
     if target_definition.visibility == "public" then
         local workspace_locations = workspace.get_definitions(word)
         local buffer = require("r.lsp.buffer")
@@ -173,19 +162,22 @@ function M.find_references(req_id, line, col, bufnr)
 
                     if temp_root then
                         for _, node in query:iter_captures(temp_root, temp_bufnr) do
-                            local text = vim.treesitter.get_node_text(node, temp_bufnr)
-                            if text == word then
-                                local in_function =
-                                    ast.find_ancestor(node, "function_definition")
-                                if not in_function then
-                                    local start_row, start_col = node:start()
-                                    local _, end_col = node:end_()
-                                    table.insert(all_refs, {
-                                        file = filepath,
-                                        line = start_row,
-                                        col = start_col,
-                                        end_col = end_col,
-                                    })
+                            if not utils.is_argument_name_node(node) then
+                                local text =
+                                    vim.treesitter.get_node_text(node, temp_bufnr)
+                                if text == word then
+                                    local in_function =
+                                        ast.find_ancestor(node, "function_definition")
+                                    if not in_function then
+                                        local start_row, start_col = node:start()
+                                        local _, end_col = node:end_()
+                                        table.insert(all_refs, {
+                                            file = filepath,
+                                            line = start_row,
+                                            col = start_col,
+                                            end_col = end_col,
+                                        })
+                                    end
                                 end
                             end
                         end
@@ -198,12 +190,21 @@ function M.find_references(req_id, line, col, bufnr)
     end
 
     all_refs = utils.deduplicate_locations(all_refs)
+    return { locations = all_refs, word = word, resolved = true }
+end
 
-    if #all_refs > 0 then
-        utils.send_response("R", req_id, { locations = all_refs })
-    else
+--- Find all references to a symbol across workspace (scope-aware)
+---@param req_id string LSP request ID
+---@param line integer 0-indexed row from LSP params
+---@param col integer 0-indexed column from LSP params
+---@param bufnr integer Source buffer number
+function M.find_references(req_id, line, col, bufnr)
+    local result = M.find_locations(line, col, bufnr)
+    if not result or #result.locations == 0 then
         utils.send_null(req_id)
+        return
     end
+    utils.send_response("R", req_id, { locations = result.locations })
 end
 
 return M

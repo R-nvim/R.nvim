@@ -8,7 +8,8 @@ local scope = require("r.lsp.scope")
 -- R grammar: all assignments are binary_operator with named fields lhs/rhs
 -- Walk up to the nearest assignment ancestor so that compound targets like
 -- x[1] <- 1, x$y <- 1, or names(x) <- ... are correctly classified as writes.
-local assign_target = { ["<-"] = "lhs", ["<<-"] = "lhs", ["="] = "lhs", ["->"] = "rhs", ["->>"] = "rhs" }
+local assign_target =
+    { ["<-"] = "lhs", ["<<-"] = "lhs", ["="] = "lhs", ["->"] = "rhs", ["->>"] = "rhs" }
 local function highlight_kind(node, bufnr)
     local cur = node
     while true do
@@ -50,7 +51,10 @@ function M.document_highlight(req_id, line, col, bufnr)
 
     local highlights = {}
     for _, node in query:iter_captures(root, bufnr) do
-        if vim.treesitter.get_node_text(node, bufnr) == word then
+        if
+            not utils.is_argument_name_node(node)
+            and vim.treesitter.get_node_text(node, bufnr) == word
+        then
             local sr, sc = node:start()
             local _, ec = node:end_()
 

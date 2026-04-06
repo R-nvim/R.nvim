@@ -1549,6 +1549,7 @@ features in your R.nvim config. Below are the default values:
     document_highlight = true,  -- enable the document highlight provider
     document_symbol = true,     -- enable the document symbol provider
     workspace_symbol = true,    -- enable the workspace symbol provider
+    rename = true,              -- enable the rename provider
     doc_width = 0,
     fun_data_1 = { "select", "rename", "mutate", "filter" },
     fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
@@ -1566,6 +1567,7 @@ Meaning of options:
   - `signature`: Enable the signature help provider
 
   - `implementation`: Enable the implementation provider
+
   - `definition`: Enable the definition provider
 
   - `use_git_files`: Use `git ls-files` to find R files when indexing the
@@ -1581,6 +1583,9 @@ Meaning of options:
   - `document_symbol`: Enable the document symbol provider
 
   - `workspace_symbol`: Enable the workspace symbol provider
+
+  - `rename`: Enable the rename provider. This allows you to rename variables and
+    functions across your R project (see |R.nvim-rename|). 
 
 Note: The definition and references providers also recognize symbols defined
 in `{targets}` pipelines. Target-defining calls (e.g., `tar_target()`,

@@ -272,6 +272,12 @@ static void handle_initialize(const char *request_id) {
         p = str_cat(p, "\"workspaceSymbolProvider\":true");
         has_cpblt = 1;
     }
+    if (!disable || strstr(disable, "rename") == NULL) {
+        if (has_cpblt)
+            p = str_cat(p, ",");
+        p = str_cat(p, "\"renameProvider\":true");
+        has_cpblt = 1;
+    }
 
     str_cat(p, "}}}");
 
@@ -288,6 +294,7 @@ static void send_workspace_symbols_result(const char *params);
 static void send_references_result(const char *params);
 static void send_implementation_result(const char *params);
 static void send_document_highlight_result(const char *params);
+static void send_rename_result(const char *params);
 
 static void handle_exe_cmd(const char *params) {
     Log("handle_exe_cmd: %s\n", params);
@@ -340,6 +347,9 @@ static void handle_exe_cmd(const char *params) {
         break;
     case 'L': // Document highlight result from Lua
         send_document_highlight_result(params);
+        break;
+    case 'X': // Rename result from Lua
+        send_rename_result(params);
         break;
     case '1': // Start TCP server and wait nvimcom connection
         start_server();
@@ -517,6 +527,96 @@ static void handle_implementation(const char *id, const char *params) {
 
 static void handle_document_highlight(const char *id, const char *params) {
     handle_location_request(id, params, "document_highlight");
+}
+
+static void send_rename_result(const char *params) {
+    /* Extract orig_id without mutating params so the subsequent strstr for
+     * "changes" is not affected by cut_json_int's null-termination. */
+    char id_str[16] = "";
+    char *id_ptr = strstr(params, "\"orig_id\":");
+    if (!id_ptr)
+        return;
+    snprintf(id_str, sizeof(id_str) - 1, "%ld", strtol(id_ptr + 10, NULL, 10));
+
+    char *changes_start = strstr(params, "\"changes\":{");
+    if (!changes_start) {
+        send_null(id_str);
+        return;
+    }
+    changes_start += 10; /* points to '{' */
+
+    /* Walk forward counting braces to find the matching '}'. */
+    int depth = 0;
+    char *p = changes_start;
+    while (*p) {
+        if (*p == '{')
+            depth++;
+        else if (*p == '}') {
+            if (--depth == 0)
+                break;
+        }
+        p++;
+    }
+    if (depth != 0 || !*p) {
+        send_null(id_str);
+        return;
+    }
+
+    size_t changes_len = (size_t)(p - changes_start) + 1;
+    size_t result_size = changes_len + 256;
+    char *result = (char *)malloc(result_size);
+    snprintf(result, result_size,
+             "{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":{\"changes\":%.*s}}",
+             id_str, (int)changes_len, changes_start);
+    send_ls_response(id_str, result);
+    free(result);
+}
+
+static void handle_rename(const char *id, const char *params) {
+    char uri[2048];
+    extract_doc_uri(params, uri, sizeof(uri));
+
+    char *position = strstr(params, "\"position\":{");
+    if (!position)
+        return;
+    position += 11;
+    char *line = strstr(position, "\"line\":");
+    char *col = strstr(position, "\"character\":");
+
+    /* Extract newName BEFORE cut_json_int calls mutate the buffer */
+    char new_name_raw[256] = "";
+    char *nn = strstr(params, "\"newName\":\"");
+    if (nn) {
+        nn += 11;
+        char *nn_end = strchr(nn, '"');
+        if (nn_end) {
+            size_t n = (size_t)(nn_end - nn);
+            if (n < sizeof(new_name_raw)) {
+                strncpy(new_name_raw, nn, n);
+                new_name_raw[n] = '\0';
+            }
+        }
+    }
+
+    /* Escape backslashes and single quotes for Lua single-quoted literal */
+    char escaped[512] = "";
+    size_t ei = 0;
+    for (size_t qi = 0; new_name_raw[qi] && ei + 2 < sizeof(escaped); qi++) {
+        if (new_name_raw[qi] == '\'' || new_name_raw[qi] == '\\')
+            escaped[ei++] = '\\';
+        escaped[ei++] = new_name_raw[qi];
+    }
+    escaped[ei] = '\0';
+
+    cut_json_int(&line, 7);
+    cut_json_int(&col, 12);
+
+    char cmd[4096];
+    snprintf(
+        cmd, sizeof(cmd) - 1,
+        "require('r.lsp').rename(%s, %s, %s, vim.uri_to_bufnr('%s'), '%s')", id,
+        line, col, uri, escaped);
+    send_cmd_to_nvim(cmd);
 }
 
 // Generic function to handle location-based LSP responses (definition,
@@ -838,6 +938,8 @@ static void lsp_loop(void) {
                 handle_implementation(id, params);
             } else if (strcmp(method, "textDocument/documentHighlight") == 0) {
                 handle_document_highlight(id, params);
+            } else if (strcmp(method, "textDocument/rename") == 0) {
+                handle_rename(id, params);
             } else if (strcmp(method, "initialize") == 0) {
                 handle_initialize(id);
             } else if (strcmp(method, "initialized") == 0) {

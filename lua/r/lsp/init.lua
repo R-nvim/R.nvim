@@ -705,6 +705,25 @@ M.references = function(req_id, line, col, bufnr)
     require("r.lsp.references").find_references(req_id, line, col, bufnr)
 end
 
+---Rename all references to the symbol under cursor
+---@param req_id string
+---@param line integer LSP line (0-indexed)
+---@param col integer LSP character (0-indexed)
+---@param bufnr integer Source buffer (resolved from textDocument URI)
+---@param new_name string Replacement identifier
+M.rename = function(req_id, line, col, bufnr, new_name)
+    bufnr = get_r_bufnr(bufnr)
+    if vim.bo[bufnr].filetype ~= "r" then
+        local lang = "other"
+        vim.api.nvim_buf_call(bufnr, function() lang = get_lang(line) end)
+        if lang ~= "r" then
+            M.send_msg({ code = "N" .. req_id })
+            return
+        end
+    end
+    require("r.lsp.rename").rename_symbol(req_id, line, col, bufnr, new_name)
+end
+
 ---Find implementations of the symbol under cursor
 ---@param req_id string
 ---@param line integer LSP line (0-indexed)

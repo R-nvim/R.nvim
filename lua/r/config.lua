@@ -34,6 +34,9 @@ local hooks = require("r.hooks")
 ---Enable the document highlight provider
 ---@field document_highlight? boolean
 ---
+---Enable the rename provider
+---@field rename? boolean
+---
 ---Text width of documentation window displayed when
 ---an item is selected
 ---@field doc_width? integer
@@ -508,6 +511,7 @@ local config = {
         document_symbol = true,
         workspace_symbol = true,
         document_highlight = true,
+        rename = true,
         doc_width = 0,
         fun_data_1 = { "select", "rename", "mutate", "filter" },
         fun_data_2 = { ggplot = { "aes" }, with = { "*" } },
