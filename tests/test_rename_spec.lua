@@ -187,6 +187,48 @@ describe("LSP textDocument/rename", function()
 
     -- -------------------------------------------------------------------------
 
+    describe("reassignment within same scope", function()
+        it("renames all occurrences including reassignments", function()
+            local content = table.concat({
+                "dummy <- 0",
+                "f <- function(res, pkg, pkgname, funcmeth) {",
+                '  if (length(res) == 0 || (length(res) == 1 && res == "")) {',
+                '    res <- ""',
+                "  } else {",
+                "    if (is.null(pkg)) {",
+                "      info <- pkgname",
+                "      if (!is.na(funcmeth)) {",
+                '        if (info != "") {',
+                '          info <- paste0(info, ", ")',
+                "        }",
+                '        info <- paste0(info, "function:", funcmeth, "()")',
+                "      }",
+                "    }",
+                "  }",
+                "}",
+            }, "\n")
+
+            -- cursor on first `info` (info <- pkgname), row=6 col=6
+            local bufnr = setup_test(content, { 7, 6 })
+
+            if not bufnr then return end
+
+            rename_module.rename_symbol("req_reassign", 6, 6, bufnr, "detail")
+
+            local msg = assert_rename_response("req_reassign")
+
+            assert.equals(6, count_edits(msg.changes))
+
+            for _, edits in pairs(msg.changes) do
+                for _, edit in ipairs(edits) do
+                    assert.equals("detail", edit.newText)
+                end
+            end
+        end)
+    end)
+
+    -- -------------------------------------------------------------------------
+
     describe("external symbol guard", function()
         it("refuses to rename a symbol with no project definition", function()
             -- str_detect belongs to stringr; scope resolution fails and

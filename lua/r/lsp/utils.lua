@@ -469,14 +469,41 @@ function M.is_argument_name_node(node)
     return #name_nodes > 0 and name_nodes[1]:id() == node:id()
 end
 
---- Check whether two symbol definitions refer to the same declaration site.
+--- Check whether two definitions refer to the same R variable.
+--- R has function-level scoping: all assignments to the same name within the
+--- same function body (or both at file level) are the same variable, not
+--- shadowing.  This is needed for rename/references to capture reassignments.
 ---@param def1 SymbolDefinition
 ---@param def2 SymbolDefinition
+---@param bufnr integer Buffer used for tree-sitter lookups
 ---@return boolean
-function M.is_same_definition(def1, def2)
-    return M.normalize_path(def1.location.file) == M.normalize_path(def2.location.file)
-        and def1.location.line == def2.location.line
+function M.is_same_r_variable(def1, def2, bufnr)
+    if M.normalize_path(def1.location.file) ~= M.normalize_path(def2.location.file) then
+        return false
+    end
+    -- Exact same position is trivially the same
+    if
+        def1.location.line == def2.location.line
         and def1.location.col == def2.location.col
+    then
+        return true
+    end
+    -- Both definitions must be in the same containing function (or both at
+    -- file level) to be considered the same variable.
+    local ast = require("r.lsp.ast")
+    local node1 = ast.node_at_position(bufnr, def1.location.line, def1.location.col)
+    local node2 = ast.node_at_position(bufnr, def2.location.line, def2.location.col)
+    if not node1 or not node2 then return false end
+
+    local func1 = ast.find_ancestor(node1, "function_definition")
+    local func2 = ast.find_ancestor(node2, "function_definition")
+
+    -- Both at file level (no containing function)
+    if not func1 and not func2 then return true end
+    -- Same containing function node
+    if func1 and func2 and func1:id() == func2:id() then return true end
+
+    return false
 end
 
 --- Prepare workspace (consolidated pattern)

@@ -64,7 +64,7 @@ function M.document_highlight(req_id, line, col, bufnr)
                 if usage_scope then
                     local resolved = scope.resolve_symbol(word, usage_scope)
                     include = resolved ~= nil
-                        and utils.is_same_definition(resolved, target_definition)
+                        and utils.is_same_r_variable(resolved, target_definition, bufnr)
                 end
             else
                 -- Symbol not resolved in scope: highlight all buffer occurrences

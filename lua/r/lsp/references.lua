@@ -107,7 +107,11 @@ function M.find_locations(line, col, bufnr)
                         local resolved = scope.resolve_symbol(word, usage_scope)
                         if
                             resolved
-                            and utils.is_same_definition(resolved, target_definition)
+                            and utils.is_same_r_variable(
+                                resolved,
+                                target_definition,
+                                bufnr
+                            )
                         then
                             table.insert(all_refs, {
                                 file = file,
