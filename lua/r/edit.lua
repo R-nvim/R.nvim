@@ -126,11 +126,9 @@ M.add_for_deletion = function(fname)
 end
 
 M.vim_leave = function()
-    local r_ready = vim.g.R_Nvim_status == 7
-    local auto_quit_pending = vim.g.R_nvim_auto_quit_pending
-    if (r_ready or auto_quit_pending) and config.auto_quit then
-        vim.g.R_nvim_auto_quit_pending = nil
-        if config.external_term ~= "" then
+    if config.auto_quit then
+        if vim.g.R_Nvim_status == 7 or vim.g.R_nvim_auto_quit_pending then
+            vim.g.R_nvim_auto_quit_pending = nil
             require("r.send").cmd('quit(save = "no")')
         else
             require("r.run").quit_R("nosave")
