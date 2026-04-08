@@ -759,7 +759,7 @@ end
 ---@param client integer Client handle
 local function on_exit(code, signal, client)
     local cfg = require("r.config").get_config()
-    if vim.g.R_Nvim_status == 7 and cfg.auto_quit and cfg.external_term ~= "" then
+    if vim.g.R_Nvim_status == 7 and cfg.auto_quit then
         vim.g.R_nvim_auto_quit_pending = true
     end
 
