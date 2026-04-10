@@ -238,7 +238,16 @@ local M = {}
 ---@param should_dedent boolean Whether to dedent the code
 ---@param m string|nil Movement mode ("move" or nil)
 ---@return boolean Whether the command was sent successfully
-local function send_chunk_line(chunk, line, lnum, lang, stop_fn, wrap_fn, should_dedent, m)
+local function send_chunk_line(
+    chunk,
+    line,
+    lnum,
+    lang,
+    stop_fn,
+    wrap_fn,
+    should_dedent,
+    m
+)
     local lines
     lines, lnum = get_ts_code_to_send(chunk, line, lnum, lang, stop_fn)
     local code = table.concat(lines, "\n")
@@ -507,8 +516,24 @@ M.motion_wrapper = function()
 
     motion = char
 
-    -- If first char is a digit, keep reading digits
-    while char:match("%d") do
+    -- If first char is a non-zero digit, keep reading digits
+    if char:match("[1-9]") then
+        repeat
+            ok, char = pcall(vim.fn.getcharstr)
+            if not ok or char == "\27" then return end
+            motion = motion .. char
+        until not char:match("%d")
+    end
+
+    -- If part of two-character motion is typed (in/around), keep reading
+    if
+        char == "i"
+        or char == "a"
+        or char == "f"
+        or char == "F"
+        or char == "t"
+        or char == "T"
+    then
         ok, char = pcall(vim.fn.getcharstr)
         if not ok or char == "\27" then return end
         motion = motion .. char
