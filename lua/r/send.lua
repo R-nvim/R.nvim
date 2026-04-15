@@ -193,6 +193,10 @@ local function get_ts_code_to_send(chunk, txt, row, lang, should_stop_fn)
     local node =
         root:named_descendant_for_range(relative_row, col - 1, relative_row, col - 1)
 
+    -- If we landed on a stop node itself (e.g. "program" at col 0 in R),
+    -- step into its first named child so the walk-up can work.
+    if node and should_stop_fn(node) then node = node:named_child(0) end
+
     -- Walk up until should_stop_fn returns true
     while node do
         local parent = node:parent()
@@ -238,13 +242,34 @@ local M = {}
 ---@param should_dedent boolean Whether to dedent the code
 ---@param m string|nil Movement mode ("move" or nil)
 ---@return boolean Whether the command was sent successfully
-local function send_chunk_line(chunk, line, lnum, lang, stop_fn, wrap_fn, should_dedent, m)
+local function send_chunk_line(
+    chunk,
+    line,
+    lnum,
+    lang,
+    stop_fn,
+    wrap_fn,
+    should_dedent,
+    m
+)
     local lines
+
     lines, lnum = get_ts_code_to_send(chunk, line, lnum, lang, stop_fn)
-    local code = table.concat(lines, "\n")
-    if should_dedent then code = utils.dedent(code) end
-    code = wrap_fn(code)
-    local ok = M.cmd(code)
+
+    local ok
+
+    if #lines > 1 then
+        ok = M.source_lines(lines, nil, { dedent = should_dedent, wrap_inline = wrap_fn })
+    else
+        local code = lines[1] or ""
+        if should_dedent then code = utils.dedent(code) end
+        code = wrap_fn(code)
+        if config.bracketed_paste then
+            ok = M.cmd("\027[200~" .. code .. "\027[201~")
+        else
+            ok = M.cmd(code)
+        end
+    end
     if ok and m == "move" then
         local last_line = vim.api.nvim_buf_line_count(0)
         vim.api.nvim_win_set_cursor(0, { math.min(lnum, last_line), 0 })
