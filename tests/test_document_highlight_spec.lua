@@ -154,6 +154,47 @@ describe("LSP textDocument/documentHighlight", function()
         end)
     end)
 
+    describe("pipe chain column highlights", function()
+        it("highlights column definition and references in pipe chain", function()
+            -- dir defined by mutate(dir = a), referenced in basename(dir)
+            local content = "x |> mutate(dir = a) |> mutate(category = basename(dir))"
+            -- cursor on `dir` in basename(dir): col=52
+            local bufnr = setup_test(content, { 1, 52 })
+            if not bufnr then return end
+            highlight_module.document_highlight("req_pipe1", 0, 52, bufnr)
+            local msg = assert_highlight_response("req_pipe1")
+            -- dir definition (col=12) + dir reference (col=52) = 2
+            assert.equals(2, #msg.highlights)
+        end)
+
+        it("highlights column from its definition site", function()
+            local content = "x |> mutate(dir = a) |> filter(dir > 0)"
+            -- cursor on `dir` in mutate(dir = a): col=12
+            local bufnr = setup_test(content, { 1, 12 })
+            if not bufnr then return end
+            highlight_module.document_highlight("req_pipe2", 0, 12, bufnr)
+            local msg = assert_highlight_response("req_pipe2")
+            -- definition (col=12) + reference in filter (col=31)
+            assert.equals(2, #msg.highlights)
+        end)
+
+        it("highlights column across multiple pipe steps", function()
+            local content = table.concat({
+                "x |>",
+                "  mutate(category = a) |>",
+                "  filter(category > 0) |>",
+                "  count(category)",
+            }, "\n")
+            -- cursor on `category` in count(category): row=3, col=8
+            local bufnr = setup_test(content, { 4, 8 })
+            if not bufnr then return end
+            highlight_module.document_highlight("req_pipe3", 3, 8, bufnr)
+            local msg = assert_highlight_response("req_pipe3")
+            -- definition + 2 references = 3
+            assert.equals(3, #msg.highlights)
+        end)
+    end)
+
     describe("scope-aware filtering", function()
         it("highlights only in-scope definition when variable is shadowed", function()
             local content = [[

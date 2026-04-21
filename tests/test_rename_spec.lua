@@ -295,4 +295,89 @@ describe("LSP textDocument/rename", function()
             end
         end)
     end)
+
+    -- -------------------------------------------------------------------------
+
+    describe("pipe chain column rename", function()
+        it("renames column defined in mutate and referenced later", function()
+            -- dir is defined by mutate(dir = ...) and referenced in basename(dir)
+            local content = table.concat({
+                "dummy <- 0",
+                "x |> mutate(dir = a) |> mutate(category = basename(dir))",
+            }, "\n")
+            -- cursor on `dir` in basename(dir): row=1, col=52
+            local bufnr = setup_test(content, { 2, 52 })
+            if not bufnr then return end
+            rename_module.rename_symbol("req_pipe1", 1, 52, bufnr, "folder")
+            local msg = assert_rename_response("req_pipe1")
+            -- definition site (dir =) + reference site (basename(dir)) = 2 edits
+            assert.equals(2, count_edits(msg.changes))
+            for _, edits in pairs(msg.changes) do
+                for _, edit in ipairs(edits) do
+                    assert.equals("folder", edit.newText)
+                end
+            end
+        end)
+
+        it("renames column from its definition site (argument name)", function()
+            local content = table.concat({
+                "dummy <- 0",
+                "x |> mutate(dir = a) |> filter(dir > 0)",
+            }, "\n")
+            -- cursor on `dir` in mutate(dir = a): row=1, col=12
+            local bufnr = setup_test(content, { 2, 12 })
+            if not bufnr then return end
+            rename_module.rename_symbol("req_pipe2", 1, 12, bufnr, "folder")
+            local msg = assert_rename_response("req_pipe2")
+            -- definition site (dir =) + reference site (filter(dir > 0)) = 2 edits
+            assert.equals(2, count_edits(msg.changes))
+        end)
+
+        it("renames column across multiple pipe steps", function()
+            local content = table.concat({
+                "dummy <- 0",
+                "x |>",
+                "  mutate(category = a) |>",
+                "  filter(category > 0) |>",
+                "  count(category)",
+            }, "\n")
+            -- cursor on `category` in count(category): row=4, col=8
+            local bufnr = setup_test(content, { 5, 8 })
+            if not bufnr then return end
+            rename_module.rename_symbol("req_pipe3", 4, 8, bufnr, "group")
+            local msg = assert_rename_response("req_pipe3")
+            -- definition + 2 references = 3 edits
+            assert.equals(3, count_edits(msg.changes))
+        end)
+
+        it("does not rename regular argument names in non-mutate functions", function()
+            -- `glob` in dir_ls(glob = ...) should not be treated as a column
+            local content = table.concat({
+                "dummy <- 0",
+                'x |> dir_ls(glob = "*.png") |> mutate(y = 1)',
+            }, "\n")
+            local bufnr = setup_test(content, { 2, 12 })
+            if not bufnr then return end
+            rename_module.rename_symbol("req_pipe4", 1, 12, bufnr, "pattern")
+            -- glob is not a pipe column, so rename falls through to workspace
+            -- (which returns empty) → null response
+            assert_null_response("req_pipe4")
+        end)
+
+        it(
+            "renames column referenced in across() back to its mutate definition",
+            function()
+                local content = table.concat({
+                    "dummy <- 0",
+                    "x |> mutate(a = 1, b = 2) |> across(c(a, b), ~ .x + 1)",
+                }, "\n")
+                local bufnr = setup_test(content, { 2, 39 })
+                if not bufnr then return end
+                rename_module.rename_symbol("req_pipe5", 1, 38, bufnr, "alpha")
+                -- cursor on `a` in across(c(a, b)) → renames definition in mutate(a =) too
+                local msg = assert_rename_response("req_pipe5")
+                assert.equals(2, count_edits(msg.changes))
+            end
+        )
+    end)
 end)

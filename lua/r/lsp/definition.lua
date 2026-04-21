@@ -137,6 +137,18 @@ function M.goto_definition(req_id, line, col, bufnr)
         return
     end
 
+    -- 1.5. Try pipe chain column resolution (tidyverse data-masking)
+    local pipe = require("r.lsp.pipe")
+    local pipe_match = pipe.resolve_column(bufnr, row, col, symbol)
+    if pipe_match then
+        utils.send_response("D", req_id, {
+            uri = "file://" .. pipe_match.file,
+            line = pipe_match.line,
+            col = pipe_match.col,
+        })
+        return
+    end
+
     -- 2. Check workspace index for other files (using centralized workspace.lua)
     local workspace_locations = workspace.get_definitions(symbol)
     if #workspace_locations > 0 then

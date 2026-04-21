@@ -42,6 +42,27 @@ function M.document_highlight(req_id, line, col, bufnr)
     local current_scope = scope.get_scope_at_position(bufnr, line, col)
     local target_definition = current_scope and scope.resolve_symbol(word, current_scope)
 
+    -- If scope resolution fails, try pipe chain column resolution
+    if not target_definition then
+        local pipe = require("r.lsp.pipe")
+        local pipe_locs = pipe.find_locations(bufnr, line, col, word)
+        if pipe_locs and #pipe_locs > 0 then
+            local highlights = {}
+            for _, loc in ipairs(pipe_locs) do
+                local node = ast.node_at_position(bufnr, loc.line, loc.col)
+                table.insert(highlights, {
+                    range = {
+                        start = { line = loc.line, character = loc.col },
+                        ["end"] = { line = loc.line, character = loc.end_col },
+                    },
+                    kind = node and highlight_kind(node, bufnr) or 2,
+                })
+            end
+            utils.send_response("L", req_id, { highlights = highlights })
+            return
+        end
+    end
+
     local query = queries.get("references")
     local _, root = ast.get_parser_and_root(bufnr)
     if not query or not root then

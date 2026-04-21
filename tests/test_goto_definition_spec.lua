@@ -179,6 +179,38 @@ list(
         end)
     end)
 
+    describe("pipe chain column resolution", function()
+        it("jumps to column definition in mutate from a reference", function()
+            -- dir defined by mutate(dir = a), referenced in basename(dir)
+            local content = "x |> mutate(dir = a) |> mutate(category = basename(dir))"
+            -- cursor on `dir` in basename(dir): col=52
+            setup_test(content, { 1, 52 })
+            definition_module.goto_definition("req_pipe1")
+            -- should jump to dir in mutate(dir = a) at col=12
+            assert_location_response("req_pipe1", 0, 12)
+        end)
+
+        it("jumps to column definition from count() usage", function()
+            local content = table.concat({
+                "x |>",
+                "  mutate(category = a) |>",
+                "  count(category)",
+            }, "\n")
+            -- cursor on `category` in count(category): row=2, col=8
+            setup_test(content, { 3, 8 })
+            definition_module.goto_definition("req_pipe2")
+            -- should jump to category in mutate(category = a) at row=1, col=9
+            assert_location_response("req_pipe2", 1, 9)
+        end)
+
+        it("returns null for non-column argument names", function()
+            local content = 'x |> dir_ls(glob = "*.png")'
+            setup_test(content, { 1, 12 })
+            definition_module.goto_definition("req_pipe3")
+            assert_null_response("req_pipe3")
+        end)
+    end)
+
     describe("edge cases", function()
         it("handles empty buffer", function()
             setup_test("", { 1, 0 })

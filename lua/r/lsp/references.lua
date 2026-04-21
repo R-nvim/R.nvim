@@ -78,6 +78,17 @@ function M.find_locations(line, col, bufnr)
 
     local target_definition = scope.resolve_symbol(word, current_scope)
     if not target_definition then
+        -- Try pipe chain column resolution (tidyverse data-masking)
+        local pipe = require("r.lsp.pipe")
+        local pipe_locs = pipe.find_locations(bufnr, row, col, word)
+        if pipe_locs and #pipe_locs > 0 then
+            return {
+                locations = utils.deduplicate_locations(pipe_locs),
+                word = word,
+                resolved = true,
+            }
+        end
+
         local locs = collect_workspace_references(word, bufnr)
         return { locations = locs, word = word, resolved = false }
     end
