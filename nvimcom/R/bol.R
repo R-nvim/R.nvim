@@ -667,9 +667,9 @@ nvim.build.cmplls <- function() {
         p <- b$pkg[i]
         pvi <- b$ivrs[i]
         msg <- paste0("ECHO: Building completion list for \"", p, "\"\x14\n")
-        if (isTRUE(getOption("nvimcom.build_messages", TRUE))) {                    
-          cat(msg)                                                                  
-        }                                                                           
+        if (isTRUE(getOption("nvimcom.build_messages", TRUE))) {
+            cat(msg)
+        }
         flush(stdout())
         t1 <- Sys.time()
         nvim.bol(paste0(bdir, "/objls_", p, "_", pvi), p)
