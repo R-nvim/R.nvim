@@ -473,6 +473,13 @@ trigger the completion after the double colon).
 For both `library()` and `require()`, when completing the first argument, the
 popup list shows the names of installed packages.
 
+At startup, R.nvim emits messages about the packages for which completion 
+lists are built. To suppress these messages, add the following to your 
+~/.Rprofile:
+
+>r
+   options(nvimcom.build_messages = FALSE)
+<
 
 ------------------------------------------------------------------------------
 4.3.1. Quarto YAML completion                          *R.nvim-quarto-completion*
