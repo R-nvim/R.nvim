@@ -1,3 +1,4 @@
+#define ENABLE_LEGACY_NONAPI_FUNS
 #include <R.h> /* to include Rconfig.h */
 #include <Rversion.h>
 #include <Rdefines.h>
@@ -283,7 +284,7 @@ static void send_to_nvim(char *msg) {
     // based on code found on php source
     // Send the message
     char *pCur = msg;
-    char *pEnd = msg + len;
+    const char *pEnd = msg + len;
     while (pCur < pEnd) {
         sent = send(sfd, pCur, pEnd - pCur, 0);
         if (sent >= 0) {
@@ -946,13 +947,12 @@ void nvimcom_task(void) {
 
             /* From R-exts: Evaluating R expressions from C */
             SEXP s, t;
-            PROTECT(t = s = allocList(2));
-            SET_TYPEOF(s, LANGSXP);
-            SETCAR(t, install("options"));
+            t = s = PROTECT(Rf_allocLang(2));
+            SETCAR(t, Rf_install("options"));
             t = CDR(t);
-            SETCAR(t, ScalarInteger((int)columns));
-            SET_TAG(t, install("width"));
-            eval(s, R_GlobalEnv);
+            SETCAR(t, Rf_ScalarInteger(columns));
+            SET_TAG(t, Rf_install("width"));
+            Rf_eval(s, R_GlobalEnv);
             UNPROTECT(1);
 
             if (verbose > 2)
