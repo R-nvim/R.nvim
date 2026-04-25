@@ -193,7 +193,6 @@ local init_exit = function(_, data, _)
 end
 
 local build_objls_exit = function()
-    vim.schedule(function() vim.api.nvim_echo({ { " " } }, false, {}) end)
     edit.add_to_debug_info(
         "stderr of last completion data building",
         table.concat(o_err, "\n")
