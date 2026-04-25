@@ -2,17 +2,11 @@
 
 local M = {}
 
-local ts_available, treesitter_parsers = pcall(require, "nvim-treesitter.parsers")
-
 --- Checks if a parser is available or not
 ---@param parser_name string
 ---@return boolean
 local function parser_installed(parser_name)
-    return (
-        ts_available
-        and treesitter_parsers.has_parser
-        and treesitter_parsers.has_parser(parser_name)
-    ) or pcall(vim.treesitter.query.get, parser_name, "highlights")
+    return pcall(vim.treesitter.language.add, parser_name)
 end
 
 M.check = function()
@@ -42,14 +36,6 @@ M.check = function()
         vim.health.error("Please, uninstall Vim-R before using R.nvim.")
     elseif vim.fn.exists("*WaitVimComStart") ~= 0 then
         vim.health.error("Please, uninstall Vim-R-plugin before using R.nvim.")
-    end
-
-    if ts_available then
-        vim.health.ok("`nvim-treesitter/nvim-treesitter` found.")
-    else
-        vim.health.warn(
-            "`nvim-treesitter/nvim-treesitter` not found. Ignore this if you manually installed the parsers."
-        )
     end
 
     if vim.fn.executable("yaml-language-server") == 1 then

@@ -116,31 +116,9 @@ sources simultaneously is not advised.
 
 ### Tree-sitter
 
-Tree-sitter is required to enable much of the functionality of R.nvim. Note
-that nvim-treesitter has been completely rewritten on
-the [main branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/main)
-and the configuration used in
-the [master branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/master)
-is not compatible with the new version. In the example below, we provide
-minimal configurations for both branches. Please choose the one that matches
-your installation.
+The following Tree-sitter parsers are required: `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`, `latex`, and `csv`. They can be installed with any Tree-sitter parser manager, such as [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) or [tree-sitter-manager.nvim](https://github.com/romus204/tree-sitter-manager.nvim).
 
-If you are using [nvim-treesitter master branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/master):
-
-```lua
-{
-    "nvim-treesitter/nvim-treesitter",
-    build = ":TSUpdate",
-    config = function ()
-        require("nvim-treesitter.configs").setup({
-            ensure_installed = { "markdown", "markdown_inline", "r", "rnoweb", "yaml", "latex", "csv" },
-            highlight = { enable = true },
-        })
-    end
-},
-```
-
-If you are using [nvim-treesitter main branch](https://github.com/nvim-treesitter/nvim-treesitter/tree/main):
+Example configuration using nvim-treesitter:
 
 ```lua
 {
@@ -268,8 +246,7 @@ firm commitment to backwards compatibility.
   components concatenated using either `"here::here"` (the default),
   `"here"`, `"file.path"`, `"fs::path"`, or `"path"`, depending on how
   `path_split_fun` is set. Requires
-  [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) to be
-  installed).
+  tree-sitter parsers to be installed.
 
 - `<LocalLeader>,` inserts a pipe operator (`|>`).
 

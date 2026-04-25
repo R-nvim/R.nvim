@@ -1309,27 +1309,20 @@ M.check_health = function()
         end
         return false
     end
-    local has_treesitter, _ = pcall(require, "nvim-treesitter")
-    if not has_treesitter then
+
+    local parsers = vim.api.nvim_get_runtime_file(
+        "parser" .. (config.is_windows and "\\" or "/") .. "*.*",
+        true
+    )
+    if
+        not has_parser("r", parsers)
+        or not has_parser("markdown", parsers)
+        or not has_parser("rnoweb", parsers)
+        or not has_parser("yaml", parsers)
+    then
         swarn(
-            'R.nvim requires nvim-treesitter. Please install it and the parsers for "r", "markdown", "rnoweb", and "yaml".'
+            'R.nvim requires treesitter parsers for "r", "markdown", "rnoweb", and "yaml". Please, install them.'
         )
-    else
-        -- Check if required treesitter parsers are available
-        local parsers = vim.api.nvim_get_runtime_file(
-            "parser" .. (config.is_windows and "\\" or "/") .. "*.*",
-            true
-        )
-        if
-            not has_parser("r", parsers)
-            or not has_parser("markdown", parsers)
-            or not has_parser("rnoweb", parsers)
-            or not has_parser("yaml", parsers)
-        then
-            swarn(
-                'R.nvim requires treesitter parsers for "r", "markdown", "rnoweb", and "yaml". Please, install them.'
-            )
-        end
     end
 
     if #smsgs > 0 then

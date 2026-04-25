@@ -91,10 +91,13 @@ Main dependencies:
       https://github.com/neovim/neovim/releases
       See also: https://github.com/neovim/neovim/wiki/Installing-Neovim
 
-   nvim-treesitter:
+   Tree-sitter parsers:
+      Parsers for `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`,
+      `latex`, and `csv` must be installed. You can install them using any
+      tree-sitter parser manager (e.g. the `nvim-treesitter` or
+      `tree-sitter-manager` plugins) or manually.
       https://github.com/nvim-treesitter/nvim-treesitter
-      You have to enable highlighting by tree-sitter and install parsers for
-      `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`, `latex`, and `csv`.
+      https://github.com/romus204/tree-sitter-manager.nvim
 
    R >= 4.0.0:
       http://www.r-project.org/
