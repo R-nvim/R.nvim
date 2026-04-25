@@ -193,6 +193,11 @@ local init_exit = function(_, data, _)
 end
 
 local build_objls_exit = function()
+    local ui2 = package.loaded["vim._core.ui2"]
+    local is_ui2_msg = ui2 and ui2.cfg and ui2.cfg.msg and ui2.cfg.msg.target == "msg"
+    if not is_ui2_msg then
+        vim.schedule(function() vim.api.nvim_echo({ { " " } }, false, {}) end)
+    end
     edit.add_to_debug_info(
         "stderr of last completion data building",
         table.concat(o_err, "\n")
