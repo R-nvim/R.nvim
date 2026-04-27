@@ -455,7 +455,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
     } else if (Rf_isFactor(*x)) {
         p = str_cat(p, "\006f\006");
 #if defined(R_VERSION) && R_VERSION >= R_Version(4, 6, 0)
-    } else if (Rf_isScalarString(*x)) {
+    } else if (Rf_isString(*x)) {
 #else
     } else if (Rf_isValidString(*x)) {
 #endif
