@@ -99,7 +99,7 @@ Main dependencies:
       https://github.com/nvim-treesitter/nvim-treesitter
       https://github.com/romus204/tree-sitter-manager.nvim
 
-   R >= 4.0.0:
+   R >= 4.1.0:
       http://www.r-project.org/
 
    Make and C compiler

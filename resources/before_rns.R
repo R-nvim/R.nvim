@@ -17,8 +17,8 @@ libp <- unique(c(
 # Check R version
 R_version <- paste0(version[c("major", "minor")], collapse = ".")
 
-if (R_version < "4.0.0") {
-    out("WARN: R.nvim requires R >= 4.0.0")
+if (R_version < "4.1.0") {
+    out("WARN: R.nvim requires R >= 4.1.0")
 }
 
 R_version <- sub("[0-9]$", "", R_version)
