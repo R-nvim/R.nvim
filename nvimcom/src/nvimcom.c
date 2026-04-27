@@ -947,7 +947,12 @@ void nvimcom_task(void) {
 
             /* From R-exts: Evaluating R expressions from C */
             SEXP s, t;
+#if R_VERSION >= R_Version(4, 4, 0)
             t = s = PROTECT(Rf_allocLang(2));
+#else
+            PROTECT(t = s = Rf_allocList(2));
+            SET_TYPEOF(s, LANGSXP);
+#endif
             SETCAR(t, Rf_install("options"));
             t = CDR(t);
             SETCAR(t, Rf_ScalarInteger(columns));
