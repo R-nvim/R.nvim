@@ -115,7 +115,7 @@ end
 --- The function is called by r_ls too.
 ---@param bufnr  integer The buffer number.
 ---@return table|nil
-M.get_code_chunks = function(bufnr)
+local get_rmd_code_chunks = function(bufnr)
     local root = require("r.utils").get_root_node()
     if not root then return nil end
 
@@ -178,7 +178,7 @@ end
 --- Avoids the markdown TreeSitter parser which does not understand Rnoweb syntax.
 ---@param bufnr integer The buffer number.
 ---@return table
-M.get_rnw_code_chunks = function(bufnr)
+local get_rnw_code_chunks = function(bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local chunks = {}
@@ -232,6 +232,11 @@ M.get_rnw_code_chunks = function(bufnr)
     end
 
     return chunks
+end
+
+M.get_code_chunks = function(bufnr)
+    if vim.bo.filetype == "rnoweb" then return get_rnw_code_chunks(bufnr) end
+    return get_rmd_code_chunks(bufnr)
 end
 
 local function unquote(str) return str and str:match("^['\"]?(.-)['\"]?$") or str end
@@ -323,12 +328,7 @@ M.get_current_code_chunk = function(bufnr)
     if not cursor then return {} end
     local row, _ = unpack(cursor)
 
-    local chunks
-    if vim.bo.filetype == "rnoweb" then
-        chunks = M.get_rnw_code_chunks(bufnr)
-    else
-        chunks = M.get_code_chunks(bufnr)
-    end
+    local chunks = M.get_code_chunks(bufnr)
     if not chunks then return {} end
 
     for _, chunk in ipairs(chunks) do
@@ -347,12 +347,7 @@ M.get_chunks_above_cursor = function(bufnr)
     if not cursor then return {} end
     local row, _ = unpack(cursor)
 
-    local chunks
-    if vim.bo.filetype == "rnoweb" then
-        chunks = M.get_rnw_code_chunks(bufnr)
-    else
-        chunks = M.get_code_chunks(bufnr)
-    end
+    local chunks = M.get_code_chunks(bufnr)
 
     if not chunks then return {} end
 
@@ -375,12 +370,7 @@ M.get_chunks_below_cursor = function(bufnr)
     if not cursor then return {} end
     local row, _ = unpack(cursor)
 
-    local chunks
-    if vim.bo.filetype == "rnoweb" then
-        chunks = M.get_rnw_code_chunks(bufnr)
-    else
-        chunks = M.get_code_chunks(bufnr)
-    end
+    local chunks = M.get_code_chunks(bufnr)
 
     if not chunks then return {} end
 
@@ -560,5 +550,88 @@ M.hl_code_bg = function()
         end
     end
 end
+
+M.setup_chunk_hl = function()
+    local config = require("r.config").get_config()
+    if config.quarto_chunk_hl.events == nil or config.quarto_chunk_hl.events == "" then
+        config.quarto_chunk_hl.events = "BufEnter,InsertLeave"
+    end
+    if config.quarto_chunk_hl.virtual_title == nil then
+        config.quarto_chunk_hl.virtual_title = true
+    end
+
+    if config.quarto_chunk_hl.bg == nil or config.quarto_chunk_hl.bg == "" then
+        local hl = vim.api.nvim_get_hl(0, { name = "CursorColumn", create = false })
+        if hl.bg then config.quarto_chunk_hl.bg = string.format("#%06x", hl.bg) end
+    end
+    local cbg = config.quarto_chunk_hl.bg
+    vim.api.nvim_set_hl(0, "RCodeBlock", { bg = cbg })
+
+    local hl = vim.api.nvim_get_hl(0, { name = "Comment", create = false })
+    local col = hl.fg and string.format("#%06x", hl.fg) or "#afafff"
+    vim.api.nvim_set_hl(0, "RCodeComment", { bg = cbg, fg = col })
+
+    hl = vim.api.nvim_get_hl(0, { name = "Ignore", create = false })
+    col = hl.fg and string.format("#%06x", hl.fg) or "#6c6c6c"
+    vim.api.nvim_set_hl(0, "RCodeIgnore", { bg = cbg, fg = col })
+
+    vim.cmd([[
+augroup RQmdChunkBg
+autocmd ]] .. config.quarto_chunk_hl.events .. [[ <buffer> lua require('r.quarto').hl_code_bg()
+augroup END
+]])
+end
+
+M.yaml_hl = function()
+    vim.treesitter.query.set(
+        "r",
+        "injections",
+        [[
+; extends
+((comment) @injection.content
+  (#match? @injection.content "^#\\|")
+  (#set! injection.language "yaml")
+  ;; Strip the "#|" from the start so YAML only sees the content
+  (#set! injection.include-children)
+  (#offset! @injection.content 0 2 0 0))
+]]
+    )
+
+    if vim.bo.filetype == "rnoweb" then return end
+
+    vim.treesitter.query.set(
+        "python",
+        "injections",
+        [[
+; extends
+((comment) @injection.content
+  (#match? @injection.content "^#\\|")
+  (#set! injection.language "yaml")
+  ;; Strip the "#|" from the start so YAML only sees the content
+  (#set! injection.include-children)
+  (#offset! @injection.content 0 2 0 0))
+]]
+    )
+end
+
+vim.treesitter.query.set(
+    "r",
+    "highlights",
+    [[
+; extends
+; Cell delimiter for Jupyter
+((comment) @content (#match? @content "^\\# ?\\%\\%")) @string.special
+]]
+)
+
+vim.treesitter.query.set(
+    "python",
+    "highlights",
+    [[
+; extends
+; Cell delimiter for Jupyter
+((comment) @content (#match? @content "^\\# ?\\%\\%")) @class.outer @string.special
+]]
+)
 
 return M
