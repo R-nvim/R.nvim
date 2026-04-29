@@ -174,6 +174,66 @@ M.get_code_chunks = function(bufnr)
     return code_chunks
 end
 
+--- Get code chunks from an Rnoweb (.Rnw) document by scanning <<...>>= / @ markers.
+--- Avoids the markdown TreeSitter parser which does not understand Rnoweb syntax.
+---@param bufnr integer The buffer number.
+---@return table
+M.get_rnw_code_chunks = function(bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local chunks = {}
+
+    local i = 1
+    while i <= #lines do
+        local params_str = lines[i]:match("^<<(.*)>>=%s*$")
+
+        if params_str then
+            local start_row = i
+
+            -- Find the closing @ (must start at column 0)
+            local end_row = nil
+            local j = i + 1
+            while j <= #lines do
+                if lines[j]:find("^@%s*$") then
+                    end_row = j
+                    break
+                end
+                j = j + 1
+            end
+
+            if end_row then
+                -- Extract content between header and @
+                local content_lines = {}
+                for k = start_row + 1, end_row - 1 do
+                    table.insert(content_lines, lines[k])
+                end
+                local content = table.concat(content_lines, "\n")
+
+                local info_string_params = M.parse_rnw_params(params_str)
+
+                local chunk = Chunk:new(
+                    content,
+                    start_row,
+                    end_row,
+                    info_string_params,
+                    {},
+                    "r",
+                    nil
+                )
+
+                table.insert(chunks, chunk)
+                i = end_row + 1
+            else
+                i = i + 1
+            end
+        else
+            i = i + 1
+        end
+    end
+
+    return chunks
+end
+
 local function unquote(str) return str and str:match("^['\"]?(.-)['\"]?$") or str end
 
 --- Helper function to parse the info string of a code block
@@ -203,6 +263,39 @@ M.parse_info_string_params = function(info_string)
     return lang, params
 end
 
+--- Parse parameters from an Rnoweb chunk header string.
+--- Rnoweb headers look like: <<label, echo=FALSE, child="other.Rnw">>=
+--- The first unkeyed element is the chunk label; remaining are key=value pairs.
+---@param params_str string The parameter string between << and >>=
+---@return table
+M.parse_rnw_params = function(params_str)
+    local params = {}
+
+    if params_str == nil or vim.trim(params_str) == "" then return params end
+
+    params_str = vim.trim(params_str)
+
+    local parts = vim.split(params_str, ",")
+    for idx, part in ipairs(parts) do
+        part = vim.trim(part)
+
+        if idx == 1 and not part:find("=") then
+            -- First element without '=' is the chunk label
+            params.label = part
+        else
+            local key, value = part:match("^%s*([^=]+)%s*=%s*(.-)%s*$")
+            if key and value then
+                key = vim.trim(key)
+                value = vim.trim(value)
+                value = unquote(value)
+                params[key] = value
+            end
+        end
+    end
+
+    return params
+end
+
 --- Helper function to parse the parameters specified in the code chunk with #|
 ---@param code_content string The content of the code chunk.
 ---@return table
@@ -230,7 +323,12 @@ M.get_current_code_chunk = function(bufnr)
     if not cursor then return {} end
     local row, _ = unpack(cursor)
 
-    local chunks = M.get_code_chunks(bufnr)
+    local chunks
+    if vim.bo.filetype == "rnoweb" then
+        chunks = M.get_rnw_code_chunks(bufnr)
+    else
+        chunks = M.get_code_chunks(bufnr)
+    end
     if not chunks then return {} end
 
     for _, chunk in ipairs(chunks) do
@@ -249,7 +347,12 @@ M.get_chunks_above_cursor = function(bufnr)
     if not cursor then return {} end
     local row, _ = unpack(cursor)
 
-    local chunks = M.get_code_chunks(bufnr)
+    local chunks
+    if vim.bo.filetype == "rnoweb" then
+        chunks = M.get_rnw_code_chunks(bufnr)
+    else
+        chunks = M.get_code_chunks(bufnr)
+    end
 
     if not chunks then return {} end
 
@@ -272,7 +375,12 @@ M.get_chunks_below_cursor = function(bufnr)
     if not cursor then return {} end
     local row, _ = unpack(cursor)
 
-    local chunks = M.get_code_chunks(bufnr)
+    local chunks
+    if vim.bo.filetype == "rnoweb" then
+        chunks = M.get_rnw_code_chunks(bufnr)
+    else
+        chunks = M.get_code_chunks(bufnr)
+    end
 
     if not chunks then return {} end
 

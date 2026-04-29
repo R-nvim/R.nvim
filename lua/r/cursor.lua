@@ -56,10 +56,24 @@ M.move_next_line = function()
     if current_line_num == last_line_num then return end
 
     local filetype = vim.o.filetype
-    local has_code = false
-    while not has_code and current_line_num < last_line_num do
+
+    -- Check if cursor is already on a chunk boundary
+    local curline = clean_current_line(vim.fn.getline(current_line_num))
+    if filetype == "rnoweb" and string.sub(curline, 1, 1) == "@" then
+        require("r.rnw").next_chunk()
+        return
+    elseif
+        vim.tbl_contains({ "markdown", "rmd", "quarto" }, filetype)
+        and curline:find("^```$")
+    then
+        require("r.rmd").next_chunk()
+        return
+    end
+
+    -- Skip blank lines to find the next significant line
+    while current_line_num < last_line_num do
         current_line_num = current_line_num + 1
-        local curline = clean_current_line(vim.fn.getline(current_line_num))
+        curline = clean_current_line(vim.fn.getline(current_line_num))
         if filetype == "rnoweb" and string.sub(curline, 1, 1) == "@" then
             require("r.rnw").next_chunk()
             return

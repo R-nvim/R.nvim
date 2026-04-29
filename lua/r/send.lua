@@ -744,7 +744,10 @@ M.line = function(m)
 
     local ok = false
 
-    if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, vim.bo.filetype) then
+    if
+        vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, vim.bo.filetype)
+        and not vim.tbl_isempty(chunk)
+    then
         local canonical, lang_cfg = quarto.resolve_lang(lang)
         if canonical and lang_cfg then
             send_chunk_line(
@@ -763,8 +766,13 @@ M.line = function(m)
         return
     end
 
-    -- Not in a chunk, send the line
-    if vim.bo.filetype == "rhelp" and lang ~= "r" then
+    -- Not in a chunk (or chunk not recognized), send the line
+    if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, vim.bo.filetype) then
+        if not quarto.is_r(lang) then
+            inform("Not inside an R code chunk.")
+            return
+        end
+    elseif vim.bo.filetype == "rhelp" and lang ~= "r" then
         inform("Not inside an R section.")
         return
     end
