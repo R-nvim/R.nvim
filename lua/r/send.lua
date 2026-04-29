@@ -5,7 +5,7 @@ local utils = require("r.utils")
 local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
-local quarto = require("r.quarto")
+local chunk = require("r.chunk")
 
 local create_r_buffer = require("r.buffer").create_r_buffer
 
@@ -466,9 +466,9 @@ end
 M.chunks_up_to_here = function()
     local bufnr = vim.api.nvim_get_current_buf()
 
-    local chunks = quarto.get_chunks_above_cursor(bufnr)
-    chunks = quarto.filter_code_chunks_by_eval(chunks)
-    chunks = quarto.filter_supported_langs(chunks)
+    local chunks = chunk.get_chunks_above_cursor(bufnr)
+    chunks = chunk.filter_code_chunks_by_eval(chunks)
+    chunks = chunk.filter_supported_langs(chunks)
 
     if #chunks == 0 then
         inform("No runnable code chunks found above the cursor.")
@@ -482,7 +482,7 @@ M.chunks_up_to_here = function()
         if cfile then
             table.insert(lines, knit_child(chunk))
         else
-            local codelines = quarto.codelines_from_chunks({ chunk })
+            local codelines = chunk.codelines_from_chunks({ chunk })
             for _, v in pairs(codelines) do
                 table.insert(lines, v)
             end
@@ -580,7 +580,7 @@ end
 ---@param m boolean True if should move to the next line.
 M.marked_block = function(m)
     local lang = utils.get_lang()
-    local _, lang_cfg = quarto.resolve_lang(lang)
+    local _, lang_cfg = chunk.resolve_lang(lang)
     if not lang_cfg then
         inform("Not in a supported language chunk.")
         return
@@ -632,7 +632,7 @@ M.selection = function(m)
 
     if
         vim.tbl_contains({ "markdown", "rmd", "quarto" }, vim.o.filetype)
-        and not quarto.is_supported_lang(lang)
+        and not chunk.is_supported_lang(lang)
         and not vim.api.nvim_get_current_line():find("`r ")
     then
         inform("Not inside supported code chunk.")
@@ -641,7 +641,7 @@ M.selection = function(m)
 
     if
         vim.o.filetype == "rnoweb"
-        and not quarto.is_r(lang)
+        and not chunk.is_r(lang)
         and not vim.api.nvim_get_current_line():find("\\Sexpr{")
     then
         inform("Not inside R code chunk.")
@@ -687,7 +687,7 @@ M.selection = function(m)
     end
 
     local ok
-    local canonical, lang_cfg = quarto.resolve_lang(lang)
+    local canonical, lang_cfg = chunk.resolve_lang(lang)
     if lang_cfg and canonical ~= "r" then
         ok = M.source_lines(lines, nil, lang_cfg)
     else
@@ -711,7 +711,7 @@ M.line = function(m)
     local lang = utils.get_lang()
 
     -- check if we are in a chunk
-    local chunk = quarto.get_current_code_chunk(vim.api.nvim_get_current_buf())
+    local chunk = chunk.get_current_code_chunk(vim.api.nvim_get_current_buf())
 
     if not vim.tbl_isempty(chunk) then
         local chunk_type = chunk:get_chunk_section_at_cursor()
@@ -748,7 +748,7 @@ M.line = function(m)
         vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, vim.bo.filetype)
         and not vim.tbl_isempty(chunk)
     then
-        local canonical, lang_cfg = quarto.resolve_lang(lang)
+        local canonical, lang_cfg = chunk.resolve_lang(lang)
         if canonical and lang_cfg then
             send_chunk_line(
                 chunk,
@@ -768,7 +768,7 @@ M.line = function(m)
 
     -- Not in a chunk (or chunk not recognized), send the line
     if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, vim.bo.filetype) then
-        if not quarto.is_r(lang) then
+        if not chunk.is_r(lang) then
             inform("Not inside an R code chunk.")
             return
         end

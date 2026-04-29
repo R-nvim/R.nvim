@@ -1,5 +1,5 @@
 local warn = require("r.log").warn
-local quarto = require("r.quarto")
+local chunk = require("r.chunk")
 local uv = vim.uv
 
 local M = {}
@@ -87,7 +87,7 @@ function M.get_lang()
     -- Handle quarto/rmd code blocks
     if vim.tbl_contains({ "markdown", "rmd", "quarto" }, filetype) then
         local current_chunk =
-            quarto.get_current_code_chunk(vim.api.nvim_get_current_buf())
+            chunk.get_current_code_chunk(vim.api.nvim_get_current_buf())
         if current_chunk and current_chunk.lang then return current_chunk:get_lang() end
     end
 

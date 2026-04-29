@@ -4,7 +4,7 @@ local M = {}
 ---@param input string
 ---@return table
 M.get_labels = function(input)
-    local chunks = require("r.quarto").get_code_chunks(0)
+    local chunks = require("r.chunk").get_code_chunks(0)
     if not chunks then return {} end
     local resp = {}
     for _, c in pairs(chunks) do

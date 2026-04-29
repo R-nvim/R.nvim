@@ -12,8 +12,10 @@ require("r.config").real_setup()
 require("r.maps").create("rnoweb")
 
 local config = require("r.config").get_config()
+local chunk = require("r.chunk")
 
-if config.quarto_chunk_hl.yaml_hl then require("r.hl").yaml() end
+if config.quarto_chunk_hl.highlight then chunk.setup_hl() end
+if config.quarto_chunk_hl.yaml_hl then chunk.yaml_hl() end
 
 vim.schedule(function()
     require("r.pdf").setup()

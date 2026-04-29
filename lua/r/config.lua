@@ -1187,6 +1187,13 @@ local global_setup = function()
         config.R_app = "ssh"
     end
 
+    if config.quarto_chunk_hl.highlight == nil then
+        config.quarto_chunk_hl.highlight = true
+    end
+    if config.quarto_chunk_hl.yaml_hl == nil then
+        config.quarto_chunk_hl.yaml_hl = true
+    end
+
     vim.fn.timer_start(1, require("r.config").check_health)
 
     vim.schedule(function() require("r.server").check_nvimcom_version() end)
