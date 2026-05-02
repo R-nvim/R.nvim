@@ -5,7 +5,7 @@ local utils = require("r.utils")
 local edit = require("r.edit")
 local cursor = require("r.cursor")
 local paragraph = require("r.paragraph")
-local quarto = require("r.quarto")
+local quarto = require("r.chunk")
 
 local create_r_buffer = require("r.buffer").create_r_buffer
 

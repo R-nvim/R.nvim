@@ -1,5 +1,5 @@
 local warn = require("r.log").warn
-local quarto = require("r.quarto")
+local quarto = require("r.chunk")
 local uv = vim.uv
 
 local M = {}

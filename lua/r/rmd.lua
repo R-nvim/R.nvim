@@ -3,7 +3,7 @@ local config = require("r.config").get_config()
 local get_lang = require("r.utils").get_lang
 local uv = vim.uv
 local chunk_key = nil
-local quarto = require("r.quarto")
+local quarto = require("r.chunk")
 
 local M = {}
 
@@ -25,7 +25,7 @@ M.write_chunk = function()
             { "```{r}", "", "```", "" }
         )
         vim.api.nvim_win_set_cursor(0, { curpos[1] + 1, 1 })
-        vim.schedule(require("r.quarto").hl_code_bg)
+        vim.schedule(require("r.chunk").hl_code_bg)
         return
     end
 
@@ -219,7 +219,7 @@ M.setup = function()
     vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
 
     if config.quarto_chunk_hl.highlight then quarto.setup_chunk_hl() end
-    if config.quarto_chunk_hl.yaml_hl then require("r.quarto").yaml_hl() end
+    if config.quarto_chunk_hl.yaml_hl then require("r.chunk").yaml_hl() end
 end
 
 --- Compiles the current R Markdown document into a specified output format.

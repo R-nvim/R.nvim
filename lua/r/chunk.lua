@@ -577,7 +577,7 @@ M.setup_chunk_hl = function()
 
     vim.cmd([[
 augroup RQmdChunkBg
-autocmd ]] .. config.quarto_chunk_hl.events .. [[ <buffer> lua require('r.quarto').hl_code_bg()
+autocmd ]] .. config.quarto_chunk_hl.events .. [[ <buffer> lua require('r.chunk').hl_code_bg()
 augroup END
 ]])
 end
