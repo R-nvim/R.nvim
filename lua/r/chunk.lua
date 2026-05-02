@@ -90,27 +90,6 @@ function Chunk:get_info_string_params() return self.info_string_params end
 ---@return table
 function Chunk:get_comment_params() return self.comment_params end
 
-M.command = function(what)
-    local config = require("r.config").get_config()
-    local send_cmd = require("r.send").cmd
-    if what == "stop" then
-        send_cmd("quarto::quarto_preview_stop()")
-        return
-    end
-
-    vim.cmd("update")
-    local qa = what == "render" and config.quarto_render_args
-        or config.quarto_preview_args
-    local cmd = "quarto::quarto_"
-        .. what
-        .. '("'
-        .. vim.fn.expand("%"):gsub("\\", "/")
-        .. '"'
-        .. qa
-        .. ")"
-    send_cmd(cmd)
-end
-
 --- Helper function to get code block from Rmd or Quarto document.
 --- The function is called by r_ls too.
 ---@param bufnr  integer The buffer number.
@@ -556,9 +535,7 @@ M.setup_chunk_hl = function()
     if config.chunk_hl.events == nil or config.chunk_hl.events == "" then
         config.chunk_hl.events = "BufEnter,InsertLeave"
     end
-    if config.chunk_hl.virtual_title == nil then
-        config.chunk_hl.virtual_title = true
-    end
+    if config.chunk_hl.virtual_title == nil then config.chunk_hl.virtual_title = true end
 
     if config.chunk_hl.bg == nil or config.chunk_hl.bg == "" then
         local hl = vim.api.nvim_get_hl(0, { name = "CursorColumn", create = false })

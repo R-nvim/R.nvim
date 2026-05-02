@@ -300,9 +300,9 @@ local send = function(file_type)
         create_maps("n",   "RPreviousRChunk", "gN", "<Cmd>lua require('r.rmd').previous_chunk()")
     end
     if file_type == "quarto" then
-        create_maps("n",   "RQuartoRender",   "qr", "<Cmd>lua require('r.chunk').command('render')")
-        create_maps("n",   "RQuartoPreview",  "qp", "<Cmd>lua require('r.chunk').command('preview')")
-        create_maps("n",   "RQuartoStop",     "qs", "<Cmd>lua require('r.chunk').command('stop')")
+        create_maps("n",   "RQuartoRender",   "qr", "<Cmd>lua require('r.quarto').command('render')")
+        create_maps("n",   "RQuartoPreview",  "qp", "<Cmd>lua require('r.quarto').command('preview')")
+        create_maps("n",   "RQuartoStop",     "qs", "<Cmd>lua require('r.quarto').command('stop')")
     end
     if file_type == "rnoweb" then
         create_maps("nvi", "RSweave",         "sw", "<Cmd>lua require('r.rnw').weave('nobib',  false, false)")
