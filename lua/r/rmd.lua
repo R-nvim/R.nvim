@@ -3,7 +3,7 @@ local config = require("r.config").get_config()
 local get_lang = require("r.utils").get_lang
 local uv = vim.uv
 local chunk_key = nil
-local quarto = require("r.chunk")
+local chunk = require("r.chunk")
 
 local M = {}
 
@@ -56,9 +56,9 @@ end
 M.send_current_chunk = function(m)
     local bufnr = vim.api.nvim_get_current_buf()
 
-    local chunks = quarto.get_current_code_chunk(bufnr)
+    local chunks = chunk.get_current_code_chunk(bufnr)
 
-    chunks = quarto.filter_supported_langs(chunks)
+    chunks = chunk.filter_supported_langs(chunks)
 
     if #chunks == 0 then
         inform("No evaluable supported code chunk found at the current cursor position.")
@@ -66,7 +66,7 @@ M.send_current_chunk = function(m)
         return
     end
 
-    local codelines = quarto.codelines_from_chunks(chunks)
+    local codelines = chunk.codelines_from_chunks(chunks)
     local ok = require("r.send").source_lines(codelines, "chunk")
 
     if ok == 0 then return end
@@ -79,9 +79,9 @@ end
 ---@return boolean
 local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
-    local chunks = quarto.get_chunks_above_cursor(vim.api.nvim_get_current_buf())
-    chunks = quarto.filter_code_chunks_by_eval(chunks)
-    chunks = quarto.filter_supported_langs(chunks)
+    local chunks = chunk.get_chunks_above_cursor(vim.api.nvim_get_current_buf())
+    chunks = chunk.filter_code_chunks_by_eval(chunks)
+    chunks = chunk.filter_supported_langs(chunks)
 
     -- move the cursor to the previous chunk
     if #chunks > 0 then
@@ -108,9 +108,9 @@ end
 -- This function searches forward from the current cursor position for the start of any supported code chunk.
 ---@return boolean
 local go_to_next = function()
-    local chunks = quarto.get_chunks_below_cursor(vim.api.nvim_get_current_buf())
-    chunks = quarto.filter_code_chunks_by_eval(chunks)
-    chunks = quarto.filter_supported_langs(chunks)
+    local chunks = chunk.get_chunks_below_cursor(vim.api.nvim_get_current_buf())
+    chunks = chunk.filter_code_chunks_by_eval(chunks)
+    chunks = chunk.filter_supported_langs(chunks)
 
     local row = vim.api.nvim_win_get_cursor(0)[1]
 
@@ -120,7 +120,7 @@ local go_to_next = function()
 
         -- If the current chunk is a header, move the cursor to the start of the chunk.
         -- Otherwise, move the cursor to the line after the chunk header.
-        if quarto.get_current_code_chunk(0).start_row == row then
+        if chunk.get_current_code_chunk(0).start_row == row then
             vim.api.nvim_win_set_cursor(0, { next_chunk.start_row, 0 })
         else
             vim.api.nvim_win_set_cursor(0, { next_chunk.start_row + 1, 0 })
@@ -218,7 +218,7 @@ M.setup = function()
 
     vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
 
-    if config.chunk_hl.highlight then quarto.setup_chunk_hl() end
+    if config.chunk_hl.highlight then chunk.setup_chunk_hl() end
     if config.chunk_hl.yaml_hl then require("r.chunk").yaml_hl() end
 end
 
