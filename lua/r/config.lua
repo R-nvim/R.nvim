@@ -334,9 +334,6 @@ local hooks = require("r.hooks")
 ---How to highlight code blocks in Quarto, Rmd, and Rnoweb documents.
 ---@field chunk_hl? { highlight: boolean, yaml_hl: boolean, virtual_title: boolean, bg: string, events: string }
 ---
----Deprecated: use `chunk_hl` instead.
----@field quarto_chunk_hl? { highlight: boolean, yaml_hl: boolean, virtual_title: boolean, bg: string, events: string }
----
 ---Enable ROxygen support.
 ---Controls both highlighting of ROxygen comments and ROxygen-specific
 ---LSP completion behavior (tag completion, Rhelp keyword completion, and R
@@ -575,13 +572,6 @@ local config = {
         bg = "",
         events = "",
     },
-    quarto_chunk_hl = {
-        highlight = true,
-        yaml_hl = true,
-        virtual_title = true,
-        bg = "",
-        events = "",
-    },
     roxygen_hl = false,
     rconsole_height = 15,
     rconsole_width = 80,
@@ -760,6 +750,7 @@ local apply_user_opts = function(opts)
             if
                 not key_name:find("r_ls%.fun_data")
                 and not key_name:find("^chunk_langs%.")
+                and key_name ~= "quarto_chunk_hl"
             then
                 swarn("Invalid option `" .. key_name .. "`.")
             end
@@ -1198,20 +1189,17 @@ local global_setup = function()
     end
 
     -- Migration: quarto_chunk_hl renamed to chunk_hl
-    if config.quarto_chunk_hl and type(config.quarto_chunk_hl) == "table" then
-        config.chunk_hl = vim.tbl_deep_extend("force", config.chunk_hl, config.quarto_chunk_hl)
+    if user_opts.quarto_chunk_hl and type(user_opts.quarto_chunk_hl) == "table" then
+        config.chunk_hl =
+            vim.tbl_deep_extend("force", config.chunk_hl, user_opts.quarto_chunk_hl)
         config.quarto_chunk_hl = nil
-        swarn(
-            "Option `quarto_chunk_hl` is deprecated. Please use `chunk_hl` instead."
-        )
+        swarn("Option `quarto_chunk_hl` is deprecated. Please use `chunk_hl` instead.")
+    else
+        config.quarto_chunk_hl = nil
     end
 
-    if config.chunk_hl.highlight == nil then
-        config.chunk_hl.highlight = true
-    end
-    if config.chunk_hl.yaml_hl == nil then
-        config.chunk_hl.yaml_hl = true
-    end
+    if config.chunk_hl.highlight == nil then config.chunk_hl.highlight = true end
+    if config.chunk_hl.yaml_hl == nil then config.chunk_hl.yaml_hl = true end
 
     vim.fn.timer_start(1, require("r.config").check_health)
 
