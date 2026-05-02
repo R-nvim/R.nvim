@@ -2002,7 +2002,7 @@ example of how to configure the highlighting:
      events = "BufEnter,TextChanged", -- Update the highlighting more often
    },
 <
-Note: this option was previously named `quarto_chunk_hl`.
+Note: `quarto_chunk_hl` is deprecated. Use `chunk_hl` instead.
 
 ------------------------------------------------------------------------------
 6.23. Clear R Console line before sending commands              *clear_line*
