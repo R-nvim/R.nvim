@@ -1541,7 +1541,9 @@ your `~/.Rprofile` the features that overlap with R.nvim's ones:
             referencesProvider = FALSE,
             implementationProvider = FALSE,
             documentHighlightProvider = FALSE,
-            documentSymbolProvider = FALSE
+            documentSymbolProvider = FALSE,
+            workspaceSymbolProvider = FALSE,
+            renameProvider = FALSE
         )
     )
 <
@@ -1967,7 +1969,6 @@ Other options to be passed to `rmarkdown::render()` might be defined with
 ------------------------------------------------------------------------------
 6.21. Quarto options                                      *quarto_render_args*
                                                          *quarto_preview_args*
-							     *chunk_hl*
 
 If you want to send the commands `quarto::quarto_render()` and
 `quarto::quarto_preview()` to R with additional arguments, you should define
@@ -1977,16 +1978,20 @@ config, as in the examples:
    quarto_render_args = ", pandoc_args = c('-F', 'apafix.py')"
    quarto_preview_args = ", browse = FALSE"
 <
+
+------------------------------------------------------------------------------
+6.22. Chunk highilighting options                                   *chunk_hl*
+
 R.nvim changes the background color of code blocks and adds a virtual text
 with the language of the code block to the right side of the header of the
-block. It also highlights YAML comments (prefixed with `#|`) with the
-foreground color of the tree-sitter highlighting group `@attribute` and
-comments prefixed with `# %%` with the foreground color of `@string.special`.
-The background color is taken from |hl-CursorColumn| and the highlighting is
-updated on the |BufEnter| and |InsertLeave| events. The code of chunks with
-the field `eval: false` are highlighted with foreground color of |hl-Comment|,
-and chunks with the field `child` are highlighted with the foreground color of
-|hl-Ignore|. Below is an example of how to configure the highlighting:
+block in Rmd, Quarto, and Rnoweb documents. It also highlights YAML comments
+(prefixed with `#|`) as YAML code, and comments prefixed with `# %%` with the
+foreground color of `@string.special`. The background color is taken from
+|hl-CursorColumn| and the highlighting is updated on the |BufEnter| and
+|InsertLeave| events. The code of chunks with the field `eval: false` are
+highlighted with foreground color of |hl-Comment|, and chunks with the field
+`child` are highlighted with the foreground color of |hl-Ignore|. Below is an
+example of how to configure the highlighting:
 >lua
    chunk_hl = {
      highlight = false,               -- Highlight code blocks?
@@ -1996,10 +2001,10 @@ and chunks with the field `child` are highlighted with the foreground color of
      events = "BufEnter,TextChanged", -- Update the highlighting more often
    },
 <
-Note: `quarto_chunk_hl` is deprecated. Use `chunk_hl` instead.
+Note: this option was previously named `quarto_chunk_hl`.
 
 ------------------------------------------------------------------------------
-6.22. Clear R Console line before sending commands              *clear_line*
+6.23. Clear R Console line before sending commands              *clear_line*
                                                                 *editing_mode*
 
 When one types <C-a> in the R Console the cursor goes to the beginning of the
@@ -2031,7 +2036,7 @@ Note: You can't control the bell on Windows; it is hardcoded to run in Rterm.
 
 
 ------------------------------------------------------------------------------
-6.23. Open document generated from quarto, rnoweb or rmd files     *pdfviewer*
+6.24. Open document generated from quarto, rnoweb or rmd files     *pdfviewer*
                                                                    *open_pdf*
                                                                    *open_html*
 
@@ -2093,7 +2098,7 @@ options (see |quarto_render_args|).
 
 
 ------------------------------------------------------------------------------
-6.24. Allow R commands in insert mode                     *insert_mode_cmds*
+6.25. Allow R commands in insert mode                     *insert_mode_cmds*
 
 R.nvim commands are enabled for Normal mode, but most of them can also be
 enabled in Insert mode:
@@ -2102,7 +2107,7 @@ enabled in Insert mode:
 <
 
 ------------------------------------------------------------------------------
-6.25. Show/remove hidden objects                                  *rmhidden*
+6.26. Show/remove hidden objects                                  *rmhidden*
 
 Hidden objects are removed from R workspace when you do <LocalLeader>rm. If
 you prefer to remove only visible objects, put in your config:
@@ -2117,7 +2122,7 @@ https://unix.stackexchange.com/questions/104094/is-there-any-way-to-enable-ctrll
 
 
 ------------------------------------------------------------------------------
-6.26. Time to wait for nvimcom loading                                *wait*
+6.27. Time to wait for nvimcom loading                                *wait*
 
 R.nvim asynchronously waits 60 seconds for the nvimcom package to be loaded
 during R startup. If 60 seconds are not enough to your R startup, then set a
@@ -2127,7 +2132,7 @@ higher value for the variable in your config. Example:
 <
 
 ------------------------------------------------------------------------------
-6.27. Start R in working directory of Neovim                           *setwd*
+6.28. Start R in working directory of Neovim                           *setwd*
 
 If you want that R starts in the directory of the file that you are editing,
 put in your config:
@@ -2142,7 +2147,7 @@ The default value of `setwd` is "no". See also 'autochdir'.
 
 
 ------------------------------------------------------------------------------
-6.28. Custom Lua functions to be executed on specific moments           *hook*
+6.29. Custom Lua functions to be executed on specific moments           *hook*
 
 If you want the execution of a Lua function just after the configuration is
 finished for each buffer, after the global plugin configuration, R startup or
@@ -2168,7 +2173,7 @@ Browser buffer:
 <
 
 ------------------------------------------------------------------------------
-6.29. Disable R.nvim commands                                 *user_maps_only*
+6.30. Disable R.nvim commands                                 *user_maps_only*
                                                               *disable_cmds*
                                                               *R_filetypes*
 
@@ -2202,7 +2207,7 @@ treated as "rmd" if you add it to the list:
 <
 
 ------------------------------------------------------------------------------
-6.30. Temporary files directories                                   *tmpdir*
+6.31. Temporary files directories                                   *tmpdir*
                                                                     *compldir*
 
 You can change the directories where temporary files are created and
@@ -2220,7 +2225,7 @@ want to know what they are, while editing an R file, do in Normal mode:
 <
 
 ------------------------------------------------------------------------------
-6.31. Options for accessing Remote R from local Neovim
+6.32. Options for accessing Remote R from local Neovim
 							    *remote_compl_dir*
 							       *remote_R_host*
 
@@ -2287,7 +2292,7 @@ Example:
 <
 
 ------------------------------------------------------------------------------
-6.32. View a data.frame or matrix                                    *view_df*
+6.33. View a data.frame or matrix                                    *view_df*
 
 
 You can see data.frames and matrices in external applications with
@@ -2390,7 +2395,7 @@ the data. Examples:
 <
 
 ------------------------------------------------------------------------------
-6.33. SyncTeX support                                         *R.nvim-SyncTeX*
+6.34. SyncTeX support                                         *R.nvim-SyncTeX*
 
 SyncTeX is a communication system used by some PDF viewers and by some text
 editors which allow users to jump from a specific line in the text editor to
@@ -2418,7 +2423,7 @@ Note: The knitr package (as of version 1.7) had at least two limitations:
 
 
 ------------------------------------------------------------------------------
-6.34. .Rproj support                                        *rproj_prioritise*
+6.35. .Rproj support                                        *rproj_prioritise*
 
 When a R.nvim buffer (e.g. an R script) is first opened, certain
 buffer-specific variables may be set which will reflect the settings in the
@@ -2433,7 +2438,7 @@ option:
 
 
 ------------------------------------------------------------------------------
-6.35. Convert numbers to explicit integers                 *convert_range_int*
+6.36. Convert numbers to explicit integers                 *convert_range_int*
 
 The `lintr` package (https://lintr.r-lib.org/https://lintr.r-lib.org/)
 provides a way to check R code for common style issues. This section describes
@@ -2450,7 +2455,7 @@ configuration:
 
 
 ------------------------------------------------------------------------------
-6.36. Convert extraction operators                  *convert_extract_operator*
+6.37. Convert extraction operators                  *convert_extract_operator*
 
 There are two types of subsetting expressions in R: `$` and `[.` `R.nvim`
 allows to convert the subsetting operators `[` and `$` to `[[`.
@@ -2463,7 +2468,7 @@ subsetting).
 
 
 ------------------------------------------------------------------------------
-6.37. Installing missing R packages in the current buffer    *install_missing*
+6.38. Installing missing R packages in the current buffer    *install_missing*
 
 If the `lintr` package is installed and properly configured
 (https://github.com/R-nvim/R.nvim/wiki/lintr), it will mark any R packages
@@ -2473,7 +2478,7 @@ packages) key binding.
 
 
 ------------------------------------------------------------------------------
-6.38. Split file paths and URLs                                   *split_path
+6.39. Split file paths and URLs                                   *split_path
 
 You can split the path of the current file, directory, or a URL under the
 cursor into its components (e.g., directory, file name, extension) using the
@@ -2491,7 +2496,7 @@ will be handled using the `paste0()` function.
 
 
 ------------------------------------------------------------------------------
-6.39. Tree-sitter parser for Quarto and RMarkdown        *register_treesitter*
+6.40. Tree-sitter parser for Quarto and RMarkdown        *register_treesitter*
 
 R.nvim registers the Markdown parser to both Quarto and RMarkdown documents.
 This will change in the future if dedicated parsers are written for them.
@@ -2501,7 +2506,7 @@ You can disable this feature in your R.nvim config:
 
 
 ------------------------------------------------------------------------------
-6.40. Set `params` based on the YAML header                       *set_params*
+6.41. Set `params` based on the YAML header                       *set_params*
 
 Set `params` based on the YAML header for R Markdown and Quarto documents.
 Defaults to `"yes"`. Valid values:
@@ -2513,7 +2518,7 @@ Defaults to `"yes"`. Valid values:
 
 
 ------------------------------------------------------------------------------
-6.41. Support for debugging functions                                *debug*
+6.42. Support for debugging functions                                *debug*
 
 Put the line below in your config if do not want that the cursor jumps to the
 line being debugged (when `browser()` is run). Highlighting of the line being
@@ -2534,7 +2539,7 @@ debug. You can hold the highlighted line in the middle of the window with
 <
 
 ------------------------------------------------------------------------------
-6.42. Code chunk languages                                         *chunk_langs*
+6.43. Code chunk languages                                         *chunk_langs*
 
 By default, R.nvim supports sending R, Python, and Bash code chunks from
 Quarto and R Markdown documents to R. You can add support for additional
