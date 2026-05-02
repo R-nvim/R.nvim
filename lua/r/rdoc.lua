@@ -55,7 +55,7 @@ M.set_buf_options = function()
     end
     require("r.config").real_setup()
     require("r.maps").create("rdoc")
-    if config.quarto_chunk_hl.highlight then require("r.chunk").hl_code_bg() end
+    if config.chunk_hl.highlight then require("r.chunk").hl_code_bg() end
 end
 
 ---Prepare R documentation output to be displayed by Nvim

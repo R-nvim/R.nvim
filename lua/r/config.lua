@@ -331,8 +331,8 @@ local hooks = require("r.hooks")
 ---Do `:help quarto_render_args` for more information.
 ---@field quarto_render_args? string
 ---
----How to highlight code blocks in Quarto and Rmd documents.
----@field quarto_chunk_hl? { highlight: boolean, yaml_hl: boolean, virtual_title: boolean, bg: string, events: string }
+---How to highlight code blocks in Quarto, Rmd, and Rnoweb documents.
+---@field chunk_hl? { highlight: boolean, yaml_hl: boolean, virtual_title: boolean, bg: string, events: string }
 ---
 ---Enable ROxygen support.
 ---Controls both highlighting of ROxygen comments and ROxygen-specific
@@ -565,7 +565,7 @@ local config = {
     pdfviewer = "",
     quarto_preview_args = "",
     quarto_render_args = "",
-    quarto_chunk_hl = {
+    chunk_hl = {
         highlight = true,
         yaml_hl = true,
         virtual_title = true,
@@ -1187,11 +1187,11 @@ local global_setup = function()
         config.R_app = "ssh"
     end
 
-    if config.quarto_chunk_hl.highlight == nil then
-        config.quarto_chunk_hl.highlight = true
+    if config.chunk_hl.highlight == nil then
+        config.chunk_hl.highlight = true
     end
-    if config.quarto_chunk_hl.yaml_hl == nil then
-        config.quarto_chunk_hl.yaml_hl = true
+    if config.chunk_hl.yaml_hl == nil then
+        config.chunk_hl.yaml_hl = true
     end
 
     vim.fn.timer_start(1, require("r.config").check_health)

@@ -968,7 +968,7 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |rmarkdown_args|      Further options to be passed to `rmarkdown::render()`
 |quarto_render_args|  Options to be passed to `quarto::quarto_render()`
 |quarto_preview_args| Options to be passed to `quarto::quarto_preview()`
-|quarto_chunk_hl|     How to highlight code blocks in Quarto and Rmd
+|chunk_hl|            How to highlight code blocks in Quarto, Rmd, and Rnoweb
 |clear_line|          Clear R Console line before sending a command
 |editing_mode|        The mode defined in your `~/.inputrc`
 |pdfviewer|           PDF application used to open PDF documents
@@ -1967,7 +1967,7 @@ Other options to be passed to `rmarkdown::render()` might be defined with
 ------------------------------------------------------------------------------
 6.21. Quarto options                                      *quarto_render_args*
                                                          *quarto_preview_args*
-							     *quarto_chunk_hl*
+							     *chunk_hl*
 
 If you want to send the commands `quarto::quarto_render()` and
 `quarto::quarto_preview()` to R with additional arguments, you should define
@@ -1988,7 +1988,7 @@ the field `eval: false` are highlighted with foreground color of |hl-Comment|,
 and chunks with the field `child` are highlighted with the foreground color of
 |hl-Ignore|. Below is an example of how to configure the highlighting:
 >lua
-   quarto_chunk_hl = {
+   chunk_hl = {
      highlight = false,               -- Highlight code blocks?
      yaml_hl = false,                 -- Highlight YAML comments?
      virtual_title = false,           -- Add language as virtual text?

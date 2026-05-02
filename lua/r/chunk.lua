@@ -529,7 +529,7 @@ M.hl_code_bg = function()
             end_col = 0,
             end_row = c.end_row,
             hl_group = hl_grp,
-            virt_text = (c.lang and config.quarto_chunk_hl.virtual_title) and {
+            virt_text = (c.lang and config.chunk_hl.virtual_title) and {
                 { c.lang .. " ", { hl_grp, "Title" } },
             } or nil,
             virt_text_pos = "right_align",
@@ -553,18 +553,18 @@ end
 
 M.setup_chunk_hl = function()
     local config = require("r.config").get_config()
-    if config.quarto_chunk_hl.events == nil or config.quarto_chunk_hl.events == "" then
-        config.quarto_chunk_hl.events = "BufEnter,InsertLeave"
+    if config.chunk_hl.events == nil or config.chunk_hl.events == "" then
+        config.chunk_hl.events = "BufEnter,InsertLeave"
     end
-    if config.quarto_chunk_hl.virtual_title == nil then
-        config.quarto_chunk_hl.virtual_title = true
+    if config.chunk_hl.virtual_title == nil then
+        config.chunk_hl.virtual_title = true
     end
 
-    if config.quarto_chunk_hl.bg == nil or config.quarto_chunk_hl.bg == "" then
+    if config.chunk_hl.bg == nil or config.chunk_hl.bg == "" then
         local hl = vim.api.nvim_get_hl(0, { name = "CursorColumn", create = false })
-        if hl.bg then config.quarto_chunk_hl.bg = string.format("#%06x", hl.bg) end
+        if hl.bg then config.chunk_hl.bg = string.format("#%06x", hl.bg) end
     end
-    local cbg = config.quarto_chunk_hl.bg
+    local cbg = config.chunk_hl.bg
     vim.api.nvim_set_hl(0, "RCodeBlock", { bg = cbg })
 
     local hl = vim.api.nvim_get_hl(0, { name = "Comment", create = false })
@@ -577,7 +577,7 @@ M.setup_chunk_hl = function()
 
     vim.cmd([[
 augroup RQmdChunkBg
-autocmd ]] .. config.quarto_chunk_hl.events .. [[ <buffer> lua require('r.chunk').hl_code_bg()
+autocmd ]] .. config.chunk_hl.events .. [[ <buffer> lua require('r.chunk').hl_code_bg()
 augroup END
 ]])
 end

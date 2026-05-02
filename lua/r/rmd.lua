@@ -218,8 +218,8 @@ M.setup = function()
 
     vim.cmd("autocmd BufWritePost <buffer> lua require('r.rmd').update_params()")
 
-    if config.quarto_chunk_hl.highlight then quarto.setup_chunk_hl() end
-    if config.quarto_chunk_hl.yaml_hl then require("r.chunk").yaml_hl() end
+    if config.chunk_hl.highlight then quarto.setup_chunk_hl() end
+    if config.chunk_hl.yaml_hl then require("r.chunk").yaml_hl() end
 end
 
 --- Compiles the current R Markdown document into a specified output format.
