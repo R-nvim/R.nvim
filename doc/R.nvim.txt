@@ -1969,7 +1969,6 @@ Other options to be passed to `rmarkdown::render()` might be defined with
 ------------------------------------------------------------------------------
 6.21. Quarto options                                      *quarto_render_args*
                                                          *quarto_preview_args*
-						     *chunk_hl*
 
 If you want to send the commands `quarto::quarto_render()` and
 `quarto::quarto_preview()` to R with additional arguments, you should define

@@ -1139,8 +1139,7 @@ local global_setup = function()
 
     -- Migration: quarto_chunk_hl renamed to chunk_hl
     if
-        user_opts
-        and user_opts.quarto_chunk_hl
+        user_opts.quarto_chunk_hl
         and type(user_opts.quarto_chunk_hl) == "table"
         and user_opts.chunk_hl == nil
     then
@@ -1198,16 +1197,6 @@ local global_setup = function()
                 .. table.concat(config.R_args, " "),
         }
         config.R_app = "ssh"
-    end
-
-    -- Migration: quarto_chunk_hl renamed to chunk_hl
-    if user_opts.quarto_chunk_hl and type(user_opts.quarto_chunk_hl) == "table" then
-        config.chunk_hl =
-            vim.tbl_deep_extend("force", config.chunk_hl, user_opts.quarto_chunk_hl)
-        config.quarto_chunk_hl = nil
-        swarn("Option `quarto_chunk_hl` is deprecated. Please use `chunk_hl` instead.")
-    else
-        config.quarto_chunk_hl = nil
     end
 
     if config.chunk_hl.highlight == nil then config.chunk_hl.highlight = true end
