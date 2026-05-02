@@ -1996,6 +1996,7 @@ and chunks with the field `child` are highlighted with the foreground color of
      events = "BufEnter,TextChanged", -- Update the highlighting more often
    },
 <
+Note: `quarto_chunk_hl` is deprecated. Use `chunk_hl` instead.
 
 ------------------------------------------------------------------------------
 6.22. Clear R Console line before sending commands              *clear_line*
