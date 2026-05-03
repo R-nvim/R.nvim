@@ -2229,6 +2229,10 @@ want to know what they are, while editing an R file, do in Normal mode:
 							    *remote_compl_dir*
 							       *remote_R_host*
 
+Note: The remote access only works if R is set to run in Neovim's built-in
+terminal emulator (which is the default). It will not work if you have set the
+value of |external_term|.
+
 If you want to run R on a remote machine from a local Neovim, you have to
 install the following tools on the local machine:
 
@@ -2242,7 +2246,7 @@ the remote machine.
 
 Then, you have to set up the remote machine to accept `ssh` login from the
 local machine without a password (search the command `ssh-copy-id` over the
-Internet to discover how to do it). Then you have to set three options in your
+Internet to discover how to do it). Then you have to set two options in your
 `R.nvim` config:
 
    `remote_compl_dir`: The absolute path to the remote cache dir to be used by
