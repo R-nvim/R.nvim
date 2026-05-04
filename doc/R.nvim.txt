@@ -1226,8 +1226,12 @@ R.nvim is aware of `.Rproj` files (the project-level configuration files used
 by RStudio). This may, for example, change whether `<Plug>RInsertPipe` inserts
 `|>` or `%>%` for a particular project. See the option |rproj_prioritise| for
 a full list of the behaviours which may be affected by `.Rproj` files, or to
-change whether they should affect things at all.
-
+change whether they should affect things at all. You can also use R.nvim
+config option `pipe_version` to choose what kind of pipe operator to insert.
+Valid values are "native" and "magrittr":
+>lua
+   pipe_version = "native"
+<
 
 ------------------------------------------------------------------------------
 6.6. Object Browser and completion options                    *objbr_w*
