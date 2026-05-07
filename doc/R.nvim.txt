@@ -2549,11 +2549,11 @@ debug. You can hold the highlighted line in the middle of the window with
 ------------------------------------------------------------------------------
 6.43. Code chunk languages                                         *chunk_langs*
 
-By default, R.nvim supports sending R, Python, and Bash code chunks from
-Quarto and R Markdown documents to R. You can add support for additional
-languages (e.g., Julia, Rust) or customise existing behaviour by adding
-entries to the `chunk_langs` table. Each entry is keyed by the canonical
-TreeSitter language name:
+By default, R.nvim supports sending R, Python, Bash, and SQL code chunks
+from Quarto and R Markdown documents to R. You can add support for
+additional languages (e.g., Julia, Rust) or customise existing behaviour by
+adding entries to the `chunk_langs` table. Each entry is keyed by the
+canonical TreeSitter language name:
 
 >lua
    chunk_langs = {
@@ -2594,6 +2594,23 @@ Fields:
                                must return a string. Used for longer code.
                                Optional: if omitted, the default R sourcing
                                mechanism is used.
+
+SQL chunks are dispatched to `DBI::dbGetQuery()` using the connection stored
+in the `nvimcom.sql.conn` R option. Before sending SQL chunks, install the
+`DBI` package and a backend driver (e.g. `RSQLite`, `RPostgres`, `odbc`),
+then set the option in your R session to a live connection object:
+>r
+   options(nvimcom.sql.conn = DBI::dbConnect(RSQLite::SQLite(), ":memory:"))
+<
+Notes:
+
+   - `DBI::dbGetQuery()` expects a single statement that returns rows.
+     Statements that do not return rows (DDL, most DML) will fail; override
+     `chunk_langs.sql.wrap_inline` / `wrap_file` to use `DBI::dbExecute()`
+     if you need that behaviour.
+   - The connection object must be available in the R session at the time
+     the chunk is sent — typically set it from a setup chunk run before any
+     SQL chunks.
 
 
 ==============================================================================
