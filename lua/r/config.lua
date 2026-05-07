@@ -639,6 +639,17 @@ local config = {
                 return 'system2("bash", c(shQuote("' .. filepath .. '")))'
             end,
         },
+        sql = {
+            aliases = {},
+            stop_types = { "program" },
+            dedent = true,
+            wrap_inline = function(code)
+                return 'DBI::dbGetQuery(getOption("nvimcom.sql.conn"), r"---(' .. code .. ')---")'
+            end,
+            wrap_file = function(filepath)
+                return 'DBI::dbGetQuery(getOption("nvimcom.sql.conn"), paste(readLines("' .. filepath .. '"), collapse = "\\n"))'
+            end,
+        },
     },
 }
 
