@@ -67,7 +67,7 @@ M.send_current_chunk = function(m)
     end
 
     local codelines = chunk.codelines_from_chunks(chunks)
-    local ok = require("r.send").source_lines(codelines, "chunk")
+    local ok = require("r.send").source_lines(codelines)
 
     if ok == 0 then return end
     if m == true then M.next_chunk() end
