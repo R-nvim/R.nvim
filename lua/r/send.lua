@@ -240,6 +240,7 @@ local M = {}
 ---@param stop_fn function The stop condition function
 ---@param wrap_fn function Function to wrap the code for execution
 ---@param should_dedent boolean Whether to dedent the code
+---@param wrap_file_fn function|nil Function to construct wrap_file command
 ---@param m string|nil Movement mode ("move" or nil)
 ---@return boolean Whether the command was sent successfully
 local function send_chunk_line(
@@ -260,7 +261,7 @@ local function send_chunk_line(
     local ok
 
     if #lines > 1 then
-        ok = M.source_lines(lines, nil, {
+        ok = M.source_lines(lines, {
             dedent = should_dedent,
             wrap_inline = wrap_fn,
             wrap_file = wrap_file_fn,
@@ -341,10 +342,9 @@ end
 
 --- Save lines in a temporary file and send to R a command to source them.
 ---@param lines string[] Lines to save and source
----@param what string|nil Additional operation to perform
 ---@param lang_cfg RChunkLangConfig|nil Language config for wrapping
 ---@return boolean
-M.source_lines = function(lines, what, lang_cfg)
+M.source_lines = function(lines, lang_cfg)
     require("r.edit").add_for_deletion(config.source_file)
 
     local rcmd
@@ -360,9 +360,6 @@ M.source_lines = function(lines, what, lang_cfg)
         vim.fn.writefile(lines, config.source_file)
         if lang_cfg and lang_cfg.wrap_file then
             rcmd = lang_cfg.wrap_file(config.source_file)
-        elseif what then
-            local sargs = string.gsub(M.get_source_args(), "^, ", "")
-            rcmd = "Rnvim." .. what .. "(" .. sargs .. ")"
         else
             local sargs = string.gsub(M.get_source_args(), "^, ", "")
             rcmd = "Rnvim.source(" .. sargs .. ")"
@@ -385,7 +382,7 @@ M.above_lines = function()
         if string.match(line, "%S") then table.insert(filtered_lines, line) end
     end
 
-    M.source_lines(filtered_lines, nil)
+    M.source_lines(filtered_lines)
 end
 
 M.source_file = function()
@@ -419,7 +416,7 @@ M.source_file = function()
         return
     end
 
-    M.source_lines(lines, nil)
+    M.source_lines(lines)
 end
 
 -- Send the current paragraph to R. If m == 'down', move the cursor to the
@@ -429,7 +426,7 @@ M.paragraph = function(m)
     local start_line, end_line = paragraph.get_current()
 
     local lines = vim.api.nvim_buf_get_lines(0, start_line, end_line, false)
-    M.source_lines(lines, nil)
+    M.source_lines(lines)
 
     if m == true then cursor.move_next_paragraph() end
 end
@@ -493,7 +490,7 @@ M.chunks_up_to_here = function()
             end
         end
     end
-    if #lines > 0 then M.source_lines(lines, "chunk") end
+    if #lines > 0 then M.source_lines(lines) end
 end
 
 -- Send to R Console the code under a Vim motion
@@ -520,7 +517,7 @@ M.motion = function()
 
     -- Send the fetched lines to be sourced by R
     if lines and #lines > 0 then
-        M.source_lines(lines, "block")
+        M.source_lines(lines)
     else
         warn("No lines to send")
     end
@@ -621,7 +618,7 @@ M.marked_block = function(m)
 
     local lines = vim.api.nvim_buf_get_lines(0, lineA - 1, lineB, true)
 
-    local ok = M.source_lines(lines, "block", lang_cfg)
+    local ok = M.source_lines(lines, lang_cfg)
     if not ok then return end
 
     if m == true and lineB ~= last_line then
@@ -692,12 +689,8 @@ M.selection = function(m)
     end
 
     local ok
-    local canonical, lang_cfg = chunk.resolve_lang(lang)
-    if lang_cfg and canonical ~= "r" then
-        ok = M.source_lines(lines, nil, lang_cfg)
-    else
-        ok = M.source_lines(lines, "selection")
-    end
+    local _, lang_cfg = chunk.resolve_lang(lang)
+    ok = M.source_lines(lines, lang_cfg)
 
     if not ok then return end
 
@@ -787,7 +780,7 @@ M.line = function(m)
     lines, lnum = get_r_code_to_send(line, lnum)
 
     if #lines > 1 then
-        ok = M.source_lines(lines, nil)
+        ok = M.source_lines(lines)
     else
         if #lines == 1 then line = lines[1] end
         if config.bracketed_paste then
@@ -932,7 +925,7 @@ M.chain = function()
 
     -- If on comment and no match found, use last operator before comment
     local captured_node = sibling or (on_comment and last_sibling) or pipe_node
-    M.source_lines({ vim.treesitter.get_node_text(captured_node, bufnr) }, nil)
+    M.source_lines({ vim.treesitter.get_node_text(captured_node, bufnr) })
 end
 
 --- Retrieves R function nodes from a given buffer using TreeSitter.
@@ -1009,7 +1002,7 @@ M.funs = function(capture_all, move_down)
         end
     end
 
-    M.source_lines(lines, "function")
+    M.source_lines(lines)
 
     if move_down and target_node then
         local _, _, end_row, _ = target_node:range()
