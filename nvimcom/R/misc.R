@@ -167,16 +167,16 @@ nvim_viewobj <- function(
 }
 
 #' Call base::source.
+#' This function is sent to R Console by `R.nvim`.
 #' @param ... Further arguments passed to base::source.
 #' @param print.eval See base::source.
 #' @param spaced See base::source.
-Rnvim.source <- function(..., print.eval = TRUE, spaced = FALSE, local = parent.frame()) {
+Rnvim.source <- function(..., print.eval = TRUE, spaced = FALSE) {
     base::source(
         getOption("nvimcom.source.path"),
         ...,
         print.eval = print.eval,
-        spaced = spaced,
-        local = local
+        spaced = spaced
     )
 }
 

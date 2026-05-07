@@ -6,11 +6,10 @@
   \code{spaced=FALSE}.
 }
 \usage{
-  Rnvim.source(..., print.eval = TRUE, spaced = FALSE, local = parent.frame())
+  Rnvim.source(..., print.eval = TRUE, spaced = FALSE)
 }
 \arguments{
   \item{print.eval}{See base::source.}
   \item{spaced}{See base::source.}
-  \item{local}{See base::source.}
   \item{...}{Further arguments passed to base::source.}
 }
