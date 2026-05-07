@@ -615,7 +615,6 @@ local config = {
             stop_types = { "program", "braced_expression" },
             dedent = false,
             wrap_inline = function(code) return code end,
-            wrap_file = function(filepath) return 'Rnvim.source("' .. filepath .. '")' end,
         },
         python = {
             aliases = { "pyodide" },
