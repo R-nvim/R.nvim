@@ -213,8 +213,69 @@ local get_rnw_code_chunks = function(bufnr)
     return chunks
 end
 
+--- Get code chunks from an RTypst (.Rtyp) document by scanning ```{r} and ```  markers.
+--- Avoids the markdown TreeSitter parser which does not understand Rnoweb syntax.
+---@param bufnr integer The buffer number.
+---@return table
+local get_typ_code_chunks = function(bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local chunks = {}
+
+    local i = 1
+    while i <= #lines do
+        local params_str = lines[i]:match("^```{r}$")
+
+        if params_str then
+            local start_row = i
+
+            -- Find the closing @ (must start at column 0)
+            local end_row = nil
+            local j = i + 1
+            while j <= #lines do
+                if lines[j]:find("^```") then
+                    end_row = j
+                    break
+                end
+                j = j + 1
+            end
+
+            if end_row then
+                -- Extract content between header and @
+                local content_lines = {}
+                for k = start_row + 1, end_row - 1 do
+                    table.insert(content_lines, lines[k])
+                end
+                local content = table.concat(content_lines, "\n")
+
+                local info_string_params = M.parse_rnw_params(params_str)
+
+                local chunk = Chunk:new(
+                    content,
+                    start_row,
+                    end_row,
+                    info_string_params,
+                    {},
+                    "r",
+                    nil
+                )
+
+                table.insert(chunks, chunk)
+                i = end_row + 1
+            else
+                i = i + 1
+            end
+        else
+            i = i + 1
+        end
+    end
+
+    return chunks
+end
+
 M.get_code_chunks = function(bufnr)
     if vim.bo.filetype == "rnoweb" then return get_rnw_code_chunks(bufnr) end
+    if vim.bo.filetype == "typst" then return get_typ_code_chunks(bufnr) end
     return get_rmd_code_chunks(bufnr)
 end
 

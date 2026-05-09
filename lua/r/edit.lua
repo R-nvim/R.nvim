@@ -103,7 +103,7 @@ M.buf_enter = function()
             rscript_buf = vim.api.nvim_get_current_buf()
         end
     else
-        local rft = { "r", "rnoweb", "rmd", "markdown", "quarto", "rhelp" }
+        local rft = { "r", "rnoweb", "rmd", "markdown", "quarto", "rhelp", "typst" }
         if vim.tbl_contains(rft, vim.o.filetype) then
             rscript_buf = vim.api.nvim_get_current_buf()
         end

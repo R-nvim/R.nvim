@@ -209,6 +209,12 @@ local control = function(file_type)
     create_maps("nvi", "ROBOpenLists",      "r=", "<Cmd>lua require('r.browser').open_close_lists('O')")
     create_maps("nvi", "ROBCloseLists",     "r-", "<Cmd>lua require('r.browser').open_close_lists('C')")
 
+    if file_type == "typst" then
+        create_maps("nvi", "RMakeRmd",  "kr", "<Cmd>lua require('r.typst').make('default')")
+        create_maps("nvi", "RMakePDFK", "kp", "<Cmd>lua require('r.typst').make('pdf')")
+        return
+    end
+
     -- Render script with rmarkdown
     create_maps("nvi", "RMakeRmd",          "kr", "<Cmd>lua require('r.rmd').make('default')")
     create_maps("nvi", "RMakeAll",          "ka", "<Cmd>lua require('r.rmd').make('all')")
