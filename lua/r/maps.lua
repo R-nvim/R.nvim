@@ -246,7 +246,7 @@ end
 local edit = function(file_type)
     create_maps("i", "RInsertPipe", ",", "<Cmd>lua require('r.edit').pipe()", 2)
     create_maps("i", "RInsertAssign", "<M-->", "<Cmd>lua require('r.edit').assign()", 3)
-    if vim.tbl_contains({ "markdown", "rmd", "quarto" }, file_type) then
+    if vim.tbl_contains({ "markdown", "rmd", "quarto", "typst" }, file_type) then
         create_maps("i", "RmdInsertChunk", "<M-r>", "<Cmd>lua require('r.rmd').write_chunk()", 3)
     end
     if file_type == "rnoweb" then

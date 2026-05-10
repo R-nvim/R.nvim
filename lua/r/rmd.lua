@@ -15,7 +15,7 @@ M.write_chunk = function()
     local lang = get_lang()
 
     -- Check if cursor is in an empty Markdown line
-    if lang == "markdown" and curline == "" then
+    if curline == "" and (lang == "markdown" or lang == "typst") then
         -- Insert new R code chunk template
         vim.api.nvim_buf_set_lines(
             0,
@@ -30,7 +30,7 @@ M.write_chunk = function()
     end
 
     -- Check if cursor is in an Markdown region
-    if lang == "markdown" or lang == "markdown_inline" then
+    if lang == "markdown" or lang == "markdown_inline" or lang == "typst" then
         -- inline R code within markdown text
         vim.api.nvim_set_current_line(
             curline:sub(1, curpos[2]) .. "`r `" .. curline:sub(curpos[2] + 1)
