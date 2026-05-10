@@ -14,8 +14,16 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
     pattern = "*.Rproj",
     callback = function() vim.api.nvim_set_option_value("syntax", "dcf", {}) end,
 })
-vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+vim.filetype.add({ pattern = { [".*%.Rtyp$"] = { "typst", { priority = math.huge } } } })
+
+-- This is needed because scripts.vim sees leading '#' and sets conf; override it
+-- TODO: I am not sure if this is ok, but I do not find a better way at the moment
+vim.api.nvim_create_autocmd("FileType", {
     group = "rft",
-    pattern = "*.Rtyp",
-    callback = function() vim.api.nvim_set_option_value("filetype", "typst", {}) end,
+    pattern = "conf",
+    callback = function(ev)
+        if vim.api.nvim_buf_get_name(ev.buf):match("%.Rtyp$") then
+            vim.bo[ev.buf].filetype = "typst"
+        end
+    end,
 })

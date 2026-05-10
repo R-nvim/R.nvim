@@ -628,8 +628,8 @@ local function get_r_bufnr(bufnr)
     if client_id then
         local client = vim.lsp.get_client_by_id(client_id)
         if client then
-            for _, b in pairs(client.attached_buffers) do
-                if r_filetypes[vim.bo[b[1]].filetype] then return b[1] end
+            for b in pairs(client.attached_buffers) do
+                if r_filetypes[vim.bo[b].filetype] then return b end
             end
         end
     end

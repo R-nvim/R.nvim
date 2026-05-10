@@ -6,7 +6,8 @@ then
     return
 end
 
-vim.treesitter.query.set(
+pcall(
+    vim.treesitter.query.set,
     "typst",
     "injections",
     [[

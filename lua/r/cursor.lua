@@ -63,7 +63,7 @@ M.move_next_line = function()
         require("r.rnw").next_chunk()
         return
     elseif
-        vim.tbl_contains({ "markdown", "rmd", "quarto" }, filetype)
+        vim.tbl_contains({ "markdown", "rmd", "quarto", "typst" }, filetype)
         and curline:find("^```$")
     then
         require("r.rmd").next_chunk()
@@ -78,7 +78,7 @@ M.move_next_line = function()
             require("r.rnw").next_chunk()
             return
         elseif
-            vim.tbl_contains({ "markdown", "rmd", "quarto" }, filetype)
+            vim.tbl_contains({ "markdown", "rmd", "quarto", "typst" }, filetype)
             and curline:find("^```$")
         then
             require("r.rmd").next_chunk()

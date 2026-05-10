@@ -300,6 +300,8 @@ local send = function(file_type)
     end
     if vim.tbl_contains({ "markdown", "rmd", "quarto" }, file_type) then
         create_maps("nvi", "RKnit",           "kn", "<Cmd>lua require('r.run').knit()")
+    end
+    if vim.tbl_contains({ "markdown", "rmd", "quarto", "typst" }, file_type) then
         create_maps("ni",  "RSendChunk",      "cc", "<Cmd>lua require('r.rmd').send_current_chunk(false)")
         create_maps("ni",  "RDSendChunk",     "cd", "<Cmd>lua require('r.rmd').send_current_chunk(true)")
         create_maps("n",   "RNextRChunk",     "gn", "<Cmd>lua require('r.rmd').next_chunk()")
@@ -327,7 +329,7 @@ local send = function(file_type)
         create_maps("n", "RNextRChunk",     "gn", "<Cmd>lua require('r.rnw').next_chunk()")
         create_maps("n", "RPreviousRChunk", "gN", "<Cmd>lua require('r.rnw').previous_chunk()")
     end
-    if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, file_type) then
+    if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto", "typst" }, file_type) then
         create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
         if config.rm_knit_cache then
             create_maps("nvi", "RKnitRmCache", "kc", "<Cmd>lua require('r.rnw').rm_knit_cache()")
