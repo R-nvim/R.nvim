@@ -182,36 +182,34 @@ local get_rtypst_code_chunks = function(bufnr)
             local text = vim.treesitter.get_node_text(node, bufnr)
             -- Match chunks like {r}, {r, echo=FALSE}, {python}, etc.
             local header_line = text:match("^(.-)\n")
-            if not header_line then goto continue end
+            if header_line then
+                local lang = header_line:match("^{(%a+)[,}%s]")
+                    or header_line:match("^{(%a+)}")
+                if lang then
+                    local start_row, _, end_row, _ = node:range()
+                    -- Content is everything after the first line
+                    local content_text = text:sub(#header_line + 2) -- skip \n
 
-            local lang = header_line:match("^{(%a+)[,}%s]")
-                or header_line:match("^{(%a+)}")
-            if not lang then goto continue end
+                    -- Strip trailing ``` line from content
+                    content_text = content_text:gsub("\n```\n?$", "")
 
-            local start_row, _, end_row, _ = node:range()
-            -- Content is everything after the first line
-            local content_text = text:sub(#header_line + 2) -- skip \n
+                    local info_string_params = M.parse_info_string_params(header_line)
+                    local comment_params = M.parse_comment_params(text)
 
-            -- Strip trailing ``` line from content
-            content_text = content_text:gsub("\n```\n?$", "")
+                    local c = Chunk:new(
+                        content_text,
+                        start_row + 1,
+                        end_row,
+                        info_string_params,
+                        comment_params,
+                        lang,
+                        node:parent()
+                    )
 
-            local info_string_params = M.parse_info_string_params(header_line)
-            local comment_params = M.parse_comment_params(text)
-
-            local c = Chunk:new(
-                content_text,
-                start_row + 1,
-                end_row,
-                info_string_params,
-                comment_params,
-                lang,
-                node:parent()
-            )
-
-            table.insert(code_chunks, c)
+                    table.insert(code_chunks, c)
+                end
+            end
         end
-
-        ::continue::
     end
 
     return code_chunks
