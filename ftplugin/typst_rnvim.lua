@@ -14,14 +14,14 @@ pcall(
 ; extends
 (raw_blck
   (blob) @injection.content
-  (#match? @injection.content "^\\{r\\}")
-  (#offset! @injection.content 0 3 0 0)
+  (#match? @injection.content "^\\{r[,}\\s]")
+  (#offset! @injection.content 1 0 0 0)
   (#set! injection.language "r"))
 
 (raw_blck
   (blob) @injection.content
-  (#match? @injection.content "^\\{python\\}")
-  (#offset! @injection.content 0 8 0 0)
+  (#match? @injection.content "^\\{python[,}\\s]")
+  (#offset! @injection.content 1 0 0 0)
   (#set! injection.language "python"))
 ]]
 )

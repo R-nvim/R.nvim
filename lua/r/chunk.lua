@@ -90,7 +90,7 @@ function Chunk:get_info_string_params() return self.info_string_params end
 ---@return table
 function Chunk:get_comment_params() return self.comment_params end
 
---- Helper function to get code block from Rmd, Quarto, or RTypst document.
+--- Helper function to get code block from Rmd or Quarto document.
 --- The function is called by r_ls too.
 ---@param bufnr  integer The buffer number.
 ---@return table|nil
@@ -151,6 +151,67 @@ local get_rmd_code_chunks = function(bufnr)
 
             table.insert(code_chunks, chunk)
         end
+    end
+
+    return code_chunks
+end
+
+--- Get code chunks from an RTypst (.Rtyp) document using the typst TreeSitter parser.
+---@param bufnr integer The buffer number.
+---@return table|nil
+local get_rtypst_code_chunks = function(bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "typst")
+    if not ok or not parser then return nil end
+
+    local root = parser:parse()[1]:root()
+
+    local query = vim.treesitter.query.parse(
+        "typst",
+        [[
+        (raw_blck
+          (blob) @raw_blob)
+        ]]
+    )
+
+    local code_chunks = {}
+
+    for id, node, _ in query:iter_captures(root, bufnr, 0, -1) do
+        if query.captures[id] == "raw_blob" then
+            local text = vim.treesitter.get_node_text(node, bufnr)
+            -- Match chunks like {r}, {r, echo=FALSE}, {python}, etc.
+            local header_line = text:match("^(.-)\n")
+            if not header_line then goto continue end
+
+            local lang = header_line:match("^{(%a+)[,}%s]")
+                or header_line:match("^{(%a+)}")
+            if not lang then goto continue end
+
+            local start_row, _, end_row, _ = node:range()
+            -- Content is everything after the first line
+            local content_text = text:sub(#header_line + 2) -- skip \n
+
+            -- Strip trailing ``` line from content
+            content_text = content_text:gsub("\n```\n?$", "")
+
+            local info_string_params = M.parse_info_string_params(header_line)
+            local comment_params = M.parse_comment_params(text)
+
+            local c = Chunk:new(
+                content_text,
+                start_row + 1,
+                end_row,
+                info_string_params,
+                comment_params,
+                lang,
+                node:parent()
+            )
+
+            table.insert(code_chunks, c)
+        end
+
+        ::continue::
     end
 
     return code_chunks
@@ -218,6 +279,7 @@ end
 
 M.get_code_chunks = function(bufnr)
     if vim.bo.filetype == "rnoweb" then return get_rnw_code_chunks(bufnr) end
+    if vim.bo.filetype == "typst" then return get_rtypst_code_chunks(bufnr) end
     return get_rmd_code_chunks(bufnr)
 end
 
