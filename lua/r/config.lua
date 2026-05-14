@@ -1297,7 +1297,21 @@ M.real_setup = function()
         table.insert(no_ts, "quarto")
         table.insert(no_ts, "rmd")
     end
-    if not vim.tbl_contains(no_ts, vim.bo.filetype) then vim.treesitter.start() end
+    if not vim.tbl_contains(no_ts, vim.bo.filetype) then
+        local ft = vim.bo.filetype
+        if not pcall(vim.treesitter.start) then
+            vim.schedule(
+                function()
+                    require("r.log").warn(
+                        'R.nvim: the treesitter parser for "'
+                            .. ft
+                            .. '" is not installed. Code chunk detection and syntax '
+                            .. "highlighting will not work until it is installed."
+                    )
+                end
+            )
+        end
+    end
 
     require("r.lsp").attach_to_buffer(vim.api.nvim_get_current_buf())
 end
