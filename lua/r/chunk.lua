@@ -90,70 +90,120 @@ function Chunk:get_info_string_params() return self.info_string_params end
 ---@return table
 function Chunk:get_comment_params() return self.comment_params end
 
---- Helper function to get code block from Rmd, Quarto, or RTypst document.
---- The function is called by r_ls too.
----@param bufnr  integer The buffer number.
+--- Generic tree-sitter code chunk extractor. Runs a query against a syntax
+--- tree root and delegates node-to-chunk conversion to an extractor function.
+---@param bufnr integer
+---@param root TSNode The root node of the syntax tree to query.
+---@param query_lang string Tree-sitter language the query is written in (e.g. "markdown", "typst").
+---@param query_str string Tree-sitter query with a single @chunk capture.
+---@param extract_fn fun(node: TSNode, bufnr: integer): string, table, string, table
+---   Returns: lang, info_string_params, content_text, comment_params
+---@param end_row_offset integer? Added to the node's end_row when building the Chunk.
+---   Markdown's fenced_code_block end_row is already one past the closing fence
+---   (the grammar includes a trailing newline), so it needs no adjustment.
+---   Typst's raw_blck end_row lands exactly on the closing fence row, so pass 1
+---   to shift "chunk_end" onto the fence line instead of the last content line.
 ---@return table|nil
-local get_rmd_code_chunks = function(bufnr)
+local get_ts_code_chunks = function(
+    bufnr,
+    root,
+    query_lang,
+    query_str,
+    extract_fn,
+    end_row_offset
+)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
+    if not root then return nil end
+    end_row_offset = end_row_offset or 0
 
-    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "markdown")
-    if not ok or not parser then return nil end
-
-    local root = parser:parse()[1]:root()
-
-    local query = vim.treesitter.query.parse(
-        "markdown",
-        [[
-                (fenced_code_block)
-                     @fenced_code_block
-            ]]
-    )
-
+    local query = vim.treesitter.query.parse(query_lang, query_str)
     local code_chunks = {}
 
-    for id, node, _ in query:iter_captures(root, bufnr, 0, -1) do
-        local capture_name = query.captures[id]
+    for _, node, _ in query:iter_captures(root, bufnr, 0, -1) do
+        local start_row, _, end_row, _ = node:range()
+        local lang, info_string_params, content_text, comment_params =
+            extract_fn(node, bufnr)
 
-        if capture_name == "fenced_code_block" then
-            -- Loop through all children of the node and print their type and text
-            local lang
-            local info_string_params = {}
-            local comment_params = {}
-            local content_text = ""
-            local start_row, _, end_row, _ = node:range()
-
-            for child in node:iter_children() do
-                if child:type() == "info_string" then
-                    local info_string = vim.treesitter.get_node_text(child, bufnr)
-                    lang, info_string_params = M.parse_info_string_params(info_string)
-                end
-
-                if child:type() == "code_fence_content" then
-                    content_text = vim.treesitter.get_node_text(child, bufnr)
-
-                    -- Get the parameters specified in the code chunk with #|
-                    comment_params =
-                        M.parse_comment_params(vim.treesitter.get_node_text(node, bufnr))
-                end
-            end
-
-            -- Create the chunk object with the extracted information
-            local chunk = Chunk:new(
+        table.insert(
+            code_chunks,
+            Chunk:new(
                 content_text,
                 start_row + 1,
-                end_row,
+                end_row + end_row_offset,
                 info_string_params,
                 comment_params,
                 lang,
                 node
             )
-
-            table.insert(code_chunks, chunk)
-        end
+        )
     end
 
     return code_chunks
+end
+
+--- Extractor for markdown fenced code blocks (Rmd / Quarto).
+local markdown_extract = function(node, bufnr)
+    local lang, info_string_params = "", {}
+    local content_text = ""
+    local comment_params = {}
+    for child in node:iter_children() do
+        if child:type() == "info_string" then
+            local info_string = vim.treesitter.get_node_text(child, bufnr)
+            lang, info_string_params = M.parse_info_string_params(info_string)
+        end
+        if child:type() == "code_fence_content" then
+            content_text = vim.treesitter.get_node_text(child, bufnr)
+            comment_params =
+                M.parse_comment_params(vim.treesitter.get_node_text(node, bufnr))
+        end
+    end
+    return lang, info_string_params, content_text, comment_params
+end
+
+--- Extractor for Typst raw blocks (RTypst). Language is read from the first
+--- line of the node (e.g. ```{r} or ```r) because the typst grammar embeds it
+--- in the blob rather than exposing a separate ident node for the {lang} form.
+local typst_extract = function(node, bufnr)
+    local start_row, _, end_row, _ = node:range()
+    local first_line = vim.api.nvim_buf_get_lines(bufnr, start_row, start_row + 1, false)[1]
+        or ""
+    local info_string = first_line:match("^```(.+)$") or ""
+    local lang, info_string_params = M.parse_info_string_params(info_string)
+    local content_lines = vim.api.nvim_buf_get_lines(bufnr, start_row + 1, end_row, false)
+    local content_text = table.concat(content_lines, "\n")
+    local comment_params = M.parse_comment_params(content_text)
+    return lang, info_string_params, content_text, comment_params
+end
+
+--- Get code chunks from an Rmd or Quarto document.
+--- Uses get_root_node() (the buffer's own parser) rather than forcing the
+--- markdown parser, so .R files still initialize the R parser correctly.
+local get_rmd_code_chunks = function(bufnr)
+    local root = require("r.utils").get_root_node(bufnr)
+    if not root then return nil end
+    return get_ts_code_chunks(
+        bufnr,
+        root,
+        "markdown",
+        [[ (fenced_code_block) @chunk ]],
+        markdown_extract
+    )
+end
+
+--- Get code chunks from an RTypst document.
+local get_rtypst_code_chunks = function(bufnr)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "typst")
+    if not ok or not parser then return nil end
+    local root = parser:parse()[1]:root()
+    return get_ts_code_chunks(
+        bufnr,
+        root,
+        "typst",
+        [[ (raw_blck) @chunk ]],
+        typst_extract,
+        1
+    )
 end
 
 --- Get code chunks from an Rnoweb (.Rnw) document by scanning <<...>>= / @ markers.
@@ -218,6 +268,7 @@ end
 
 M.get_code_chunks = function(bufnr)
     if vim.bo.filetype == "rnoweb" then return get_rnw_code_chunks(bufnr) end
+    if vim.bo.filetype == "typst" then return get_rtypst_code_chunks(bufnr) end
     return get_rmd_code_chunks(bufnr)
 end
 
