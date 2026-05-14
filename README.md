@@ -16,7 +16,7 @@ R.nvim adds R support to Neovim, including:
 
 - Keyboard shortcuts for common inserts like `<-` and `|>`
 
-- Quarto/R Markdown support
+- Quarto/R Markdown/RTypst support
 
 - ...And much more!
 
@@ -116,7 +116,7 @@ sources simultaneously is not advised.
 
 ### Tree-sitter
 
-The following Tree-sitter parsers are required: `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`, `latex`, and `csv`. They can be installed with any Tree-sitter parser manager, such as [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) or [tree-sitter-manager.nvim](https://github.com/romus204/tree-sitter-manager.nvim).
+The following Tree-sitter parsers are required: `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`, `latex`, and `csv`. The `typst` parser is also required if you edit RTypst (`.Rtyp`) documents. They can be installed with any Tree-sitter parser manager, such as [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) or [tree-sitter-manager.nvim](https://github.com/romus204/tree-sitter-manager.nvim).
 
 Example configuration using nvim-treesitter:
 
@@ -226,6 +226,12 @@ firm commitment to backwards compatibility.
   `vim.g.R_filetypes`.
 
 ### New features
+
+#### New filetype support
+
+- RTypst (`.Rtyp`) documents are now supported: Typst files with R code chunks,
+  using the same chunk delimiters as Rmd and Quarto. Requires the `typst`
+  tree-sitter parser.
 
 #### New commands
 
