@@ -270,6 +270,8 @@ local get_lang = function(lnum)
     local lines = vim.api.nvim_buf_get_lines(0, 0, lnum, true)
     if vim.bo.filetype == "rmd" or vim.bo.filetype == "quarto" then
         return get_quarto_lang(lines, lnum)
+    elseif vim.bo.filetype == "typst" then
+        return get_quarto_lang(lines, lnum)
     elseif vim.bo.filetype == "rnoweb" then
         return get_rnoweb_lang(lnum, lines)
     elseif vim.bo.filetype == "rhelp" then
@@ -609,7 +611,7 @@ M.signature = function(req_id)
     end
 end
 
-local r_filetypes = { r = true, rmd = true, quarto = true, rnoweb = true, rhelp = true }
+local r_filetypes = { r = true, rmd = true, quarto = true, rnoweb = true, rhelp = true, typst = true }
 
 --- Return the source R buffer for an LSP request.
 --- Prefers the bufnr passed from C (via vim.uri_to_bufnr). Falls back to

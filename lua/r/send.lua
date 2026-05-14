@@ -633,7 +633,7 @@ M.selection = function(m)
     local lang = utils.get_lang()
 
     if
-        vim.tbl_contains({ "markdown", "rmd", "quarto" }, vim.o.filetype)
+        vim.tbl_contains({ "markdown", "rmd", "quarto", "typst" }, vim.o.filetype)
         and not chunk.is_supported_lang(lang)
         and not vim.api.nvim_get_current_line():find("`r ")
     then
