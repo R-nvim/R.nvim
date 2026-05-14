@@ -189,7 +189,19 @@ local get_rtypst_code_chunks = function(bufnr)
                     local start_row, _, end_row, _ = node:range()
                     -- Use the parent raw_blck's end_row to include the closing ```
                     -- so that the last content line isn't treated as "chunk_end".
-                    local parent_end_row = node:parent() and node:parent():range() or end_row
+                    -- Use the parent raw_blck's end_row to include the closing ```
+                    -- so that the last content line isn't treated as "chunk_end".
+                    -- +1 converts 0-indexed exclusive end to 1-indexed cursor row.
+                    local parent_end_row
+                    do
+                        local p = node:parent()
+                        if p then
+                            local _, _, pe_row, _ = p:range()
+                            parent_end_row = pe_row + 1
+                        else
+                            parent_end_row = end_row + 1
+                        end
+                    end
                     -- Content is everything after the first line
                     local content_text = text:sub(#header_line + 2) -- skip \n
 
