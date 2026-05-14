@@ -6,25 +6,45 @@ then
     return
 end
 
-pcall(
-    vim.treesitter.query.set,
-    "typst",
-    "injections",
-    [[
-; extends
-(raw_blck
-  (blob) @injection.content
-  (#match? @injection.content "^\\{r[,}\\s]")
-  (#offset! @injection.content 1 0 0 0)
-  (#set! injection.language "r"))
+--- Build typst injection queries dynamically from chunk_langs config.
+--- Generates one entry per canonical language and its aliases.
+local function build_typst_injections()
+    local config = require("r.config").get_config()
+    local langs = config.chunk_langs
+    if not langs then return "" end
 
-(raw_blck
-  (blob) @injection.content
-  (#match? @injection.content "^\\{python[,}\\s]")
-  (#offset! @injection.content 1 0 0 0)
-  (#set! injection.language "python"))
-]]
-)
+    local parts = { "; extends" }
+
+    for lang, lang_cfg in pairs(langs) do
+        local names = { lang }
+        if lang_cfg.aliases then
+            for _, alias in ipairs(lang_cfg.aliases) do
+                table.insert(names, alias)
+            end
+        end
+
+        for _, name in ipairs(names) do
+            local escaped = name:gsub("([^%w])", "\\%1")
+            -- Build match pattern: ^\\{name[,\\}\\s]
+            local match_pat = "^"
+                .. "\\\\" .. "{"
+                .. escaped
+                .. "[," .. "\\\\" .. "}" .. "\\\\" .. "s]"
+
+            local entry = "(raw_blck\n"
+                .. "  (blob) @injection.content\n"
+                .. '  (#match? @injection.content "' .. match_pat .. '")\n'
+                .. "  (#offset! @injection.content 1 -3 0 0)\n"
+                .. '  (#set! injection.language "' .. lang .. '"))'
+
+            table.insert(parts, entry)
+        end
+    end
+
+    return table.concat(parts, "\n\n")
+end
+
+pcall(vim.treesitter.query.set, "typst", "injections", build_typst_injections())
 
 require("r.config").real_setup()
 require("r.rmd").setup()

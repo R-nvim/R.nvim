@@ -1293,6 +1293,17 @@ M.real_setup = function()
     local no_ts = { "rhelp" }
     if config.register_treesitter then
         vim.treesitter.language.register("markdown", { "quarto", "rmd" })
+        -- Register chunk_lang aliases so that tree-sitter injection resolution
+        -- maps them to their canonical parser (e.g., "webr" → "r" parser).
+        if config.chunk_langs then
+            for lang, lang_cfg in pairs(config.chunk_langs) do
+                if lang_cfg.aliases then
+                    for _, alias in ipairs(lang_cfg.aliases) do
+                        vim.treesitter.language.register(lang, alias)
+                    end
+                end
+            end
+        end
     else
         table.insert(no_ts, "quarto")
         table.insert(no_ts, "rmd")

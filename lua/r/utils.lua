@@ -84,8 +84,8 @@ function M.get_lang()
     if filetype == "rnoweb" then return get_rnw_lang() end
     if filetype == "rhelp" then return get_rhelp_lang() end
 
-    -- Handle quarto/rmd code blocks
-    if vim.tbl_contains({ "markdown", "rmd", "quarto" }, filetype) then
+    -- Handle quarto/rmd/typst code blocks
+    if vim.tbl_contains({ "markdown", "rmd", "quarto", "typst" }, filetype) then
         local current_chunk =
             chunk.get_current_code_chunk(vim.api.nvim_get_current_buf())
         if current_chunk and current_chunk.lang then return current_chunk:get_lang() end
