@@ -94,7 +94,7 @@ Main dependencies:
    Tree-sitter parsers:
       Parsers for `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`,
       `latex`, and `csv` must be installed. The `typst` parser is also
-      required if you edit RTypst (`.Rtyp`) documents. You can install them
+      required if you edit Rtypst (`.Rtyp`) documents. You can install them
       using any tree-sitter parser manager (e.g. the `nvim-treesitter` or
       `tree-sitter-manager` plugins) or manually.
       https://github.com/nvim-treesitter/nvim-treesitter
@@ -125,7 +125,7 @@ Main dependencies:
    The R packages:
       - `parallel`: to generate cache files for auto-completion.
       - `knitr`: to generate final documents from Rnoweb, Rmd, Quarto or
-        RTypst.
+        Rtypst.
       - `quarto`: to generate final documents from Quarto.
       - `rmarkdown`: to generate final documents from Rmd.
       - `styler`: to format R code.
@@ -303,7 +303,7 @@ In Rnoweb files, if the cursor is in an empty line in Insert mode, pressing
 `\Sexpr{}`. You can map the "less than" symbol to `<Plug>RnwInsertChunk` to
 emulate Vim-R behavior.
 
-In Rmd, Quarto and RTypst files, typing <M-r> in Insert mode will insert chunk
+In Rmd, Quarto and Rtypst files, typing <M-r> in Insert mode will insert chunk
 delimiters. In addition to creating an empty chunk block, the key strokes will
 be converted to inline R delimiters if the cursor is not at the beginning of
 the line. You can map a single backtick to `<Plug>RmdInsertChunk` to emulate
@@ -467,9 +467,9 @@ In any case, the PDF viewer must be started by the R.nvim plugin. See
 
 
 ------------------------------------------------------------------------------
-4.3. Editing RTypst files
+4.3. Editing Rtypst files
 
-RTypst documents (.Rtyp) are Typst files that may contain fenced code chunks,
+Rtypst documents (.Rtyp) are Typst files that may contain fenced code chunks,
 written with the same delimiters used in Quarto and Rmd documents:
 >
    ```{r}
@@ -478,11 +478,11 @@ written with the same delimiters used in Quarto and Rmd documents:
 <
 The `typst` tree-sitter parser must be installed for chunk detection and
 syntax highlighting to work (see |R.nvim-installation|). Apart from the file
-extension and the parser, RTypst documents behave like Rmd and Quarto
+extension and the parser, Rtypst documents behave like Rmd and Quarto
 documents: the same key bindings to navigate and send code chunks are
 available.
 
-The command <LocalLeader>kr builds the final document from the RTypst file
+The command <LocalLeader>kr builds the final document from the Rtypst file
 using the knitr package, and <LocalLeader>kp compiles the PDF.
 
 
@@ -990,7 +990,7 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |rmarkdown_args|      Further options to be passed to `rmarkdown::render()`
 |quarto_render_args|  Options to be passed to `quarto::quarto_render()`
 |quarto_preview_args| Options to be passed to `quarto::quarto_preview()`
-|chunk_hl|            How to highlight chunks in Quarto, Rmd, Rnoweb and RTypst
+|chunk_hl|            How to highlight chunks in Quarto, Rmd, Rnoweb and Rtypst
 |clear_line|          Clear R Console line before sending a command
 |editing_mode|        The mode defined in your `~/.inputrc`
 |pdfviewer|           PDF application used to open PDF documents
@@ -2010,7 +2010,7 @@ config, as in the examples:
 
 R.nvim changes the background color of code blocks and adds a virtual text
 with the language of the code block to the right side of the header of the
-block in Rmd, Quarto, Rnoweb, and RTypst documents. It also highlights YAML
+block in Rmd, Quarto, Rnoweb, and Rtypst documents. It also highlights YAML
 comments (prefixed with `#|`) as YAML code, and comments prefixed with `# %%`
 with the foreground color of `@string.special`. The background color is taken
 from |hl-CursorColumn| and the highlighting is updated on the |BufEnter| and

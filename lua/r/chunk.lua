@@ -160,7 +160,7 @@ local markdown_extract = function(node, bufnr)
     return lang, info_string_params, content_text, comment_params
 end
 
---- Extractor for Typst raw blocks (RTypst). Language is read from the first
+--- Extractor for Typst raw blocks (Rtypst). Language is read from the first
 --- line of the node (e.g. ```{r} or ```r) because the typst grammar embeds it
 --- in the blob rather than exposing a separate ident node for the {lang} form.
 local typst_extract = function(node, bufnr)
@@ -190,7 +190,7 @@ local get_rmd_code_chunks = function(bufnr)
     )
 end
 
---- Get code chunks from an RTypst document.
+--- Get code chunks from an Rtypst document.
 local get_rtypst_code_chunks = function(bufnr)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
     local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "typst")
