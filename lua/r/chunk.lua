@@ -95,12 +95,10 @@ function Chunk:get_comment_params() return self.comment_params end
 ---@param bufnr  integer The buffer number.
 ---@return table|nil
 local get_rmd_code_chunks = function(bufnr)
+    local root = require("r.utils").get_root_node()
+    if not root then return nil end
+
     bufnr = bufnr or vim.api.nvim_get_current_buf()
-
-    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "markdown")
-    if not ok or not parser then return nil end
-
-    local root = parser:parse()[1]:root()
 
     local query = vim.treesitter.query.parse(
         "markdown",
