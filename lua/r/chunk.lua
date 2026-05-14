@@ -187,6 +187,9 @@ local get_rtypst_code_chunks = function(bufnr)
                     or header_line:match("^{(%a+)}")
                 if lang then
                     local start_row, _, end_row, _ = node:range()
+                    -- Use the parent raw_blck's end_row to include the closing ```
+                    -- so that the last content line isn't treated as "chunk_end".
+                    local parent_end_row = node:parent() and node:parent():range() or end_row
                     -- Content is everything after the first line
                     local content_text = text:sub(#header_line + 2) -- skip \n
 
@@ -199,7 +202,7 @@ local get_rtypst_code_chunks = function(bufnr)
                     local c = Chunk:new(
                         content_text,
                         start_row + 1,
-                        end_row,
+                        parent_end_row,
                         info_string_params,
                         comment_params,
                         lang,
