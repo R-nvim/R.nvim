@@ -645,10 +645,14 @@ local config = {
             -- suppressWarnings silences the "dbGetQuery should only be used with
             -- SELECT" warning on DDL statements (not elegant, but pragmatic).
             wrap_inline = function(code)
-                return 'suppressWarnings(DBI::dbGetQuery(getOption("nvimcom.sql.conn"), r"---(' .. code .. ')---"))'
+                return 'suppressWarnings(DBI::dbGetQuery(getOption("nvimcom.sql.conn"), r"---('
+                    .. code
+                    .. ')---"))'
             end,
             wrap_file = function(filepath)
-                return 'suppressWarnings(DBI::dbGetQuery(getOption("nvimcom.sql.conn"), paste(readLines("' .. filepath .. '"), collapse = "\\n")))'
+                return 'suppressWarnings(DBI::dbGetQuery(getOption("nvimcom.sql.conn"), paste(readLines("'
+                    .. filepath
+                    .. '"), collapse = "\\n")))'
             end,
         },
     },
