@@ -611,7 +611,8 @@ M.signature = function(req_id)
     end
 end
 
-local r_filetypes = { r = true, rmd = true, quarto = true, rnoweb = true, rhelp = true, typst = true }
+local r_filetypes =
+    { r = true, rmd = true, quarto = true, rnoweb = true, rhelp = true, typst = true }
 
 --- Return the source R buffer for an LSP request.
 --- Prefers the bufnr passed from C (via vim.uri_to_bufnr). Falls back to

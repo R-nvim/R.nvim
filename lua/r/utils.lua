@@ -86,8 +86,7 @@ function M.get_lang()
 
     -- Handle quarto/rmd/typst code blocks
     if vim.tbl_contains({ "markdown", "rmd", "quarto", "typst" }, filetype) then
-        local current_chunk =
-            chunk.get_current_code_chunk(vim.api.nvim_get_current_buf())
+        local current_chunk = chunk.get_current_code_chunk(vim.api.nvim_get_current_buf())
         if current_chunk and current_chunk.lang then return current_chunk:get_lang() end
     end
 

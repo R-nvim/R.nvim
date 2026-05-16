@@ -27,15 +27,24 @@ local function build_typst_injections()
             local escaped = name:gsub("([^%w])", "\\%1")
             -- Build match pattern: ^\\{name[,\\}\\s]
             local match_pat = "^"
-                .. "\\\\" .. "{"
+                .. "\\\\"
+                .. "{"
                 .. escaped
-                .. "[," .. "\\\\" .. "}" .. "\\\\" .. "s]"
+                .. "[,"
+                .. "\\\\"
+                .. "}"
+                .. "\\\\"
+                .. "s]"
 
             local entry = "(raw_blck\n"
                 .. "  (blob) @injection.content\n"
-                .. '  (#match? @injection.content "' .. match_pat .. '")\n'
+                .. '  (#match? @injection.content "'
+                .. match_pat
+                .. '")\n'
                 .. "  (#offset! @injection.content 1 -3 0 0)\n"
-                .. '  (#set! injection.language "' .. lang .. '"))'
+                .. '  (#set! injection.language "'
+                .. lang
+                .. '"))'
 
             table.insert(parts, entry)
         end
@@ -44,7 +53,9 @@ local function build_typst_injections()
     return table.concat(parts, "\n\n")
 end
 
-pcall(vim.treesitter.query.set, "typst", "injections", build_typst_injections())
+if vim.api.nvim_buf_get_name(0):lower():find("%.[Rr][Tt][Yy][Pp]$") then
+    pcall(vim.treesitter.query.set, "typst", "injections", build_typst_injections())
+end
 
 require("r.config").real_setup()
 require("r.rmd").setup()

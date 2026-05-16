@@ -147,7 +147,7 @@ function M.find_workspace_symbols(query)
                     kind = loc.kind or 13,
                     file = loc.file,
                     line = loc.line,
-                    col  = loc.col,
+                    col = loc.col,
                     end_col = loc.col + #symbol,
                 })
             end
