@@ -592,14 +592,16 @@ M.set_pdf_dir = function()
     vim.b.rplugin_pdfdir = "."
 
     -- Latexmk has an option to create the PDF in a directory other than '.'
-    if config.latexcmd and (vim.fn.glob("~/.latexmkrc") ~= "") == 1 then
-        local ltxmk = vim.fn.readfile(vim.fn.expand("~/.latexmkrc"))
-        for _, line in ipairs(ltxmk) do
-            if
-                line:match('out_dir%s*=%s*"(.*)"') or line:match("out_dir%s*=%s*'(.*)'")
-            then
-                vim.b.rplugin_pdfdir = line:match('out_dir%s*=%s*"(.*)"')
-                    or line:match("out_dir%s*=%s*'(.*)'")
+    if config.latexcmd then
+        local chkdirs = { "~", ".", vim.fn.expand("%:p:h") }
+        for _, chkdir in ipairs(chkdirs) do
+            if vim.fn.glob(chkdir .. "/.latexmkrc") ~= "" then
+                local ltxmk = vim.fn.readfile(vim.fn.expand(chkdir .. "/.latexmkrc"))
+                for _, line in ipairs(ltxmk) do
+                    vim.b.rplugin_pdfdir = line:match('out_dir%s*=%s*"(.*)"')
+                        or line:match("out_dir%s*=%s*'(.*)'")
+                        or vim.b.rplugin_pdfdir
+                end
             end
         end
     end
