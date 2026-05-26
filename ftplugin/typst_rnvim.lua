@@ -53,7 +53,7 @@ local function build_typst_injections()
     return table.concat(parts, "\n\n")
 end
 
-if vim.api.nvim_buf_get_name(0):lower():find("%.[Rr][Tt][Yy][Pp]$") then
+if vim.api.nvim_buf_get_name(0):lower():find("%.rtyp$") then
     pcall(vim.treesitter.query.set, "typst", "injections", build_typst_injections())
 end
 
