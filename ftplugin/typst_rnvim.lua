@@ -25,16 +25,8 @@ local function build_typst_injections()
 
         for _, name in ipairs(names) do
             local escaped = name:gsub("([^%w])", "\\%1")
-            -- Build match pattern: ^\\{name[,\\}\\s]
-            local match_pat = "^"
-                .. "\\\\"
-                .. "{"
-                .. escaped
-                .. "[,"
-                .. "\\\\"
-                .. "}"
-                .. "\\\\"
-                .. "s]"
+            -- Build match pattern: ^\\{name[, \\}]
+            local match_pat = "^" .. "\\\\{" .. escaped .. "[, \\\\}]"
 
             local entry = "(raw_blck\n"
                 .. "  (blob) @injection.content\n"
