@@ -2,13 +2,6 @@
 
 local M = {}
 
---- Checks if a parser is available or not
----@param parser_name string
----@return boolean
-local function parser_installed(parser_name)
-    return pcall(vim.treesitter.language.add, parser_name)
-end
-
 M.check = function()
     vim.health.start("Checking applications and plugins:")
 
@@ -46,21 +39,40 @@ M.check = function()
         )
     end
 
-    vim.health.start("Checking tree-sitter parsers:")
+    vim.health.start("Checking tree-sitter parser for R:")
 
-    for _, parser in ipairs({
-        "r",
-        "markdown",
-        "markdown_inline",
-        "rnoweb",
-        "latex",
-        "yaml",
-    }) do
-        if parser_installed(parser) then
-            vim.health.ok("`" .. parser .. "` " .. " found.")
-        else
-            vim.health.error("`" .. parser .. "` " .. "not found.")
-        end
+    if vim.treesitter.language.add("r") == true then
+        vim.health.ok("`r` found.")
+    else
+        vim.health.error("`r` not found.")
+    end
+
+    vim.health.start("Checking other tree-sitter parsers:")
+
+    if vim.treesitter.language.add("csv") == true then
+        vim.health.ok("`csv` found.")
+    else
+        vim.health.warn("`csv` not found (required to view matrices and data frames).")
+    end
+
+    if vim.treesitter.language.add("yaml") == true then
+        vim.health.ok("`yaml` found.")
+    else
+        vim.health.warn(
+            "`yaml` not found (required to edit RMarkdown, Quarto, Rnoweb and RTypst documents)."
+        )
+    end
+
+    if vim.treesitter.language.add("rnoweb") == true then
+        vim.health.ok("`rnoweb` found.")
+    else
+        vim.health.warn("`rnoweb` not found (required to edit Rnoweb documents).")
+    end
+
+    if vim.treesitter.language.add("typst") == true then
+        vim.health.ok("`typst` found.")
+    else
+        vim.health.warn("`typst` not found (required to edit RTypst documents).")
     end
 end
 

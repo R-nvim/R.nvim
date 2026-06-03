@@ -91,12 +91,14 @@ Main dependencies:
       https://github.com/neovim/neovim/releases
       See also: https://github.com/neovim/neovim/wiki/Installing-Neovim
 
-   Tree-sitter parsers:
-      Parsers for `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`,
-      `latex`, and `csv` must be installed. The `typst` parser is also
-      required if you edit Rtypst (`.Rtyp`) documents. You can install them
-      using any tree-sitter parser manager (e.g. the `nvim-treesitter` or
-      `tree-sitter-manager` plugins) or manually.
+   Tree-sitter parsers for `r`, and:
+      `csv` for viewing matrices and data frames.
+      `yaml` for RMarkdown (`.Rmd`), Quarto (`.qmd`), Rnoweb (`.Rnw`) or
+          RTypst (`.Rtyp`) documents.
+      `latex` and `rnoweb` for Rnoweb documents.
+      `typst` for Rtypst documents.
+      You can install them using any tree-sitter parser manager (e.g., the
+      `nvim-treesitter` or `tree-sitter-manager` plugins) or manually.
       https://github.com/nvim-treesitter/nvim-treesitter
       https://github.com/romus204/tree-sitter-manager.nvim
 
