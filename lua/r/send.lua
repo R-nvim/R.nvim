@@ -633,7 +633,7 @@ M.selection = function(m)
     local lang = utils.get_lang()
 
     if
-        vim.tbl_contains({ "markdown", "rmd", "quarto" }, vim.o.filetype)
+        vim.tbl_contains({ "markdown", "rmd", "quarto", "typst" }, vim.o.filetype)
         and not chunk.is_supported_lang(lang)
         and not vim.api.nvim_get_current_line():find("`r ")
     then
@@ -743,8 +743,10 @@ M.line = function(m)
     local ok = false
 
     if
-        vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, vim.bo.filetype)
-        and not vim.tbl_isempty(current_chunk)
+        vim.tbl_contains(
+            { "rnoweb", "markdown", "rmd", "quarto", "typst" },
+            vim.bo.filetype
+        ) and not vim.tbl_isempty(current_chunk)
     then
         local canonical, lang_cfg = chunk.resolve_lang(lang)
         if canonical and lang_cfg then
@@ -766,7 +768,12 @@ M.line = function(m)
     end
 
     -- Not in a chunk (or chunk not recognized), send the line
-    if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, vim.bo.filetype) then
+    if
+        vim.tbl_contains(
+            { "rnoweb", "markdown", "rmd", "quarto", "typst" },
+            vim.bo.filetype
+        )
+    then
         if not chunk.is_r(lang) then
             inform("Not inside an R code chunk.")
             return

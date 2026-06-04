@@ -14,3 +14,4 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
     pattern = "*.Rproj",
     callback = function() vim.api.nvim_set_option_value("syntax", "dcf", {}) end,
 })
+vim.filetype.add({ extension = { Rtyp = "typst" } })

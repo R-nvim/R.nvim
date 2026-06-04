@@ -209,6 +209,14 @@ local control = function(file_type)
     create_maps("nvi", "ROBOpenLists",      "r=", "<Cmd>lua require('r.browser').open_close_lists('O')")
     create_maps("nvi", "ROBCloseLists",     "r-", "<Cmd>lua require('r.browser').open_close_lists('C')")
 
+    if file_type == "typst" then
+        if vim.api.nvim_buf_get_name(0):lower():find("%.[Rr][Tt][Yy][Pp]$") then
+            create_maps("nvi", "RMakeRmd", "kr", "<Cmd>lua require('r.typst').make('default')")
+        end
+        create_maps("nvi", "RMakePDFK", "kp", "<Cmd>lua require('r.typst').make('pdf')")
+        return
+    end
+
     -- Render script with rmarkdown
     create_maps("nvi", "RMakeRmd",          "kr", "<Cmd>lua require('r.rmd').make('default')")
     create_maps("nvi", "RMakeAll",          "ka", "<Cmd>lua require('r.rmd').make('all')")
@@ -240,7 +248,7 @@ end
 local edit = function(file_type)
     create_maps("i", "RInsertPipe", ",", "<Cmd>lua require('r.edit').pipe()", 2)
     create_maps("i", "RInsertAssign", "<M-->", "<Cmd>lua require('r.edit').assign()", 3)
-    if vim.tbl_contains({ "markdown", "rmd", "quarto" }, file_type) then
+    if vim.tbl_contains({ "markdown", "rmd", "quarto", "typst" }, file_type) then
         create_maps("i", "RmdInsertChunk", "<M-r>", "<Cmd>lua require('r.rmd').write_chunk()", 3)
     end
     if file_type == "rnoweb" then
@@ -294,6 +302,8 @@ local send = function(file_type)
     end
     if vim.tbl_contains({ "markdown", "rmd", "quarto" }, file_type) then
         create_maps("nvi", "RKnit",           "kn", "<Cmd>lua require('r.run').knit()")
+    end
+    if vim.tbl_contains({ "markdown", "rmd", "quarto", "typst" }, file_type) then
         create_maps("ni",  "RSendChunk",      "cc", "<Cmd>lua require('r.rmd').send_current_chunk(false)")
         create_maps("ni",  "RDSendChunk",     "cd", "<Cmd>lua require('r.rmd').send_current_chunk(true)")
         create_maps("n",   "RNextRChunk",     "gn", "<Cmd>lua require('r.rmd').next_chunk()")
@@ -321,7 +331,7 @@ local send = function(file_type)
         create_maps("n", "RNextRChunk",     "gn", "<Cmd>lua require('r.rnw').next_chunk()")
         create_maps("n", "RPreviousRChunk", "gN", "<Cmd>lua require('r.rnw').previous_chunk()")
     end
-    if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto" }, file_type) then
+    if vim.tbl_contains({ "rnoweb", "markdown", "rmd", "quarto", "typst" }, file_type) then
         create_maps("ni", "RSendChunkFH", "ch", "<Cmd>lua require('r.send').chunks_up_to_here()")
         if config.rm_knit_cache then
             create_maps("nvi", "RKnitRmCache", "kc", "<Cmd>lua require('r.rnw').rm_knit_cache()")

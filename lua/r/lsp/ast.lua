@@ -13,14 +13,10 @@ function M.get_parser_and_root(bufnr, lang)
     lang = lang or "r"
 
     local ok, parser = pcall(vim.treesitter.get_parser, bufnr, lang)
-    if not ok or not parser then
-        return nil, nil
-    end
+    if not ok or not parser then return nil, nil end
 
     local tree = parser:parse()[1]
-    if not tree then
-        return nil, nil
-    end
+    if not tree then return nil, nil end
 
     return parser, tree:root()
 end
@@ -32,9 +28,7 @@ end
 ---@return TSNode?
 function M.node_at_position(bufnr, row, col)
     local _, root = M.get_parser_and_root(bufnr)
-    if not root then
-        return nil
-    end
+    if not root then return nil end
 
     return root:descendant_for_range(row, col, row, col)
 end
@@ -44,16 +38,12 @@ end
 ---@param node_types string|string[] Single type or array of types
 ---@return TSNode?
 function M.find_ancestor(node, node_types)
-    if type(node_types) == "string" then
-        node_types = { node_types }
-    end
+    if type(node_types) == "string" then node_types = { node_types } end
 
     local current = node:parent()
     while current do
         for _, node_type in ipairs(node_types) do
-            if current:type() == node_type then
-                return current
-            end
+            if current:type() == node_type then return current end
         end
         current = current:parent()
     end
@@ -67,16 +57,12 @@ end
 ---@param boundary TSNode Stop walking when this node is reached (exclusive)
 ---@return TSNode?
 function M.find_ancestor_until(node, node_types, boundary)
-    if type(node_types) == "string" then
-        node_types = { node_types }
-    end
+    if type(node_types) == "string" then node_types = { node_types } end
 
     local current = node:parent()
     while current and current ~= boundary do
         for _, node_type in ipairs(node_types) do
-            if current:type() == node_type then
-                return current
-            end
+            if current:type() == node_type then return current end
         end
         current = current:parent()
     end
@@ -93,9 +79,7 @@ function M.collect_ancestors(node, node_type)
     local current = node:parent()
 
     while current do
-        if current:type() == node_type then
-            table.insert(ancestors, current)
-        end
+        if current:type() == node_type then table.insert(ancestors, current) end
         current = current:parent()
     end
 
@@ -110,9 +94,7 @@ function M.get_children_of_type(node, child_type)
     local children = {}
 
     for child in node:iter_children() do
-        if child:type() == child_type then
-            table.insert(children, child)
-        end
+        if child:type() == child_type then table.insert(children, child) end
     end
 
     return children
@@ -123,15 +105,11 @@ end
 ---@param call_node TSNode Call node
 ---@return string? Argument text
 function M.get_first_call_argument(bufnr, call_node)
-    if call_node:type() ~= "call" then
-        return nil
-    end
+    if call_node:type() ~= "call" then return nil end
 
     -- Get arguments node
     local args_nodes = M.get_children_of_type(call_node, "arguments")
-    if #args_nodes == 0 then
-        return nil
-    end
+    if #args_nodes == 0 then return nil end
 
     local arguments = args_nodes[1]
 
@@ -142,9 +120,7 @@ function M.get_first_call_argument(bufnr, call_node)
             for arg_child in child:iter_children() do
                 if arg_child:named() and arg_child:type() ~= "identifier" then
                     -- Skip calls and complex expressions
-                    if arg_child:type() == "call" then
-                        return nil
-                    end
+                    if arg_child:type() == "call" then return nil end
                     if arg_child:type() == "identifier" then
                         return vim.treesitter.get_node_text(arg_child, bufnr)
                     end
@@ -169,9 +145,7 @@ function M.find_call_in_chain(bufnr, start_node, function_name)
         for child in start_node:iter_children() do
             if child:type() == "identifier" then
                 local fn_name = vim.treesitter.get_node_text(child, bufnr)
-                if fn_name == function_name then
-                    return start_node
-                end
+                if fn_name == function_name then return start_node end
             end
         end
     end
@@ -181,9 +155,7 @@ function M.find_call_in_chain(bufnr, start_node, function_name)
         for child in start_node:iter_children() do
             if child:named() then
                 local result = M.find_call_in_chain(bufnr, child, function_name)
-                if result then
-                    return result
-                end
+                if result then return result end
             end
         end
     end
@@ -198,9 +170,7 @@ end
 ---@return boolean in_comment, boolean in_string
 function M.is_in_comment_or_string(bufnr, row, col)
     local node = M.node_at_position(bufnr, row, col)
-    if not node then
-        return false, false
-    end
+    if not node then return false, false end
 
     local in_comment = false
     local in_string = false

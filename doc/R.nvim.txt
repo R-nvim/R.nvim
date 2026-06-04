@@ -91,11 +91,14 @@ Main dependencies:
       https://github.com/neovim/neovim/releases
       See also: https://github.com/neovim/neovim/wiki/Installing-Neovim
 
-   Tree-sitter parsers:
-      Parsers for `r`, `markdown`, `markdown_inline`, `rnoweb`, `yaml`,
-      `latex`, and `csv` must be installed. You can install them using any
-      tree-sitter parser manager (e.g. the `nvim-treesitter` or
-      `tree-sitter-manager` plugins) or manually.
+   Tree-sitter parsers for `r`, and:
+      `csv` for viewing matrices and data frames.
+      `yaml` for RMarkdown (`.Rmd`), Quarto (`.qmd`), Rnoweb (`.Rnw`) or
+          RTypst (`.Rtyp`) documents.
+      `latex` and `rnoweb` for Rnoweb documents.
+      `typst` for Rtypst documents.
+      You can install them using any tree-sitter parser manager (e.g., the
+      `nvim-treesitter` or `tree-sitter-manager` plugins) or manually.
       https://github.com/nvim-treesitter/nvim-treesitter
       https://github.com/romus204/tree-sitter-manager.nvim
 
@@ -123,7 +126,8 @@ Main dependencies:
 
    The R packages:
       - `parallel`: to generate cache files for auto-completion.
-      - `knitr`: to generate final documents from Rnoweb, Rmd or Quarto.
+      - `knitr`: to generate final documents from Rnoweb, Rmd, Quarto or
+        Rtypst.
       - `quarto`: to generate final documents from Quarto.
       - `rmarkdown`: to generate final documents from Rmd.
       - `styler`: to format R code.
@@ -190,9 +194,9 @@ Wiki:
 Note: The <LocalLeader> is '\' by default.
 
 The plugin is a |file-type| plugin. It will be active only if you are editing
-a .R, .Rnw, .Rd, .Rmd or .qmd file. The key bindings will not be active while
-editing either unnamed files or files with name extensions other than the
-mentioned above.
+a .R, .Rnw, .Rd, .Rmd, .qmd or .Rtyp file. The key bindings will not be active
+while editing either unnamed files or files with name extensions other than
+the mentioned above.
 
 If the plugin is active, pressing <LocalLeader>rf should start R.
 
@@ -275,7 +279,7 @@ change this behavior (see |external_term|).
 
 Note: The <LocalLeader> is '\' by default.
 
-To use the plugin, open a .R, .Rnw, .Rd, .Rmd or .qmd file with Neovim
+To use the plugin, open a .R, .Rnw, .Rd, .Rmd, .qmd or .Rtyp file with Neovim
 and type <LocalLeader>rf. Then, you will be able to use the plugin key
 bindings to send commands to R.
 
@@ -284,7 +288,7 @@ with R still running in a Neovim's built-in terminal emulator, R.nvim will
 send to R the command `quit(save = "no")` (see the |auto_quit| option).
 
 This plugin has many key bindings. Not all key bindings are enabled in all
-file types supported by the plugin (r, rnoweb, rhelp, rmd, and quarto).
+file types supported by the plugin (r, rnoweb, rhelp, rmd, quarto, and typst).
 To see the list of mappings, do in Normal mode:
 >vim
    :RMapsDesc
@@ -301,7 +305,7 @@ In Rnoweb files, if the cursor is in an empty line in Insert mode, pressing
 `\Sexpr{}`. You can map the "less than" symbol to `<Plug>RnwInsertChunk` to
 emulate Vim-R behavior.
 
-In Rmd and Quarto files, typing <M-r> in Insert mode will insert chunk
+In Rmd, Quarto and Rtypst files, typing <M-r> in Insert mode will insert chunk
 delimiters. In addition to creating an empty chunk block, the key strokes will
 be converted to inline R delimiters if the cursor is not at the beginning of
 the line. You can map a single backtick to `<Plug>RmdInsertChunk` to emulate
@@ -465,7 +469,27 @@ In any case, the PDF viewer must be started by the R.nvim plugin. See
 
 
 ------------------------------------------------------------------------------
-4.3. Language server's completion
+4.3. Editing Rtypst files
+
+Rtypst documents (.Rtyp) are Typst files that may contain fenced code chunks,
+written with the same delimiters used in Quarto and Rmd documents:
+>
+   ```{r}
+   x <- 1
+   ```
+<
+The `typst` tree-sitter parser must be installed for chunk detection and
+syntax highlighting to work (see |R.nvim-installation|). Apart from the file
+extension and the parser, Rtypst documents behave like Rmd and Quarto
+documents: the same key bindings to navigate and send code chunks are
+available.
+
+The command <LocalLeader>kr builds the final document from the Rtypst file
+using the knitr package, and <LocalLeader>kp compiles the PDF.
+
+
+------------------------------------------------------------------------------
+4.4. Language server's completion
 
 R.nvim completes the names of functions of loaded libraries (when R is not
 running, it completes function names listed in |start_libs|). The names of
@@ -485,7 +509,7 @@ lists are built. To suppress these messages, add the following to your
 <
 
 ------------------------------------------------------------------------------
-4.3.1. Quarto YAML completion                          *R.nvim-quarto-completion*
+4.4.1. Quarto YAML completion                          *R.nvim-quarto-completion*
 
 R.nvim provides intelligent YAML completion for Quarto documents and project
 files through integration with the YAML Language Server (yamlls). This feature
@@ -521,7 +545,7 @@ if `vim.lsp.config` is available (Neovim 0.11+).
 
 
 ------------------------------------------------------------------------------
-4.3.2. Document highlight                               *R.nvim-doc-highlight*
+4.4.2. Document highlight                               *R.nvim-doc-highlight*
 
 R.nvim supports the `textDocument/documentHighlight` LSP request. When
 triggered, it highlights all references to the symbol under the cursor in the
@@ -549,7 +573,7 @@ Note: This feature requires Neovim's built-in LSP client and will only work
 if `vim.lsp.config` is available (Neovim 0.11+).
 
 ------------------------------------------------------------------------------
-4.4. The Object Browser
+4.5. The Object Browser
 
 You have to use <LocalLeader>ro to either open or close the Object Browser on
 the same tab page. If it is already open on another tab page, it will be
@@ -625,7 +649,7 @@ Notes:
 
 
 ------------------------------------------------------------------------------
-4.5. Build a tags file to jump to function definitions            *RBuildTags*
+4.6. Build a tags file to jump to function definitions            *RBuildTags*
 
 Neovim can jump to functions defined in other files if you press CTRL-] over
 the name of a function, but it needs a tags file to be able to find the
@@ -638,7 +662,7 @@ definitions.
 
 
 ------------------------------------------------------------------------------
-4.6. Debugging R functions (Unix only)                     *debug-R-functions*
+4.7. Debugging R functions (Unix only)                     *debug-R-functions*
 
 `R.nvim` has limited debugging facilities available on Unix systems (not
 available on Windows). To debug a function with R.nvim you have to do the
@@ -715,7 +739,7 @@ defined by your colorscheme.
 
 
 ------------------------------------------------------------------------------
-4.7 ROxygen2 support                                         *R.nvim-roxygen2*
+4.8 ROxygen2 support                                         *R.nvim-roxygen2*
 
 R.nvim supports the insertion of ROxygen2 skeletons in R scripts. To insert a
 new ROxygen2 block, you can use the `:ROxygenize` command while the cursor is
@@ -906,7 +930,7 @@ or other Lua script sourced during Neovim startup. Example:
 You can also set directory-specific options in an `rnvim_config.lua` script,
 returning a Lua table which will override the `init.lua` options. The
 `rnvim_config.lua` script will be sourced when the first R file (`.R`, `.Rmd`,
-`.qmd`, `.Rnw` or `.Rd`) from its directory is read. Example of
+`.qmd`, `.Rnw`, `.Rd` or `.Rtyp`) from its directory is read. Example of
 `rnvim_config.lua`:
 >lua
    return {
@@ -968,7 +992,7 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |rmarkdown_args|      Further options to be passed to `rmarkdown::render()`
 |quarto_render_args|  Options to be passed to `quarto::quarto_render()`
 |quarto_preview_args| Options to be passed to `quarto::quarto_preview()`
-|chunk_hl|            How to highlight code blocks in Quarto, Rmd, and Rnoweb
+|chunk_hl|            How to highlight chunks in Quarto, Rmd, Rnoweb and Rtypst
 |clear_line|          Clear R Console line before sending a command
 |editing_mode|        The mode defined in your `~/.inputrc`
 |pdfviewer|           PDF application used to open PDF documents
@@ -1988,10 +2012,10 @@ config, as in the examples:
 
 R.nvim changes the background color of code blocks and adds a virtual text
 with the language of the code block to the right side of the header of the
-block in Rmd, Quarto, and Rnoweb documents. It also highlights YAML comments
-(prefixed with `#|`) as YAML code, and comments prefixed with `# %%` with the
-foreground color of `@string.special`. The background color is taken from
-|hl-CursorColumn| and the highlighting is updated on the |BufEnter| and
+block in Rmd, Quarto, Rnoweb, and Rtypst documents. It also highlights YAML
+comments (prefixed with `#|`) as YAML code, and comments prefixed with `# %%`
+with the foreground color of `@string.special`. The background color is taken
+from |hl-CursorColumn| and the highlighting is updated on the |BufEnter| and
 |InsertLeave| events. The code of chunks with the field `eval: false` are
 highlighted with foreground color of |hl-Comment|, and chunks with the field
 `child` are highlighted with the foreground color of |hl-Ignore|. Below is an
