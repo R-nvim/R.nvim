@@ -31,6 +31,7 @@ NvimcomEnv$tcb <- FALSE
         options(nvimcom.setwidth = TRUE)
         options(nvimcom.debug_r = TRUE)
         options(nvimcom.nvimpager = TRUE)
+        options(nvimcom.max_list_len = 10000)
         options(nvimcom.max_depth = 12)
         options(nvimcom.max_size = 1000000)
         options(nvimcom.max_time = 100)
@@ -65,6 +66,7 @@ NvimcomEnv$tcb <- FALSE
             as.integer(getOption("nvimcom.verbose")),
             as.integer(getOption("nvimcom.allnames")),
             as.integer(getOption("nvimcom.setwidth")),
+            as.integer(getOption("nvimcom.max_list_len")),
             as.integer(getOption("nvimcom.max_depth")),
             as.integer(getOption("nvimcom.max_size")),
             as.integer(getOption("nvimcom.max_time")),

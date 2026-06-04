@@ -93,6 +93,7 @@ static double timelimit =
     100.0; // Maximum acceptable time to build list of .GlobalEnv objects
 static int sizelimit = 1000000; // Maximum acceptable size of string
                                 // representing .GlobalEnv (list of objects)
+static int maxlslen = 10000;    // Maximum acceptable list length
 static int maxdepth = 12; // How many levels to parse in lists and S4 objects
 // when building list of objects for auto-completion. The value decreases if
 // the listing is too slow.
@@ -609,7 +610,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
 
         if (xgroup == 4 || xgroup == 7) {
             snprintf(newenv, 575, "%s%s@", curenv, xname);
-            if (len > 0) {
+            if (len > 0 && len < maxlslen) {
                 for (int i = 0; i < len; i++) {
                     ename = CHAR(STRING_ELT(sn, i));
                     if (R_has_slot(*x, Rf_install(ename)) == 1) {
@@ -627,7 +628,7 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
             len = length(listNames);
             if (len == 0) { /* Empty list? */
                 int len1 = length(*x);
-                if (len1 > 0) { /* List without names */
+                if (len1 > 0 && len1 < maxlslen) { /* List without names */
                     len1 -= 1;
                     if (newenv[strlen(newenv) - 1] == '$')
                         newenv[strlen(newenv) - 1] = 0; // Delete trailing '$'
@@ -643,28 +644,31 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
                     UNPROTECT(1);
                 }
             } else { /* Named list */
-                SEXP eexp;
-                len -= 1;
-                for (int i = 0; i < len; i++) {
-                    PROTECT(eexp = STRING_ELT(listNames, i));
-                    ename = CHAR(eexp);
-                    UNPROTECT(1);
+                if (len < maxlslen) {
+                    SEXP eexp;
+                    len -= 1;
+                    for (int i = 0; i < len; i++) {
+                        PROTECT(eexp = STRING_ELT(listNames, i));
+                        ename = CHAR(eexp);
+                        UNPROTECT(1);
+                        if (ename[0] == 0) {
+                            snprintf(ebuf, 63, "[[%d]]", i + 1);
+                            ename = ebuf;
+                        }
+                        PROTECT(elmt = VECTOR_ELT(*x, i));
+                        p = nvimcom_glbnv_line(&elmt, ename, newenv, p,
+                                               depth + 1);
+                        UNPROTECT(1);
+                    }
+                    ename = CHAR(STRING_ELT(listNames, len));
                     if (ename[0] == 0) {
-                        snprintf(ebuf, 63, "[[%d]]", i + 1);
+                        snprintf(ebuf, 63, "[[%d]]", len + 1);
                         ename = ebuf;
                     }
-                    PROTECT(elmt = VECTOR_ELT(*x, i));
+                    PROTECT(elmt = VECTOR_ELT(*x, len));
                     p = nvimcom_glbnv_line(&elmt, ename, newenv, p, depth + 1);
                     UNPROTECT(1);
                 }
-                ename = CHAR(STRING_ELT(listNames, len));
-                if (ename[0] == 0) {
-                    snprintf(ebuf, 63, "[[%d]]", len + 1);
-                    ename = ebuf;
-                }
-                PROTECT(elmt = VECTOR_ELT(*x, len));
-                p = nvimcom_glbnv_line(&elmt, ename, newenv, p, depth + 1);
-                UNPROTECT(1);
             }
             UNPROTECT(1); /* listNames */
         }
@@ -1272,11 +1276,12 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
  *
  * @param rinfo Information on R to be passed to nvim.
  */
-SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP szl, SEXP tml,
-                   SEXP dbg, SEXP nvv, SEXP rinfo) {
+SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP lsl, SEXP szl,
+                   SEXP tml, SEXP dbg, SEXP nvv, SEXP rinfo) {
     verbose = *INTEGER(vrb);
     allnames = *INTEGER(anm);
     setwidth = *INTEGER(swd);
+    maxlslen = *INTEGER(lsl);
     maxdepth = *INTEGER(imd);
     sizelimit = *INTEGER(szl);
     timelimit = (double)*INTEGER(tml);

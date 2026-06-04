@@ -69,6 +69,9 @@ start_R2 = function()
         'Sys.setenv(RNVIM_ID= "' .. vim.env.RNVIM_ID .. '")',
         'Sys.setenv(RNVIM_SECRET = "' .. vim.env.RNVIM_SECRET .. '")',
         'Sys.setenv(RNVIM_PORT = "' .. vim.env.RNVIM_PORT .. '")',
+        "options(nvimcom.max_list_len = "
+            .. tostring(config.compl_data.max_list_len)
+            .. ")",
         "options(nvimcom.max_depth = " .. tostring(config.compl_data.max_depth) .. ")",
         "options(nvimcom.max_size = " .. tostring(config.compl_data.max_size) .. ")",
         "options(nvimcom.max_time = " .. tostring(config.compl_data.max_time) .. ")",
