@@ -1338,7 +1338,7 @@ values:
         max_time = 100,
     },
 <
-You should increase the value of `max_list_len` if want to be able to open in
+You should increase the value of `max_list_len` if you want to be able to open in
 the Object Browser and do completion of list and S4 objects with more than
 10000 elements. You should increase the value of `max_depth` if you want to
 complete or see in the Object Browser more than 3 list levels. You should
