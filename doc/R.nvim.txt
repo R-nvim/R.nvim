@@ -1332,18 +1332,22 @@ in the Lua table `compl_data` in your `R.nvim` config. Below are the default
 values:
 >lua
     compl_data = {
+        max_list_len = 10000,
         max_depth = 3,
         max_size = 1000000,
         max_time = 100,
     },
 <
-You should increase the value of `max_depth` if you want to complete or see in
-the Object Browser more than 3 list levels. You should increase either
-`max_size` or `max_time` if `nvimcom` needs more space or more time to build
-the completion data with the desired list depth. You should decrease the
-values if you notice any delay when R is running commands. In this case,
-please, put `options(nvimcom.verbose = 1)` in your `~/.Rprofile` and use the
-information output by `nvimcom` to decide what parameter to change.
+You should increase the value of `max_list_len` if you want to be able to open in
+the Object Browser and do completion of list and S4 objects with more than
+10000 elements. You should increase the value of `max_depth` if you want to
+complete or see in the Object Browser more than 3 list levels. You should
+increase either `max_size` or `max_time` if `nvimcom` needs more space or more
+time to build the completion data with the desired list depth. You should
+decrease the values if you notice any delay when R is running commands. In
+this case, please, put `options(nvimcom.verbose = 1)` in your `~/.Rprofile`
+and use the information output by `nvimcom` to decide what parameter to
+change.
 
 It is possible to add a custom keymap through `objbr_mappings` table. The
 keymap defined in this table will be available in the object browser only.

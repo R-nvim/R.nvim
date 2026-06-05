@@ -166,7 +166,7 @@ local hooks = require("r.hooks")
 ---
 ---Options for fine-grained control of the object browser. Do `:help compl_data`
 ---for more information.
----@field compl_data? { max_depth: integer, max_size: integer, max_time: integer }
+---@field compl_data? { max_list_len: integer, max_depth: integer, max_size: integer, max_time: integer }
 ---
 ---Options for the r_ls (R.nvim's built-in language server)
 ---@field r_ls? RLSConfigOpts
@@ -496,6 +496,7 @@ local config = {
     convert_range_int = false,
     compldir = "",
     compl_data = {
+        max_list_len = 10000,
         max_depth = 3,
         max_size = 1000000,
         max_time = 100,
