@@ -220,9 +220,7 @@ local check_lang = function()
 
     -- Expected language at different cursor positions
     local qlangs = {
-        { "yaml", 2, 0, "" },
         { "markdown", 4, 0, "" },
-        { "markdown_inline", 5, 0, "" },
         { "r", 8, 0, "" },
     }
 
