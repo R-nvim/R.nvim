@@ -1276,7 +1276,7 @@ static void *client_loop_thread(__attribute__((unused)) void *arg)
  *
  * @param rinfo Information on R to be passed to nvim.
  */
-SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP imd, SEXP lsl, SEXP szl,
+SEXP nvimcom_Start(SEXP vrb, SEXP anm, SEXP swd, SEXP lsl, SEXP imd, SEXP szl,
                    SEXP tml, SEXP dbg, SEXP nvv, SEXP rinfo) {
     verbose = *INTEGER(vrb);
     allnames = *INTEGER(anm);
