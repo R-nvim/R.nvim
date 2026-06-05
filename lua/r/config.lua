@@ -1360,22 +1360,35 @@ M.check_health = function()
         "parser" .. (config.is_windows and "\\" or "/") .. "*.*",
         true
     )
-    if
-        not has_parser("r", parsers)
-        or not has_parser("markdown", parsers)
-        or not has_parser("rnoweb", parsers)
-        or not has_parser("yaml", parsers)
-    then
-        swarn(
-            'R.nvim requires treesitter parsers for "r", "markdown", "rnoweb", and "yaml". Please, install them.'
-        )
+
+    local needed = { "r" }
+    if vim.tbl_contains({ "rmd", "quarto", "rnoweb", "typst" }, vim.bo.filetype) then
+        table.insert(needed, "yaml")
+    end
+    if vim.tbl_contains({ "rmd", "quarto" }, vim.bo.filetype) then
+        table.insert(needed, "markdown")
+        table.insert(needed, "markdown_inline")
+    elseif vim.bo.filetype == "rnoweb" then
+        table.insert(needed, "rnoweb")
+    elseif vim.bo.filetype == "typst" then
+        table.insert(needed, "typst")
+    end
+    for _, v in pairs(needed) do
+        if not has_parser(v, parsers) then
+            swarn(
+                string.format(
+                    'R.nvim requires the following tree-sitter parsers: "%s". Please, install them.',
+                    table.concat(needed, '", "')
+                )
+            )
+            break
+        end
     end
 
     if #smsgs > 0 then
         local plural = #smsgs > 1 and "s" or ""
-        local msg = "\n  " .. table.concat(smsgs, "\n  ")
-        require("r.edit").add_to_debug_info("Startup warning" .. plural, msg)
-        msg = "R.nvim warning" .. plural .. ":" .. msg
+        local msg = "  " .. table.concat(smsgs, "\n  ")
+        require("r.edit").add_to_debug_info("Startup warning" .. plural, "\n" .. msg)
         vim.schedule(function()
             vim.defer_fn(function() require("r.log").warn(msg) end, 200)
         end)
