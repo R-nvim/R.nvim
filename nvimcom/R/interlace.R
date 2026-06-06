@@ -323,7 +323,13 @@ nvim.interlace.rnoweb <- function(
     }
 
     if (!file.exists(logf)) {
-        paths <- c("~/.latexmkrc", ".latexmkrc", paste0(rnwdir, "/.latexmkrc"))
+        paths <- c(
+            paste0(rnwdir, "/.latexmkrc"),
+            ".latexmkrc",
+            "~/.latexmkrc",
+            file.path(Sys.getenv("XDG_CONFIG_HOME"), "latexmk/latexmkrc"),
+            "~/.config/latexmk/latexmkrc"
+        )
         found <- file.exists(paths)
         if (latexcmd == "latexmk" && any(found)) {
             foundlmks <- paths[found]
@@ -336,6 +342,7 @@ nvim.interlace.rnoweb <- function(
                         "/",
                         sub("\\....$", ".log", rnwf)
                     )
+                    break
                 }
             }
         } else {
