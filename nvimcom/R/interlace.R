@@ -323,15 +323,27 @@ nvim.interlace.rnoweb <- function(
     }
 
     if (!file.exists(logf)) {
-        if (latexcmd == "latexmk" && file.exists("~/.latexmkrc")) {
-            lmk <- readLines("~/.latexmkrc")
-            idx <- grep("\\$out_dir\\s*=", lmk)
-            if (length(idx) == 1) {
-                logf <- paste0(
-                    sub(".*\\$out_dir\\s*=\\s*['\"](.*)['\"].*", "\\1", lmk[idx]),
-                    "/",
-                    sub("\\....$", ".log", rnwf)
-                )
+        paths <- c(
+            paste0(rnwdir, "/.latexmkrc"),
+            ".latexmkrc",
+            "~/.latexmkrc",
+            file.path(Sys.getenv("XDG_CONFIG_HOME"), "latexmk/latexmkrc"),
+            "~/.config/latexmk/latexmkrc"
+        )
+        found <- file.exists(paths)
+        if (latexcmd == "latexmk" && any(found)) {
+            foundlmks <- paths[found]
+            for (lmkfile in foundlmks) {
+                lmk <- readLines(lmkfile)
+                idx <- grep("\\$out_dir\\s*=", lmk)
+                if (length(idx) == 1) {
+                    logf <- paste0(
+                        sub(".*\\$out_dir\\s*=\\s*['\"](.*)['\"].*", "\\1", lmk[idx]),
+                        "/",
+                        sub("\\....$", ".log", rnwf)
+                    )
+                    break
+                }
             }
         } else {
             idx <- grep("-output-directory=", latexargs)
