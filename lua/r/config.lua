@@ -1376,10 +1376,9 @@ M.check_health = function()
     for _, v in pairs(needed) do
         if not has_parser(v, parsers) then
             swarn(
-                string.format(
-                    'R.nvim requires the following tree-sitter parsers: "%s". Please, install them.',
-                    table.concat(needed, '", "')
-                )
+                'R.nvim requires the tree-sitter parser for "'
+                    .. v
+                    .. '". Please, install it.'
             )
             break
         end
