@@ -24,6 +24,23 @@ R.nvim adds R support to Neovim, including:
     <img style="width: 800px" src="screenshot.png">
 </p>
 
+The `R.nvim` directory has four different things:
+
+  - A R package (subdirectory `nvimcom`).
+
+  - The C code of an language server for R (subdirectory `rnvimserver`).
+
+  - A tree-sitter parser for `.Rout` files (Git submodule `tree-sitter-rout`
+    in the subdirectory `resources`).
+
+  - A Lua plugin for Neovim (most of everything else).
+
+R.nvim automatically:
+
+ - builds and install the R package `nvimcom`;
+ - compiles the `rnvimserver` binary in the `rnvimserver` directory;
+ - generates the `rout` parser and installs it in the `parser` subdirectory.
+
 ## Installation
 
 The `R.nvim` repository must be cloned with its submodule `tree-sitter-rout`.
@@ -328,13 +345,13 @@ There are three different ways of sending the commands to R Console:
   is used to send code to R Console.
 
 - When running R in an external terminal emulator, Tmux is used to send
-  commands to R Console, but some terminal emulators have built-in multiplexer
-  capabilities and can be used without Tmux.
+  commands to R Console.
 
-The R package _nvimcom_ includes the application _rnvimserver_ which is never
-used by R itself but is run as a Neovim's job. That is, the communication
-between the _rnvimserver_ and Neovim is through the _rnvimserver_ standard
-input and output (green arrows). The _rnvimserver_ application runs a TCP
+- Some terminal emulators have built-in multiplexer capabilities and can be
+  used without Tmux.
+
+The application _rnvimserver_ runs as a language server that communicates with
+Neovim through the standard input/output, but it also includes a TCP
 server. When _nvimcom_ is loaded, it immediately starts a TCP client that
 connects to _rnvimserver_ (red arrows).
 
@@ -345,9 +362,9 @@ arguments), start and manipulate the Object Browser (`\ro`, `\r=` and `\r-`),
 call R help (`\rh` or `:Rhelp`), insert the output of an R command
 (`:Rinsert`), and format selected text (`:Rformat`).
 
-When new objects are created or new libraries are loaded, nvimcom sends
+When new objects are created or new libraries are loaded, _nvimcom_ sends
 messages that tell the editor to update the Object Browser, update the syntax
-highlight to include newly loaded libraries and open the PDF output after
+highlight to include newly loaded libraries, and open the PDF output after
 knitting an Rnoweb file, and compiling the LaTeX result. Most of the
 information is transmitted through the TCP connection to the _rnvimserver_,
 but temporary files are used in a few cases.
