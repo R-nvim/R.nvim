@@ -158,7 +158,7 @@ local need_R_args = function(line, lnum)
         -- Check if the data.frame is supposed to be the first argument of the
         -- nesting function:
         if not listdf and cnum > 1 then
-            nline = string.sub(nline, 1, cnum)
+            nline = string.sub(nline, 1, cnum - 1)
             for k, v in pairs(options.fun_data_2) do
                 for _, a in pairs(v) do
                     if a == "*" or funname == a then
@@ -504,7 +504,7 @@ function M.complete(req_id, lnum, cnum)
                     if nra.listdf == 1 or nra.listdf == 3 then
                         df_name = nra.firstobj
                     else
-                        df_name = nra.firstobj2
+                        df_name = nra.firstobj2 or nra.firstobj
                     end
                     M.send_msg({
                         code = "5",
