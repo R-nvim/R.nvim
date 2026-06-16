@@ -1356,7 +1356,16 @@ node managed by a job scheduler such as Slurm), you can cap the number of
 cores with the `nvimcom.max_cpu_cores` option in your ~/.Rprofile:
 >r
    options(nvimcom.max_cpu_cores = 4)
-<
+
+In case you are using Slurm, you can set the option to the value of the
+environment variable `SLURM_CPUS_PER_TASK`:
+>r
+   options(nvimcom.max_cpu_cores = as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK")))
+
+Note that `SLURM_CPUS_PER_TASK` is only set if you have requested more than
+one CPU core in your Slurm job script (e.g., with `#SBATCH
+--cpus-per-task=4`).
+
 It is possible to add a custom keymap through `objbr_mappings` table. The
 keymap defined in this table will be available in the object browser only.
 Using this method, you can set keymaps that run Lua functions or R code. The
