@@ -1338,8 +1338,8 @@ values:
         max_time = 100,
     },
 <
-You should increase the value of `max_list_len` if you want to be able to open in
-the Object Browser and do completion of list and S4 objects with more than
+You should increase the value of `max_list_len` if you want to be able to open
+in the Object Browser and do completion of list and S4 objects with more than
 10000 elements. You should increase the value of `max_depth` if you want to
 complete or see in the Object Browser more than 3 list levels. You should
 increase either `max_size` or `max_time` if `nvimcom` needs more space or more
@@ -1349,6 +1349,14 @@ this case, please, put `options(nvimcom.verbose = 1)` in your `~/.Rprofile`
 and use the information output by `nvimcom` to decide what parameter to
 change.
 
+Completion lists are built in parallel, using all but two of the cores
+reported by `parallel::detectCores()`. On systems where this number does not
+reflect the resources actually available to the process (for example, an HPC
+node managed by a job scheduler such as Slurm), you can cap the number of
+cores with the `nvimcom.max_cpu_cores` option in your ~/.Rprofile:
+>r
+   options(nvimcom.max_cpu_cores = 4)
+<
 It is possible to add a custom keymap through `objbr_mappings` table. The
 keymap defined in this table will be available in the object browser only.
 Using this method, you can set keymaps that run Lua functions or R code. The
