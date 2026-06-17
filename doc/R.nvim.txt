@@ -1351,20 +1351,18 @@ change.
 
 Completion lists are built in parallel, using all but two of the cores
 reported by `parallel::detectCores()`. On systems where this number does not
-reflect the resources actually available to the process (for example, an HPC
-node managed by a job scheduler such as Slurm), you can cap the number of
-cores with the `nvimcom.max_cpu_cores` option in your ~/.Rprofile:
+reflect the resources actually available to the process, like an HPC
+cluster where CPUs are allocated as portions of the total available on the hardware,
+you can cap the number of cores with the `nvimcom.max_cpu_cores` option in your ~/.Rprofile:
 >r
    options(nvimcom.max_cpu_cores = 4)
 
-In case you are using Slurm, you can set the option to the value of the
-environment variable `SLURM_CPUS_PER_TASK`:
->r
-   options(nvimcom.max_cpu_cores = as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK")))
+This value can come from environment variables. For example, on an HPC cluster using
+the Slurm scheduler, you can set the option to the value of the environment variable `SLURM_CPUS_PER_TASK` or, if it's not available (for example, you have not specified
+`cpus-per-task` for the job and only get the default number of CPUs), then fall back to 2:
 
-Note that `SLURM_CPUS_PER_TASK` is only set if you have requested more than
-one CPU core in your Slurm job script (e.g., with `#SBATCH
---cpus-per-task=4`).
+>r
+   options(nvimcom.max_cpu_cores = max(2, as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))))
 
 It is possible to add a custom keymap through `objbr_mappings` table. The
 keymap defined in this table will be available in the object browser only.
