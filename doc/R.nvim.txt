@@ -1338,8 +1338,8 @@ values:
         max_time = 100,
     },
 <
-You should increase the value of `max_list_len` if you want to be able to open in
-the Object Browser and do completion of list and S4 objects with more than
+You should increase the value of `max_list_len` if you want to be able to open
+in the Object Browser and do completion of list and S4 objects with more than
 10000 elements. You should increase the value of `max_depth` if you want to
 complete or see in the Object Browser more than 3 list levels. You should
 increase either `max_size` or `max_time` if `nvimcom` needs more space or more
@@ -1348,6 +1348,21 @@ decrease the values if you notice any delay when R is running commands. In
 this case, please, put `options(nvimcom.verbose = 1)` in your `~/.Rprofile`
 and use the information output by `nvimcom` to decide what parameter to
 change.
+
+Completion lists are built in parallel, using all but two of the cores
+reported by `parallel::detectCores()`. On systems where this number does not
+reflect the resources actually available to the process, like an HPC
+cluster where CPUs are allocated as portions of the total available on the hardware,
+you can cap the number of cores with the `nvimcom.max_cpu_cores` option in your ~/.Rprofile:
+>r
+   options(nvimcom.max_cpu_cores = 4)
+
+This value can come from environment variables. For example, on an HPC cluster using
+the Slurm scheduler, you can set the option to the value of the environment variable `SLURM_CPUS_PER_TASK` or, if it's not available (for example, you have not specified
+`cpus-per-task` for the job and only get the default number of CPUs), then fall back to 2:
+
+>r
+   options(nvimcom.max_cpu_cores = max(2, as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))))
 
 It is possible to add a custom keymap through `objbr_mappings` table. The
 keymap defined in this table will be available in the object browser only.

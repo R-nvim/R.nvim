@@ -690,7 +690,11 @@ nvim.build.cmplls <- function() {
         flush(stdout())
     }
 
-    num_cores <- max(c(parallel::detectCores() - 2, 1))
+    if (is.null(getOption("nvimcom.max_cpu_cores"))) {
+        num_cores <- max(c(parallel::detectCores() - 2, 1))
+    } else {
+        num_cores <- getOption("nvimcom.max_cpu_cores")
+    }
     invisible(parallel::mclapply(1:nrow(b), process_row, mc.cores = num_cores))
 
     return(invisible(0))
