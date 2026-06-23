@@ -93,7 +93,8 @@ A longer example adding some custom behaviour:
             rconsole_width = 78,
             objbr_mappings = { -- Object browser keymap
                 c = 'class', -- Call R functions
-                ['<localleader>gg'] = 'head({object}, n = 15)', -- Use {object} notation to write arbitrary R code.
+                -- Use {object} notation to write arbitrary R code.
+                ['<localleader>gg'] = 'head({object}, n = 15)',
                 v = function()
                     -- Run lua functions
                     require('r.browser').toggle_view()
@@ -218,9 +219,9 @@ firm commitment to backwards compatibility.
 - `R_source` and `after_R_start` have been replaced with more powerful `hook`
   options.
 
-- `nvimpager`, which controls how R documentation is displayed, now has possible
-  options `"split_h"`, `"split_v"`, `"tab"`, `"float"` (not implemented yet),
-  and `"no"`.
+- `nvimpager`, which controls how R documentation is displayed, now has
+  possible options `"split_h"`, `"split_v"`, `"tab"`, `"float"` (not
+  implemented yet), and `"no"`.
 
 - `open_pdf` replaces `openpdf` and `openhtml`; see the documentation for
   details.
@@ -314,7 +315,8 @@ firm commitment to backwards compatibility.
 
 - `R-language-server` sets options for R.nvim's built-in language server.
 
-- `max_paste_lines` sets the maximum number of lines to be pasted into R Console.
+- `max_paste_lines` sets the maximum number of lines to be pasted into R
+  Console.
 
 - `debug` enables support for debugging functions.
 
@@ -322,7 +324,8 @@ firm commitment to backwards compatibility.
 
 ## Screenshots and videos
 
-None yet! Please let us know if you publish a video presenting R.nvim features 😃
+None yet! Please let us know if you publish a video presenting R.nvim features
+😃
 
 ## Troubleshooting
 
@@ -332,7 +335,7 @@ None yet! Please let us know if you publish a video presenting R.nvim features �
   `colorout::isColorOut()` which in previous `colorout` versions was unduly
   enabling the output colorizing.
 
-## How R.nvim communicates with your R session
+## How R.nvim communicates with R
 
 The diagram below shows how the communication between Neovim and R works.
 ![Neovim-R communication](https://raw.githubusercontent.com/R-Nvim/R.nvim/main/nvimrcom.svg "Neovim-R communication")
@@ -356,8 +359,8 @@ server. When _nvimcom_ is loaded, it immediately starts a TCP client that
 connects to _rnvimserver_ (red arrows).
 
 Some commands that you trigger are not pasted into R Console and do not output
-anything in the R Console; their results are seen in the editor itself. These are
-the commands to do auto completion (of names of objects and function
+anything in the R Console; their results are seen in the editor itself. These
+are the commands to do auto completion (of names of objects and function
 arguments), start and manipulate the Object Browser (`\ro`, `\r=` and `\r-`),
 call R help (`\rh` or `:Rhelp`), insert the output of an R command
 (`:Rinsert`), and format selected text (`:Rformat`).
@@ -377,8 +380,8 @@ but temporary files are used in a few cases.
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's
   output.
 
-- [Ark](https://github.com/posit-dev/ark): a LSP server/DAP server/Jupyter kernel
-  for R.
+- [Ark](https://github.com/posit-dev/ark): a LSP server/DAP server/Jupyter
+  kernel for R.
 
 - [southernlights](https://github.com/jalvesaq/southernlights): a colourscheme
   for vim.
