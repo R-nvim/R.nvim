@@ -509,7 +509,7 @@ lists are built. To suppress these messages, add the following to your
 <
 
 ------------------------------------------------------------------------------
-4.4.1. Quarto YAML completion                          *R.nvim-quarto-completion*
+4.4.1. Quarto YAML completion                       *R.nvim-quarto-completion*
 
 R.nvim provides intelligent YAML completion for Quarto documents and project
 files through integration with the YAML Language Server (yamlls). This feature
@@ -562,8 +562,8 @@ Neovim applies the built-in `LspReferenceText`, `LspReferenceRead`, and
 `LspReferenceWrite` highlight groups. You can customise them in your
 `init.lua`. For example:
 >lua
-   vim.api.nvim_set_hl(0, "LspReferenceText",  { bg = "#3F5865", fg = "white" })
-   vim.api.nvim_set_hl(0, "LspReferenceRead",  { link = "LspReferenceText" })
+   vim.api.nvim_set_hl(0, "LspReferenceText", { bg = "#3F5865", fg = "white" })
+   vim.api.nvim_set_hl(0, "LspReferenceRead", { link = "LspReferenceText" })
    vim.api.nvim_set_hl(0, "LspReferenceWrite", { bg = "#3a5a7a", fg = "white" })
 <
 Whether highlights are triggered automatically on `CursorHold` or manually
@@ -678,8 +678,9 @@ following:
       in the R Console, run either `debug(funcname)` or `debugonce(funcname)`
       where `funcname` is the name of the function (not quoted). R.nvim will
       send this command to R Console if you press <LocalLeader>bg in Normal
-      mode with the cursor over the function name. Use `<LocalLeader>ud` with the cursor on a function to undebug it. An example of using
-      `browser` is shown later in the documentation.
+      mode with the cursor over the function name. Use `<LocalLeader>ud` with
+      the cursor on a function to undebug it. An example of using `browser` is
+      shown later in the documentation.
 
    3. Call the function.
 
@@ -992,7 +993,7 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |rmarkdown_args|      Further options to be passed to `rmarkdown::render()`
 |quarto_render_args|  Options to be passed to `quarto::quarto_render()`
 |quarto_preview_args| Options to be passed to `quarto::quarto_preview()`
-|chunk_hl|            How to highlight chunks in Quarto, Rmd, Rnoweb and Rtypst
+|chunk_hl|            Chunk highlighting in Quarto, Rmd, Rnoweb and Rtypst
 |clear_line|          Clear R Console line before sending a command
 |editing_mode|        The mode defined in your `~/.inputrc`
 |pdfviewer|           PDF application used to open PDF documents
@@ -1158,10 +1159,10 @@ options:
     7. alacritty
     8. xterm
 
-If the value of `external_term` is `"default"`, the plugin runs the first terminal
-emulator that it finds from the above list. If your favorite terminal emulator
-is not selected, you may define it in your config. Below are some examples of
-how to set the value of `external_term`:
+If the value of `external_term` is `"default"`, the plugin runs the first
+terminal emulator that it finds from the above list. If your favorite terminal
+emulator is not selected, you may define it in your config. Below are some
+examples of how to set the value of `external_term`:
 >lua
    external_term = "default" -- Run R in an external terminal
    external_term = "konsole" -- Run R in konsole
@@ -1201,7 +1202,8 @@ be used to run R in a split pane. Examples:
 Note: for `external_term = "kitty_split"`, Kitty must be ready to receive
 remote commands. Example:
 >sh
- kitty --instance-group "kitty_sock" -o allow_remote_control=yes --listen-on unix:/tmp/.kitty_sock
+ kitty --instance-group "kitty_sock" -o allow_remote_control=yes \
+       --listen-on unix:/tmp/.kitty_sock
 <
 You will also need the option `enabled_layouts splits` in your Kitty config.
 
@@ -1229,7 +1231,8 @@ If R cannot find either `make` or `gcc` while trying to compile nvimcom, you
 should add their directories to the beginning of the `PATH` environment
 variable in your |init.lua|. Example:
 >lua
-   vim.env.PATH = "C:\\rtools45\\mingw64\\bin;C:\\rtools45\\usr\\bin;" .. vim.env.PATH
+   vim.env.PATH = "C:\\rtools45\\mingw64\\bin;C:\\rtools45\\usr\\bin;" ..
+                  vim.env.PATH
 <
 The plugin sets `$HOME` as the Windows register value for "Personal" "Shell
 Folders" which is the same value set by R. However, if you have set `$HOME`
@@ -1258,15 +1261,15 @@ Valid values are "native" and "magrittr":
 <
 
 ------------------------------------------------------------------------------
-6.6. Object Browser and completion options                    *objbr_w*
-                                                              *objbr_h*
-                                                              *objbr_place*
-                                                              *objbr_opendf*
-                                                              *objbr_openlist*
-                                                              *objbr_allnames*
-                                                              *compl_data*
-                                                              *objbr_mappings*
-                                                              *objbr_placeholder*
+6.6. Object Browser and completion options                 *objbr_w*
+                                                           *objbr_h*
+                                                           *objbr_place*
+                                                           *objbr_opendf*
+                                                           *objbr_openlist*
+                                                           *objbr_allnames*
+                                                           *compl_data*
+                                                           *objbr_mappings*
+                                                           *objbr_placeholder*
 By default, the Object Browser will be created at the right of the script
 window, and with 40 columns. Valid values for the Object Browser placement are
 the combination of either "script" or "console" and "right", "left", "above",
@@ -1352,17 +1355,21 @@ change.
 Completion lists are built in parallel, using all but two of the cores
 reported by `parallel::detectCores()`. On systems where this number does not
 reflect the resources actually available to the process, like an HPC
-cluster where CPUs are allocated as portions of the total available on the hardware,
-you can cap the number of cores with the `nvimcom.max_cpu_cores` option in your ~/.Rprofile:
+cluster where CPUs are allocated as portions of the total available on the
+hardware, you can cap the number of cores with the `nvimcom.max_cpu_cores`
+option in your ~/.Rprofile:
 >r
    options(nvimcom.max_cpu_cores = 4)
 
-This value can come from environment variables. For example, on an HPC cluster using
-the Slurm scheduler, you can set the option to the value of the environment variable `SLURM_CPUS_PER_TASK` or, if it's not available (for example, you have not specified
-`cpus-per-task` for the job and only get the default number of CPUs), then fall back to 2:
+This value can come from environment variables. For example, on an HPC cluster
+using the Slurm scheduler, you can set the option to the value of the
+environment variable `SLURM_CPUS_PER_TASK` or, if it's not available (for
+example, you have not specified `cpus-per-task` for the job and only get the
+default number of CPUs), then fall back to 2:
 
 >r
-   options(nvimcom.max_cpu_cores = max(2, as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))))
+   options(nvimcom.max_cpu_cores =
+           max(2, as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))))
 
 It is possible to add a custom keymap through `objbr_mappings` table. The
 keymap defined in this table will be available in the object browser only.
@@ -1417,18 +1424,19 @@ browser. Here you should define `objbr_placeholder` in your `config` table.
       },
       objbr_placeholder = '@@'
 <
-One might need to use special keys (e.g., <localleader>, <CR>, etc) when defining a
-keymap. Lua allows the use *bracket notation* to use non-alphanumeric
-characters in table keys.
+One might need to use special keys (e.g., <localleader>, <CR>, etc) when
+defining a keymap. Lua allows the use *bracket notation* to use
+non-alphanumeric characters in table keys.
 >lua
       objbr_mappings = {
         ['<localleader>gg'] = 'head({object}, 30)',
       },
 <
-You can also bind keys to Lua functions. For example, the following example binds
-`e` to an anonymous function that fetches the definition of an R function
-under the cursor and opens it in a new vim buffer. The code also binds `v` in the
-object browser to toggle between the two view (i.e., `.Globalenv` and `Libraries`).
+You can also bind keys to Lua functions. For example, the following example
+binds `e` to an anonymous function that fetches the definition of an R
+function under the cursor and opens it in a new vim buffer. The code also
+binds `v` in the object browser to toggle between the two view (i.e.,
+`.Globalenv` and `Libraries`).
 >lua
       objbr_mappings = {
         ['<localleader>gg'] = 'head',
@@ -1443,10 +1451,12 @@ object browser to toggle between the two view (i.e., `.Globalenv` and `Libraries
             return
           end
 
-          local temp_file = config.tmpdir .. '/function_def_' .. vim.env.RNVIM_ID .. '.R'
+          local temp_file = config.tmpdir .. '/function_def_' ..
+                            vim.env.RNVIM_ID .. '.R'
 
           -- Send R command to write the function definition to a temp file
-          local cmd = string.format('writeLines(deparse(%s), "%s")', object_name, temp_file)
+          local cmd = string.format('writeLines(deparse(%s), "%s")',
+                                    object_name, temp_file)
           require('r.send').cmd(cmd)
 
           -- Wait for R to execute the command and write the file
@@ -1518,7 +1528,8 @@ path to R in your config as in the examples:
    R_path = "/path/to/my/preferred/R/version/bin"
    R_path = "C:\\Program Files\\R\\R-4.3.3\\bin\\x64"
 <
-On Windows, Neovim will try to find the R install path in the Windows Registry.
+On Windows, Neovim will try to find the R install path in the Windows
+Registry.
 
 The `R_path` variable can also be prefixed to the `PATH` environment variable.
 So, it can include more than one directory separated by a `;` on Windows or a
@@ -1529,7 +1540,7 @@ RTools `bin` directories on Windows. Example:
 <
 By default `R_cmd` is `"R"` (the same as `R_app`) and will be used to run some
 scripts in the background, such as:
->
+>sh
    R CMD build nvimcom
    R CMD install nvimcom
    R CMD BATCH current_script.R
@@ -1603,7 +1614,7 @@ features in your R.nvim config. Below are the default values:
     signature = true,           -- enable the signature help provider
     implementation = true,      -- enable the implementation provider
     definition = true,          -- enable the definition provider
-    use_git_files = true,       -- use git to find R files, skipping gitignored files
+    use_git_files = true,       -- use git to find R files
     references = true,          -- enable the references provider
     document_highlight = true,  -- enable the document highlight provider
     document_symbol = true,     -- enable the document symbol provider
@@ -1783,8 +1794,8 @@ you should put in your config:
 >lua
    R_prompt_str = "»"
 <
-Similarly, if the `continue` option in your `~/.Rprofile` has ANSI scape codes,
-you should set the value of `R_continue_str`. Example:
+Similarly, if the `continue` option in your `~/.Rprofile` has ANSI scape
+codes, you should set the value of `R_continue_str`. Example:
 >lua
    R_continue_str = "…"
 <
@@ -1963,7 +1974,7 @@ Console with the option `max_paste_lines` (default value = 20).
 
 To produce a PDF document from the .tex file generated by either `Sweave()` or
 `knit()` command, R.nvim calls:
->
+>sh
    latexmk -pdf -pdflatex="xelatex %O -file-line-error -interaction=nonstopmode -synctex=1 %S"
 <
 If `xelatex` is not installed, it will be replaced with `pdflatex` in the
@@ -2397,8 +2408,8 @@ The substring `%s` is replaced by the name of the object under the cursor, and
 The data will be displayed in a new tab. Change the value of `how` to "split"
 or "vsplit" to display the data in a split window.
 
-If the default field delimiter (`\t`) causes problems in your case, you can change it
-in your config. Valid values are `"\t"`, `";"` and `","`. Example:
+If the default field delimiter (`\t`) causes problems in your case, you can
+change it in your config. Valid values are `"\t"`, `";"` and `","`. Example:
 >lua
    csv_sep = ","
 <
@@ -2542,8 +2553,8 @@ Current available functions are:
 >lua
   path_split_fun   = { "here::here", "here", "file.path", "fs::path", "path" }
 
-If the target string is detected as a URL, it will be split using the '/' character.
-will be handled using the `paste0()` function.
+If the target string is detected as a URL, it will be split using the '/'
+character. will be handled using the `paste0()` function.
 
 
 ------------------------------------------------------------------------------
@@ -2583,14 +2594,14 @@ not want this, put in your config:
    debug_jump = false
 <
 The highlighted debugged line incrementally moves down the buffer with code
-execution and, with long scripts, it may stay at the bottom of the window as you
-debug. You can hold the highlighted line in the middle of the window with
+execution and, with long scripts, it may stay at the bottom of the window as
+you debug. You can hold the highlighted line in the middle of the window with
 >lua
     debug_center = true
 <
 
 ------------------------------------------------------------------------------
-6.43. Code chunk languages                                         *chunk_langs*
+6.43. Code chunk languages                                       *chunk_langs*
 
 By default, R.nvim supports sending R, Python, Bash, and SQL code chunks
 from Quarto and R Markdown documents to R. You can add support for
@@ -2663,7 +2674,7 @@ The Lua internals for R.nvim should be considered generally unstable and
 subject to change without notice. There are some exceptions to this rule,
 which are declared stable for the benefit of users:
 
-r.run.action(rcmd, mode, args)                                 *r.run.action()*
+r.run.action(rcmd, mode, args)                                *r.run.action()*
     Calls an R function on the word currently under the cursor
 
     Parameters: ~
@@ -2671,7 +2682,7 @@ r.run.action(rcmd, mode, args)                                 *r.run.action()*
         {mode} (string)     The current mode (`"n"` or `"v"`)
         {args} (string)     Extra arguments to pass to `rcmd`
 
-r.send.cmd(command)                                              *r.send.cmd()*
+r.send.cmd(command)                                             *r.send.cmd()*
     Calls an R function on the word currently under the cursor
 
     Parameters: ~
@@ -2790,5 +2801,3 @@ See: https://www.vim.org/scripts/script.php?script_id=2628
 
 
 vim:tw=78:ts=8:ft=help:norl
-
-
