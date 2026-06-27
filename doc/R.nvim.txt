@@ -976,7 +976,6 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |rconsole_height|     Number of lines of R Console
 |rconsole_width|      Number of columns of R Console
 |rconsole_pos|        Position of the R Console relative to the editor window
-|register_treesitter| Register treesitter parsers for quarto and rmd files
 |min_editor_width|    Minimum number of columns of editor after R start
 |RStudio_cmd|         Run RStudio instead of R.
 |listmethods|         Do `nvim.list.args()` instead of `args()`
@@ -1002,6 +1001,7 @@ You may close the window opened by `:RConfigShow` by simply pressing `q`.
 |open_html|           Open HTML after processing Rmd or Quarto
 |insert_mode_cmds|    Allow R commands in insert mode
 |rmhidden|            Remove hidden objects from R workspace
+|register_treesitter| Register treesitter parsers for quarto and rmd files
 |set_params|          Control setting `params` in `.GlobalEnv`
 |wait|                Time to wait for nvimcom loading
 |wait_reply|          Time to wait for R reply
@@ -1843,6 +1843,7 @@ file (~/.tmux.conf).
 ------------------------------------------------------------------------------
 6.14. Control of R window                                   *rconsole_height*
                                                             *rconsole_width*
+                                                            *rconsole_pos*
                                                             *min_editor_width*
 
 When starting R, Neovim's buffer is split vertically if its width is larger
@@ -1868,7 +1869,6 @@ For a horizontal split, you can set the number of lines of the R window:
 >lua
    rconsole_height = 15
 <
-
 By default, in a vertical split, the R Console opens on the right of the
 editor window; in a horizontal split, it opens below the editor window. You
 can set the value of `rconsole_pos` to get the R Console in a different
