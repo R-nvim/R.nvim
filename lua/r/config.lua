@@ -1289,10 +1289,13 @@ M.real_setup = function()
 
     require("r.rproj").apply_settings(config)
 
-    local rnc = vim.api.nvim_buf_get_name(0):match("(.*/).*") .. "rnvim_config.lua"
-    if vim.uv.fs_access(rnc, "R") then
-        local opts = dofile(rnc)
-        apply_user_opts(opts)
+    local bufname = vim.api.nvim_buf_get_name(0)
+    if bufname ~= "" then
+        local rnc = vim.fs.joinpath(vim.fs.dirname(bufname), "rnvim_config.lua")
+        if vim.uv.fs_access(rnc, "R") then
+            local opts = dofile(rnc)
+            apply_user_opts(opts)
+        end
     end
 
     local no_ts = { "rhelp" }
