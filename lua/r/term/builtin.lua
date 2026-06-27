@@ -72,22 +72,24 @@ local split_window = function()
     local nw = vim.o.number and vim.o.numberwidth or 0
     local sw = config.rconsole_width + config.min_editor_width + 1 + nw
     if config.rconsole_width > 0 and vim.fn.winwidth(0) > sw then
+        local pos = config.rconsole_pos:find("left") and "aboveleft" or "belowright"
         if
             config.rconsole_width > 16
             and config.rconsole_width < (vim.fn.winwidth(0) - 17)
         then
-            vim.cmd("silent exe 'belowright " .. config.rconsole_width .. "vnew'")
+            vim.cmd("silent exe '" .. pos .. " " .. config.rconsole_width .. "vnew'")
         else
-            vim.cmd("silent belowright vnew")
+            vim.cmd("silent " .. pos .. " vnew")
         end
     else
+        local pos = config.rconsole_pos:find("above") and "aboveleft" or "belowright"
         if
             config.rconsole_height > 0
             and config.rconsole_height < (vim.fn.winheight(0) - 1)
         then
-            vim.cmd("silent exe 'belowright " .. config.rconsole_height .. "new'")
+            vim.cmd("silent exe '" .. pos .. " " .. config.rconsole_height .. "new'")
         else
-            vim.cmd("silent belowright new")
+            vim.cmd("silent " .. pos .. " new")
         end
     end
 end

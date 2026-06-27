@@ -219,6 +219,11 @@ firm commitment to backwards compatibility.
 - `R_source` and `after_R_start` have been replaced with more powerful `hook`
   options.
 
+- When running R in the Neovim built-in terminal or in a WezTerm split pane,
+  the `R.nvim` config option `rconsole_pos` should be used to define the
+  position of the R Console. The Vim options 'splitright' and 'splitbelow' are
+  ignored.
+
 - `nvimpager`, which controls how R documentation is displayed, now has
   possible options `"split_h"`, `"split_v"`, `"tab"`, `"float"` (not
   implemented yet), and `"no"`.

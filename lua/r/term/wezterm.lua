@@ -27,15 +27,15 @@ M.start = function()
         }
     else
         ed_pane = vim.env.WEZTERM_PANE
-        local location = "--right"
+        local location = config.rconsole_pos:find("left") and "--left" or "--right"
         local nw = vim.o.number and vim.o.numberwidth or 0
         local swd = config.rconsole_width + config.min_editor_width + 1 + nw
         if config.rconsole_width == 0 or (vim.fn.winwidth(0) < swd) then
-            location = "--bottom"
+            location = config.rconsole_pos:find("above") and "--top" or "--bottom"
         end
 
         local prcnt
-        if location == "--right" then
+        if location == "--right" or location == "--left" then
             prcnt = vim.fn.round(100 * config.rconsole_width / vim.fn.winwidth(0))
         else
             prcnt = vim.fn.round(100 * config.rconsole_height / vim.fn.winheight(0))

@@ -348,6 +348,9 @@ local hooks = require("r.hooks")
 ---Do `:help rconsole_width` for more information.
 ---@field rconsole_width? integer
 ---
+--- Position of the R Console relative to the editor window.
+---@field rconsole_pos? '"below,right"' | '"below,left"' | "above,right" | '"above,left"'
+---
 ---Whether to register the Markdown parser for Quarto and RMarkdown documents;
 ---defaults to `true`. Do `:help register_treesitter` for more information.
 ---@field register_treesitter? boolean
@@ -576,6 +579,7 @@ local config = {
     roxygen_hl = false,
     rconsole_height = 15,
     rconsole_width = 80,
+    rconsole_pos = "below,right",
     register_treesitter = true,
     remote_compl_dir = "",
     remote_R_host = "",
