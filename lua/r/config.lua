@@ -1,5 +1,6 @@
 local utils = require("r.utils")
 local uv = vim.uv
+local fs = vim.fs
 local hooks = require("r.hooks")
 
 ---@class RLSConfigOpts
@@ -839,14 +840,15 @@ local set_directories = function()
     -- config.rnvim_home should be the directory where the plugin files are.
     local rndir = debug.getinfo(1, "S").source
     rndir = rndir:match("^@(.*)/lua/r/.*")
-    config.rnvim_home = rndir
+    config.rnvim_home = fs.normalize(rndir)
 
     -- config.uservimfiles must be a writable directory. It will be config.rnvim_home
     -- unless it's not writable. Then it wil be ~/.vim or ~/vimfiles.
     if vim.fn.filewritable(config.rnvim_home) == 2 then
         config.uservimfiles = config.rnvim_home
     else
-        config.uservimfiles = vim.split(vim.fn.expand("&runtimepath"), ",")[1]
+        config.uservimfiles =
+            fs.normalize(vim.split(vim.fn.expand("&runtimepath"), ",")[1])
     end
 
     -- Windows logins can include domain, e.g: 'DOMAIN\Username', need to remove
@@ -881,64 +883,61 @@ local set_directories = function()
         swarn("Could not determine user name.")
     end
 
-    if config.is_windows then
-        config.rnvim_home = utils.normalize_windows_path(config.rnvim_home)
-        config.uservimfiles = utils.normalize_windows_path(config.uservimfiles)
-    end
     vim.env.RNVIM_HOME = rndir
 
     if config.compldir ~= "" then
-        config.compldir = vim.fn.expand(config.compldir)
+        config.compldir = fs.normalize(config.compldir)
     elseif config.is_windows and vim.env.APPDATA then
-        config.compldir = vim.fn.expand(vim.env.APPDATA) .. "\\R.nvim"
+        config.compldir = fs.joinpath(vim.env.APPDATA, "R.nvim")
     elseif vim.env.XDG_CACHE_HOME then
-        config.compldir = vim.fn.expand(vim.env.XDG_CACHE_HOME) .. "/R.nvim"
-    elseif vim.fn.isdirectory(vim.fn.expand("~/.cache")) ~= 0 then
-        config.compldir = vim.fn.expand("~/.cache/R.nvim")
-    elseif vim.fn.isdirectory(vim.fn.expand("~/Library/Caches")) ~= 0 then
-        config.compldir = vim.fn.expand("~/Library/Caches/R.nvim")
+        config.compldir = fs.joinpath(fs.normalize(vim.env.XDG_CACHE_HOME), "R.nvim")
+    elseif vim.fn.isdirectory(fs.normalize("~/.cache")) ~= 0 then
+        config.compldir = fs.normalize("~/.cache/R.nvim")
+    elseif vim.fn.isdirectory(fs.normalize("~/Library/Caches")) ~= 0 then
+        config.compldir = fs.normalize("~/Library/Caches/R.nvim")
     else
-        config.compldir = config.uservimfiles .. "/R_cache/"
+        config.compldir = fs.joinpath(config.uservimfiles, "R_cache")
     end
 
     utils.ensure_directory_exists(config.compldir)
 
     -- Check if the 'config' table has the key 'tmpdir'
     if not config.tmpdir ~= "" then
+        local suffix = "R.nvim-" .. config.user_login
+        local base
         -- Set temporary directory based on the platform
         if config.is_windows then
             if vim.env.TMP and vim.fn.isdirectory(vim.env.TMP) ~= 0 then
-                config.tmpdir = vim.env.TMP .. "/R.nvim-" .. config.user_login
+                base = fs.normalize(vim.env.TMP)
             elseif vim.env.TEMP and vim.fn.isdirectory(vim.env.TEMP) ~= 0 then
-                config.tmpdir = vim.env.TEMP .. "/R.nvim-" .. config.user_login
+                base = fs.normalize(vim.env.TEMP)
             else
-                config.tmpdir = config.uservimfiles .. "/R_tmp"
+                base = config.uservimfiles
+                suffix = "R_tmp"
             end
-            config.tmpdir = utils.normalize_windows_path(config.tmpdir)
         else
             if vim.env.TMPDIR and vim.fn.isdirectory(vim.env.TMPDIR) ~= 0 then
-                if string.find(vim.env.TMPDIR, "/$") then
-                    config.tmpdir = vim.env.TMPDIR .. "R.nvim-" .. config.user_login
-                else
-                    config.tmpdir = vim.env.TMPDIR .. "/R.nvim-" .. config.user_login
-                end
+                base = fs.normalize(vim.env.TMPDIR)
             elseif vim.fn.isdirectory("/dev/shm") ~= 0 then
-                config.tmpdir = "/dev/shm/R.nvim-" .. config.user_login
+                base = "/dev/shm"
             elseif vim.fn.isdirectory("/tmp") ~= 0 then
-                config.tmpdir = "/tmp/R.nvim-" .. config.user_login
+                base = "/tmp"
             else
-                config.tmpdir = config.uservimfiles .. "/R_tmp"
+                base = config.uservimfiles
+                suffix = "R_tmp"
             end
         end
+
+        config.tmpdir = fs.joinpath(base, suffix)
     end
 
     -- Adjust options when accessing R remotely
     if config.remote_R_host ~= "" then
-        config.tmpdir = config.compldir .. "/remote/tmp"
+        config.tmpdir = fs.joinpath(config.compldir, "remote/tmp")
         if config.remote_compl_dir == "" then
             config.remote_compl_dir = config.compldir
         end
-        config.remote_tmpdir = config.remote_compl_dir .. "/tmp"
+        config.remote_tmpdir = fs.joinpath(config.remote_compl_dir, "tmp")
     end
 
     utils.ensure_directory_exists(config.tmpdir)
@@ -947,7 +946,7 @@ local set_directories = function()
     vim.env.RNVIM_COMPLDIR = config.compldir
 
     -- Make the file name of files to be sourced
-    config.source_file = config.tmpdir .. "/Rsource-" .. vim.fn.getpid()
+    config.source_file = fs.joinpath(config.tmpdir, "Rsource-" .. vim.fn.getpid())
 end
 
 local check_readme = function()
@@ -1016,13 +1015,15 @@ local check_readme = function()
             "  - Line breaks are indicated by \\x14.",
         }
 
-        vim.fn.writefile(readme, config.compldir .. "/README")
+        vim.fn.writefile(readme, fs.joinpath(config.compldir, "README"))
     end
 end
 
 local do_common_global = function()
     config.uname = uv.os_uname().sysname
-    config.is_windows = config.uname:find("Windows", 1, true) ~= nil
+    config.is_windows = not not (
+        config.uname:lower():find("windows") or config.uname:lower():find("mingw")
+    ) -- in line with `vim.fs`
     if config.r_ls.doc_width == 0 then
         local dw = vim.o.columns / 2 - 4
         if dw < 30 then dw = 30 end
@@ -1126,17 +1127,19 @@ end
 --- Install the "rout" parser, required to properly highlight R output in
 --- hover and resolve windows from the language server
 local check_rout_parser = function()
-    local routp = config.rnvim_home .. "/parser/rout.so"
-    local mt1 = mtime(config.rnvim_home .. "/resources/tree-sitter-rout/grammar.js")
+    local routp = fs.joinpath(config.rnvim_home, "parser/rout.so")
+    local mt1 =
+        mtime(fs.joinpath(config.rnvim_home, "resources/tree-sitter-rout/grammar.js"))
     local mt2 = mtime(routp)
     if mt1 and mt2 and mt2 > mt1 then return end
     if vim.fn.executable("tree-sitter") == 0 then return end
 
-    local _, err = vim.uv.fs_mkdir(config.rnvim_home .. "/parser", tonumber("755", 8))
+    local _, err =
+        vim.uv.fs_mkdir(fs.joinpath(config.rnvim_home, "parser"), tonumber("755", 8))
     if err and not err:find("EEXIST") then return end
 
     local cwdir = vim.uv.cwd()
-    vim.uv.chdir(config.rnvim_home .. "/resources/tree-sitter-rout")
+    vim.uv.chdir(fs.joinpath(config.rnvim_home, "resources/tree-sitter-rout"))
     -- from nvim-treesitter
     local obj = vim.system({ "tree-sitter", "generate" }, { text = true }):wait(3000)
     if obj.code ~= 0 then
@@ -1295,7 +1298,7 @@ M.real_setup = function()
 
     local bufname = vim.api.nvim_buf_get_name(0)
     if bufname ~= "" then
-        local rnc = vim.fs.joinpath(vim.fs.dirname(bufname), "rnvim_config.lua")
+        local rnc = fs.joinpath(fs.dirname(bufname), "rnvim_config.lua")
         if vim.uv.fs_access(rnc, "R") then
             local opts = dofile(rnc)
             apply_user_opts(opts)
@@ -1356,17 +1359,14 @@ M.check_health = function()
 
     -- Check if treesitter is available
     local function has_parser(parser_name, parsers)
-        local path = "parser" .. (config.is_windows and "\\" or "/") .. parser_name .. "."
+        local path = "parser/" .. parser_name .. "."
         for _, v in pairs(parsers) do
             if v:find(path, 1, true) then return true end
         end
         return false
     end
 
-    local parsers = vim.api.nvim_get_runtime_file(
-        "parser" .. (config.is_windows and "\\" or "/") .. "*.*",
-        true
-    )
+    local parsers = vim.api.nvim_get_runtime_file("parser/*", true) -- uses and returns forward-slashed paths despite the platform
 
     local needed = { "r" }
     if vim.tbl_contains({ "rmd", "quarto", "rnoweb", "typst" }, vim.bo.filetype) then
