@@ -1115,11 +1115,11 @@ local do_common_global = function()
 end
 
 local mtime = function(fname)
-    local fd = vim.uv.fs_open(fname, "r", tonumber("644", 8))
+    local fd = uv.fs_open(fname, "r", tonumber("644", 8))
     local mt
     if fd then
-        mt = vim.uv.fs_fstat(fd).mtime.sec
-        vim.uv.fs_close(fd)
+        mt = uv.fs_fstat(fd).mtime.sec
+        uv.fs_close(fd)
     end
     return mt
 end
@@ -1135,11 +1135,11 @@ local check_rout_parser = function()
     if vim.fn.executable("tree-sitter") == 0 then return end
 
     local _, err =
-        vim.uv.fs_mkdir(fs.joinpath(config.rnvim_home, "parser"), tonumber("755", 8))
+        uv.fs_mkdir(fs.joinpath(config.rnvim_home, "parser"), tonumber("755", 8))
     if err and not err:find("EEXIST") then return end
 
-    local cwdir = vim.uv.cwd()
-    vim.uv.chdir(fs.joinpath(config.rnvim_home, "resources/tree-sitter-rout"))
+    local cwdir = uv.cwd()
+    uv.chdir(fs.joinpath(config.rnvim_home, "resources/tree-sitter-rout"))
     -- from nvim-treesitter
     local obj = vim.system({ "tree-sitter", "generate" }, { text = true }):wait(3000)
     if obj.code ~= 0 then
@@ -1151,7 +1151,7 @@ local check_rout_parser = function()
         swarn("Error building tree-sitter parser for `rout`: " .. obj.stderr)
         return
     end
-    if cwdir then vim.uv.chdir(cwdir) end
+    if cwdir then uv.chdir(cwdir) end
 end
 
 local global_setup = function()
@@ -1299,7 +1299,7 @@ M.real_setup = function()
     local bufname = vim.api.nvim_buf_get_name(0)
     if bufname ~= "" then
         local rnc = fs.joinpath(fs.dirname(bufname), "rnvim_config.lua")
-        if vim.uv.fs_access(rnc, "R") then
+        if uv.fs_access(rnc, "R") then
             local opts = dofile(rnc)
             apply_user_opts(opts)
         end
