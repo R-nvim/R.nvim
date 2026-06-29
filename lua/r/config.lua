@@ -965,7 +965,7 @@ local check_readme = function()
         local l = vim.fn.split(vim.fn.glob(config.compldir .. "/*"), "\n")
         if #l > 0 then
             for _, f in ipairs(l) do
-                vim.fn.delete(f)
+                vim.fs.rm(f, { force = true })
             end
         end
 

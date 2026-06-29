@@ -134,7 +134,7 @@ M.vim_leave = function()
     end
 
     for _, fn in pairs(del_list) do
-        vim.fn.delete(fn)
+        vim.fs.rm(fn, { force = true })
     end
 
     if config.remote_R_host == "" then
@@ -501,7 +501,7 @@ M.open_example = function()
     vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local" })
     vim.api.nvim_set_option_value("swapfile", false, { scope = "local" })
     vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local" })
-    vim.fn.delete(config.tmpdir .. "/example.R")
+    vim.fs.rm(vim.fs.joinpath(config.tmpdir, "example.R"), { force = true })
 end
 
 return M

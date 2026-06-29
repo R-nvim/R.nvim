@@ -412,7 +412,7 @@ M.source_file = function()
         edit.add_for_deletion(fpath)
         local sargs = M.get_source_args()
         local ok = M.cmd('nvimcom:::source.and.clean("' .. fpath .. '"' .. sargs .. ")")
-        if not ok then vim.fn.delete(fpath) end
+        if not ok then vim.fs.rm(fpath, { force = true }) end
         return
     end
 

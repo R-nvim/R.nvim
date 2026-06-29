@@ -461,7 +461,7 @@ M.show_bol_error = function(stt)
         end
         edit.add_to_debug_info("Error running R code", errmsg)
         warn("Error building objls_ file. Run :RDebugInfo for details.")
-        vim.fn.delete(config.tmpdir .. "/run_R_stderr")
+        vim.fs.rm(config.tmpdir .. "/run_R_stderr", { force = true })
     else
         warn(config.tmpdir .. "/run_R_stderr not found")
     end

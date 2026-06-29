@@ -340,8 +340,14 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
 end
 
 M.clear_R_info = function()
-    vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.RNVIM_ID))
-    vim.fn.delete(config.tmpdir .. "/liblist_" .. vim.fn.string(vim.env.RNVIM_ID))
+    vim.fs.rm(
+        vim.fs.joinpath(config.tmpdir, "globenv_" .. vim.fn.string(vim.env.RNVIM_ID)),
+        { force = true }
+    )
+    vim.fs.rm(
+        vim.fs.joinpath(config.tmpdir, "liblist_" .. vim.fn.string(vim.env.RNVIM_ID)),
+        { force = true }
+    )
     R_pid = 0
     if config.external_term == "" then require("r.term.builtin").close_term() end
     if vim.g.R_Nvim_status > 3 then
