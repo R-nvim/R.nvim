@@ -448,7 +448,7 @@ M.view_df = function(oname, txt)
     if config.view_df.save_fun and config.view_df.save_fun ~= "" then
         tsvnm = txt
     else
-        tsvnm = config.tmpdir .. "/" .. oname .. ".tsv"
+        tsvnm = vim.fs.joinpath(config.tmpdir, oname .. ".tsv")
         vim.fn.writefile(csv_lines, tsvnm)
     end
     M.add_for_deletion(tsvnm)
@@ -480,21 +480,28 @@ end
 M.open_example = function()
     local bl = vim.api.nvim_list_bufs()
     for _, v in pairs(bl) do
-        if vim.api.nvim_buf_get_name(v) == config.tmpdir .. "/example.R" then
+        if
+            vim.fs.normalize(vim.api.nvim_buf_get_name(v))
+            == vim.fs.joinpath(config.tmpdir, "example.R")
+        then
             vim.cmd("bunload! " .. tostring(v))
             break
         end
     end
 
     if config.nvimpager == "tabnew" or config.nvimpager == "tab" then
-        vim.cmd("tabnew " .. config.tmpdir:gsub(" ", "\\ ") .. "/example.R")
+        vim.cmd("tabnew " .. vim.fs.joinpath(config.tmpdir:gsub(" ", "\\ "), "example.R"))
     else
         if config.nvimpager == "split_v" then
             vim.cmd(
-                "belowright vsplit " .. config.tmpdir:gsub(" ", "\\ ") .. "/example.R"
+                "belowright vsplit "
+                    .. vim.fs.joinpath(config.tmpdir:gsub(" ", "\\ "), "example.R")
             )
         else
-            vim.cmd("belowright split " .. config.tmpdir:gsub(" ", "\\ ") .. "/example.R")
+            vim.cmd(
+                "belowright split "
+                    .. vim.fs.joinpath(config.tmpdir:gsub(" ", "\\ "), "example.R")
+            )
         end
     end
     vim.api.nvim_buf_set_keymap(0, "n", "q", ":q<CR>", { noremap = true, silent = true })
