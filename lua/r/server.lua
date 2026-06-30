@@ -150,8 +150,8 @@ local start_rnvimserver = function()
 
     if config.is_windows then require("r.windows").unset_R_home() end
 
-    edit.add_for_deletion(config.tmpdir .. "/run_R_stdout")
-    edit.add_for_deletion(config.tmpdir .. "/run_R_stderr")
+    edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "run_R_stdout"))
+    edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "run_R_stderr"))
 
     vim.api.nvim_create_user_command("RGetNRSInfo", require("r.server").echo_rns_info, {})
 end
