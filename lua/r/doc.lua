@@ -189,7 +189,7 @@ end
 M.load_html = function(fullpath, browser)
     if config.open_html == "no" then return end
 
-    local fname = fullpath:gsub(".*/", "")
+    local fname = vim.fs.basename(fullpath)
     if job.is_running(fullpath) then
         if config.open_html:find("focus") then
             utils.focus_window(fname, job.get_pid(fullpath))
