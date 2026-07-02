@@ -695,6 +695,11 @@ nvim.build.cmplls <- function() {
     } else {
         num_cores <- getOption("nvimcom.max_cpu_cores")
     }
+
+    if (.Platform$OS.type == "windows") {
+        num_cores <- 1
+    }
+
     invisible(parallel::mclapply(1:nrow(b), process_row, mc.cores = num_cores))
 
     return(invisible(0))
