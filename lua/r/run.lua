@@ -2,7 +2,6 @@ local M = {}
 local config = require("r.config").get_config()
 local edit = require("r.edit")
 local warn = require("r.log").warn
-local utils = require("r.utils")
 local send = require("r.send")
 local cursor = require("r.cursor")
 local hooks = require("r.hooks")
@@ -22,7 +21,7 @@ local get_R_start_dir = function()
         rsd = M.get_buf_dir()
     elseif config.setwd == "nvim" then
         rsd = uv.cwd()
-        if rsd and config.is_windows then rsd = rsd:gsub("\\", "/") end
+        if rsd then rsd = vim.fs.normalize(rsd) end
     end
     return rsd
 end
@@ -41,16 +40,16 @@ start_R2 = function()
         end)
     end
 
-    vim.fn.writefile({}, config.tmpdir .. "/globenv_" .. vim.env.RNVIM_ID)
-    vim.fn.writefile({}, config.tmpdir .. "/liblist_" .. vim.env.RNVIM_ID)
+    vim.fn.writefile({}, vim.fs.joinpath(config.tmpdir, "globenv_" .. vim.env.RNVIM_ID))
+    vim.fn.writefile({}, vim.fs.joinpath(config.tmpdir, "liblist_" .. vim.env.RNVIM_ID))
 
-    edit.add_for_deletion(config.tmpdir .. "/globenv_" .. vim.env.RNVIM_ID)
-    edit.add_for_deletion(config.tmpdir .. "/liblist_" .. vim.env.RNVIM_ID)
+    edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "globenv_" .. vim.env.RNVIM_ID))
+    edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "liblist_" .. vim.env.RNVIM_ID))
 
     if vim.o.encoding == "utf-8" then
-        edit.add_for_deletion(config.tmpdir .. "/start_options_utf8.R")
+        edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "start_options_utf8.R"))
     else
-        edit.add_for_deletion(config.tmpdir .. "/start_options.R")
+        edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "start_options.R"))
     end
 
     -- Required to make R load nvimcom without the need for the user to include
@@ -134,9 +133,12 @@ start_R2 = function()
     )
 
     if vim.o.encoding == "utf-8" then
-        vim.fn.writefile(start_options, config.tmpdir .. "/start_options_utf8.R")
+        vim.fn.writefile(
+            start_options,
+            vim.fs.joinpath(config.tmpdir, "start_options_utf8.R")
+        )
     else
-        vim.fn.writefile(start_options, config.tmpdir .. "/start_options.R")
+        vim.fn.writefile(start_options, vim.fs.joinpath(config.tmpdir, "start_options.R"))
     end
 
     if config.RStudio_cmd ~= "" then
@@ -265,7 +267,7 @@ end
 
 M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
     local r_home_description =
-        vim.fn.readfile(config.rnvim_home .. "/nvimcom/DESCRIPTION")
+        vim.fn.readfile(vim.fs.joinpath(config.rnvim_home, "nvimcom/DESCRIPTION"))
     local current
     for _, v in pairs(r_home_description) do
         if v:find("Version: ") then current = v:sub(10) end
@@ -340,8 +342,14 @@ M.set_nvimcom_info = function(nvimcomversion, rpid, wid, r_info)
 end
 
 M.clear_R_info = function()
-    vim.fn.delete(config.tmpdir .. "/globenv_" .. vim.fn.string(vim.env.RNVIM_ID))
-    vim.fn.delete(config.tmpdir .. "/liblist_" .. vim.fn.string(vim.env.RNVIM_ID))
+    vim.fs.rm(
+        vim.fs.joinpath(config.tmpdir, "globenv_" .. vim.fn.string(vim.env.RNVIM_ID)),
+        { force = true }
+    )
+    vim.fs.rm(
+        vim.fs.joinpath(config.tmpdir, "liblist_" .. vim.fn.string(vim.env.RNVIM_ID)),
+        { force = true }
+    )
     R_pid = 0
     if config.external_term == "" then require("r.term.builtin").close_term() end
     if vim.g.R_Nvim_status > 3 then
@@ -675,16 +683,14 @@ M.clear_all = function()
 end
 
 M.get_buf_dir = function()
-    local rwd = vim.api.nvim_buf_get_name(0)
-    if config.is_windows then rwd = utils.normalize_windows_path(rwd) end
-    rwd = rwd:gsub("(.*)/.*", "%1")
-    return rwd
+    local rwd = vim.fs.normalize(vim.api.nvim_buf_get_name(0))
+    return vim.fs.dirname(rwd)
 end
 
 ---Send to R the command to source all files in a directory
 ---@param dir string
 M.source_dir = function(dir)
-    if config.is_windows then dir = utils.normalize_windows_path(dir) end
+    dir = vim.fs.normalize(dir)
     if dir == "" then
         send.cmd("nvim.srcdir()")
     else

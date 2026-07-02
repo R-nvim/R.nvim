@@ -102,7 +102,7 @@ end
 local start_rnvimserver = function()
     if vim.g.R_Nvim_status > 1 then return end
 
-    local rns_dir = config.rnvim_home .. "/rnvimserver"
+    local rns_dir = vim.fs.joinpath(config.rnvim_home, "rnvimserver")
 
     -- Some pdf viewers run rnvimserver to send SyncTeX messages back to Neovim
     if config.is_windows then
@@ -150,8 +150,8 @@ local start_rnvimserver = function()
 
     if config.is_windows then require("r.windows").unset_R_home() end
 
-    edit.add_for_deletion(config.tmpdir .. "/run_R_stdout")
-    edit.add_for_deletion(config.tmpdir .. "/run_R_stderr")
+    edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "run_R_stdout"))
+    edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "run_R_stderr"))
 
     vim.api.nvim_create_user_command("RGetNRSInfo", require("r.server").echo_rns_info, {})
 end
@@ -181,8 +181,8 @@ local init_exit = function(_, data, _)
     edit.add_to_debug_info("before_rns.R stdout", table.concat(b_out, "\n"))
     b_err = {}
     b_out = {}
-    edit.add_for_deletion(config.tmpdir .. "/bo_code.R")
-    edit.add_for_deletion(config.tmpdir .. "/libnames_" .. vim.env.RNVIM_ID)
+    edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "bo_code.R"))
+    edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "libnames_" .. vim.env.RNVIM_ID))
     if #b_warn > 0 then
         local wrn = table.concat(b_warn, "\n")
         edit.add_to_debug_info("RInit Warning", wrn)
@@ -226,7 +226,10 @@ local list_libs_from_buffer = function()
         end
     end
     local libs = table.concat(flibs, ",") .. "#"
-    vim.fn.writefile({ libs }, config.tmpdir .. "/libnames_" .. vim.env.RNVIM_ID)
+    vim.fn.writefile(
+        { libs },
+        vim.fs.joinpath(config.tmpdir, "libnames_" .. vim.env.RNVIM_ID)
+    )
 end
 
 -- Add words to the completion list of :Rhelp
@@ -237,7 +240,7 @@ local fill_Rhelp_list = function()
     M.rhelp_list = {}
 
     for _, v in pairs(libs) do
-        local omf = config.compldir .. "/alias_" .. v
+        local omf = vim.fs.joinpath(config.compldir, "alias_" .. v)
 
         -- List of objects
         local olist = vim.fn.readfile(omf)
@@ -287,7 +290,7 @@ end
 
 M.check_nvimcom_version = function()
     local flines
-    local nvimcom_desc_path = config.rnvim_home .. "/nvimcom/DESCRIPTION"
+    local nvimcom_desc_path = vim.fs.joinpath(config.rnvim_home, "nvimcom/DESCRIPTION")
     local current = "0.0.0"
     local nvc_fn
 
@@ -302,8 +305,10 @@ M.check_nvimcom_version = function()
         local obj
         obj = vim.system({ "df" }, { text = true }):wait()
         if not obj.stdout:find(".cache/R.nvim") then
-            local _, err =
-                vim.uv.fs_mkdir(config.compldir .. "/remote", tonumber("755", 8))
+            local _, err = vim.uv.fs_mkdir(
+                vim.fs.joinpath(config.compldir, "remote"),
+                tonumber("755", 8)
+            )
             if err and not err:find("EEXIST") then
                 warn(err)
                 return
@@ -315,13 +320,16 @@ M.check_nvimcom_version = function()
                 "-o",
                 "sshfs_sync",
                 config.remote_R_host .. ":" .. config.remote_compl_dir,
-                config.compldir .. "/remote",
+                vim.fs.joinpath(config.compldir, "remote"),
             }, { text = true }):wait()
             if obj.code ~= 0 then
                 warn(obj.stderr)
                 return
             end
-            _, err = vim.uv.fs_mkdir(config.compldir .. "/remote/tmp", tonumber("755", 8))
+            _, err = vim.uv.fs_mkdir(
+                vim.fs.joinpath(config.compldir, "remote/tmp"),
+                tonumber("755", 8)
+            )
             if err and not err:find("EEXIST") then
                 warn(err)
                 return
@@ -334,13 +342,16 @@ M.check_nvimcom_version = function()
         )
         table.insert(
             flines,
-            "Sys.setenv(RNVIM_TMPDIR = '" .. config.remote_compl_dir .. "/tmp')"
+            "Sys.setenv(RNVIM_TMPDIR = '"
+                .. vim.fs.joinpath(config.remote_compl_dir, "tmp")
+                .. "')"
         )
         table.insert(flines, 'nvim_r_home <- "not needed"')
-        nvc_fn = config.compldir .. "/remote/nvimcom_" .. current .. ".tar.gz"
+        nvc_fn =
+            vim.fs.joinpath(config.compldir, "remote/nvimcom_" .. current .. ".tar.gz")
     else
         table.insert(flines, 'nvim_r_home <- "' .. config.rnvim_home .. '"')
-        nvc_fn = config.compldir .. "/nvimcom_" .. current .. ".tar.gz"
+        nvc_fn = vim.fs.joinpath(config.compldir, "nvimcom_" .. current .. ".tar.gz")
     end
 
     if vim.fn.filereadable(nvc_fn) == 0 then
@@ -379,14 +390,14 @@ M.check_nvimcom_version = function()
 
     vim.list_extend(
         flines,
-        vim.fn.readfile(config.rnvim_home .. "/resources/before_rns.R")
+        vim.fn.readfile(vim.fs.joinpath(config.rnvim_home, "resources/before_rns.R"))
     )
 
-    local scrptnm = config.tmpdir .. "/before_rns.R"
+    local scrptnm = vim.fs.joinpath(config.tmpdir, "before_rns.R")
     vim.fn.writefile(flines, scrptnm)
-    edit.add_for_deletion(config.tmpdir .. "/before_rns.R")
+    edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "before_rns.R"))
     if config.remote_R_host ~= "" then
-        scrptnm = config.remote_tmpdir .. "/before_rns.R"
+        scrptnm = vim.fs.joinpath(config.remote_tmpdir, "before_rns.R")
     end
 
     -- Run the script as a job, setting callback functions to receive its
@@ -424,13 +435,15 @@ M.build_cache_files = function()
         table.insert(
             Rcode,
             1,
-            "Sys.setenv(RNVIM_TMPDIR = '" .. config.remote_compl_dir .. "/tmp')"
+            "Sys.setenv(RNVIM_TMPDIR = '"
+                .. vim.fs.joinpath(config.remote_compl_dir, "tmp")
+                .. "')"
         )
     end
-    local scrptnm = config.tmpdir .. "/bo_code.R"
+    local scrptnm = vim.fs.joinpath(config.tmpdir, "bo_code.R")
     vim.fn.writefile(Rcode, scrptnm)
     if config.remote_R_host ~= "" then
-        scrptnm = config.remote_compl_dir .. "/tmp/bo_code.R"
+        scrptnm = vim.fs.joinpath(config.remote_compl_dir, "tmp/bo_code.R")
     end
     local opts = {
         on_stdout = init_stdout,
@@ -450,8 +463,11 @@ end
 
 -- Called by rnvimserver when it gets an error running R code
 M.show_bol_error = function(stt)
-    if vim.fn.filereadable(config.tmpdir .. "/run_R_stderr") == 1 then
-        local ferr = table.concat(vim.fn.readfile(config.tmpdir .. "/run_R_stderr"), "\n")
+    if vim.fn.filereadable(vim.fs.joinpath(config.tmpdir, "run_R_stderr")) == 1 then
+        local ferr = table.concat(
+            vim.fn.readfile(vim.fs.joinpath(config.tmpdir, "run_R_stderr")),
+            "\n"
+        )
         local errmsg = "Exit status: " .. stt .. "\n" .. ferr
         if
             ferr:find("Error in library..nvimcom...*there is no package called .*nvimcom")
@@ -461,7 +477,7 @@ M.show_bol_error = function(stt)
         end
         edit.add_to_debug_info("Error running R code", errmsg)
         warn("Error building objls_ file. Run :RDebugInfo for details.")
-        vim.fn.delete(config.tmpdir .. "/run_R_stderr")
+        vim.fs.rm(vim.fs.joinpath(config.tmpdir, "run_R_stderr"), { force = true })
     else
         warn(config.tmpdir .. "/run_R_stderr not found")
     end

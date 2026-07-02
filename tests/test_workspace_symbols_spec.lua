@@ -182,7 +182,7 @@ describe("LSP workspace symbols", function()
 
         after_each(function()
             if find_files_stub then find_files_stub:revert() end
-            if tmpfile then vim.fn.delete(tmpfile) end
+            if tmpfile then vim.fs.rm(tmpfile, { force = true }) end
             package.loaded["r.lsp.workspace"] = nil
         end)
 
