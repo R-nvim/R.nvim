@@ -490,17 +490,17 @@ M.open_example = function()
     end
 
     if config.nvimpager == "tabnew" or config.nvimpager == "tab" then
-        vim.cmd("tabnew " .. vim.fs.joinpath(config.tmpdir:gsub(" ", "\\ "), "example.R"))
+        vim.cmd("tabnew " .. vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ "))
     else
         if config.nvimpager == "split_v" then
             vim.cmd(
                 "belowright vsplit "
-                    .. vim.fs.joinpath(config.tmpdir:gsub(" ", "\\ "), "example.R")
+                    .. vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ ")
             )
         else
             vim.cmd(
                 "belowright split "
-                    .. vim.fs.joinpath(config.tmpdir:gsub(" ", "\\ "), "example.R")
+                    .. vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ ")
             )
         end
     end

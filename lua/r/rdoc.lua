@@ -67,9 +67,9 @@ M.fix_rdoc = function(txt)
     txt = string.gsub(txt, "\018", "\\")
     txt = string.gsub(txt, "<URL: %([^>]*%)>", " |%1|")
     txt = string.gsub(txt, "<email: %([^>]*%)>", " |%1|")
-    if not config.is_windows then
+    if not config.is_windows or config.is_mingw then
         -- curly single quotes only if the environment is UTF-8
-        txt = string.gsub(txt, "\145", "‘")
+        txt = string.gsub(txt, "\145", "’")
         txt = string.gsub(txt, "\146", "’")
     end
 

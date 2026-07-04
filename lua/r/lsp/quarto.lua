@@ -51,7 +51,8 @@ local find_quarto_intel_windows = function(qpath2)
 end
 
 local find_quarto_intel = function()
-    local is_windows = vim.loop.os_uname().sysname:find("Windows") ~= nil
+    local uname = vim.loop.os_uname().sysname:lower()
+    local is_windows = not not (uname:find("windows") or uname:find("mingw"))
     local qpath2 = "/share/editor/tools/yaml/yaml-intelligence-resources.json"
     if is_windows then return find_quarto_intel_windows(qpath2) end
     return find_quarto_intel_unix(qpath2)

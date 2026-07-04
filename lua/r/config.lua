@@ -468,6 +468,7 @@ local hooks = require("r.hooks")
 ---@class RConfig: RConfigUserOpts
 ---@field uname? string
 ---@field is_windows? boolean
+---@field is_mingw? boolean
 ---@field rnvim_home? string
 ---@field uservimfiles? string
 ---@field user_login? string
@@ -697,7 +698,7 @@ local set_pdf_viewer = function()
         if config.skim_app_path == "" then
             config.skim_app_path = "/Applications/Skim.app"
         end
-    elseif config.is_windows then
+    elseif config.is_windows and not config.is_mingw then
         config.pdfviewer = "sumatra"
     else
         config.pdfviewer = "zathura"
@@ -883,10 +884,10 @@ local set_directories = function()
         swarn("Could not determine user name.")
     end
 
-    vim.env.RNVIM_HOME = rndir
+    vim.env.RNVIM_HOME = config.rnvim_home
 
     if config.compldir ~= "" then
-        config.compldir = fs.normalize(config.compldir)
+        config.compldir = vim.fn.expand(config.compldir)
     elseif config.is_windows and vim.env.APPDATA then
         config.compldir = fs.joinpath(vim.env.APPDATA, "R.nvim")
     elseif vim.env.XDG_CACHE_HOME then
@@ -902,7 +903,7 @@ local set_directories = function()
     utils.ensure_directory_exists(config.compldir)
 
     -- Check if the 'config' table has the key 'tmpdir'
-    if not config.tmpdir ~= "" then
+    if config.tmpdir == "" then
         local suffix = "R.nvim-" .. config.user_login
         local base
         -- Set temporary directory based on the platform
@@ -1021,9 +1022,8 @@ end
 
 local do_common_global = function()
     config.uname = uv.os_uname().sysname
-    config.is_windows = not not (
-        config.uname:lower():find("windows") or config.uname:lower():find("mingw")
-    ) -- in line with `vim.fs`
+    config.is_mingw = not not config.uname:lower():find("mingw")
+    config.is_windows = not not (config.uname:lower():find("windows") or config.is_mingw) -- in line with `vim.fs`
     if config.r_ls.doc_width == 0 then
         local dw = vim.o.columns / 2 - 4
         if dw < 30 then dw = 30 end
@@ -1095,7 +1095,7 @@ local do_common_global = function()
     end
 
     -- Set the name of R executable
-    if config.is_windows then
+    if config.is_windows and not config.is_mingw then
         config.R_app = "Rterm.exe"
         config.R_cmd = "R.exe"
     end
@@ -1188,7 +1188,7 @@ local global_setup = function()
     -- See https://github.com/jalvesaq/Vim-R/issues/625
     do_common_global()
 
-    if config.is_windows then
+    if config.is_windows and not config.is_mingw then
         require("r.platform.windows").configure(config)
     else
         require("r.platform.unix").configure(config)

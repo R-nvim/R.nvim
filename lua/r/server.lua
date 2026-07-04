@@ -105,7 +105,7 @@ local start_rnvimserver = function()
     local rns_dir = vim.fs.joinpath(config.rnvim_home, "rnvimserver")
 
     -- Some pdf viewers run rnvimserver to send SyncTeX messages back to Neovim
-    if config.is_windows then
+    if config.is_windows and not config.is_mingw then
         vim.env.PATH = rns_dir .. ";" .. vim.env.PATH
     else
         vim.env.PATH = rns_dir .. ":" .. vim.env.PATH
@@ -143,12 +143,16 @@ local start_rnvimserver = function()
 
     -- We have to set R's home directory on Windows because rnvimserver will
     -- run R to build the list for auto completion.
-    if config.is_windows then require("r.windows").set_R_home() end
+    if config.is_windows and not config.is_mingw then
+        require("r.windows").set_R_home()
+    end
 
     vim.g.R_Nvim_status = 2
     require("r.lsp").start(rns_env)
 
-    if config.is_windows then require("r.windows").unset_R_home() end
+    if config.is_windows and not config.is_mingw then
+        require("r.windows").unset_R_home()
+    end
 
     edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "run_R_stdout"))
     edit.add_for_deletion(vim.fs.joinpath(config.tmpdir, "run_R_stderr"))
@@ -355,7 +359,8 @@ M.check_nvimcom_version = function()
     end
 
     if vim.fn.filereadable(nvc_fn) == 0 then
-        local oldf = vim.fn.glob("~/.cache/R.nvim/nvimcom_*.tar.gz", true, true)
+        local oldf =
+            vim.fn.glob(vim.fs.joinpath(config.compldir, "nvimcom_*.tar.gz"), true, true)
         for _, o in ipairs(oldf) do
             vim.uv.fs_unlink(o)
         end

@@ -156,7 +156,7 @@ start_R2 = function()
         if vim.fn.executable("wezterm") == 1 then
             config.external_term = "wezterm"
         else
-            if config.is_windows then
+            if config.is_windows and not config.is_mingw then
                 warn("WezTerm must be installed to run R in a external terminal emulator")
                 return
             end
