@@ -5,8 +5,7 @@
 # R.nvim
 
 > [!Note]
-> The autocompletion depending on [cmp-r](https://github.com/R-nvim/cmp-r) was
-> replaced with a built-in language server.
+> Vim-R users should read the release notes of [version 1.0.0](https://github.com/R-nvim/R.nvim/releases/tag/v1.0.0).
 
 R.nvim adds R support to Neovim, including:
 
@@ -187,146 +186,6 @@ notes for any breaking changes when upgrading.
 Eventually we plan to release a version 1.0.0, at which point we will make a
 firm commitment to backwards compatibility.
 
-## Transitioning from Vim-R (Nvim-R)
-
-### Removed features
-
-- reStructuredText support (no longer seems to be widely used).
-
-- Legacy omni-completion (we now recommend the built-in LSP).
-
-- Highlighting functions from `.GlobalEnv` (difficult to make compatible with
-  tree-sitter + LSP highlighting).
-
-- The `echo` argument for functions that send code to R console has been
-  removed. Users can still set the `source_args` to define the arguments that
-  will be passed to `base::source()` and include the argument `echo=TRUE`.
-  `max_lines_to_paste` can now be used to set the number of lines which can be
-  sent directly to the R Console without saving the code in a temporary file.
-
-- Rnoweb chunk headers with options are not supported by tree-sitter. You have
-  to write the options at the top of the code block after the `#|` comment
-  strings as is common in Quarto documents. See
-  [execution-options](https://quarto.org/docs/computations/execution-options.html).
-
-- Integration with `Rapp` on macOS was removed (option `applescript`).
-
-### Changes
-
-- `<M-->` (i.e. `Alt + -`) is now used to insert `<-`. See the documentation
-  on how to create custom key bindings.
-
-- `R_source` and `after_R_start` have been replaced with more powerful `hook`
-  options.
-
-- When running R in the Neovim built-in terminal or in a WezTerm split pane,
-  the `R.nvim` config option `rconsole_pos` should be used to define the
-  position of the R Console. The Vim options 'splitright' and 'splitbelow' are
-  ignored.
-
-- `nvimpager`, which controls how R documentation is displayed, now has
-  possible options `"split_h"`, `"split_v"`, `"tab"`, `"float"` (not
-  implemented yet), and `"no"`.
-
-- `open_pdf` replaces `openpdf` and `openhtml`; see the documentation for
-  details.
-
-- `setwd` replaces `nvim_wd`. The new default value is `"no"`.
-
-- Only strings are valid values for `external_term`.
-
-- `config_tmux` replaces `notmuxconf`. The new default value is `true`.
-
-- `:RFormat` now requires {styler} to be installed; {formatR} is no longer
-  supported.
-
-- `Rout_options` replaces `Rout_more_colors`.
-
-- `view_df` is a table replacing the options `csv_app`,
-  `csv_delim`, and `df_viewer`. The commands to see a `data.frame`
-  or `matrix` in a split window were eliminated. See the documentation
-  on `view_df` for alternative ways of getting similar results.
-
-- `rmdchunk` and `rnowebchunk` were removed. In Insert mode, press `<M-r>` to
-  insert chunks of R code in Rmd, Quarto or Rnoweb. See the documentation on
-  how to create custom key bindings.
-
-- In a Quarto or RMarkdown document, when the cursor is over a chunk header
-  and you try to send the current line and go to the next line, the whole
-  chunk is sent to R and the cursor jumps to the next chunk of either R or
-  Python code.
-
-- Markdown documents are treated as RMarkdown if "markdown" is in
-  `vim.g.R_filetypes`.
-
-### New features
-
-#### New filetype support
-
-- Rtypst (`.Rtyp`) documents are now supported: Typst files with R code chunks,
-  using the same chunk delimiters as Rmd and Quarto. Requires the `typst`
-  tree-sitter parser.
-
-#### New commands
-
-- `:RMapsDesc` displays the list of key bindings followed by short
-  descriptions.
-
-- `:RConfigShow` displays the list of configuration options and their current
-  values.
-
-#### New keybindings
-
-- `<LocalLeader>sc` sends a piped chain of commands.
-
-- `<LocalLeader>ip` installs missing packages detected by
-  [languageserver](https://github.com/REditorSupport/languageserver).
-
-- `<LocalLeader>sp` splits a filepath under the cursor into individual
-  components concatenated using either `"here::here"` (the default),
-  `"here"`, `"file.path"`, `"fs::path"`, or `"path"`, depending on how
-  `path_split_fun` is set. Requires
-  tree-sitter parsers to be installed.
-
-- `<LocalLeader>,` inserts a pipe operator (`|>`).
-
-#### New options
-
-- `remote_compl_dir` and `remote_R_host` control how to access a remote R from
-  a local Neovim.
-
-- `auto_quit` can be configured to automatically quit R when you quit Neovim.
-
-- `hook` replaces `R_after_start` and `R_after_ob_open`.
-
-- `rproj_prioritise` can be configured to control how `.Rproj` files change the
-  behaviour of R.nvim. Amongst other things, this may affect whether
-  `<LocalLeader>,` inserts `|>` or `%>%`.
-
-- `objbr_mappings` can be configured to run R commands on objects in the
-  current session.
-
-- `pipe_version` allow you to choose between "native" or "magrittr".
-
-- `external_term` now accepts as valid values `"wezterm_split"` and
-  `"kitty_split"`, not requiring Tmux to split the terminal window.
-  It's possible to [WezTerm](https://wezterm.org/) to run R in an external
-  terminal emulator on Windows. Hence, the values `"wezterm"` and
-  `"wezterm_split"` are valid on Linux, macOS and Windows.
-
-- `objbr_mappings` adds custom keymap to the Object Browser.
-
-- `objbr_placeholder` defines the string to substitute for with objects.
-
-- `R-language-server` sets options for R.nvim's built-in language server.
-
-- `max_paste_lines` sets the maximum number of lines to be pasted into R
-  Console.
-
-- `debug` enables support for debugging functions.
-
-- `chunk_langs` changes configuration for code chunk languages.
-
 ## Screenshots and videos
 
 None yet! Please let us know if you publish a video presenting R.nvim features
@@ -384,9 +243,3 @@ but temporary files are used in a few cases.
 
 - [colorout](https://github.com/jalvesaq/colorout): a package to colorize R's
   output.
-
-- [Ark](https://github.com/posit-dev/ark): a LSP server/DAP server/Jupyter
-  kernel for R.
-
-- [southernlights](https://github.com/jalvesaq/southernlights): a colourscheme
-  for vim.
