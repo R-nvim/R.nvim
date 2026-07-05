@@ -34,17 +34,17 @@ local M = {}
 M.open = function(fullpath)
     if not SumatraInPath() then return end
 
-    local pdir = fullpath:gsub("(.*)/.*", "%1")
-    local olddir = vim.fn.getcwd():gsub("\\", "/"):gsub(" ", "\\ ")
+    local pdir = vim.fs.dirname(fullpath)
+    local olddir = vim.fs.normalize(vim.fn.getcwd()):gsub(" ", "\\ ")
     vim.cmd("cd " .. pdir)
     vim.fn.writefile({
         'start SumatraPDF.exe -reuse-instance -inverse-search "rnvimserver.exe %%f %%l" "'
             .. fullpath
             .. '"',
-    }, config.tmpdir .. "/run_cmd.bat")
-    vim.system({ config.tmpdir .. "/run_cmd.bat" }, { detach = true })
+    }, vim.fs.joinpath(config.tmpdir, "run_cmd.bat"))
+    vim.system({ vim.fs.joinpath(config.tmpdir, "run_cmd.bat") }, { detach = true })
     vim.cmd("cd " .. olddir)
-    require("r.edit").add_for_deletion(config.tmpdir .. "/run_cmd.bat")
+    require("r.edit").add_for_deletion(vim.fs.joinpath(config.tmpdir, "run_cmd.bat"))
 end
 
 ---Send the SyncTeX forward command to Sumatra
@@ -55,10 +55,10 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
     if not SumatraInPath() then return end
 
     -- Empty spaces must be removed from the rnoweb file name to get SyncTeX support with SumatraPDF.
-    local tname = tpath:gsub(".*/(.*)", "%1")
-    local tdir = tpath:gsub("(.*)/.*", "%1")
+    local tname = vim.fs.basename(tpath)
+    local tdir = vim.fs.dirname(tpath)
     local pname = ppath:gsub(tdir .. "/", "")
-    local olddir = vim.fn.getcwd():gsub("\\", "/"):gsub(" ", "\\ ")
+    local olddir = vim.fs.normalize(vim.fn.getcwd()):gsub(" ", "\\ ")
     vim.cmd("cd " .. tdir:gsub(" ", "\\ "))
     vim.fn.writefile({
         'start SumatraPDF.exe -reuse-instance -forward-search "'
@@ -68,10 +68,10 @@ M.SyncTeX_forward = function(tpath, ppath, texln)
             .. ' -inverse-search "rnvimserver.exe %%f %%l" "'
             .. pname
             .. '"',
-    }, config.tmpdir .. "/run_cmd.bat")
-    vim.system({ config.tmpdir .. "/run_cmd.bat" }, { detach = true })
+    }, vim.fs.joinpath(config.tmpdir, "run_cmd.bat"))
+    vim.system({ vim.fs.joinpath(config.tmpdir, "run_cmd.bat") }, { detach = true })
     vim.cmd("cd " .. olddir)
-    require("r.edit").add_for_deletion(config.tmpdir .. "/run_cmd.bat")
+    require("r.edit").add_for_deletion(vim.fs.joinpath(config.tmpdir, "run_cmd.bat"))
 end
 
 return M

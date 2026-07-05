@@ -71,12 +71,13 @@ M.open = function(fullpath)
 
     if fullpath == "Get Master" then
         local fpath = require("r.rnw").SyncTeX_get_master() .. ".pdf"
-        fpath = vim.b.rplugin_pdfdir .. "/" .. fpath:gsub(".*/", "")
+        fpath = vim.fs.joinpath(vim.b.rplugin_pdfdir, vim.fs.basename(fpath))
         M.open(fpath)
         return
     end
 
-    local fname = fullpath:gsub(".*/", "")
+    local fname = vim.fs.basename(fullpath)
+
     if job.is_running(fullpath) then
         if config.open_pdf:find("focus") then
             utils.focus_window(fname, job.get_pid(fullpath))

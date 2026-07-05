@@ -387,6 +387,7 @@ end
 
 M.source_file = function()
     local fpath = vim.api.nvim_buf_get_name(0) .. ".tmp.R"
+    fpath = vim.fs.normalize(fpath)
 
     if vim.fn.filereadable(fpath) == 1 then
         warn(
@@ -396,8 +397,6 @@ M.source_file = function()
         )
         return
     end
-
-    if config.is_windows then fpath = utils.normalize_windows_path(fpath) end
 
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
 
@@ -412,7 +411,7 @@ M.source_file = function()
         edit.add_for_deletion(fpath)
         local sargs = M.get_source_args()
         local ok = M.cmd('nvimcom:::source.and.clean("' .. fpath .. '"' .. sargs .. ")")
-        if not ok then vim.fn.delete(fpath) end
+        if not ok then vim.fs.rm(fpath, { force = true }) end
         return
     end
 

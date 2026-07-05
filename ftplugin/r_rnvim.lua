@@ -35,7 +35,7 @@ require("r").show_R_out = function()
     routfile = vim.fn.expand("%:r") .. ".Rout"
     if vim.fn.bufloaded(routfile) == 1 then
         vim.api.nvim_command("bunload " .. routfile)
-        vim.fn.delete(routfile)
+        vim.fs.rm(routfile, { force = true })
     end
 
     -- If not silent, the user will have to type <Enter>
