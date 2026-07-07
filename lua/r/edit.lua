@@ -6,6 +6,7 @@ local rscript_buf = 0
 local debug_info = { Time = {} }
 local assign_key = nil
 local pipe_key = nil
+local edit_win_id = -1 -- for `nvimpager = "float"`
 
 local M = {}
 
@@ -489,19 +490,42 @@ M.open_example = function()
         end
     end
 
+    local example_path = vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ ")
+
     if config.nvimpager == "tabnew" or config.nvimpager == "tab" then
-        vim.cmd("tabnew " .. vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ "))
+        vim.cmd("tabnew " .. example_path)
     else
         if config.nvimpager == "split_v" then
-            vim.cmd(
-                "belowright vsplit "
-                    .. vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ ")
-            )
+            vim.cmd("belowright vsplit " .. example_path)
+        elseif config.nvimpager == "float" then
+            local buf = vim.api.nvim_create_buf(true, false)
+            if not vim.api.nvim_win_is_valid(edit_win_id) then
+                local ncolumns = vim.api.nvim_win_get_width(0)
+                local nlines = vim.api.nvim_win_get_height(0)
+                local width = 80
+                if ncolumns >= 60 and ncolumns <= 120 then
+                    -- set width to longest line length + 1
+                    local lines = vim.fn.readfile(example_path)
+                    for _, v in pairs(lines) do
+                        local linelen = #v
+                        if linelen + 1 > width then width = linelen + 1 end
+                    end
+                    width = math.min(width, 120)
+                end
+                local height = math.ceil(nlines * 0.6)
+                local col = math.floor((ncolumns - width) / 2)
+                local row = math.floor((nlines - height) / 2)
+                edit_win_id = require("r.utils").open_float_win(buf, {
+                    title = " R Example ",
+                    width = width,
+                    height = height,
+                    col = col,
+                    row = row,
+                })
+            end
+            vim.cmd("edit " .. example_path)
         else
-            vim.cmd(
-                "belowright split "
-                    .. vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ ")
-            )
+            vim.cmd("belowright split " .. example_path)
         end
     end
     vim.api.nvim_buf_set_keymap(0, "n", "q", ":q<CR>", { noremap = true, silent = true })
