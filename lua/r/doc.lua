@@ -5,6 +5,7 @@ local utils = require("r.utils")
 local cursor = require("r.cursor")
 local job = require("r.job")
 local doc_buf_id = nil
+local doc_win_id = -1 -- for `nvimpager = "float"`
 
 local M = {}
 
@@ -90,16 +91,52 @@ M.show = function(rkeyword, txt)
         vim.cmd("set switchbuf=" .. savesb)
     end
 
+    txt = txt:gsub("\019", "'")
+    local lines
+    local is_help = false
+    if txt:find("\008") then
+        lines = require("r.rdoc").fix_rdoc(txt)
+        is_help = true
+    else
+        lines = vim.split(txt, "\020")
+    end
+
     if doc_buf_id and vim.api.nvim_buf_is_loaded(doc_buf_id) then
         local savesb = vim.o.switchbuf
         vim.o.switchbuf = "useopen,usetab"
         vim.cmd.sb(doc_buf_id)
         vim.cmd("set switchbuf=" .. savesb)
     else
-        if vpager == "tab" or vpager == "float" then
+        if vpager == "tab" then
             vim.cmd("tabnew R_doc")
         elseif vpager == "split_v" then
             vim.cmd("vsplit R_doc")
+        elseif vpager == "float" then
+            if not doc_buf_id or not vim.api.nvim_buf_is_valid(doc_buf_id) then
+                doc_buf_id = vim.api.nvim_create_buf(true, false)
+            end
+            if not vim.api.nvim_win_is_valid(doc_win_id) then
+                local ncolumns = vim.api.nvim_win_get_width(0)
+                local nlines = vim.api.nvim_win_get_height(0)
+                local width = 80
+                if ncolumns >= 60 and ncolumns <= 120 then
+                    for _, v in pairs(lines) do
+                        local linelen = #v
+                        if linelen + 1 > width then width = linelen + 1 end
+                    end
+                    width = math.min(width, 120)
+                end
+                local height = math.ceil(nlines * 0.6)
+                local col = math.floor((ncolumns - width) / 2)
+                local row = math.floor((nlines - height) / 2)
+                doc_win_id = utils.open_float_win(doc_buf_id, {
+                    title = " R Help ",
+                    width = width,
+                    height = height,
+                    col = col,
+                    row = row,
+                })
+            end
         else
             if vim.fn.winwidth(0) < 80 then
                 vim.cmd("topleft split R_doc")
@@ -119,15 +156,6 @@ M.show = function(rkeyword, txt)
     vim.api.nvim_set_option_value("modifiable", true, { scope = "local" })
     vim.api.nvim_buf_set_lines(0, 0, -1, true, {})
 
-    txt = txt:gsub("\019", "'")
-    local lines
-    local is_help = false
-    if txt:find("\008") then
-        lines = require("r.rdoc").fix_rdoc(txt)
-        is_help = true
-    else
-        lines = vim.split(txt, "\020")
-    end
     vim.api.nvim_buf_set_lines(0, 0, -1, true, lines)
     if rkeyword:find("R History", 1, true) then
         vim.api.nvim_set_option_value("filetype", "r", { scope = "local" })
