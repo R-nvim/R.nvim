@@ -448,4 +448,33 @@ M.dedent = function(text)
     return table.concat(lines, "\n")
 end
 
+---@param buf integer
+---@param win_opts vim.api.keyset.win_config
+---@return integer
+M.open_float_win = function(buf, win_opts)
+    win_opts = win_opts or {}
+    -- centered relative to the whole editor by default
+    local width = 80
+    local height = math.ceil(vim.o.lines * 0.6)
+    local col = math.floor((vim.o.columns - width) / 2)
+    local row = math.floor((vim.o.lines - height) / 2)
+    local default_win_opts = {
+        relative = "editor",
+        width = width,
+        height = height,
+        col = col,
+        row = row,
+        style = "minimal",
+        border = "single",
+        title_pos = "center",
+    }
+
+    local win_id = vim.api.nvim_open_win(
+        buf,
+        true,
+        vim.tbl_extend("force", default_win_opts, win_opts)
+    )
+    return win_id
+end
+
 return M
