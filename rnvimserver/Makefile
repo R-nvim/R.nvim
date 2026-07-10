@@ -1,4 +1,6 @@
-CC ?= gcc
+ifeq ($(origin CC),default)
+CC = gcc
+endif
 SRCS = complete.c resolve.c hover.c definition.c signature.c rhelp.c chunk.c roxygen.c data_structures.c logging.c rnvimserver.c obbr.c tcp.c utilities.c ../nvimcom/src/common.c
 
 ifeq ($(OS),Windows_NT)
