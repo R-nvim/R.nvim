@@ -449,31 +449,37 @@ M.dedent = function(text)
 end
 
 ---@param buf integer
----@param win_opts vim.api.keyset.win_config
+---@param lines string[]
+---@param ttl string
 ---@return integer
-M.open_float_win = function(buf, win_opts)
-    win_opts = win_opts or {}
-    -- centered relative to the whole editor by default
-    local width = 80
-    local height = math.ceil(vim.o.lines * 0.6)
-    local col = math.floor((vim.o.columns - width) / 2)
-    local row = math.floor((vim.o.lines - height) / 2)
-    local default_win_opts = {
+M.open_float_win = function(buf, lines, ttl)
+    -- Set width to the longest line length + 1
+    local width = 40
+    for _, v in pairs(lines) do
+        local linelen = #v
+        if linelen + 1 > width then width = linelen + 1 end
+    end
+
+    local h = vim.api.nvim_win_get_height(0)
+    local w = vim.api.nvim_win_get_width(0)
+    local yx = vim.api.nvim_win_get_position(0) or { 0, 0 }
+    local height = math.ceil(h * 0.6)
+    local row = yx[1] + math.floor((h - height) / 2)
+    local col = yx[2] + math.floor((w - width) / 2)
+    if col < 0 then col = 0 end
+
+    -- Centered relative to the editor window
+    local win_opts = {
+        title = ttl,
         relative = "editor",
         width = width,
         height = height,
         col = col,
         row = row,
-        style = "minimal",
-        border = "single",
         title_pos = "center",
     }
 
-    local win_id = vim.api.nvim_open_win(
-        buf,
-        true,
-        vim.tbl_extend("force", default_win_opts, win_opts)
-    )
+    local win_id = vim.api.nvim_open_win(buf, true, win_opts)
     return win_id
 end
 
