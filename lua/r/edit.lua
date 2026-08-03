@@ -500,28 +500,8 @@ M.open_example = function()
         elseif config.nvimpager == "float" then
             local buf = vim.api.nvim_create_buf(true, false)
             if not vim.api.nvim_win_is_valid(edit_win_id) then
-                local ncolumns = vim.api.nvim_win_get_width(0)
-                local nlines = vim.api.nvim_win_get_height(0)
-                local width = 80
-                if ncolumns >= 60 and ncolumns <= 120 then
-                    -- set width to longest line length + 1
-                    local lines = vim.fn.readfile(example_path)
-                    for _, v in pairs(lines) do
-                        local linelen = #v
-                        if linelen + 1 > width then width = linelen + 1 end
-                    end
-                    width = math.min(width, 120)
-                end
-                local height = math.ceil(nlines * 0.6)
-                local col = math.floor((ncolumns - width) / 2)
-                local row = math.floor((nlines - height) / 2)
-                edit_win_id = require("r.utils").open_float_win(buf, {
-                    title = " R Example ",
-                    width = width,
-                    height = height,
-                    col = col,
-                    row = row,
-                })
+                local lines = vim.fn.readfile(example_path)
+                edit_win_id = require("r.utils").open_float_win(buf, lines, " R Example ")
             end
             vim.cmd("edit " .. example_path)
         else

@@ -116,26 +116,7 @@ M.show = function(rkeyword, txt)
                 doc_buf_id = vim.api.nvim_create_buf(true, false)
             end
             if not vim.api.nvim_win_is_valid(doc_win_id) then
-                local ncolumns = vim.api.nvim_win_get_width(0)
-                local nlines = vim.api.nvim_win_get_height(0)
-                local width = 80
-                if ncolumns >= 60 and ncolumns <= 120 then
-                    for _, v in pairs(lines) do
-                        local linelen = #v
-                        if linelen + 1 > width then width = linelen + 1 end
-                    end
-                    width = math.min(width, 120)
-                end
-                local height = math.ceil(nlines * 0.6)
-                local col = math.floor((ncolumns - width) / 2)
-                local row = math.floor((nlines - height) / 2)
-                doc_win_id = utils.open_float_win(doc_buf_id, {
-                    title = " R Help ",
-                    width = width,
-                    height = height,
-                    col = col,
-                    row = row,
-                })
+                doc_win_id = utils.open_float_win(doc_buf_id, lines, " R Help ")
             end
         else
             if vim.fn.winwidth(0) < 80 then
