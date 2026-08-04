@@ -6,6 +6,7 @@ local rscript_buf = 0
 local debug_info = { Time = {} }
 local assign_key = nil
 local pipe_key = nil
+local edit_win_id = -1 -- for `nvimpager = "float"`
 
 local M = {}
 
@@ -489,19 +490,22 @@ M.open_example = function()
         end
     end
 
+    local example_path = vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ ")
+
     if config.nvimpager == "tabnew" or config.nvimpager == "tab" then
-        vim.cmd("tabnew " .. vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ "))
+        vim.cmd("tabnew " .. example_path)
     else
         if config.nvimpager == "split_v" then
-            vim.cmd(
-                "belowright vsplit "
-                    .. vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ ")
-            )
+            vim.cmd("belowright vsplit " .. example_path)
+        elseif config.nvimpager == "float" then
+            local buf = vim.api.nvim_create_buf(true, false)
+            if not vim.api.nvim_win_is_valid(edit_win_id) then
+                local lines = vim.fn.readfile(example_path)
+                edit_win_id = require("r.utils").open_float_win(buf, lines, " R Example ")
+            end
+            vim.cmd("edit " .. example_path)
         else
-            vim.cmd(
-                "belowright split "
-                    .. vim.fs.joinpath(config.tmpdir, "example.R"):gsub(" ", "\\ ")
-            )
+            vim.cmd("belowright split " .. example_path)
         end
     end
     vim.api.nvim_buf_set_keymap(0, "n", "q", ":q<CR>", { noremap = true, silent = true })
