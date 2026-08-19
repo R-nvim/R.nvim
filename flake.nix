@@ -80,17 +80,29 @@
           '';
         };
 
-        # Optional: Add a package for R.nvim itself
-        packages.default = pkgs.vimUtils.buildVimPlugin {
-          pname = "R.nvim";
-          version = "0.1.0";
-          src = ./.;
-          nativeBuildInputs = [pkgs.gnumake pkgs.gcc];
-          buildPhase = ''
-            runHook preBuild
-            make -C rnvimserver
-            runHook postBuild
-          '';
+        packages = let
+          nativeBuildInputs = with pkgs; [gnumake gcc];
+        in {
+          # Optional: Add a package for R.nvim itself
+          default = pkgs.vimUtils.buildVimPlugin {
+            pname = "R.nvim";
+            version = "1.0.0";
+            src = ./.;
+            inherit nativeBuildInputs;
+            buildPhase = ''
+              runHook preBuild
+              make -C rnvimserver
+              runHook postBuild
+            '';
+          };
+
+          # Separate nvimcom R package
+          nvimcom = pkgs.rPackages.buildRPackage {
+            name = "nvimcom";
+            version = "0.9.96";
+            src = ./nvimcom;
+            inherit nativeBuildInputs;
+          };
         };
       }
     );
