@@ -85,6 +85,12 @@
           pname = "R.nvim";
           version = "0.1.0";
           src = ./.;
+          nativeBuildInputs = [pkgs.gnumake pkgs.gcc];
+          buildPhase = ''
+            runHook preBuild
+            make -C rnvimserver
+            runHook postBuild
+          '';
         };
       }
     );
