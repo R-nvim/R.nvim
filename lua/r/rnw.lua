@@ -200,7 +200,7 @@ local go_to_previous = function()
     local i = vim.fn.search("^<<.*$", "bnW")
     local lang = get_lang()
     if lang == "r" or lang == "python" or lang == "chunk_end" then
-        if i ~= 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end
+        if i > 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end
         i = vim.fn.search("^<<.*$", "bnW")
     end
     if i == 0 then
