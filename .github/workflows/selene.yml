@@ -7,10 +7,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      - name: Install selene
+        run: |
+          curl -L -o selene.zip https://github.com/Kampfkarren/selene/releases/download/0.31.0/selene-0.31.0-linux.zip
+          unzip selene.zip selene
+          chmod +x selene
+          sudo mv selene /usr/local/bin/selene
       - name: selene linter
-        uses: NTBBloodbath/selene-action@v1.0.0
-        with:
-          # Github secret token
-          token: ${{ secrets.GITHUB_TOKEN }}
-          # selene arguments
-          args: . --config selene.toml
+        run: selene . --config selene.toml
