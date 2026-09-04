@@ -197,12 +197,12 @@ end
 ---@return boolean
 local go_to_previous = function()
     local curline = vim.api.nvim_win_get_cursor(0)[1]
-    local lang = get_lang()
-    if lang ~= "r" and lang ~= "python" then
-        local i = vim.fn.search("^<<.*$", "bnW")
-        if i ~= 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end
-    end
     local i = vim.fn.search("^<<.*$", "bnW")
+    local lang = get_lang()
+    if lang == "r" or lang == "python" or lang == "chunk_end" then
+        if i > 0 then vim.api.nvim_win_set_cursor(0, { i - 1, 0 }) end
+        i = vim.fn.search("^<<.*$", "bnW")
+    end
     if i == 0 then
         vim.api.nvim_win_set_cursor(0, { curline, 0 })
         inform("There is no previous R code chunk to go.")
