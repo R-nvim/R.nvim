@@ -105,7 +105,9 @@ M.reopen_win = function()
     end
     local edbuf = vim.api.nvim_get_current_buf()
     split_window()
+    local orphan = vim.api.nvim_get_current_buf()
     vim.api.nvim_win_set_buf(0, r_bufnr)
+    pcall(vim.api.nvim_buf_delete, orphan, { force = true })
     vim.cmd.sb(edbuf)
 end
 
