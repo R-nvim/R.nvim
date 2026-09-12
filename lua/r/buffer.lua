@@ -30,40 +30,36 @@ M.create_r_buffer = function()
          ]]
     )
 
-    local contents = {}
+    local lines = {}
     local last_end = 0
 
     local root = get_root_node(bufnr)
     if not root then return end
 
     for id, node in query:iter_captures(root, bufnr, 0, -1) do
-        local start_row, _, end_row, _ = node:range()
-
-        -- Replace non-R content with blank lines
-        for _ = last_end, start_row - 1 do
-            table.insert(contents, "")
-        end
-
-        -- Add R chunk content
         if query.captures[id] == "content" then
-            local chunk_content = vim.treesitter.get_node_text(node, bufnr)
+            local start_row, _, end_row, _ = node:range()
 
-            -- Account for the chunk delimiter
-            table.insert(contents, "")
-            table.insert(contents, chunk_content)
-            table.insert(contents, "")
+            -- Replace non-R content (including the chunk delimiters) with
+            -- blank lines
+            for _ = last_end, start_row - 1 do
+                table.insert(lines, "")
+            end
+
+            vim.list_extend(
+                lines,
+                vim.api.nvim_buf_get_lines(bufnr, start_row, end_row, false)
+            )
+
+            last_end = end_row
         end
-
-        last_end = end_row + 1
     end
 
     -- Replace remaining non-R content at the end with blank lines
     local buffer_line_count = vim.api.nvim_buf_line_count(bufnr)
     for _ = last_end, buffer_line_count - 1 do
-        table.insert(contents, "")
+        table.insert(lines, "")
     end
-
-    local lines = table.concat(contents, "\n")
 
     local rbuf = vim.api.nvim_create_buf(false, true)
 
@@ -72,7 +68,7 @@ M.create_r_buffer = function()
         return
     end
 
-    vim.api.nvim_buf_set_lines(rbuf, 0, -1, false, vim.split(lines, "\n"))
+    vim.api.nvim_buf_set_lines(rbuf, 0, -1, false, lines)
     vim.bo[rbuf].filetype = "r"
 
     return rbuf
