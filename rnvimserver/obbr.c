@@ -280,8 +280,8 @@ void lib2ob(void) {
     while (lib) {
         if (lib->pkg->descr) {
             pkg_descr =
-                (char *)malloc(sizeof(char) * (strlen(lib->pkg->descr) + 1));
-            strcpy(pkg_descr, lib->pkg->descr);
+                (char *)malloc(sizeof(char) * (strlen(lib->pkg->title) + 1));
+            strcpy(pkg_descr, lib->pkg->title);
             replace_char(pkg_descr, '\x13', '\'');
             fprintf(f, "   :#%s\t%s\n", lib->pkg->name, pkg_descr);
             free(pkg_descr);
