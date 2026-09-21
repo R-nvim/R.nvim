@@ -543,8 +543,12 @@ static char *nvimcom_glbnv_line(SEXP *x, const char *xname, const char *curenv,
 
     // Add the object length
     if (xgroup == 2) {
-        snprintf(buf, 127, "\xc2\xa0[%d, %d]", length(Rf_GetRowNames(*x)),
-                 length(*x));
+        if (length(*x) > 0) {
+            snprintf(buf, 127, "\xc2\xa0[%d, %d]", length(Rf_GetRowNames(*x)),
+                     length(*x));
+        } else {
+            snprintf(buf, 127, "\xc2\xa0[0, 0]");
+        }
         p = str_cat(p, buf);
     } else if (xgroup == 3) {
         snprintf(buf, 127, "\xc2\xa0[%d]", length(*x));
