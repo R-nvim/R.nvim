@@ -33,6 +33,20 @@ M.assign = function()
     end
 end
 
+local pipe_saved_maps = {}
+
+local restore_pipe_maps = function(bufnr)
+    local saved = pipe_saved_maps[bufnr]
+    if not saved then return end
+    pipe_saved_maps[bufnr] = nil
+    for key, old in pairs(saved) do
+        pcall(vim.keymap.del, "i", key, { buffer = bufnr })
+        if old and vim.api.nvim_buf_is_valid(bufnr) then
+            vim.api.nvim_buf_call(bufnr, function() vim.fn.mapset("i", false, old) end)
+        end
+    end
+end
+
 M.pipe = function()
     local pipe_opts = {
         native = " |> ",
@@ -67,9 +81,29 @@ M.pipe = function()
     -- mode.
     local temp_remaps = { "<CR>", "<C-j>" }
 
-    for _, key in pairs(temp_remaps) do
-        local old = vim.fn.maparg(key, "i", false, true)
+    local bufnr = vim.api.nvim_get_current_buf()
 
+    if not pipe_saved_maps[bufnr] then
+        local saved = {}
+        for _, key in pairs(temp_remaps) do
+            local old = vim.fn.maparg(key, "i", false, true)
+            saved[key] = old.buffer == 1 and old or false
+        end
+        pipe_saved_maps[bufnr] = saved
+
+        vim.schedule(function()
+            vim.api.nvim_create_autocmd(
+                { "TextChangedI", "CursorMovedI", "InsertLeave" },
+                {
+                    buffer = bufnr,
+                    once = true,
+                    callback = function() restore_pipe_maps(bufnr) end,
+                }
+            )
+        end)
+    end
+
+    for _, key in pairs(temp_remaps) do
         vim.keymap.set("i", key, function()
             local cursor = vim.api.nvim_win_get_cursor(0)
             if not cursor then return end
@@ -79,25 +113,10 @@ M.pipe = function()
             -- Move the cursor back one column. This only makes a difference if
             -- a pipe has been inserted mid-line
             vim.api.nvim_win_set_cursor(0, { row, col - 1 })
-            -- Delete this keymapping so whitespace stripping doesn't happen again
-            vim.keymap.del("i", key, { buffer = 0 })
+            restore_pipe_maps(bufnr)
             -- Insert the newline
             vim.api.nvim_input(key)
-        end, { buffer = 0 })
-
-        vim.schedule(function()
-            vim.api.nvim_create_autocmd({ "TextChangedI", "CursorMovedI", "InsertLeave" }, {
-                callback = function(args)
-                    pcall(vim.keymap.del, "i", key, { buffer = 0 })
-                    if not vim.tbl_isempty(old) then
-                        vim.notify(string.format("Recovery %s", key))
-                        vim.fn.mapset(old)
-                    end
-
-                    pcall(vim.api.nvim_del_autocmd, args.id) -- real once
-                end
-            })
-        end)
+        end, { buffer = bufnr })
     end
 end
 
