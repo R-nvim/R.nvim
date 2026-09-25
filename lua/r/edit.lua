@@ -68,6 +68,8 @@ M.pipe = function()
     local temp_remaps = { "<CR>", "<C-j>" }
 
     for _, key in pairs(temp_remaps) do
+        local old = vim.fn.maparg(key, "i", false, true)
+
         vim.keymap.set("i", key, function()
             local cursor = vim.api.nvim_win_get_cursor(0)
             if not cursor then return end
@@ -82,20 +84,21 @@ M.pipe = function()
             -- Insert the newline
             vim.api.nvim_input(key)
         end, { buffer = 0 })
-    end
 
-    -- Set a single-use autocommand so that if the user changes the text, i.e.
-    -- keeps typing after inserting the pipe, the above keymappings are removed
-    vim.schedule(function()
-        vim.api.nvim_create_autocmd({ "TextChangedI", "CursorMovedI", "InsertLeave" }, {
-            once = true,
-            callback = function()
-                for _, key in pairs(temp_remaps) do
+        vim.schedule(function()
+            vim.api.nvim_create_autocmd({ "TextChangedI", "CursorMovedI", "InsertLeave" }, {
+                callback = function(args)
                     pcall(vim.keymap.del, "i", key, { buffer = 0 })
+                    if not vim.tbl_isempty(old) then
+                        vim.notify(string.format("Recovery %s", key))
+                        vim.fn.mapset(old)
+                    end
+
+                    pcall(vim.api.nvim_del_autocmd, args.id) -- real once
                 end
-            end,
-        })
-    end)
+            })
+        end)
+    end
 end
 
 M.buf_enter = function()
