@@ -96,8 +96,10 @@ M.pipe = function()
                 { "TextChangedI", "CursorMovedI", "InsertLeave" },
                 {
                     buffer = bufnr,
-                    once = true,
-                    callback = function() restore_pipe_maps(bufnr) end,
+                    callback = function(args)
+                        restore_pipe_maps(bufnr)
+                        pcall(vim.api.nvim_del_autocmd, args.id)
+                    end,
                 }
             )
         end)
