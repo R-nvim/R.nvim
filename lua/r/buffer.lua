@@ -25,20 +25,29 @@ M.create_r_buffer = function()
         "markdown",
         [[
          (fenced_code_block
-           (info_string (language) @lang (#eq? @lang "r"))
+           (info_string (language) @lang)
            (code_fence_content) @content)
          ]]
     )
 
+    local is_r = require("r.chunk").is_r
     local lines = {}
     local last_end = 0
 
     local root = get_root_node(bufnr)
     if not root then return end
 
-    for id, node in query:iter_captures(root, bufnr, 0, -1) do
-        if query.captures[id] == "content" then
-            local start_row, _, end_row, _ = node:range()
+    for _, match in query:iter_matches(root, bufnr, 0, -1, { all = true }) do
+        local lang_node, content_node
+        for id, nodes in pairs(match) do
+            local name = query.captures[id]
+            if name == "lang" then lang_node = nodes[#nodes] end
+            if name == "content" then content_node = nodes[#nodes] end
+        end
+
+        local lang = lang_node and vim.treesitter.get_node_text(lang_node, bufnr)
+        if content_node and lang and is_r(lang) then
+            local start_row, _, end_row, _ = content_node:range()
 
             -- Replace non-R content (including the chunk delimiters) with
             -- blank lines
