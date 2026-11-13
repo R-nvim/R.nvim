@@ -30,7 +30,9 @@ local mk_R_dir = function(libd)
                         warn('Failed creating "' .. libd .. '"')
                     end
                 else
-                    vim.schedule(function() vim.api.nvim_echo({ "\n" }, false, {}) end)
+                    vim.schedule(
+                        function() vim.api.nvim_echo({ { "\n" } }, false, {}) end
+                    )
                 end
             end
         )
