@@ -304,6 +304,35 @@ function M.complete(req_id, lnum, cnum)
 
     local wrd = get_word(cline, cnum)
 
+    -- Send a completion request to rnvimserver, adding the symbols defined in
+    -- the buffer that are visible at the cursor (function parameters, local
+    -- variables, ...). These do not exist in .GlobalEnv, so rnvimserver can't
+    -- know them otherwise.
+    local send_cmp_msg = function(msg)
+        if msg.base and vim.bo.filetype == "r" then
+            local byte_col = vim.fn.byteidx(cline, cnum)
+            if byte_col < 0 then byte_col = #cline end
+            local ok, syms = pcall(
+                require("r.lsp.scope").list_visible_symbols,
+                0,
+                lnum,
+                byte_col,
+                msg.base
+            )
+            if ok and #syms > 0 then
+                local parts = {}
+                for _, s in ipairs(syms) do
+                    -- Only syntactic names: they can't contain ':' or ' '
+                    if s.name:match("^[%w_.\128-\255]+$") then
+                        table.insert(parts, s.name .. ":" .. s.kind)
+                    end
+                end
+                msg.locals = table.concat(parts, " ")
+            end
+        end
+        M.send_msg(msg)
+    end
+
     local in_roxygen_examples = false
     if
         vim.bo.filetype == "r"
@@ -463,14 +492,14 @@ function M.complete(req_id, lnum, cnum)
         if nra.firstobj == nil then
             -- Get the arguments of the first function whose name matches nra.fnm
             if nra.lib then
-                M.send_msg({
+                send_cmp_msg({
                     code = "5",
                     orig_id = req_id,
                     base = wrd,
                     fnm = nra.lib .. "::" .. nra.fnm,
                 })
             else
-                M.send_msg({ code = "5", orig_id = req_id, base = wrd, fnm = nra.fnm })
+                send_cmp_msg({ code = "5", orig_id = req_id, base = wrd, fnm = nra.fnm })
             end
             return
         else
@@ -506,7 +535,7 @@ function M.complete(req_id, lnum, cnum)
                     else
                         df_name = nra.firstobj2 or nra.firstobj
                     end
-                    M.send_msg({
+                    send_cmp_msg({
                         code = "5",
                         orig_id = req_id,
                         base = wrd,
@@ -514,7 +543,7 @@ function M.complete(req_id, lnum, cnum)
                         df = df_name,
                     })
                 else
-                    M.send_msg({
+                    send_cmp_msg({
                         code = "5",
                         orig_id = req_id,
                         base = wrd,
@@ -536,7 +565,7 @@ function M.complete(req_id, lnum, cnum)
         return
     end
 
-    M.send_msg({ code = "5", orig_id = req_id, base = wrd })
+    send_cmp_msg({ code = "5", orig_id = req_id, base = wrd })
 end
 
 --- Get function name according to cursor position

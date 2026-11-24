@@ -293,6 +293,48 @@ static void complete_instlibs(char *p, const char *base) {
     }
 }
 
+// Add the symbols defined in the buffer and visible at the cursor position.
+// They are sent by R.nvim as "name:kind name:kind ...", where kind is "F"
+// (function), "v" (variable) or "a" (function parameter).
+static char *add_local_symbols(char *locals, char *p) {
+    char *s = locals;
+    while (s && *s) {
+        char *end = strchr(s, ' ');
+        if (end)
+            *end = '\0';
+        char *colon = strrchr(s, ':');
+        if (colon && colon != s) {
+            *colon = '\0';
+            const char *kind = "6";
+            const char *doc = "Local variable";
+            if (colon[1] == 'F') {
+                kind = "3";
+                doc = "Local function";
+            } else if (colon[1] == 'a') {
+                doc = "Function parameter";
+            }
+
+            size_t nsz = strlen(s) * 2 + 256 + (p - cmp_buf);
+            if (cmp_buf_sz < nsz)
+                p = grow_buffer(&cmp_buf, &cmp_buf_sz,
+                                nsz - cmp_buf_sz + 32768);
+
+            p = str_cat(p, "{\"label\":\"");
+            p = str_cat(p, s);
+            p = str_cat(p, "\",\"sortText\":\"00");
+            p = str_cat(p, s);
+            p = str_cat(p, "\",\"kind\":");
+            p = str_cat(p, kind);
+            p = str_cat(p, ",\"documentation\":{\"kind\":\"markdown\","
+                           "\"value\":\"");
+            p = str_cat(p, doc);
+            p = str_cat(p, "\"}},");
+        }
+        s = end ? end + 1 : NULL;
+    }
+    return p;
+}
+
 void complete(const char *params) {
     Log("complete: %s", params);
     char *id = strstr(params, "\"orig_id\":");
@@ -300,11 +342,13 @@ void complete(const char *params) {
     char *fnm = strstr(params, "\"fnm\":\"");
     char *df = strstr(params, "\"df\":\"");
     char *fargs = strstr(params, "\"fargs\":\"");
+    char *locals = strstr(params, "\"locals\":\"");
     cut_json_int(&id, 10);
     cut_json_str(&base, 8);
     cut_json_str(&fnm, 7);
     cut_json_str(&df, 6);
     cut_json_str(&fargs, 9);
+    cut_json_str(&locals, 10);
     if (base && *base == ' ')
         base = NULL;
 
@@ -352,6 +396,10 @@ void complete(const char *params) {
             return;
         }
     }
+
+    // Symbols defined in the buffer come first
+    if (locals && base)
+        p = add_local_symbols(locals, p);
 
     // Finish filling the cmp_buf
     if (glbnv_buffer && base)

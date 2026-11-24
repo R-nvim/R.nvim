@@ -314,4 +314,110 @@ function M.resolve_symbol(symbol, scope_context)
     return nil
 end
 
+--- Return true if every character of `pattern` appears in `str` in order
+--- (case-insensitive), mirroring the fuzzy matching done by rnvimserver.
+---@param str string
+---@param pattern string
+---@return boolean
+local function fuzzy_match(str, pattern)
+    if pattern == "" then return true end
+    str, pattern = str:lower(), pattern:lower()
+    local pos = 1
+    for i = 1, #pattern do
+        local found = str:find(pattern:sub(i, i), pos, true)
+        if not found then return false end
+        pos = found + 1
+    end
+    return true
+end
+
+--- List the symbols visible at a position, for completion
+--- Includes parameters of the enclosing functions, variables assigned before
+--- the cursor in those functions and at file level, and for-loop variables.
+--- Inner definitions shadow outer ones.
+---@param bufnr number Buffer number
+---@param row number Row (0-indexed)
+---@param col number Byte column (0-indexed)
+---@param base string Word being completed (fuzzy filter)
+---@return {name: string, kind: "F"|"v"|"a"}[]
+function M.list_visible_symbols(bufnr, row, col, base)
+    local ast = require("r.lsp.ast")
+    local _, root = ast.get_parser_and_root(bufnr)
+    if not root then return {} end
+
+    local query = vim.treesitter.query.get("r", "locals")
+    if not query then return {} end
+
+    -- Map each enclosing scope node to its depth (0 = innermost)
+    local scopes = get_enclosing_scopes(bufnr, row, col)
+    local depth_of = {}
+    for i, scope in ipairs(scopes) do
+        depth_of[scope:id()] = i - 1
+    end
+
+    local function before_cursor(node)
+        local er, ec = node:end_()
+        return er < row or (er == row and ec < col)
+    end
+
+    local best = {} -- name -> { depth, row, col, kind }
+
+    local function consider(node, kind)
+        local name = vim.treesitter.get_node_text(node, bufnr)
+        if not fuzzy_match(name, base) then return end
+        local owner = ast.find_ancestor(node, "function_definition") or root
+        local depth = depth_of[owner:id()]
+        if depth == nil then return end -- defined in a function we're not in
+        -- Parameters are always visible in their function; assignments only
+        -- once they've happened
+        if kind ~= "a" and not before_cursor(node) then return end
+        local r, c = node:start()
+        local cur = best[name]
+        -- Prefer the innermost scope; within a scope, the latest definition
+        if
+            not cur
+            or depth < cur.depth
+            or (depth == cur.depth and (r > cur.row or (r == cur.row and c > cur.col)))
+        then
+            best[name] = { depth = depth, row = r, col = c, kind = kind }
+        end
+    end
+
+    for id, node in query:iter_captures(root, bufnr) do
+        if query.captures[id] == "local.definition" then
+            local parent = node:parent()
+            local ptype = parent and parent:type()
+            if ptype == "parameter" then
+                -- The parameter's own function_definition is its owner
+                consider(node, "a")
+            elseif ptype == "binary_operator" then
+                local rhs = parent:field("rhs")[1]
+                local is_fun = rhs and rhs ~= node and rhs:type() == "function_definition"
+                consider(node, is_fun and "F" or "v")
+            end
+            -- `argument` captures are named arguments of calls
+            -- (e.g. `mutate(x = ...)`), not definitions: ignore them
+        end
+    end
+
+    -- for (i in seq) ... : the loop variable
+    local ok, for_query = pcall(
+        vim.treesitter.query.parse,
+        "r",
+        "(for_statement variable: (identifier) @var)"
+    )
+    if ok then
+        for _, node in for_query:iter_captures(root, bufnr) do
+            consider(node, "v")
+        end
+    end
+
+    local items = {}
+    for name, def in pairs(best) do
+        -- Don't offer the word currently being typed as a completion of itself
+        if name ~= base then table.insert(items, { name = name, kind = def.kind }) end
+    end
+    return items
+end
+
 return M
