@@ -319,7 +319,15 @@ send_definition <- function(req_id, pkg, symbol) {
     return(invisible(NULL))
 }
 
-get_method <- function(req_id, fnm, fstobj, wrd = NULL, lib = NULL, df = NULL) {
+get_method <- function(
+    req_id,
+    fnm,
+    fstobj,
+    wrd = NULL,
+    lib = NULL,
+    df = NULL,
+    locals = NULL
+) {
     fname <- fnm
     if (exists(fnm) && !is.null(fobj <- get0(fstobj, envir = .GlobalEnv))) {
         sm <- get_methods(fnm)
@@ -334,6 +342,10 @@ get_method <- function(req_id, fnm, fstobj, wrd = NULL, lib = NULL, df = NULL) {
     }
     if (!is.null(df)) {
         msg <- paste0(msg, ',"df":"', df, '"')
+    }
+    # Symbols defined in the buffer and visible at the cursor
+    if (!is.null(locals)) {
+        msg <- paste0(msg, ',"locals":"', locals, '"')
     }
     .C(nvimcom_msg_to_nvim, paste0(msg, "}"))
 }

@@ -304,32 +304,32 @@ function M.complete(req_id, lnum, cnum)
 
     local wrd = get_word(cline, cnum)
 
-    -- Send a completion request to rnvimserver, adding the symbols defined in
-    -- the buffer that are visible at the cursor (function parameters, local
-    -- variables, ...). These do not exist in .GlobalEnv, so rnvimserver can't
-    -- know them otherwise.
-    local send_cmp_msg = function(msg)
-        if msg.base and vim.bo.filetype == "r" then
-            local byte_col = vim.fn.byteidx(cline, cnum)
-            if byte_col < 0 then byte_col = #cline end
-            local ok, syms = pcall(
-                require("r.lsp.scope").list_visible_symbols,
-                0,
-                lnum,
-                byte_col,
-                msg.base
-            )
-            if ok and #syms > 0 then
-                local parts = {}
-                for _, s in ipairs(syms) do
-                    -- Only syntactic names: they can't contain ':' or ' '
-                    if s.name:match("^[%w_.\128-\255]+$") then
-                        table.insert(parts, s.name .. ":" .. s.kind)
-                    end
-                end
-                msg.locals = table.concat(parts, " ")
+    -- Symbols defined in the buffer that are visible at the cursor (function
+    -- parameters, local variables, ...), as "name:kind name:kind ...". These
+    -- do not exist in .GlobalEnv, so rnvimserver can't know them otherwise.
+    ---@param base string?
+    ---@return string?
+    local get_locals = function(base)
+        if not base or vim.bo.filetype ~= "r" then return nil end
+        local byte_col = vim.fn.byteidx(cline, cnum)
+        if byte_col < 0 then byte_col = #cline end
+        local ok, syms =
+            pcall(require("r.lsp.scope").list_visible_symbols, 0, lnum, byte_col, base)
+        if not ok or #syms == 0 then return nil end
+        local parts = {}
+        for _, s in ipairs(syms) do
+            -- Only syntactic names: they can't contain ':', ' ' or quotes
+            if s.name:match("^[%w_.\128-\255]+$") then
+                table.insert(parts, s.name .. ":" .. s.kind)
             end
         end
+        if #parts == 0 then return nil end
+        return table.concat(parts, " ")
+    end
+
+    -- Send a completion request to rnvimserver, adding the local symbols
+    local send_cmp_msg = function(msg)
+        msg.locals = get_locals(msg.base)
         M.send_msg(msg)
     end
 
@@ -525,6 +525,8 @@ function M.complete(req_id, lnum, cnum)
                         end
                     end
                 end
+                local locals = get_locals(wrd)
+                if locals then msg = msg .. ", locals = '" .. locals .. "'" end
                 msg = msg .. ")"
                 send_to_nvimcom("E", msg)
             else
